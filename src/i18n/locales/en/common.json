@@ -166,7 +166,27 @@
     "calendar": {
       "sun": "Su", "mon": "Mo", "tue": "Tu", "wed": "We",
       "thu": "Th", "fri": "Fr", "sat": "Sa"
-    }
+    },
+    "advanced": "Advanced Settings",
+    "target_type": "Target Type",
+    "target_type.binary": "Yes/No",
+    "target_type.binary_desc": "Just mark as done or not",
+    "target_type.count": "Count Goal",
+    "target_type.count_desc": "Complete a specific number of times (e.g. 8 glasses of water)",
+    "target_type.duration": "Duration Goal",
+    "target_type.duration_desc": "Complete for a specific duration (e.g. 30 min exercise)",
+    "target_value": "Target Value",
+    "target_unit_count": "times",
+    "target_unit_duration": "minutes",
+    "custom_days": "Custom Days",
+    "days": {
+      "mon": "Mon", "tue": "Tue", "wed": "Wed",
+      "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+    },
+    "reminder": "Reminder",
+    "reminder_time": "Reminder Time",
+    "reminder_enabled": "Enable Reminder",
+    "start_date": "Start Date"
   },
   "countdowns": {
     "new_countdown": "New Countdown",

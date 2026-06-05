@@ -381,6 +381,8 @@ pub async fn update_habit(
     description: Option<String>,
     icon: Option<String>,
     color: Option<String>,
+    target_type: Option<String>,
+    target_value: Option<i32>,
     frequency: Option<String>,
     frequency_days: Option<String>,
     reminder_time: Option<String>,
@@ -403,6 +405,14 @@ pub async fn update_habit(
     if let Some(ref color) = color {
         conn.execute("UPDATE habits SET color = ?1, updated_at = datetime('now') WHERE id = ?2", (color, &id))
             .map_err(|e| format!("Failed to update color: {}", e))?;
+    }
+    if let Some(ref target_type) = target_type {
+        conn.execute("UPDATE habits SET target_type = ?1, updated_at = datetime('now') WHERE id = ?2", (target_type, &id))
+            .map_err(|e| format!("Failed to update target_type: {}", e))?;
+    }
+    if let Some(target_value) = target_value {
+        conn.execute("UPDATE habits SET target_value = ?1, updated_at = datetime('now') WHERE id = ?2", (&target_value, &id))
+            .map_err(|e| format!("Failed to update target_value: {}", e))?;
     }
     if let Some(ref frequency) = frequency {
         conn.execute("UPDATE habits SET frequency = ?1, updated_at = datetime('now') WHERE id = ?2", (frequency, &id))

@@ -166,7 +166,27 @@
     "calendar": {
       "sun": "日", "mon": "月", "tue": "火", "wed": "水",
       "thu": "木", "fri": "金", "sat": "土"
-    }
+    },
+    "advanced": "詳細設定",
+    "target_type": "目標タイプ",
+    "target_type.binary": "完了チェック",
+    "target_type.binary_desc": "完了したかどうかを記録するだけ",
+    "target_type.count": "回数目標",
+    "target_type.count_desc": "指定回数を達成（例：水を8杯飲む）",
+    "target_type.duration": "時間目標",
+    "target_type.duration_desc": "指定時間を達成（例：運動30分）",
+    "target_value": "目標数値",
+    "target_unit_count": "回",
+    "target_unit_duration": "分",
+    "custom_days": "カスタム曜日",
+    "days": {
+      "mon": "月", "tue": "火", "wed": "水",
+      "thu": "木", "fri": "金", "sat": "土", "sun": "日"
+    },
+    "reminder": "リマインダー",
+    "reminder_time": "リマインダー時間",
+    "reminder_enabled": "リマインダーを有効にする",
+    "start_date": "開始日"
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",

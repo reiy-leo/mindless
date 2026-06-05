@@ -42,6 +42,8 @@ export interface UpdateHabitParams {
   description?: string;
   icon?: string;
   color?: string;
+  targetType?: TargetType;
+  targetValue?: number;
   frequency?: HabitFrequency;
   frequencyDays?: string;
   reminderTime?: string;
