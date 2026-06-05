@@ -40,6 +40,8 @@ export interface CreateTaskParams {
   dueTime?: string;
   startDate?: string;
   listId?: string;
+  recurrenceRule?: string;
+  recurrenceEndDate?: string;
 }
 
 export interface UpdateTaskParams {
@@ -51,6 +53,8 @@ export interface UpdateTaskParams {
   dueTime?: string;
   startDate?: string;
   listId?: string;
+  recurrenceRule?: string;
+  recurrenceEndDate?: string;
 }
 
 export interface Subtask {

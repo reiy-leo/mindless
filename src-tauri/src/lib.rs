@@ -26,6 +26,7 @@ pub fn run() {
             commands::reorder_subtasks,
             commands::reorder_steps,
             commands::get_lists,
+            commands::complete_recurring_task,
             // Lists
             commands::create_list,
             commands::update_list,

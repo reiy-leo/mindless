@@ -92,6 +92,21 @@
     },
     "edit_task": "编辑任务",
     "delete_confirm": "确定要删除此任务吗？",
+    "supports_markdown": "支持 Markdown",
+    "recurrence": {
+      "label": "重复",
+      "none": "不重复",
+      "daily": "每天",
+      "weekly": "每周",
+      "monthly": "每月",
+      "yearly": "每年",
+      "custom": "自定义",
+      "every": "每",
+      "days": "天",
+      "weeks": "周",
+      "months": "个月",
+      "end_date": "重复截止日期（可选）"
+    },
     "views": {
       "list": "列表",
       "calendar": "日历",

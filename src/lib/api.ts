@@ -19,6 +19,8 @@ export async function createTask(params: {
   startDate?: string;
   listId?: string;
   tagIds?: string;
+  recurrenceRule?: string;
+  recurrenceEndDate?: string;
 }): Promise<Task> {
   return await invoke<Task>('create_task', params);
 }
@@ -34,12 +36,18 @@ export async function updateTask(id: string, params: {
   listId?: string;
   tagIds?: string;
   sortOrder?: number;
+  recurrenceRule?: string;
+  recurrenceEndDate?: string;
 }): Promise<Task> {
   return await invoke<Task>('update_task', { id, ...params });
 }
 
 export async function deleteTask(id: string): Promise<void> {
   return await invoke<void>('delete_task', { id });
+}
+
+export async function completeRecurringTask(id: string): Promise<Task | null> {
+  return await invoke<Task | null>('complete_recurring_task', { id });
 }
 
 // Reorder APIs

@@ -92,6 +92,21 @@
     },
     "edit_task": "Edit Task",
     "delete_confirm": "Are you sure you want to delete this task?",
+    "supports_markdown": "Supports Markdown",
+    "recurrence": {
+      "label": "Repeat",
+      "none": "No repeat",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "custom": "Custom",
+      "every": "Every",
+      "days": "days",
+      "weeks": "weeks",
+      "months": "months",
+      "end_date": "Repeat until (optional)"
+    },
     "views": {
       "list": "List",
       "calendar": "Calendar",

@@ -102,6 +102,17 @@ export function useToggleTaskCompletion() {
   });
 }
 
+export function useCompleteRecurringTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.completeRecurringTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
 export function useReorderTasks() {
   const queryClient = useQueryClient();
   return useMutation({

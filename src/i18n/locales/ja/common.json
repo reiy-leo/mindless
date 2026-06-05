@@ -92,6 +92,21 @@
     },
     "edit_task": "タスクを編集",
     "delete_confirm": "このタスクを削除しますか？",
+    "supports_markdown": "Markdown対応",
+    "recurrence": {
+      "label": "繰り返し",
+      "none": "繰り返しなし",
+      "daily": "毎日",
+      "weekly": "毎週",
+      "monthly": "毎月",
+      "yearly": "毎年",
+      "custom": "カスタム",
+      "every": "ごと",
+      "days": "日",
+      "weeks": "週",
+      "months": "ヶ月",
+      "end_date": "繰り返し終了日（任意）"
+    },
     "views": {
       "list": "リスト",
       "calendar": "カレンダー",

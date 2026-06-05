@@ -15,6 +15,7 @@ import {
   useCreateSubtask, useUpdateSubtask, useDeleteSubtask,
   useCreateStep, useUpdateStep, useDeleteStep,
   useCreateTag, useReorderTasks, useReorderSubtasks, useReorderSteps,
+  useCompleteRecurringTask,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK, VIEW_MODES } from '@/lib/constants';
@@ -26,6 +27,7 @@ import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
 import GridView from '@/components/tasks/GridView';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import type { Task, Priority, Subtask as SubtaskType, Step as StepType } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -46,6 +48,29 @@ function buildSubtaskTree(flatSubtasks: SubtaskType[]): (SubtaskType & { childre
   });
 
   return roots;
+}
+
+// ==================== Helper: Recurrence label ====================
+function getRecurrenceLabel(rule: string, t: (key: string, opts?: any) => string): string {
+  const basic: Record<string, string> = {
+    daily: t('tasks.recurrence.daily'),
+    weekly: t('tasks.recurrence.weekly'),
+    monthly: t('tasks.recurrence.monthly'),
+    yearly: t('tasks.recurrence.yearly'),
+  };
+  if (basic[rule]) return basic[rule];
+  if (rule.startsWith('every_')) {
+    const parts = rule.split('_');
+    if (parts.length >= 3) {
+      const n = parts[1];
+      const unit = parts[2];
+      const unitLabel = unit === 'days' ? t('tasks.recurrence.days')
+        : unit === 'weeks' ? t('tasks.recurrence.weeks')
+        : t('tasks.recurrence.months');
+      return `${t('tasks.recurrence.every')} ${n} ${unitLabel}`;
+    }
+  }
+  return rule;
 }
 
 // ==================== Task Detail Panel ====================
@@ -207,7 +232,7 @@ function TaskDetailPanel({
         {task.description && (
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-1">{t('tasks.description')}</h3>
-            <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{task.description}</p>
+            <MarkdownRenderer content={task.description} />
           </div>
         )}
 
@@ -237,6 +262,11 @@ function TaskDetailPanel({
           {task.startDate && (
             <div className="text-gray-600 dark:text-gray-400">
               {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
+            </div>
+          )}
+          {task.recurrenceRule && (
+            <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+              <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(task.recurrenceRule, t)}</span>
             </div>
           )}
         </div>
@@ -447,6 +477,11 @@ function SortableTaskRow({
         style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
         title={`${t('tasks.priority.label')}: ${task.priority}`}
       />
+      {task.recurrenceRule && (
+        <span className="text-xs text-blue-500 flex-shrink-0" title={getRecurrenceLabel(task.recurrenceRule, t)}>
+          &#x21bb;
+        </span>
+      )}
       {task.dueDate && (
         <span className="text-sm text-gray-500 flex-shrink-0">
           {parseLocalDate(task.dueDate).toLocaleDateString()}
@@ -488,6 +523,7 @@ export default function TasksPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const toggleTask = useToggleTaskCompletion();
+  const completeRecurring = useCompleteRecurringTask();
   const reorderTasks = useReorderTasks();
 
   const sensors = useSensors(
@@ -563,6 +599,8 @@ export default function TasksPage() {
     dueTime?: string;
     startDate?: string;
     listId?: string;
+    recurrenceRule?: string;
+    recurrenceEndDate?: string;
   }) => {
     createTask.mutate(taskData, { onSuccess: closeForm });
   };
@@ -575,6 +613,8 @@ export default function TasksPage() {
     dueTime?: string;
     startDate?: string;
     listId?: string;
+    recurrenceRule?: string;
+    recurrenceEndDate?: string;
   }) => {
     if (editingTask) {
       updateTask.mutate({ id: editingTask.id, ...taskData }, { onSuccess: closeForm });
@@ -582,7 +622,13 @@ export default function TasksPage() {
   };
 
   const handleToggleTask = (id: string, isCompleted: boolean) => {
-    toggleTask.mutate({ id, isCompleted: !isCompleted });
+    const task = tasks.find((t) => t.id === id);
+    // If completing a recurring task, generate the next occurrence
+    if (!isCompleted && task?.recurrenceRule) {
+      completeRecurring.mutate(id);
+    } else {
+      toggleTask.mutate({ id, isCompleted: !isCompleted });
+    }
   };
 
   const handleDeleteTask = (id: string) => {
