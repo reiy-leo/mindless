@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, SettingsIcon,
   ChevronDownIcon, ChevronRightIcon, PlusIcon, PencilIcon,
-  CalendarIcon, ClockIcon, InboxIcon, LayoutGrid,
+  CalendarIcon, ClockIcon, InboxIcon, LayoutGrid, Tag,
 } from 'lucide-react';
 import { useLists, useTasks } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
@@ -39,6 +39,7 @@ const navItems = [
   { path: '/tasks', icon: CheckSquareIcon, labelKey: 'navigation.tasks' },
   { path: '/habits', icon: RepeatIcon, labelKey: 'navigation.habits' },
   { path: '/countdowns', icon: HourglassIcon, labelKey: 'navigation.countdowns' },
+  { path: '/tags', icon: Tag, labelKey: 'navigation.tags' },
   { path: '/settings', icon: SettingsIcon, labelKey: 'navigation.settings' },
 ];
 

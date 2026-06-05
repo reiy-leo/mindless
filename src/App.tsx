@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import TasksPage from './pages/TasksPage';
 import HabitsPage from './pages/HabitsPage';
 import CountdownsPage from './pages/CountdownsPage';
+import TagsPage from './pages/TagsPage';
 import SettingsPage from './pages/SettingsPage';
 import { useAppStore } from './stores/useAppStore';
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/habits" element={<HabitsPage />} />
           <Route path="/countdowns" element={<CountdownsPage />} />
+          <Route path="/tags" element={<TagsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </AppLayout>

@@ -41,6 +41,7 @@
     "tasks": "Tasks",
     "habits": "Habits",
     "countdowns": "Countdowns",
+    "tags": "Tags",
     "settings": "Settings"
   },
   "tasks": {
@@ -189,6 +190,25 @@
     "days_until": "days until",
     "today": "Today",
     "delete_confirm": "Are you sure you want to delete this countdown?"
+  },
+  "tags": {
+    "title": "Tags",
+    "new_tag": "New Tag",
+    "edit_tag": "Edit Tag",
+    "name": "Tag Name",
+    "name_placeholder": "Enter tag name",
+    "emoji": "Icon",
+    "color": "Color",
+    "preview": "Preview",
+    "search_placeholder": "Search tags...",
+    "no_tags": "No tags yet",
+    "no_results": "No matching tags found",
+    "create_first": "Create your first tag",
+    "add_subtag": "Add sub-tag",
+    "creating_subtag": "New sub-tag",
+    "task_count": "{{count}} tasks",
+    "delete_confirm": "Are you sure you want to delete tag \"{{name}}\"?",
+    "delete_confirm_with_children": "Are you sure you want to delete tag \"{{name}}\" and its {{count}} sub-tags?"
   },
   "settings": {
     "language": "Language",

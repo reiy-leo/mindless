@@ -41,6 +41,7 @@
     "tasks": "任务",
     "habits": "习惯",
     "countdowns": "倒数日",
+    "tags": "标签",
     "settings": "设置"
   },
   "tasks": {
@@ -189,6 +190,25 @@
     "days_until": "天之前",
     "today": "今天",
     "delete_confirm": "确定要删除此倒数日吗？"
+  },
+  "tags": {
+    "title": "标签管理",
+    "new_tag": "新建标签",
+    "edit_tag": "编辑标签",
+    "name": "标签名称",
+    "name_placeholder": "输入标签名称",
+    "emoji": "图标",
+    "color": "颜色",
+    "preview": "预览",
+    "search_placeholder": "搜索标签...",
+    "no_tags": "暂无标签",
+    "no_results": "未找到匹配的标签",
+    "create_first": "创建第一个标签",
+    "add_subtag": "添加子标签",
+    "creating_subtag": "新建子标签",
+    "task_count": "{{count}} 个任务",
+    "delete_confirm": "确定要删除标签「{{name}}」吗？",
+    "delete_confirm_with_children": "确定要删除标签「{{name}}」及其 {{count}} 个子标签吗？"
   },
   "settings": {
     "language": "语言",

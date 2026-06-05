@@ -41,6 +41,7 @@
     "tasks": "タスク",
     "habits": "習慣",
     "countdowns": "カウントダウン",
+    "tags": "タグ",
     "settings": "設定"
   },
   "tasks": {
@@ -189,6 +190,25 @@
     "days_until": "日まで",
     "today": "今日",
     "delete_confirm": "このカウントダウンを削除しますか？"
+  },
+  "tags": {
+    "title": "タグ管理",
+    "new_tag": "新規タグ",
+    "edit_tag": "タグを編集",
+    "name": "タグ名",
+    "name_placeholder": "タグ名を入力",
+    "emoji": "アイコン",
+    "color": "カラー",
+    "preview": "プレビュー",
+    "search_placeholder": "タグを検索...",
+    "no_tags": "タグがありません",
+    "no_results": "一致するタグが見つかりません",
+    "create_first": "最初のタグを作成",
+    "add_subtag": "サブタグを追加",
+    "creating_subtag": "新規サブタグ",
+    "task_count": "{{count}} タスク",
+    "delete_confirm": "タグ「{{name}}」を削除しますか？",
+    "delete_confirm_with_children": "タグ「{{name}}」とその {{count}} 個のサブタグを削除しますか？"
   },
   "settings": {
     "language": "言語",
