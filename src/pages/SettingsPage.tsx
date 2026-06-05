@@ -7,12 +7,12 @@ export default function SettingsPage() {
 
   return (
     <div className="flex-1 overflow-auto p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('navigation.settings')}</h1>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">{t('navigation.settings')}</h1>
 
       <div className="space-y-6 max-w-2xl">
         {/* Language settings */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.language')}
           </h2>
           <select
@@ -22,7 +22,7 @@ export default function SettingsPage() {
               setLanguage(lang);
               i18n.changeLanguage(lang);
             }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="zh">中文</option>
             <option value="en">English</option>
@@ -31,8 +31,8 @@ export default function SettingsPage() {
         </section>
 
         {/* Theme settings */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.theme')}
           </h2>
           <div className="space-y-2">
@@ -50,15 +50,15 @@ export default function SettingsPage() {
                   onChange={() => setTheme(option.value as any)}
                   className="w-4 h-4 text-blue-500"
                 />
-                <span className="text-gray-700">{option.label}</span>
+                <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
               </label>
             ))}
           </div>
         </section>
 
         {/* Priority mode settings */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.priority_mode')}
           </h2>
           <div className="space-y-2">
@@ -76,7 +76,7 @@ export default function SettingsPage() {
             ].map((option) => (
               <label
                 key={option.value}
-                className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+                className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <input
                   type="radio"
@@ -87,7 +87,7 @@ export default function SettingsPage() {
                   className="w-4 h-4 text-blue-500 mt-1"
                 />
                 <div>
-                  <div className="text-gray-900 font-medium">{option.label}</div>
+                  <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
                   <div className="text-sm text-gray-500 mt-1">{option.description}</div>
                 </div>
               </label>
@@ -96,11 +96,11 @@ export default function SettingsPage() {
         </section>
 
         {/* About section */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.about')}
           </h2>
-          <div className="text-gray-600">
+          <div className="text-gray-600 dark:text-gray-400">
             <p className="mb-2">
               <strong>Mindless</strong> - {t('app.name')}
             </p>

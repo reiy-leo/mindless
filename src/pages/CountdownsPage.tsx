@@ -81,43 +81,43 @@ function CountdownFormDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {isEditing ? t('countdowns.edit_countdown') : t('countdowns.new_countdown')}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             <XMarkIcon className="w-5 h-5 text-gray-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.event_name')} *
             </label>
             <input
               type="text" value={title} onChange={(e) => setTitle(e.target.value)}
               required autoFocus placeholder={t('countdowns.event_name_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.description')}
             </label>
             <input
               type="text" value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder={t('countdowns.description_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           {/* Event Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.event_type')}
             </label>
             <div className="flex gap-2">
@@ -126,8 +126,8 @@ function CountdownFormDialog({
                 onClick={() => setEventType('countdown')}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                   eventType === 'countdown'
-                    ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-500'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 ring-2 ring-purple-500'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 <ClockIcon className="w-4 h-4" />
@@ -138,8 +138,8 @@ function CountdownFormDialog({
                 onClick={() => setEventType('countup')}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                   eventType === 'countup'
-                    ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-500'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 ring-2 ring-purple-500'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 <ArrowPathIcon className="w-4 h-4" />
@@ -150,14 +150,14 @@ function CountdownFormDialog({
 
           {/* Icon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.icon')}
             </label>
             <div className="flex gap-2 flex-wrap">
               {ICON_OPTIONS.map((ic) => (
                 <button key={ic} type="button" onClick={() => setIcon(ic)}
                   className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
-                    icon === ic ? 'ring-2 ring-purple-500 bg-purple-50' : 'bg-gray-100 hover:bg-gray-200'
+                    icon === ic ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >{ICON_MAP[ic] || '🚩'}</button>
               ))}
@@ -166,7 +166,7 @@ function CountdownFormDialog({
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.color')}
             </label>
             <div className="flex gap-2">
@@ -183,31 +183,31 @@ function CountdownFormDialog({
 
           {/* Target Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.target_date')} *
             </label>
             <input
               type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           {/* Target Time (optional) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.target_time')}
             </label>
             <input
               type="time" value={targetTime} onChange={(e) => setTargetTime(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
               {t('common.cancel')}
             </button>
             <button type="submit" disabled={!title.trim() || !targetDate}
@@ -276,7 +276,7 @@ function CountdownCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -287,15 +287,15 @@ function CountdownCard({
             {ICON_MAP[countdown.icon] || '🚩'}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{countdown.title}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h3>
             {countdown.description && (
               <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{countdown.description}</p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100" title={t('common.edit')}>
-            <PencilIcon className="w-4 h-4 text-gray-400" />
+          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
+            <PencilIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
           <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50" title={t('common.delete')}>
             <TrashIcon className="w-4 h-4 text-red-400" />
@@ -312,7 +312,7 @@ function CountdownCard({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-400">
+      <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
         <span>
           {new Date(countdown.targetDate).toLocaleDateString(undefined, {
             year: 'numeric', month: 'long', day: 'numeric',
@@ -320,7 +320,7 @@ function CountdownCard({
           {countdown.targetTime && ` ${countdown.targetTime.slice(0, 5)}`}
         </span>
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-          isCountup ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+          isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700'
         }`}>
           {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
         </span>
@@ -391,7 +391,7 @@ export default function CountdownsPage() {
   return (
     <div className="flex-1 overflow-auto p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('navigation.countdowns')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.countdowns')}</h1>
         <button
           onClick={() => { setEditingCountdown(null); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
@@ -403,7 +403,7 @@ export default function CountdownsPage() {
 
       {countdowns.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-          <ClockIcon className="w-16 h-16 mb-4 text-gray-300" />
+          <ClockIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
           <p className="text-lg">{t('countdowns.no_countdowns')}</p>
           <button onClick={() => setShowForm(true)} className="mt-4 text-purple-500 hover:text-purple-600">
             {t('countdowns.create_first')}

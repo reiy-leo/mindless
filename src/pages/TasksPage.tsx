@@ -157,28 +157,28 @@ function TaskDetailPanel({
   };
 
   return (
-    <div className="flex flex-col h-full border-l border-gray-200 bg-white">
+    <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Detail Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 truncate flex-1">{task.title}</h2>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate flex-1">{task.title}</h2>
         <div className="flex items-center gap-1 ml-2">
           <button
             onClick={onEdit}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={t('common.edit')}
           >
-            <PencilIcon className="w-4 h-4 text-gray-600" />
+            <PencilIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title={t('common.delete')}
           >
             <TrashIcon className="w-4 h-4 text-red-500" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={t('common.close')}
           >
             <XMarkIcon className="w-4 h-4 text-gray-500" />
@@ -192,7 +192,7 @@ function TaskDetailPanel({
         {task.description && (
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-1">{t('tasks.description')}</h3>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{task.description}</p>
+            <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{task.description}</p>
           </div>
         )}
 
@@ -204,23 +204,23 @@ function TaskDetailPanel({
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
               />
-              <span className="text-gray-600">
+              <span className="text-gray-600 dark:text-gray-400">
                 {t('tasks.priority')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
               </span>
             </div>
           )}
           {task.dueDate && (
-            <div className="text-gray-600">
+            <div className="text-gray-600 dark:text-gray-400">
               {t('tasks.due_date')}: {new Date(task.dueDate).toLocaleDateString()}
             </div>
           )}
           {task.dueTime && (
-            <div className="text-gray-600">
+            <div className="text-gray-600 dark:text-gray-400">
               {t('tasks.due_time')}: {task.dueTime}
             </div>
           )}
           {task.startDate && (
-            <div className="text-gray-600">
+            <div className="text-gray-600 dark:text-gray-400">
               {t('tasks.start_date')}: {new Date(task.startDate).toLocaleDateString()}
             </div>
           )}
@@ -229,7 +229,7 @@ function TaskDetailPanel({
         {/* Tags */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center gap-1">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
               <TagIcon className="w-4 h-4" />
               {t('tasks.tags.title')}
             </h3>
@@ -244,7 +244,7 @@ function TaskDetailPanel({
           {/* Tag chips */}
           <div className="flex flex-wrap gap-2 mb-2">
             {taskTags.length === 0 && (
-              <span className="text-xs text-gray-400 italic">{t('tasks.tags.empty')}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 italic">{t('tasks.tags.empty')}</span>
             )}
             {taskTags.map((tag) => (
               <span
@@ -270,7 +270,7 @@ function TaskDetailPanel({
                   <button
                     key={tag.id}
                     onClick={() => handleToggleTag(tag.id)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors"
                   >
                     {tag.emoji && <span>{tag.emoji}</span>}
                     + {tag.name}
@@ -286,14 +286,14 @@ function TaskDetailPanel({
                 type="color"
                 value={newTagColor}
                 onChange={(e) => setNewTagColor(e.target.value)}
-                className="w-8 h-8 rounded cursor-pointer border border-gray-300"
+                className="w-8 h-8 rounded cursor-pointer border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
               <input
                 type="text"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 placeholder={t('tasks.tags.name_placeholder')}
-                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateAndAssignTag();
                   if (e.key === 'Escape') setShowTagInput(false);
@@ -310,7 +310,7 @@ function TaskDetailPanel({
         </div>
 
         {/* Subtasks */}
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
           <SubtaskList
             subtasks={subtaskTree}
             onAdd={handleAddSubtask}
@@ -321,7 +321,7 @@ function TaskDetailPanel({
         </div>
 
         {/* Steps */}
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
           <StepList
             steps={steps}
             onAdd={handleAddStep}
@@ -426,16 +426,16 @@ export default function TasksPage() {
       {/* Task List Panel */}
       <div className={`flex flex-col overflow-hidden transition-all ${selectedTask ? 'w-1/2' : 'w-full'}`}>
         {/* Header */}
-        <div className="border-b border-gray-200 bg-white px-6 py-4">
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">{t('navigation.tasks')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.tasks')}</h1>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title={t('tasks.filters')}
               >
-                <FunnelIcon className="w-5 h-5 text-gray-600" />
+                <FunnelIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <button
                 onClick={() => {
@@ -457,12 +457,12 @@ export default function TasksPage() {
               placeholder={t('tasks.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">{t('tasks.status.all')}</option>
               <option value="active">{t('tasks.status.active')}</option>
@@ -479,7 +479,7 @@ export default function TasksPage() {
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   viewMode === key
                     ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {t(label)}
@@ -517,7 +517,7 @@ export default function TasksPage() {
                   <div
                     key={task.id}
                     onClick={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
-                    className={`flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+                    className={`flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
                       selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
                     }`}
                   >
@@ -529,12 +529,12 @@ export default function TasksPage() {
                         handleToggleTask(task.id, task.isCompleted);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
                     />
                     <div className="flex-1 min-w-0">
                       <h3
                         className={`text-base truncate ${
-                          task.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
+                          task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
                         }`}
                       >
                         {task.title}
@@ -576,7 +576,7 @@ export default function TasksPage() {
                           setEditingTask(task);
                           setShowTaskForm(true);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
                         title={t('common.edit')}
                       >
                         <PencilIcon className="w-4 h-4 text-gray-500" />
@@ -586,7 +586,7 @@ export default function TasksPage() {
                           e.stopPropagation();
                           handleDeleteTask(task.id);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
                         title={t('common.delete')}
                       >
                         <TrashIcon className="w-4 h-4 text-red-500" />

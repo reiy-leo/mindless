@@ -63,43 +63,43 @@ function HabitFormDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {isEditing ? t('habits.edit_habit') : t('habits.new_habit')}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             <XMarkIcon className="w-5 h-5 text-gray-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('habits.habit_name')} *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.habit_name')} *</label>
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
               required autoFocus
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('habits.description')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.description')}</label>
             <input
               type="text" value={description} onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('habits.icon')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.icon')}</label>
             <div className="flex gap-2 flex-wrap">
               {icons.map((ic) => (
                 <button key={ic} type="button" onClick={() => setIcon(ic)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${icon === ic ? 'ring-2 ring-green-500 bg-green-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${icon === ic ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 >{ic === 'star' ? '⭐' : ic === 'heart' ? '❤️' : ic === 'fire' ? '🔥' : ic === 'book' ? '📖' : ic === 'dumbbell' ? '💪' : ic === 'moon' ? '🌙' : ic === 'sun' ? '☀️' : '🍃'}</button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('habits.color')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.color')}</label>
             <div className="flex gap-2">
               {colors.map((c) => (
                 <button key={c} type="button" onClick={() => setColor(c)}
@@ -110,9 +110,9 @@ function HabitFormDialog({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('habits.frequency')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.frequency')}</label>
             <select value={frequency} onChange={(e) => setFrequency(e.target.value as HabitFrequency)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="daily">{t('habits.frequency.daily')}</option>
               <option value="weekly">{t('habits.frequency.weekly')}</option>
@@ -120,7 +120,7 @@ function HabitFormDialog({
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">{t('common.cancel')}</button>
             <button type="submit" disabled={!name.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50">{isEditing ? t('common.save') : t('common.create')}</button>
           </div>
         </form>
@@ -161,12 +161,12 @@ function CheckInCalendar({ habitId, color }: { habitId: string; color: string })
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-2">
-        <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100"><ChevronLeftIcon className="w-4 h-4 text-gray-500" /></button>
-        <span className="text-sm font-medium text-gray-700">{monthLabel}</span>
-        <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100"><ChevronRightIcon className="w-4 h-4 text-gray-500" /></button>
+        <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeftIcon className="w-4 h-4 text-gray-500" /></button>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{monthLabel}</span>
+        <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRightIcon className="w-4 h-4 text-gray-500" /></button>
       </div>
       <div className="grid grid-cols-7 gap-1">
-        {dayLabels.map((d) => <div key={d} className="text-center text-xs text-gray-400 py-1">{d}</div>)}
+        {dayLabels.map((d) => <div key={d} className="text-center text-xs text-gray-400 dark:text-gray-500 py-1">{d}</div>)}
         {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
           const dateStr = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -175,8 +175,8 @@ function CheckInCalendar({ habitId, color }: { habitId: string; color: string })
           return (
             <div key={day}
               className={`aspect-square flex items-center justify-center rounded-full text-xs relative
-                ${isChecked ? 'text-white font-bold' : 'text-gray-600'}
-                ${isToday ? 'ring-2 ring-gray-300' : ''}
+                ${isChecked ? 'text-white font-bold' : 'text-gray-600 dark:text-gray-400'}
+                ${isToday ? 'ring-2 ring-gray-300 dark:ring-gray-600' : ''}
               `}
               style={isChecked ? { backgroundColor: color } : {}}
             >
@@ -213,7 +213,7 @@ function HabitCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -221,15 +221,15 @@ function HabitCard({
             {iconMap[habit.icon] || '⭐'}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{habit.name}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{habit.name}</h3>
             <p className="text-xs text-gray-500">{getFrequencyLabel(habit.frequency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100" title={t('common.edit')}>
-            <PencilIcon className="w-4 h-4 text-gray-400" />
+          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
+            <PencilIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50" title={t('common.delete')}>
+          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
             <TrashIcon className="w-4 h-4 text-red-400" />
           </button>
         </div>
@@ -262,7 +262,7 @@ function HabitCard({
         disabled={checkedInToday}
         className={`w-full py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
           checkedInToday
-            ? 'bg-gray-100 text-gray-500 cursor-default'
+            ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 cursor-default'
             : 'text-white hover:opacity-90'
         }`}
         style={!checkedInToday ? { backgroundColor: habit.color } : {}}
@@ -277,7 +277,7 @@ function HabitCard({
       {/* Toggle calendar */}
       <button
         onClick={() => setShowCalendar(!showCalendar)}
-        className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        className="w-full mt-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
       >
         {showCalendar ? t('habits.hide_history') : t('habits.show_history')}
       </button>
@@ -337,7 +337,7 @@ export default function HabitsPage() {
   return (
     <div className="flex-1 overflow-auto p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('navigation.habits')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.habits')}</h1>
         <button
           onClick={() => { setEditingHabit(null); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
