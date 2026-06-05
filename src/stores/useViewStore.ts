@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 type ViewMode = 'list' | 'calendar' | 'kanban' | 'grid' | 'matrix';
 
@@ -16,16 +17,27 @@ interface ViewState {
   setSearchQuery: (query: string) => void;
 }
 
-export const useViewStore = create<ViewState>((set) => ({
-  viewMode: 'list',
-  selectedDate: null,
-  selectedListId: null,
-  filterStatus: 'all',
-  searchQuery: '',
+export const useViewStore = create<ViewState>()(
+  persist(
+    (set) => ({
+      viewMode: 'list',
+      selectedDate: null,
+      selectedListId: null,
+      filterStatus: 'all',
+      searchQuery: '',
 
-  setViewMode: (viewMode) => set({ viewMode }),
-  setSelectedDate: (selectedDate) => set({ selectedDate }),
-  setSelectedListId: (selectedListId) => set({ selectedListId }),
-  setFilterStatus: (filterStatus) => set({ filterStatus }),
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
-}));
+      setViewMode: (viewMode) => set({ viewMode }),
+      setSelectedDate: (selectedDate) => set({ selectedDate }),
+      setSelectedListId: (selectedListId) => set({ selectedListId }),
+      setFilterStatus: (filterStatus) => set({ filterStatus }),
+      setSearchQuery: (searchQuery) => set({ searchQuery }),
+    }),
+    {
+      name: 'mindless-view-settings',
+      partialize: (state) => ({
+        viewMode: state.viewMode,
+        selectedListId: state.selectedListId,
+      }),
+    }
+  )
+);

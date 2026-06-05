@@ -246,3 +246,16 @@ export async function updateCountdown(id: string, params: {
 export async function deleteCountdown(id: string): Promise<void> {
   return await invoke<void>('delete_countdown', { id });
 }
+
+// Settings APIs
+export async function getSettings(): Promise<[string, string][]> {
+  return await invoke<[string, string][]>('get_settings');
+}
+
+export async function updateSetting(key: string, value: string): Promise<void> {
+  return await invoke<void>('update_setting', { key, value });
+}
+
+export async function updateSettings(settings: [string, string][]): Promise<void> {
+  return await invoke<void>('update_settings', { settings });
+}

@@ -62,6 +62,8 @@ pub fn run() {
             commands::delete_countdown,
             // Settings
             commands::get_settings,
+            commands::update_setting,
+            commands::update_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

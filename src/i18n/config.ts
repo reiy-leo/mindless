@@ -18,11 +18,28 @@ const resources = {
   },
 };
 
+// Read persisted language from Zustand store (localStorage)
+function getPersistedLanguage(): string {
+  try {
+    const raw = localStorage.getItem('mindless-app-settings');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const state = parsed?.state;
+      if (state?.language && ['zh', 'en', 'ja'].includes(state.language)) {
+        return state.language;
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return 'zh';
+}
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'zh', // default language
+    lng: getPersistedLanguage(),
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
