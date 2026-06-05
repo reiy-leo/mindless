@@ -251,7 +251,16 @@
     "days_since": "天以来",
     "days_until": "天之前",
     "today": "今天",
-    "delete_confirm": "确定要删除此倒数日吗？"
+    "delete_confirm": "确定要删除此倒数日吗？",
+    "detail": "事件详情",
+    "month_events": "本月事件",
+    "no_events_this_month": "本月暂无事件",
+    "view_grid": "卡片视图",
+    "view_calendar": "日历视图",
+    "lunar_date": "农历",
+    "days_left_short": "天",
+    "days_ago_short": "天前",
+    "days_since_short": "天"
   },
   "tags": {
     "title": "标签管理",

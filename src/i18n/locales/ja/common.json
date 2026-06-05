@@ -251,7 +251,16 @@
     "days_since": "日経過",
     "days_until": "日まで",
     "today": "今日",
-    "delete_confirm": "このカウントダウンを削除しますか？"
+    "delete_confirm": "このカウントダウンを削除しますか？",
+    "detail": "イベント詳細",
+    "month_events": "今月のイベント",
+    "no_events_this_month": "今月イベントなし",
+    "view_grid": "カード表示",
+    "view_calendar": "カレンダー表示",
+    "lunar_date": "旧暦",
+    "days_left_short": "日",
+    "days_ago_short": "日前",
+    "days_since_short": "日"
   },
   "tags": {
     "title": "タグ管理",

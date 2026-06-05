@@ -251,7 +251,16 @@
     "days_since": "days since",
     "days_until": "days until",
     "today": "Today",
-    "delete_confirm": "Are you sure you want to delete this countdown?"
+    "delete_confirm": "Are you sure you want to delete this countdown?",
+    "detail": "Event Detail",
+    "month_events": "This Month",
+    "no_events_this_month": "No events this month",
+    "view_grid": "Card View",
+    "view_calendar": "Calendar View",
+    "lunar_date": "Lunar",
+    "days_left_short": "d",
+    "days_ago_short": "d ago",
+    "days_since_short": "d"
   },
   "tags": {
     "title": "Tags",
