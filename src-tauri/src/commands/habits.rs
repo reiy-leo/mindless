@@ -62,16 +62,38 @@ fn parse_weekday(s: &str) -> Option<chrono::Weekday> {
     }
 }
 
-/// Get distinct completed check-in dates for a habit, sorted descending.
-fn get_checkin_dates(conn: &rusqlite::Connection, habit_id: &str) -> Result<Vec<chrono::NaiveDate>, String> {
-    let mut stmt = conn.prepare(
+/// Get check-in dates that meet the target requirement for a habit.
+/// For binary habits: any completed check-in counts.
+/// For count/duration habits: only check-ins with value >= target_value count.
+/// Returns dates sorted descending.
+fn get_valid_checkin_dates(
+    conn: &rusqlite::Connection,
+    habit_id: &str,
+    target_type: &str,
+    target_value: i32,
+) -> Result<Vec<chrono::NaiveDate>, String> {
+    // For binary habits, any check-in counts
+    // For count/duration, only check-ins meeting target count
+    let sql = if target_type == "binary" || target_value <= 1 {
         "SELECT DISTINCT log_date FROM habit_logs WHERE habit_id = ?1 AND completed = 1 ORDER BY log_date DESC"
-    ).map_err(|e| format!("Failed to prepare: {}", e))?;
+    } else {
+        "SELECT DISTINCT log_date FROM habit_logs WHERE habit_id = ?1 AND completed = 1 AND value >= ?2 ORDER BY log_date DESC"
+    };
 
-    let dates: Vec<String> = stmt.query_map([habit_id], |row| row.get(0))
-        .map_err(|e| format!("Failed to query: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
+    let mut stmt = conn.prepare(sql)
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+
+    let dates: Vec<String> = if target_type == "binary" || target_value <= 1 {
+        stmt.query_map([habit_id], |row| row.get(0))
+            .map_err(|e| format!("Failed to query: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect()
+    } else {
+        stmt.query_map(rusqlite::params![habit_id, target_value], |row| row.get(0))
+            .map_err(|e| format!("Failed to query: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect()
+    };
 
     Ok(dates.iter().filter_map(|d| parse_date(d)).collect())
 }
@@ -83,12 +105,14 @@ fn calculate_streaks(
     frequency: &str,
     start_date: &str,
     frequency_days: &str,
+    target_type: &str,
+    target_value: i32,
 ) -> Result<(i32, i32), String> {
     match frequency {
-        "daily" => calculate_daily_streaks(conn, habit_id, start_date),
-        "every_x_days" => calculate_every_x_days_streaks(conn, habit_id, start_date, frequency_days),
-        "weekly" => calculate_weekly_streaks(conn, habit_id, start_date, frequency_days),
-        "monthly" => calculate_monthly_streaks(conn, habit_id, start_date),
+        "daily" => calculate_daily_streaks(conn, habit_id, start_date, target_type, target_value),
+        "every_x_days" => calculate_every_x_days_streaks(conn, habit_id, start_date, frequency_days, target_type, target_value),
+        "weekly" => calculate_weekly_streaks(conn, habit_id, start_date, frequency_days, target_type, target_value),
+        "monthly" => calculate_monthly_streaks(conn, habit_id, start_date, target_type, target_value),
         _ => Ok((0, 0)),
     }
 }
@@ -99,13 +123,15 @@ fn calculate_daily_streaks(
     conn: &rusqlite::Connection,
     habit_id: &str,
     start_date: &str,
+    target_type: &str,
+    target_value: i32,
 ) -> Result<(i32, i32), String> {
-    let parsed = get_checkin_dates(conn, habit_id)?;
+    let parsed = get_valid_checkin_dates(conn, habit_id, target_type, target_value)?;
     if parsed.is_empty() {
         return Ok((0, 0));
     }
 
-    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
+    let start = parse_date(start_date).unwrap_or(*parsed.last().unwrap());
     let today = chrono::Local::now().date_naive();
     let yesterday = today - chrono::Duration::days(1);
 
@@ -124,7 +150,7 @@ fn calculate_daily_streaks(
                 current_streak += 1;
                 prev = *date;
             } else if *date == prev {
-                continue;
+                continue; // skip duplicates
             } else {
                 break;
             }
@@ -180,6 +206,8 @@ fn calculate_every_x_days_streaks(
     habit_id: &str,
     start_date: &str,
     frequency_days: &str,
+    target_type: &str,
+    target_value: i32,
 ) -> Result<(i32, i32), String> {
     let interval: i64 = frequency_days.trim().parse().unwrap_or(1);
     let interval = interval.max(1);
@@ -188,7 +216,7 @@ fn calculate_every_x_days_streaks(
         None => return Ok((0, 0)),
     };
 
-    let parsed = get_checkin_dates(conn, habit_id)?;
+    let parsed = get_valid_checkin_dates(conn, habit_id, target_type, target_value)?;
     if parsed.is_empty() {
         return Ok((0, 0));
     }
@@ -222,7 +250,7 @@ fn calculate_every_x_days_streaks(
 
     // Current streak: consecutive periods from current or previous period
     let mut current_streak = 0i32;
-    if !periods.is_empty() && (periods[0] == today_period || periods[0] == prev_period) {
+    if periods[0] == today_period || periods[0] == prev_period {
         current_streak = 1;
         for i in 1..periods.len() {
             if periods[i - 1] - periods[i] == 1 {
@@ -257,13 +285,15 @@ fn calculate_weekly_streaks(
     habit_id: &str,
     start_date: &str,
     frequency_days: &str,
+    target_type: &str,
+    target_value: i32,
 ) -> Result<(i32, i32), String> {
-    let parsed = get_checkin_dates(conn, habit_id)?;
+    let parsed = get_valid_checkin_dates(conn, habit_id, target_type, target_value)?;
     if parsed.is_empty() {
         return Ok((0, 0));
     }
 
-    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
+    let start = parse_date(start_date).unwrap_or(*parsed.last().unwrap());
 
     // Parse custom days (e.g. "mon,wed,fri")
     let custom_days: Vec<chrono::Weekday> = if frequency_days.is_empty() {
@@ -338,11 +368,20 @@ fn calculate_weekly_streaks(
     Ok((current_streak, longest))
 }
 
+/// Check if two ISO weeks are consecutive (newer is exactly 1 week after older).
+/// Uses date-based calculation to correctly handle year boundaries.
 fn is_consecutive_week(newer: (i32, u32), older: (i32, u32)) -> bool {
-    // newer should be exactly 1 week after older
-    let newer_val = newer.0 as i64 * 52 + newer.1 as i64;
-    let older_val = older.0 as i64 * 52 + older.1 as i64;
-    newer_val - older_val == 1
+    // Convert each (year, iso_week) to a representative Monday date
+    let to_monday = |year: i32, week: u32| -> Option<chrono::NaiveDate> {
+        let jan4 = chrono::NaiveDate::from_ymd_opt(year, 1, 4)?;
+        let iso_year_start = jan4 - chrono::Duration::days(jan4.weekday().num_days_from_monday() as i64);
+        Some(iso_year_start + chrono::Duration::days((week as i64 - 1) * 7))
+    };
+
+    match (to_monday(newer.0, newer.1), to_monday(older.0, older.1)) {
+        (Some(n), Some(o)) => (n - o).num_days() == 7,
+        _ => false,
+    }
 }
 
 // ==================== Monthly Streaks ====================
@@ -351,13 +390,15 @@ fn calculate_monthly_streaks(
     conn: &rusqlite::Connection,
     habit_id: &str,
     start_date: &str,
+    target_type: &str,
+    target_value: i32,
 ) -> Result<(i32, i32), String> {
-    let parsed = get_checkin_dates(conn, habit_id)?;
+    let parsed = get_valid_checkin_dates(conn, habit_id, target_type, target_value)?;
     if parsed.is_empty() {
         return Ok((0, 0));
     }
 
-    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
+    let start = parse_date(start_date).unwrap_or(*parsed.last().unwrap());
 
     // Get unique months with check-ins >= start_date
     let mut months: Vec<(i32, u32)> = Vec::new();
@@ -422,26 +463,71 @@ fn is_consecutive_month(newer: (i32, u32), older: (i32, u32)) -> bool {
     newer_val - older_val == 1
 }
 
+// ==================== Streak Refresh Helper ====================
+
+/// Recalculate streaks for a single habit and update the database.
+fn refresh_single_habit_streaks(conn: &rusqlite::Connection, habit: &Habit) -> Result<(), String> {
+    let frequency_days = habit.frequency_days.as_deref().unwrap_or("");
+    let target_type = habit.target_type.as_str();
+    let target_value = habit.target_value.unwrap_or(1);
+
+    let (current_streak, longest_streak) = calculate_streaks(
+        conn, &habit.id, &habit.frequency, &habit.start_date,
+        frequency_days, target_type, target_value,
+    )?;
+
+    // Only update if changed
+    if current_streak != habit.current_streak || longest_streak != habit.longest_streak {
+        conn.execute(
+            "UPDATE habits SET current_streak = ?1, longest_streak = ?2, updated_at = datetime('now') WHERE id = ?3",
+            (&current_streak, &longest_streak, &habit.id),
+        ).map_err(|e| format!("Failed to update streaks: {}", e))?;
+    }
+
+    Ok(())
+}
+
 // ==================== Commands ====================
 
 #[tauri::command]
 pub async fn get_habits(app: AppHandle) -> Result<Vec<Habit>, String> {
     let conn = get_db(&app)?;
+
+    // First, refresh all streaks (catches up on missed days)
+    let mut all_stmt = conn.prepare("SELECT * FROM habits WHERE archived_at IS NULL ORDER BY created_at DESC")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let habits: Vec<Habit> = all_stmt.query_map([], row_to_habit)
+        .map_err(|e| format!("Failed to query: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Refresh streaks for all habits
+    for habit in &habits {
+        let _ = refresh_single_habit_streaks(&conn, habit);
+    }
+
+    // Re-fetch to get updated streak values
     let mut stmt = conn.prepare("SELECT * FROM habits WHERE archived_at IS NULL ORDER BY created_at DESC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
-
-    let habits = stmt.query_map([], row_to_habit)
+    let result_habits = stmt.query_map([], row_to_habit)
         .map_err(|e| format!("Failed to query: {}", e))?;
-
-    let result: Result<Vec<_>, _> = habits.collect();
+    let result: Result<Vec<_>, _> = result_habits.collect();
     result.map_err(|e| format!("Failed to collect: {}", e))
 }
 
 #[tauri::command]
 pub async fn get_habit_by_id(app: AppHandle, id: String) -> Result<Habit, String> {
     let conn = get_db(&app)?;
-    let habit = conn.query_row("SELECT * FROM habits WHERE id = ?1 AND archived_at IS NULL", [&id], row_to_habit)
+    let mut habit = conn.query_row("SELECT * FROM habits WHERE id = ?1 AND archived_at IS NULL", [&id], row_to_habit)
         .map_err(|e| format!("Failed to fetch habit: {}", e))?;
+
+    // Refresh streak for this habit
+    let _ = refresh_single_habit_streaks(&conn, &habit);
+
+    // Re-fetch
+    habit = conn.query_row("SELECT * FROM habits WHERE id = ?1 AND archived_at IS NULL", [&id], row_to_habit)
+        .map_err(|e| format!("Failed to re-fetch habit: {}", e))?;
+
     Ok(habit)
 }
 
@@ -557,8 +643,14 @@ pub async fn update_habit(
             .map_err(|e| format!("Failed to update start_date: {}", e))?;
     }
 
+    // Recalculate streaks after update (frequency/start_date may have changed)
     let habit = conn.query_row("SELECT * FROM habits WHERE id = ?1", [&id], row_to_habit)
         .map_err(|e| format!("Failed to fetch habit: {}", e))?;
+    let _ = refresh_single_habit_streaks(&conn, &habit);
+
+    // Re-fetch with updated streaks
+    let habit = conn.query_row("SELECT * FROM habits WHERE id = ?1", [&id], row_to_habit)
+        .map_err(|e| format!("Failed to re-fetch habit: {}", e))?;
 
     Ok(habit)
 }
@@ -585,19 +677,18 @@ pub async fn check_in_habit(app: AppHandle, habit_id: String, date: String, valu
     ).map_err(|e| format!("Failed to check in: {}", e))?;
 
     // Fetch habit details for streak calculation
-    let (frequency, start_date, frequency_days) = conn.query_row(
-        "SELECT frequency, start_date, frequency_days FROM habits WHERE id = ?1",
+    let habit = conn.query_row(
+        "SELECT * FROM habits WHERE id = ?1",
         [&habit_id],
-        |row| Ok((
-            row.get::<_, String>(0)?,
-            row.get::<_, String>(1)?,
-            row.get::<_, String>(2)?,
-        ))
+        row_to_habit,
     ).map_err(|e| format!("Failed to fetch habit: {}", e))?;
 
-    // Calculate updated streaks
+    let frequency_days = habit.frequency_days.as_deref().unwrap_or("");
+
+    // Calculate updated streaks (now value-aware)
     let (current_streak, longest_streak) = calculate_streaks(
-        &conn, &habit_id, &frequency, &start_date, &frequency_days,
+        &conn, &habit_id, &habit.frequency, &habit.start_date,
+        frequency_days, &habit.target_type, habit.target_value.unwrap_or(1),
     )?;
 
     // Count total completions
@@ -612,6 +703,24 @@ pub async fn check_in_habit(app: AppHandle, habit_id: String, date: String, valu
         "UPDATE habits SET current_streak = ?1, longest_streak = ?2, total_completions = ?3, updated_at = datetime('now') WHERE id = ?4",
         (&current_streak, &longest_streak, &total, &habit_id)
     ).map_err(|e| format!("Failed to update streaks: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn refresh_habit_streaks(app: AppHandle) -> Result<(), String> {
+    let conn = get_db(&app)?;
+
+    let mut stmt = conn.prepare("SELECT * FROM habits WHERE archived_at IS NULL")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let habits: Vec<Habit> = stmt.query_map([], row_to_habit)
+        .map_err(|e| format!("Failed to query: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    for habit in &habits {
+        let _ = refresh_single_habit_streaks(&conn, habit);
+    }
 
     Ok(())
 }

@@ -94,3 +94,14 @@ export function useTodayCheckinMap(): Map<string, number> {
   }
   return map;
 }
+
+export function useRefreshStreaks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.refreshHabitStreaks(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}

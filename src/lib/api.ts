@@ -215,6 +215,10 @@ export async function getTodayCheckins(): Promise<TodayCheckinInfo[]> {
   return await invoke<TodayCheckinInfo[]>('get_today_checkins');
 }
 
+export async function refreshHabitStreaks(): Promise<void> {
+  return await invoke<void>('refresh_habit_streaks');
+}
+
 // Countdown APIs
 export async function getCountdowns(): Promise<Countdown[]> {
   return await invoke<Countdown[]>('get_countdowns');

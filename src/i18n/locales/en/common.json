@@ -208,7 +208,10 @@
     "reminder": "Reminder",
     "reminder_time": "Reminder Time",
     "reminder_enabled": "Enable Reminder",
-    "start_date": "Start Date"
+    "start_date": "Start Date",
+    "due_today": "Due today",
+    "not_due_today": "Not due today",
+    "refresh_streaks": "Refresh streaks"
   },
   "countdowns": {
     "new_countdown": "New Countdown",

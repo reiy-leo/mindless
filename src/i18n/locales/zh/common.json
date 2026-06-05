@@ -208,7 +208,10 @@
     "reminder": "提醒",
     "reminder_time": "提醒时间",
     "reminder_enabled": "开启提醒",
-    "start_date": "开始日期"
+    "start_date": "开始日期",
+    "due_today": "今日需打卡",
+    "not_due_today": "今日无需打卡",
+    "refresh_streaks": "刷新连续天数"
   },
   "countdowns": {
     "new_countdown": "新建倒数日",

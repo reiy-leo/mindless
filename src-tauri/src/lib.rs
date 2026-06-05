@@ -55,6 +55,7 @@ pub fn run() {
             commands::check_in_habit,
             commands::get_habit_logs,
             commands::get_today_checkins,
+            commands::refresh_habit_streaks,
             // Countdowns
             commands::get_countdowns,
             commands::get_countdown_by_id,

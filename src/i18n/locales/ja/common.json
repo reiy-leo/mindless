@@ -208,7 +208,10 @@
     "reminder": "リマインダー",
     "reminder_time": "リマインダー時間",
     "reminder_enabled": "リマインダーを有効にする",
-    "start_date": "開始日"
+    "start_date": "開始日",
+    "due_today": "今日が期限",
+    "not_due_today": "今日は期限ではない",
+    "refresh_streaks": "連続日数を更新"
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",

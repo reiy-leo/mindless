@@ -3,13 +3,52 @@ import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
   ChevronLeftIcon, ChevronRightIcon, TrophyIcon, CheckCircleIcon,
-  ChevronDownIcon, ChevronUpIcon, MinusIcon,
+  ChevronDownIcon, ChevronUpIcon, MinusIcon, ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import {
   useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit,
-  useCheckInHabit, useHabitLogs, useTodayCheckinMap,
+  useCheckInHabit, useHabitLogs, useTodayCheckinMap, useRefreshStreaks,
 } from '@/queries/useHabitQueries';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
+
+// ==================== Due Today Helper ====================
+function isHabitDueToday(habit: Habit): boolean {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const startDate = habit.startDate || todayStr;
+
+  switch (habit.frequency) {
+    case 'daily':
+      return true;
+    case 'every_x_days': {
+      const interval = habit.frequencyDays ? parseInt(habit.frequencyDays) : 1;
+      if (interval <= 1) return true;
+      const start = new Date(startDate);
+      const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return false;
+      return diffDays % interval === 0;
+    }
+    case 'weekly': {
+      if (!habit.frequencyDays) return true; // no custom days = every day
+      const dayKeys = habit.frequencyDays.split(',').filter(Boolean);
+      if (dayKeys.length === 0) return true;
+      const weekDayMap: Record<number, string> = {
+        1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun',
+      };
+      const todayKey = weekDayMap[today.getDay()];
+      return dayKeys.includes(todayKey);
+    }
+    case 'monthly': {
+      const start = new Date(startDate);
+      const targetDay = start.getDate();
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const expectedDay = Math.min(targetDay, lastDayOfMonth);
+      return today.getDate() === expectedDay;
+    }
+    default:
+      return true;
+  }
+}
 
 // ==================== Habit Form Dialog ====================
 function HabitFormDialog({
@@ -418,13 +457,14 @@ function CheckInCalendar({ habitId, color }: { habitId: string; color: string })
 
 // ==================== Habit Card ====================
 function HabitCard({
-  habit, onEdit, onDelete, onCheckIn, todayValue,
+  habit, onEdit, onDelete, onCheckIn, todayValue, dueToday,
 }: {
   habit: Habit;
   onEdit: () => void;
   onDelete: () => void;
   onCheckIn: (value?: number) => void;
   todayValue: number;
+  dueToday: boolean;
 }) {
   const { t } = useTranslation('common');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -501,7 +541,7 @@ function HabitCard({
       </div>
 
       {/* Target & Reminder badges */}
-      {(targetBadge || habit.reminderEnabled) && (
+      {(targetBadge || habit.reminderEnabled || true) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {targetBadge && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
@@ -511,6 +551,15 @@ function HabitCard({
           {habit.reminderEnabled && habit.reminderTime && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
               {habit.reminderTime}
+            </span>
+          )}
+          {dueToday ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+              {t('habits.due_today')}
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+              {t('habits.not_due_today')}
             </span>
           )}
         </div>
@@ -654,11 +703,18 @@ export default function HabitsPage() {
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
   const checkIn = useCheckInHabit();
+  const refreshStreaks = useRefreshStreaks();
 
   const today = new Date().toISOString().split('T')[0];
 
   // Fetch today's check-in values as a Map<habitId, value>
   const todayCheckinMap = useTodayCheckinMap();
+
+  // Refresh streaks on page mount (catches up on missed days)
+  useEffect(() => {
+    refreshStreaks.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreate = (params: CreateHabitParams) => {
     createHabit.mutate(params);
@@ -693,13 +749,23 @@ export default function HabitsPage() {
     <div className="flex-1 overflow-auto p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.habits')}</h1>
-        <button
-          onClick={() => { setEditingHabit(null); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>{t('habits.new_habit')}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refreshStreaks.mutate()}
+            disabled={refreshStreaks.isPending}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            title={t('habits.refresh_streaks')}
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${refreshStreaks.isPending ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => { setEditingHabit(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>{t('habits.new_habit')}</span>
+          </button>
+        </div>
       </div>
 
       {habits.length === 0 ? (
@@ -719,6 +785,7 @@ export default function HabitsPage() {
               onDelete={() => handleDelete(habit.id)}
               onCheckIn={(value) => handleCheckIn(habit.id, value)}
               todayValue={todayCheckinMap.get(habit.id) || 0}
+              dueToday={isHabitDueToday(habit)}
             />
           ))}
         </div>
