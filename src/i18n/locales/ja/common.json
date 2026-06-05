@@ -101,14 +101,27 @@
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",
+    "edit_countdown": "カウントダウンを編集",
     "create_countdown": "カウントダウンを作成",
     "event_name": "イベント名",
+    "event_name_placeholder": "イベント名を入力",
+    "description": "説明",
+    "description_placeholder": "イベント説明を追加（任意）",
+    "event_type": "タイプ",
+    "type_countdown": "カウントダウン",
+    "type_countup": "経過日数",
+    "icon": "アイコン",
+    "color": "カラー",
     "target_date": "目標日",
+    "target_time": "目標時間",
     "no_countdowns": "カウントダウンなし",
     "create_first": "最初のカウントダウンを作成",
     "days_left": "日残り",
     "days_ago": "日前",
-    "today": "今日"
+    "days_since": "日経過",
+    "days_until": "日まで",
+    "today": "今日",
+    "delete_confirm": "このカウントダウンを削除しますか？"
   },
   "settings": {
     "language": "言語",

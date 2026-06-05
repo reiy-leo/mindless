@@ -49,7 +49,10 @@ pub fn run() {
             commands::get_today_checkins,
             // Countdowns
             commands::get_countdowns,
+            commands::get_countdown_by_id,
             commands::create_countdown,
+            commands::update_countdown,
+            commands::delete_countdown,
             // Settings
             commands::get_settings,
         ])

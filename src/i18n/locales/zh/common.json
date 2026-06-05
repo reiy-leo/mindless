@@ -101,14 +101,27 @@
   },
   "countdowns": {
     "new_countdown": "新建倒数日",
+    "edit_countdown": "编辑倒数日",
     "create_countdown": "创建倒数日",
     "event_name": "事件名称",
+    "event_name_placeholder": "输入事件名称",
+    "description": "描述",
+    "description_placeholder": "添加事件描述（可选）",
+    "event_type": "类型",
+    "type_countdown": "倒数",
+    "type_countup": "正数",
+    "icon": "图标",
+    "color": "颜色",
     "target_date": "目标日期",
+    "target_time": "目标时间",
     "no_countdowns": "暂无倒数日",
     "create_first": "创建第一个倒数日",
     "days_left": "天",
     "days_ago": "天前",
-    "today": "今天"
+    "days_since": "天以来",
+    "days_until": "天之前",
+    "today": "今天",
+    "delete_confirm": "确定要删除此倒数日吗？"
   },
   "settings": {
     "language": "语言",

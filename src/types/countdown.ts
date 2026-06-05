@@ -4,13 +4,12 @@ export type EventType = 'countdown' | 'countup';
 
 export interface Countdown {
   id: string;
-  name: string;
-  title?: string;
+  title: string;
   description: string;
   icon: string;
   color: string;
-  targetDate: string;   // YYYY-MM-DD
-  targetTime?: string;  // HH:mm:ss
+  targetDate: string;     // YYYY-MM-DD
+  targetTime?: string;    // HH:mm:ss
   eventType: EventType;
   reminderEnabled: boolean;
   reminderDaysBefore: number;
@@ -22,7 +21,31 @@ export interface Countdown {
 }
 
 export interface CreateCountdownParams {
-  name: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  color?: string;
   targetDate: string;
+  targetTime?: string;
+  eventType?: EventType;
   reminderEnabled?: boolean;
+  reminderDaysBefore?: number;
+  reminderTime?: string;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+}
+
+export interface UpdateCountdownParams {
+  title?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  targetDate?: string;
+  targetTime?: string;
+  eventType?: EventType;
+  reminderEnabled?: boolean;
+  reminderDaysBefore?: number;
+  reminderTime?: string;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
 }

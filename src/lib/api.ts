@@ -173,14 +173,36 @@ export async function getCountdownById(id: string): Promise<Countdown> {
 }
 
 export async function createCountdown(params: {
-  name: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  color?: string;
   targetDate: string;
+  targetTime?: string;
+  eventType?: string;
   reminderEnabled?: boolean;
+  reminderDaysBefore?: number;
+  reminderTime?: string;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
 }): Promise<Countdown> {
   return await invoke<Countdown>('create_countdown', params);
 }
 
-export async function updateCountdown(id: string, params: Partial<Countdown>): Promise<Countdown> {
+export async function updateCountdown(id: string, params: {
+  title?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  targetDate?: string;
+  targetTime?: string;
+  eventType?: string;
+  reminderEnabled?: boolean;
+  reminderDaysBefore?: number;
+  reminderTime?: string;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+}): Promise<Countdown> {
   return await invoke<Countdown>('update_countdown', { id, ...params });
 }
 

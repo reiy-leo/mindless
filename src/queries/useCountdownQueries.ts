@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '@/lib/api';
-import type { Countdown, CreateCountdownParams } from '@/types/countdown';
+import type { CreateCountdownParams, UpdateCountdownParams } from '@/types/countdown';
 
 // Queries
 export function useCountdowns() {
@@ -34,7 +34,7 @@ export function useUpdateCountdown() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, ...params }: Partial<Countdown> & { id: string }) =>
+    mutationFn: ({ id, ...params }: UpdateCountdownParams & { id: string }) =>
       api.updateCountdown(id, params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['countdowns'] });
