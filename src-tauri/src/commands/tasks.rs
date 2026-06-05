@@ -6,6 +6,11 @@ fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
 }
 
+/// Convert None or empty-string Options to proper SQL NULL
+fn opt_str(opt: &Option<String>) -> Option<&str> {
+    opt.as_deref().filter(|s| !s.is_empty())
+}
+
 fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
     Ok(Task {
         id: row.get(0)?,
@@ -49,7 +54,17 @@ pub async fn create_task(
 
     conn.execute(
         "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-        (&id, &title, description.as_deref().unwrap_or(""), &priority, due_date.as_deref().unwrap_or(""), due_time.as_deref().unwrap_or(""), start_date.as_deref().unwrap_or(""), list_id.as_deref().unwrap_or(""), tag_ids.as_deref().unwrap_or(""))
+        rusqlite::params![
+            &id,
+            &title,
+            description.as_deref().unwrap_or(""),
+            &priority,
+            opt_str(&due_date),
+            opt_str(&due_time),
+            opt_str(&start_date),
+            opt_str(&list_id),
+            opt_str(&tag_ids),
+        ]
     ).map_err(|e| format!("Failed to create task: {}", e))?;
 
     let task = conn.query_row("SELECT * FROM tasks WHERE id = ?1", [&id], row_to_task)
@@ -97,6 +112,13 @@ pub async fn update_task(
     tag_ids: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
+
+    // Normalize empty strings to None for FK-safe optional fields
+    let list_id = list_id.filter(|s| !s.is_empty());
+    let due_date = due_date.filter(|s| !s.is_empty());
+    let due_time = due_time.filter(|s| !s.is_empty());
+    let start_date = start_date.filter(|s| !s.is_empty());
+    let tag_ids = tag_ids.filter(|s| !s.is_empty());
 
     let mut updates: Vec<String> = Vec::new();
     let mut param_idx = 1;

@@ -396,6 +396,11 @@ export default function TasksPage() {
     return true;
   });
 
+  const closeForm = () => {
+    setShowTaskForm(false);
+    setEditingTask(null);
+  };
+
   const handleCreateTask = (taskData: {
     title: string;
     description?: string;
@@ -405,7 +410,7 @@ export default function TasksPage() {
     startDate?: string;
     listId?: string;
   }) => {
-    createTask.mutate(taskData);
+    createTask.mutate(taskData, { onSuccess: closeForm });
   };
 
   const handleUpdateTask = (taskData: {
@@ -418,8 +423,7 @@ export default function TasksPage() {
     listId?: string;
   }) => {
     if (editingTask) {
-      updateTask.mutate({ id: editingTask.id, ...taskData });
-      setEditingTask(null);
+      updateTask.mutate({ id: editingTask.id, ...taskData }, { onSuccess: closeForm });
     }
   };
 

@@ -59,6 +59,9 @@ export function useCreateTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
+    onError: (error) => {
+      console.error('Failed to create task:', error);
+    },
   });
 }
 

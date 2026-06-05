@@ -77,7 +77,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       listId: listId || undefined,
     });
 
-    onClose();
+    // onClose is called by the parent after mutation succeeds
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
