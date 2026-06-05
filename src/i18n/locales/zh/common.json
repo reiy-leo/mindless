@@ -72,16 +72,31 @@
   },
   "habits": {
     "new_habit": "新建习惯",
+    "edit_habit": "编辑习惯",
     "create_habit": "创建习惯",
     "habit_name": "习惯名称",
+    "description": "描述",
+    "icon": "图标",
+    "color": "颜色",
     "frequency": "频率",
     "no_habits": "暂无习惯",
     "create_first": "创建第一个习惯",
     "check_in": "打卡",
+    "checked_in": "今日已打卡",
+    "streak_days": "天连续",
+    "best": "最长",
+    "total": "累计",
+    "show_history": "查看打卡历史",
+    "hide_history": "隐藏打卡历史",
+    "delete_confirm": "确定要归档此习惯吗？相关打卡记录将被保留。",
     "frequency": {
       "daily": "每天",
       "weekly": "每周",
       "monthly": "每月"
+    },
+    "calendar": {
+      "sun": "日", "mon": "一", "tue": "二", "wed": "三",
+      "thu": "四", "fri": "五", "sat": "六"
     }
   },
   "countdowns": {

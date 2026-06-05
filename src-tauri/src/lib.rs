@@ -40,8 +40,13 @@ pub fn run() {
             commands::delete_tag,
             // Habits
             commands::get_habits,
+            commands::get_habit_by_id,
             commands::create_habit,
+            commands::update_habit,
+            commands::delete_habit,
             commands::check_in_habit,
+            commands::get_habit_logs,
+            commands::get_today_checkins,
             // Countdowns
             commands::get_countdowns,
             commands::create_countdown,

@@ -12,10 +12,9 @@ export interface Habit {
   targetType: TargetType;
   targetValue: number;
   frequency: HabitFrequency;
-  frequencyDays?: number[]; // 0-6 (Sun-Sat)
+  frequencyDays?: string;
   reminderTime?: string;
   reminderEnabled: boolean;
-  streak: number;
   currentStreak: number;
   longestStreak: number;
   totalCompletions: number;
@@ -27,7 +26,25 @@ export interface Habit {
 
 export interface CreateHabitParams {
   name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  targetType?: TargetType;
+  targetValue?: number;
   frequency: HabitFrequency;
+  frequencyDays?: string;
+  reminderTime?: string;
+  reminderEnabled?: boolean;
+}
+
+export interface UpdateHabitParams {
+  name?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  frequency?: HabitFrequency;
+  frequencyDays?: string;
+  reminderTime?: string;
   reminderEnabled?: boolean;
 }
 

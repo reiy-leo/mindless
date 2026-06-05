@@ -72,16 +72,31 @@
   },
   "habits": {
     "new_habit": "New Habit",
+    "edit_habit": "Edit Habit",
     "create_habit": "Create Habit",
     "habit_name": "Habit Name",
+    "description": "Description",
+    "icon": "Icon",
+    "color": "Color",
     "frequency": "Frequency",
     "no_habits": "No habits",
     "create_first": "Create your first habit",
     "check_in": "Check In",
+    "checked_in": "Checked in today",
+    "streak_days": "day streak",
+    "best": "best",
+    "total": "total",
+    "show_history": "Show check-in history",
+    "hide_history": "Hide check-in history",
+    "delete_confirm": "Are you sure you want to archive this habit? Check-in records will be preserved.",
     "frequency": {
       "daily": "Daily",
       "weekly": "Weekly",
       "monthly": "Monthly"
+    },
+    "calendar": {
+      "sun": "Su", "mon": "Mo", "tue": "Tu", "wed": "We",
+      "thu": "Th", "fri": "Fr", "sat": "Sa"
     }
   },
   "countdowns": {

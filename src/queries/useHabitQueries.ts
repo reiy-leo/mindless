@@ -70,7 +70,16 @@ export function useCheckInHabit() {
       api.checkInHabit(habitId, date),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['habit', variables.habitId] });
       queryClient.invalidateQueries({ queryKey: ['habit-logs', variables.habitId] });
+      queryClient.invalidateQueries({ queryKey: ['today-checkins'] });
     },
+  });
+}
+
+export function useTodayCheckins() {
+  return useQuery({
+    queryKey: ['today-checkins'],
+    queryFn: () => api.getTodayCheckins(),
   });
 }

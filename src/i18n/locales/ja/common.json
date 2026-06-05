@@ -72,16 +72,31 @@
   },
   "habits": {
     "new_habit": "新規習慣",
+    "edit_habit": "習慣を編集",
     "create_habit": "習慣を作成",
     "habit_name": "習慣名",
+    "description": "説明",
+    "icon": "アイコン",
+    "color": "カラー",
     "frequency": "頻度",
     "no_habits": "習慣なし",
     "create_first": "最初の習慣を作成",
     "check_in": "チェックイン",
+    "checked_in": "今日チェックイン済み",
+    "streak_days": "日連続",
+    "best": "最長",
+    "total": "累計",
+    "show_history": "チェックイン履歴を表示",
+    "hide_history": "チェックイン履歴を非表示",
+    "delete_confirm": "この習慣をアーカイブしますか？チェックイン記録は保持されます。",
     "frequency": {
       "daily": "毎日",
       "weekly": "毎週",
       "monthly": "毎月"
+    },
+    "calendar": {
+      "sun": "日", "mon": "月", "tue": "火", "wed": "水",
+      "thu": "木", "fri": "金", "sat": "土"
     }
   },
   "countdowns": {

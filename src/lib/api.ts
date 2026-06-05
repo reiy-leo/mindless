@@ -159,6 +159,10 @@ export async function checkInHabit(habitId: string, date: string): Promise<void>
   return await invoke<void>('check_in_habit', { habitId, date });
 }
 
+export async function getTodayCheckins(): Promise<string[]> {
+  return await invoke<string[]>('get_today_checkins');
+}
+
 // Countdown APIs
 export async function getCountdowns(): Promise<Countdown[]> {
   return await invoke<Countdown[]>('get_countdowns');
