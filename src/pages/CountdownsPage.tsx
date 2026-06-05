@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, PencilIcon, TrashIcon, XMarkIcon,
@@ -41,7 +41,7 @@ function CountdownFormDialog({
   const [eventType, setEventType] = useState<EventType>(countdown?.eventType || 'countdown');
 
   // Reset form when opening
-  useState(() => {
+  useEffect(() => {
     if (isOpen && countdown) {
       setTitle(countdown.title);
       setDescription(countdown.description || '');
@@ -59,7 +59,7 @@ function CountdownFormDialog({
       setTargetTime('');
       setEventType('countdown');
     }
-  });
+  }, [isOpen, countdown]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,15 +230,18 @@ function CountdownCard({
   const { t } = useTranslation('common');
 
   const getDaysRemaining = () => {
+    // Parse date components manually to avoid UTC timezone shift
+    const [year, month, day] = countdown.targetDate.split('-').map(Number);
     const now = new Date();
-    const target = new Date(countdown.targetDate);
+    now.setHours(0, 0, 0, 0);
+
     if (countdown.targetTime) {
       const [h, m, s] = countdown.targetTime.split(':').map(Number);
-      target.setHours(h, m, s || 0, 0);
-    } else {
-      target.setHours(0, 0, 0, 0);
-      now.setHours(0, 0, 0, 0);
+      const target = new Date(year, month - 1, day, h, m, s || 0, 0);
+      const diff = target.getTime() - now.getTime();
+      return Math.ceil(diff / (1000 * 60 * 60 * 24));
     }
+    const target = new Date(year, month - 1, day);
     const diff = target.getTime() - now.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
@@ -332,25 +335,40 @@ export default function CountdownsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingCountdown, setEditingCountdown] = useState<Countdown | null>(null);
 
-  const { data: countdowns = [], isLoading } = useCountdowns();
+  const { data: countdowns = [], isLoading, isError } = useCountdowns();
   const createCountdown = useCreateCountdown();
   const updateCountdown = useUpdateCountdown();
   const deleteCountdown = useDeleteCountdown();
 
   const handleCreate = (params: CreateCountdownParams) => {
-    createCountdown.mutate(params);
+    createCountdown.mutate(params, {
+      onError: (err) => {
+        console.error('Failed to create countdown:', err);
+        alert(`Failed to create: ${err instanceof Error ? err.message : String(err)}`);
+      },
+    });
   };
 
   const handleUpdate = (params: CreateCountdownParams) => {
     if (editingCountdown) {
-      updateCountdown.mutate({ id: editingCountdown.id, ...params });
+      updateCountdown.mutate({ id: editingCountdown.id, ...params }, {
+        onError: (err) => {
+          console.error('Failed to update countdown:', err);
+          alert(`Failed to update: ${err instanceof Error ? err.message : String(err)}`);
+        },
+      });
       setEditingCountdown(null);
     }
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('countdowns.delete_confirm'))) {
-      deleteCountdown.mutate(id);
+      deleteCountdown.mutate(id, {
+        onError: (err) => {
+          console.error('Failed to delete countdown:', err);
+          alert(`Failed to delete: ${err instanceof Error ? err.message : String(err)}`);
+        },
+      });
     }
   };
 
@@ -358,6 +376,14 @@ export default function CountdownsPage() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-gray-500">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-red-500">Failed to load countdowns. Please try again.</div>
       </div>
     );
   }

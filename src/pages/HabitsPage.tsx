@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
@@ -35,7 +35,7 @@ function HabitFormDialog({
   const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
   // Reset form when opening
-  useState(() => {
+  useEffect(() => {
     if (isOpen && habit) {
       setName(habit.name);
       setDescription(habit.description || '');
@@ -49,7 +49,7 @@ function HabitFormDialog({
       setIcon('star');
       setColor('#8B5CF6');
     }
-  });
+  }, [isOpen, habit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

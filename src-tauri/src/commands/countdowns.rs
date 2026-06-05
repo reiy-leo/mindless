@@ -29,7 +29,7 @@ fn row_to_countdown(row: &rusqlite::Row) -> rusqlite::Result<Countdown> {
 #[tauri::command]
 pub async fn get_countdowns(app: AppHandle) -> Result<Vec<Countdown>, String> {
     let conn = get_db(&app)?;
-    let mut stmt = conn.prepare("SELECT * FROM countdowns ORDER BY target_date ASC")
+    let mut stmt = conn.prepare("SELECT * FROM countdowns ORDER BY target_date ASC, target_time ASC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
 
     let countdowns = stmt.query_map([], row_to_countdown)
@@ -115,56 +115,78 @@ pub async fn update_countdown(
 ) -> Result<Countdown, String> {
     let conn = get_db(&app)?;
 
-    if let Some(ref title) = title {
-        conn.execute("UPDATE countdowns SET title = ?1, updated_at = datetime('now') WHERE id = ?2", (title, &id))
-            .map_err(|e| format!("Failed to update title: {}", e))?;
+    let mut sql = String::from("UPDATE countdowns SET updated_at = datetime('now')");
+    let mut param_idx = 1;
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    if let Some(ref v) = title {
+        sql.push_str(&format!(", title = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref description) = description {
-        conn.execute("UPDATE countdowns SET description = ?1, updated_at = datetime('now') WHERE id = ?2", (description, &id))
-            .map_err(|e| format!("Failed to update description: {}", e))?;
+    if let Some(ref v) = description {
+        sql.push_str(&format!(", description = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref icon) = icon {
-        conn.execute("UPDATE countdowns SET icon = ?1, updated_at = datetime('now') WHERE id = ?2", (icon, &id))
-            .map_err(|e| format!("Failed to update icon: {}", e))?;
+    if let Some(ref v) = icon {
+        sql.push_str(&format!(", icon = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref color) = color {
-        conn.execute("UPDATE countdowns SET color = ?1, updated_at = datetime('now') WHERE id = ?2", (color, &id))
-            .map_err(|e| format!("Failed to update color: {}", e))?;
+    if let Some(ref v) = color {
+        sql.push_str(&format!(", color = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref target_date) = target_date {
-        conn.execute("UPDATE countdowns SET target_date = ?1, updated_at = datetime('now') WHERE id = ?2", (target_date, &id))
-            .map_err(|e| format!("Failed to update target_date: {}", e))?;
+    if let Some(ref v) = target_date {
+        sql.push_str(&format!(", target_date = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref target_time) = target_time {
-        conn.execute("UPDATE countdowns SET target_time = ?1, updated_at = datetime('now') WHERE id = ?2", (target_time, &id))
-            .map_err(|e| format!("Failed to update target_time: {}", e))?;
+    if let Some(ref v) = target_time {
+        sql.push_str(&format!(", target_time = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(ref event_type) = event_type {
-        conn.execute("UPDATE countdowns SET event_type = ?1, updated_at = datetime('now') WHERE id = ?2", (event_type, &id))
-            .map_err(|e| format!("Failed to update event_type: {}", e))?;
+    if let Some(ref v) = event_type {
+        sql.push_str(&format!(", event_type = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(reminder_enabled) = reminder_enabled {
-        let val: i32 = if reminder_enabled { 1 } else { 0 };
-        conn.execute("UPDATE countdowns SET reminder_enabled = ?1, updated_at = datetime('now') WHERE id = ?2", (&val, &id))
-            .map_err(|e| format!("Failed to update reminder: {}", e))?;
+    if let Some(v) = reminder_enabled {
+        sql.push_str(&format!(", reminder_enabled = ?{}", param_idx));
+        params.push(Box::new(if v { 1i32 } else { 0i32 }));
+        param_idx += 1;
     }
-    if let Some(reminder_days_before) = reminder_days_before {
-        conn.execute("UPDATE countdowns SET reminder_days_before = ?1, updated_at = datetime('now') WHERE id = ?2", (&reminder_days_before, &id))
-            .map_err(|e| format!("Failed to update reminder_days: {}", e))?;
+    if let Some(v) = reminder_days_before {
+        sql.push_str(&format!(", reminder_days_before = ?{}", param_idx));
+        params.push(Box::new(v));
+        param_idx += 1;
     }
-    if let Some(ref reminder_time) = reminder_time {
-        conn.execute("UPDATE countdowns SET reminder_time = ?1, updated_at = datetime('now') WHERE id = ?2", (reminder_time, &id))
-            .map_err(|e| format!("Failed to update reminder_time: {}", e))?;
+    if let Some(ref v) = reminder_time {
+        sql.push_str(&format!(", reminder_time = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
-    if let Some(is_recurring) = is_recurring {
-        let val: i32 = if is_recurring { 1 } else { 0 };
-        conn.execute("UPDATE countdowns SET is_recurring = ?1, updated_at = datetime('now') WHERE id = ?2", (&val, &id))
-            .map_err(|e| format!("Failed to update recurring: {}", e))?;
+    if let Some(v) = is_recurring {
+        sql.push_str(&format!(", is_recurring = ?{}", param_idx));
+        params.push(Box::new(if v { 1i32 } else { 0i32 }));
+        param_idx += 1;
     }
-    if let Some(ref recurrence_rule) = recurrence_rule {
-        conn.execute("UPDATE countdowns SET recurrence_rule = ?1, updated_at = datetime('now') WHERE id = ?2", (recurrence_rule, &id))
-            .map_err(|e| format!("Failed to update recurrence_rule: {}", e))?;
+    if let Some(ref v) = recurrence_rule {
+        sql.push_str(&format!(", recurrence_rule = ?{}", param_idx));
+        params.push(Box::new(v.clone()));
+        param_idx += 1;
     }
+
+    sql.push_str(&format!(" WHERE id = ?{}", param_idx));
+    params.push(Box::new(id.clone()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Failed to prepare: {}", e))?;
+    stmt.execute(param_refs.as_slice())
+        .map_err(|e| format!("Failed to update countdown: {}", e))?;
 
     let countdown = conn.query_row("SELECT * FROM countdowns WHERE id = ?1", [&id], row_to_countdown)
         .map_err(|e| format!("Failed to fetch countdown: {}", e))?;
