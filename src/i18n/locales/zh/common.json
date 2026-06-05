@@ -3,6 +3,26 @@
     "name": "Mindless",
     "tagline": "你的个人任务管理器"
   },
+  "dashboard": {
+    "today_tasks": "今日任务",
+    "habits": "今日习惯",
+    "countdowns": "即将到来",
+    "no_tasks": "今日暂无任务",
+    "no_habits": "暂无习惯",
+    "no_countdowns": "暂无倒数日",
+    "view_all": "查看全部",
+    "overdue": "逾期",
+    "days_left": "天",
+    "days_ago": "天前",
+    "checked_in": "已打卡",
+    "check_in": "打卡",
+    "stats": {
+      "tasks_today": "今日任务",
+      "completed": "已完成",
+      "habits": "习惯打卡",
+      "countdowns": "倒数日"
+    }
+  },
   "common": {
     "save": "保存",
     "cancel": "取消",

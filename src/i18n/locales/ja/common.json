@@ -3,6 +3,26 @@
     "name": "Mindless",
     "tagline": "あなたの個人タスクマネージャー"
   },
+  "dashboard": {
+    "today_tasks": "今日のタスク",
+    "habits": "今日の習慣",
+    "countdowns": "次のイベント",
+    "no_tasks": "今日のタスクはありません",
+    "no_habits": "習慣はありません",
+    "no_countdowns": "カウントダウンはありません",
+    "view_all": "すべて見る",
+    "overdue": "期限超過",
+    "days_left": "日",
+    "days_ago": "日前",
+    "checked_in": "完了",
+    "check_in": "チェックイン",
+    "stats": {
+      "tasks_today": "今日のタスク",
+      "completed": "完了",
+      "habits": "習慣",
+      "countdowns": "カウントダウン"
+    }
+  },
   "common": {
     "save": "保存",
     "cancel": "キャンセル",

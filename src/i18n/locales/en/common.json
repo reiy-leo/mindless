@@ -3,6 +3,26 @@
     "name": "Mindless",
     "tagline": "Your personal task manager"
   },
+  "dashboard": {
+    "today_tasks": "Today's Tasks",
+    "habits": "Today's Habits",
+    "countdowns": "Upcoming",
+    "no_tasks": "No tasks for today",
+    "no_habits": "No habits to track",
+    "no_countdowns": "No upcoming countdowns",
+    "view_all": "View all",
+    "overdue": "Overdue",
+    "days_left": "days",
+    "days_ago": "days ago",
+    "checked_in": "Done",
+    "check_in": "Check in",
+    "stats": {
+      "tasks_today": "Tasks Today",
+      "completed": "Completed",
+      "habits": "Habits",
+      "countdowns": "Countdowns"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
