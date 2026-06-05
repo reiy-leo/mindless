@@ -73,7 +73,10 @@
       "title": "Subtasks",
       "add": "Add Subtask",
       "add_child": "Add Child",
-      "empty": "No subtasks"
+      "empty": "No subtasks",
+      "title_placeholder": "Enter subtask title...",
+      "child_placeholder": "Enter child title...",
+      "delete_with_children": "This subtask has {{count}} children. Delete them all?"
     },
     "steps": {
       "title": "Steps",
@@ -93,6 +96,7 @@
     "edit_task": "Edit Task",
     "delete_confirm": "Are you sure you want to delete this task?",
     "supports_markdown": "Supports Markdown",
+    "progress_label": "Progress",
     "recurrence": {
       "label": "Repeat",
       "none": "No repeat",

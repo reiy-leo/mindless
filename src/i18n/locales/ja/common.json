@@ -73,7 +73,10 @@
       "title": "サブタスク",
       "add": "サブタスクを追加",
       "add_child": "子項目を追加",
-      "empty": "サブタスクなし"
+      "empty": "サブタスクなし",
+      "title_placeholder": "サブタスク名を入力...",
+      "child_placeholder": "子項目名を入力...",
+      "delete_with_children": "このサブタスクには{{count}}個の子項目があります。すべて削除しますか？"
     },
     "steps": {
       "title": "ステップ",
@@ -93,6 +96,7 @@
     "edit_task": "タスクを編集",
     "delete_confirm": "このタスクを削除しますか？",
     "supports_markdown": "Markdown対応",
+    "progress_label": "進捗",
     "recurrence": {
       "label": "繰り返し",
       "none": "繰り返しなし",

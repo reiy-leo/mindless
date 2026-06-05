@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -48,6 +48,25 @@ function buildSubtaskTree(flatSubtasks: SubtaskType[]): (SubtaskType & { childre
   });
 
   return roots;
+}
+
+// ==================== Helper: Get all descendant IDs ====================
+function getDescendantIds(flatSubtasks: SubtaskType[], parentId: string): string[] {
+  const children = flatSubtasks.filter((s) => s.parentSubtaskId === parentId);
+  const result: string[] = [];
+  for (const child of children) {
+    result.push(child.id);
+    result.push(...getDescendantIds(flatSubtasks, child.id));
+  }
+  return result;
+}
+
+// ==================== Helper: Calculate task progress ====================
+function calcTaskProgress(subtasks: SubtaskType[], steps: StepType[]): { completed: number; total: number } | null {
+  const total = subtasks.length + steps.length;
+  if (total === 0) return null;
+  const completed = subtasks.filter((s) => s.isCompleted).length + steps.filter((s) => s.isCompleted).length;
+  return { completed, total };
 }
 
 // ==================== Helper: Recurrence label ====================
@@ -109,6 +128,17 @@ function TaskDetailPanel({
 
   const subtaskTree = useMemo(() => buildSubtaskTree(flatSubtasks), [flatSubtasks]);
 
+  // Calculate progress
+  const progress = useMemo(() => calcTaskProgress(flatSubtasks, steps), [flatSubtasks, steps]);
+
+  // Auto-complete task when all subtasks and steps are done
+  useEffect(() => {
+    if (!progress || progress.total === 0) return;
+    if (progress.completed === progress.total && !task.isCompleted) {
+      onUpdateTask({ isCompleted: true });
+    }
+  }, [progress, task.isCompleted, onUpdateTask]);
+
   // Parse task's tag_ids (comma-separated string)
   const taskTagIds: string[] = useMemo(() => {
     if (!task.tagIds || task.tagIds.length === 0) return [];
@@ -119,20 +149,27 @@ function TaskDetailPanel({
     return allTags.filter((tag) => taskTagIds.includes(tag.id));
   }, [allTags, taskTagIds]);
 
-  const handleAddSubtask = (parentSubtaskId?: string) => {
+  const handleAddSubtask = (title: string, parentSubtaskId?: string) => {
     const level = parentSubtaskId
       ? (flatSubtasks.find((s) => s.id === parentSubtaskId)?.level ?? 0) + 1
       : 0;
-    const title = window.prompt(t('tasks.subtasks.add'));
-    if (title?.trim()) {
-      createSubtask.mutate({ taskId: task.id, title: title.trim(), parentSubtaskId, level });
-    }
+    createSubtask.mutate({ taskId: task.id, title, parentSubtaskId, level });
   };
 
   const handleToggleSubtask = (id: string) => {
     const subtask = flatSubtasks.find((s) => s.id === id);
     if (subtask) {
-      updateSubtask.mutate({ id, taskId: task.id, isCompleted: !subtask.isCompleted });
+      const newCompleted = !subtask.isCompleted;
+      // Update the subtask itself
+      updateSubtask.mutate({ id, taskId: task.id, isCompleted: newCompleted });
+      // Cascade: update all descendants to the same state
+      const descendants = getDescendantIds(flatSubtasks, id);
+      for (const descId of descendants) {
+        const desc = flatSubtasks.find((s) => s.id === descId);
+        if (desc && desc.isCompleted !== newCompleted) {
+          updateSubtask.mutate({ id: descId, taskId: task.id, isCompleted: newCompleted });
+        }
+      }
     }
   };
 
@@ -144,11 +181,8 @@ function TaskDetailPanel({
     updateSubtask.mutate({ id, taskId: task.id, title });
   };
 
-  const handleAddStep = () => {
-    const description = window.prompt(t('tasks.steps.add'));
-    if (description?.trim()) {
-      createStep.mutate({ taskId: task.id, description: description.trim() });
-    }
+  const handleAddStep = (description: string) => {
+    createStep.mutate({ taskId: task.id, description });
   };
 
   const handleToggleStep = (id: string) => {
@@ -228,6 +262,31 @@ function TaskDetailPanel({
 
       {/* Detail Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
+        {/* Progress Bar */}
+        {progress && progress.total > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {t('tasks.progress_label')}
+              </span>
+              <span className={`text-xs font-bold ${
+                progress.completed === progress.total ? 'text-green-500' : 'text-gray-600 dark:text-gray-400'
+              }`}>
+                {progress.completed}/{progress.total}
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${(progress.completed / progress.total) * 100}%`,
+                  backgroundColor: progress.completed === progress.total ? '#10B981' : '#3B82F6',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Description */}
         {task.description && (
           <div>
@@ -412,6 +471,13 @@ function SortableTaskRow({
     isDragging,
   } = useSortable({ id: task.id });
 
+  const { data: taskSubtasks = [] } = useSubtasks(task.id);
+  const { data: taskSteps = [] } = useSteps(task.id);
+  const rowProgress = useMemo(
+    () => calcTaskProgress(taskSubtasks, taskSteps),
+    [taskSubtasks, taskSteps],
+  );
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -481,6 +547,27 @@ function SortableTaskRow({
         <span className="text-xs text-blue-500 flex-shrink-0" title={getRecurrenceLabel(task.recurrenceRule, t)}>
           &#x21bb;
         </span>
+      )}
+      {/* Subtask/Step progress badge */}
+      {rowProgress && rowProgress.total > 0 && (
+        <div className="flex items-center gap-1 flex-shrink-0" title={`${rowProgress.completed}/${rowProgress.total}`}>
+          <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${(rowProgress.completed / rowProgress.total) * 100}%`,
+                backgroundColor: rowProgress.completed === rowProgress.total ? '#10B981' : '#3B82F6',
+              }}
+            />
+          </div>
+          <span className={`text-xs ${
+            rowProgress.completed === rowProgress.total
+              ? 'text-green-500 font-medium'
+              : 'text-gray-400 dark:text-gray-500'
+          }`}>
+            {rowProgress.completed}/{rowProgress.total}
+          </span>
+        </div>
       )}
       {task.dueDate && (
         <span className="text-sm text-gray-500 flex-shrink-0">

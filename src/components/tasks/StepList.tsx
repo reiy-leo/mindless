@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, TrashIcon, CalendarIcon, ClockIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -22,13 +22,66 @@ interface Step {
 interface StepListProps {
   taskId: string;
   steps: Step[];
-  onAdd: () => void;
+  onAdd: (description: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateDescription: (id: string, description: string) => void;
   onUpdateDueDate: (id: string, dueDate?: string) => void;
   onUpdateDueTime: (id: string, dueTime?: string) => void;
   onReorder?: (items: { id: string; sortOrder: number }[]) => void;
+}
+
+// ==================== Inline Add Input ====================
+function InlineAddInput({
+  placeholder,
+  onCancel,
+  onSubmit,
+}: {
+  placeholder: string;
+  onCancel: () => void;
+  onSubmit: (description: string) => void;
+}) {
+  const { t } = useTranslation('common');
+  const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && value.trim()) {
+      onSubmit(value.trim());
+      setValue('');
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+      <div className="w-4 h-4 rounded border-2 border-dashed border-blue-300 dark:border-blue-600 flex-shrink-0" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          if (value.trim()) onSubmit(value.trim());
+          else onCancel();
+        }}
+        placeholder={placeholder}
+        className="flex-1 px-2 py-1 text-sm border border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        onClick={onCancel}
+        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
+      >
+        {t('common.cancel')}
+      </button>
+    </div>
+  );
 }
 
 export default function StepList({
@@ -43,6 +96,7 @@ export default function StepList({
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAddInput, setShowAddInput] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -65,12 +119,22 @@ export default function StepList({
     onReorder(items);
   }, [steps, onReorder]);
 
+  const total = steps.length;
+  const completed = steps.filter((s) => s.isCompleted).length;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('tasks.steps.title')}</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('tasks.steps.title')}
+          {total > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+              {completed}/{total}
+            </span>
+          )}
+        </h3>
         <button
-          onClick={onAdd}
+          onClick={() => setShowAddInput(true)}
           className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
@@ -78,7 +142,19 @@ export default function StepList({
         </button>
       </div>
 
-      {steps.length === 0 ? (
+      {/* Inline add input */}
+      {showAddInput && (
+        <InlineAddInput
+          placeholder={t('tasks.steps.description_placeholder')}
+          onCancel={() => setShowAddInput(false)}
+          onSubmit={(desc) => {
+            onAdd(desc);
+            setShowAddInput(false);
+          }}
+        />
+      )}
+
+      {steps.length === 0 && !showAddInput ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.steps.empty')}</p>
       ) : onReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

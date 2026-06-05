@@ -73,7 +73,10 @@
       "title": "子任务",
       "add": "添加子任务",
       "add_child": "添加子项",
-      "empty": "暂无子任务"
+      "empty": "暂无子任务",
+      "title_placeholder": "输入子任务名称...",
+      "child_placeholder": "输入子项名称...",
+      "delete_with_children": "此子任务包含 {{count}} 个子项，确定要全部删除吗？"
     },
     "steps": {
       "title": "步骤",
@@ -93,6 +96,7 @@
     "edit_task": "编辑任务",
     "delete_confirm": "确定要删除此任务吗？",
     "supports_markdown": "支持 Markdown",
+    "progress_label": "完成进度",
     "recurrence": {
       "label": "重复",
       "none": "不重复",

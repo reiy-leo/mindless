@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, TrashIcon, ChevronRightIcon, ChevronDownIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -21,7 +21,7 @@ interface Subtask {
 interface SubtaskListProps {
   taskId: string;
   subtasks: Subtask[];
-  onAdd: (parentId?: string) => void;
+  onAdd: (title: string, parentId?: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
@@ -30,11 +30,66 @@ interface SubtaskListProps {
 
 interface SubtaskItemProps {
   subtask: Subtask;
-  onAdd: (parentId?: string) => void;
+  onAdd: (title: string, parentId?: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
   depth: number;
+}
+
+// ==================== Inline Add Input ====================
+function InlineAddInput({
+  placeholder,
+  onCancel,
+  onSubmit,
+  indent = 0,
+}: {
+  placeholder: string;
+  onCancel: () => void;
+  onSubmit: (title: string) => void;
+  indent?: number;
+}) {
+  const { t } = useTranslation('common');
+  const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && value.trim()) {
+      onSubmit(value.trim());
+      setValue('');
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2" style={{ paddingLeft: `${indent * 24}px` }}>
+      <div className="w-6" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          if (value.trim()) onSubmit(value.trim());
+          else onCancel();
+        }}
+        placeholder={placeholder}
+        className="flex-1 px-2 py-1.5 text-sm border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        onClick={onCancel}
+        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
+      >
+        {t('common.cancel')}
+      </button>
+    </div>
+  );
 }
 
 function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth }: SubtaskItemProps) {
@@ -42,6 +97,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(subtask.title);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showChildInput, setShowChildInput] = useState(false);
 
   const handleSave = () => {
     if (title.trim()) {
@@ -61,6 +117,22 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
 
   const hasChildren = subtask.children && subtask.children.length > 0;
   const canAddChild = depth < 3; // Max 4 levels (0-3)
+
+  // Count descendants for delete confirmation
+  const countDescendants = (node: Subtask): number => {
+    if (!node.children) return 0;
+    return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0);
+  };
+
+  const handleDelete = () => {
+    const descendantCount = countDescendants(subtask);
+    if (descendantCount > 0) {
+      if (!window.confirm(t('tasks.subtasks.delete_with_children', { count: descendantCount }))) {
+        return;
+      }
+    }
+    onDelete(subtask.id);
+  };
 
   return (
     <div className="space-y-2">
@@ -118,7 +190,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {canAddChild && (
             <button
-              onClick={() => onAdd(subtask.id)}
+              onClick={() => setShowChildInput(!showChildInput)}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={t('tasks.subtasks.add_child')}
             >
@@ -126,7 +198,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
             </button>
           )}
           <button
-            onClick={() => onDelete(subtask.id)}
+            onClick={handleDelete}
             className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title={t('common.delete')}
           >
@@ -134,6 +206,19 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
           </button>
         </div>
       </div>
+
+      {/* Child add input */}
+      {showChildInput && (
+        <InlineAddInput
+          placeholder={t('tasks.subtasks.child_placeholder')}
+          indent={depth + 1}
+          onCancel={() => setShowChildInput(false)}
+          onSubmit={(childTitle) => {
+            onAdd(childTitle, subtask.id);
+            setShowChildInput(false);
+          }}
+        />
+      )}
 
       {/* Children */}
       {hasChildren && isExpanded && (
@@ -164,7 +249,7 @@ function SortableSubtaskItem({
   onUpdateTitle,
 }: {
   subtask: Subtask;
-  onAdd: (parentId?: string) => void;
+  onAdd: (title: string, parentId?: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
@@ -222,6 +307,7 @@ export default function SubtaskList({
   onReorder,
 }: Omit<SubtaskListProps, 'taskId'>) {
   const { t } = useTranslation('common');
+  const [showAddInput, setShowAddInput] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -245,12 +331,29 @@ export default function SubtaskList({
     onReorder(items);
   }, [subtasks, onReorder]);
 
+  // Count total and completed
+  const countAll = (items: Subtask[]): number =>
+    items.reduce((sum, s) => sum + 1 + (s.children ? countAll(s.children) : 0), 0);
+  const countCompleted = (items: Subtask[]): number =>
+    items.reduce((sum, s) =>
+      sum + (s.isCompleted ? 1 : 0) + (s.children ? countCompleted(s.children) : 0), 0);
+
+  const total = countAll(subtasks);
+  const completed = countCompleted(subtasks);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('tasks.subtasks.title')}</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('tasks.subtasks.title')}
+          {total > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+              {completed}/{total}
+            </span>
+          )}
+        </h3>
         <button
-          onClick={() => onAdd()}
+          onClick={() => setShowAddInput(true)}
           className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
@@ -258,7 +361,19 @@ export default function SubtaskList({
         </button>
       </div>
 
-      {subtasks.length === 0 ? (
+      {/* Inline add input */}
+      {showAddInput && (
+        <InlineAddInput
+          placeholder={t('tasks.subtasks.title_placeholder')}
+          onCancel={() => setShowAddInput(false)}
+          onSubmit={(title) => {
+            onAdd(title);
+            setShowAddInput(false);
+          }}
+        />
+      )}
+
+      {subtasks.length === 0 && !showAddInput ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.subtasks.empty')}</p>
       ) : onReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
