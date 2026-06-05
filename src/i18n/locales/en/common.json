@@ -117,7 +117,8 @@
       "urgent": "Urgent",
       "not_urgent": "Not Urgent",
       "important": "Important",
-      "not_important": "Not Important"
+      "not_important": "Not Important",
+      "drag_to_reorder": "Drag to reorder"
     }
   },
   "lists": {

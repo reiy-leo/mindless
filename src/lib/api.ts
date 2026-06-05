@@ -33,12 +33,26 @@ export async function updateTask(id: string, params: {
   startDate?: string;
   listId?: string;
   tagIds?: string;
+  sortOrder?: number;
 }): Promise<Task> {
   return await invoke<Task>('update_task', { id, ...params });
 }
 
 export async function deleteTask(id: string): Promise<void> {
   return await invoke<void>('delete_task', { id });
+}
+
+// Reorder APIs
+export async function reorderTasks(items: { id: string; sortOrder: number }[]): Promise<void> {
+  return await invoke<void>('reorder_tasks', { items });
+}
+
+export async function reorderSubtasks(items: { id: string; sortOrder: number }[]): Promise<void> {
+  return await invoke<void>('reorder_subtasks', { items });
+}
+
+export async function reorderSteps(items: { id: string; sortOrder: number }[]): Promise<void> {
+  return await invoke<void>('reorder_steps', { items });
 }
 
 // List APIs
@@ -111,6 +125,7 @@ export async function createSubtask(params: {
 export async function updateSubtask(id: string, params: {
   title?: string;
   isCompleted?: boolean;
+  sortOrder?: number;
 }): Promise<Subtask> {
   return await invoke<Subtask>('update_subtask', { id, ...params });
 }
@@ -138,6 +153,7 @@ export async function updateStep(id: string, params: {
   dueDate?: string;
   dueTime?: string;
   isCompleted?: boolean;
+  sortOrder?: number;
 }): Promise<Step> {
   return await invoke<Step>('update_step', { id, ...params });
 }

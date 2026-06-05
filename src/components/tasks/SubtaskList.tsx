@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, ChevronRightIcon, ChevronDownIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Subtask {
   id: string;
@@ -17,6 +25,7 @@ interface SubtaskListProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
+  onReorder?: (items: { id: string; sortOrder: number }[]) => void;
 }
 
 interface SubtaskItemProps {
@@ -146,14 +155,95 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
   );
 }
 
+// ==================== Sortable Wrapper ====================
+function SortableSubtaskItem({
+  subtask,
+  onAdd,
+  onToggle,
+  onDelete,
+  onUpdateTitle,
+}: {
+  subtask: Subtask;
+  onAdd: (parentId?: string) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdateTitle: (id: string, title: string) => void;
+}) {
+  const { t } = useTranslation('common');
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: subtask.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="flex items-center gap-1 group/sort">
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+          title={t('tasks.views.drag_to_reorder')}
+        >
+          <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+        </button>
+        <div className="flex-1">
+          <SubtaskItem
+            subtask={subtask}
+            onAdd={onAdd}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onUpdateTitle={onUpdateTitle}
+            depth={0}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SubtaskList({
   subtasks,
   onAdd,
   onToggle,
   onDelete,
   onUpdateTitle,
+  onReorder,
 }: Omit<SubtaskListProps, 'taskId'>) {
   const { t } = useTranslation('common');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    if (!onReorder) return;
+
+    const topLevel = subtasks.filter((s) => !('parentSubtaskId' in s && (s as any).parentSubtaskId));
+    const oldIndex = topLevel.findIndex((s) => s.id === active.id);
+    const newIndex = topLevel.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...topLevel];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const items = reordered.map((s, idx) => ({ id: s.id, sortOrder: idx }));
+    onReorder(items);
+  }, [subtasks, onReorder]);
 
   return (
     <div className="space-y-2">
@@ -170,6 +260,23 @@ export default function SubtaskList({
 
       {subtasks.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.subtasks.empty')}</p>
+      ) : onReorder ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={subtasks.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {subtasks.map((subtask) => (
+                <SortableSubtaskItem
+                  key={subtask.id}
+                  subtask={subtask}
+                  onAdd={onAdd}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                  onUpdateTitle={onUpdateTitle}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="space-y-2">
           {subtasks.map((subtask) => (

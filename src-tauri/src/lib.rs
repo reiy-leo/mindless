@@ -22,6 +22,9 @@ pub fn run() {
             commands::get_task_by_id,
             commands::update_task,
             commands::delete_task,
+            commands::reorder_tasks,
+            commands::reorder_subtasks,
+            commands::reorder_steps,
             commands::get_lists,
             // Lists
             commands::create_list,

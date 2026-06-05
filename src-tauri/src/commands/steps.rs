@@ -69,6 +69,7 @@ pub async fn update_step(
     due_date: Option<String>,
     due_time: Option<String>,
     is_completed: Option<bool>,
+    sort_order: Option<f64>,
 ) -> Result<Step, String> {
     let conn = get_db(&app)?;
 
@@ -99,6 +100,13 @@ pub async fn update_step(
             "UPDATE steps SET is_completed = ?1, updated_at = datetime('now') WHERE id = ?2",
             (&completed_int, &id)
         ).map_err(|e| format!("Failed to update step completion: {}", e))?;
+    }
+
+    if let Some(sort_order) = sort_order {
+        conn.execute(
+            "UPDATE steps SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            (&sort_order, &id)
+        ).map_err(|e| format!("Failed to update step sort_order: {}", e))?;
     }
 
     let step = conn.query_row("SELECT * FROM steps WHERE id = ?1", [&id], row_to_step)

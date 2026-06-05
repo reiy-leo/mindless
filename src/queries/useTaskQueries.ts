@@ -102,6 +102,36 @@ export function useToggleTaskCompletion() {
   });
 }
 
+export function useReorderTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { id: string; sortOrder: number }[]) => api.reorderTasks(items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useReorderSubtasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { id: string; sortOrder: number }[]) => api.reorderSubtasks(items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+    },
+  });
+}
+
+export function useReorderSteps() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { id: string; sortOrder: number }[]) => api.reorderSteps(items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['steps'] });
+    },
+  });
+}
+
 // ==================== Subtask Mutations ====================
 
 export function useCreateSubtask() {

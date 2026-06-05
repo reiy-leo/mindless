@@ -1,5 +1,6 @@
 use tauri::AppHandle;
 use uuid::Uuid;
+use serde::Deserialize;
 use crate::db::models::{Task, List};
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
@@ -52,8 +53,14 @@ pub async fn create_task(
     let id = Uuid::new_v4().to_string();
     let priority = priority.unwrap_or(0);
 
+    let max_sort: f64 = conn.query_row(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(0.0);
+
     conn.execute(
-        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         rusqlite::params![
             &id,
             &title,
@@ -64,6 +71,7 @@ pub async fn create_task(
             opt_str(&start_date),
             opt_str(&list_id),
             opt_str(&tag_ids),
+            &max_sort,
         ]
     ).map_err(|e| format!("Failed to create task: {}", e))?;
 
@@ -110,6 +118,7 @@ pub async fn update_task(
     start_date: Option<String>,
     list_id: Option<String>,
     tag_ids: Option<String>,
+    sort_order: Option<f64>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
@@ -171,6 +180,11 @@ pub async fn update_task(
         updates.push("tag_ids".to_string());
         param_idx += 1;
     }
+    if sort_order.is_some() {
+        sql.push_str(&format!(", sort_order = ?{}", param_idx));
+        updates.push("sort_order".to_string());
+        param_idx += 1;
+    }
 
     sql.push_str(&format!(" WHERE id = ?{}", param_idx));
 
@@ -188,6 +202,7 @@ pub async fn update_task(
     if let Some(ref v) = start_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = list_id { params.push(Box::new(v.clone())); }
     if let Some(ref v) = tag_ids { params.push(Box::new(v.clone())); }
+    if let Some(v) = sort_order { params.push(Box::new(v)); }
     params.push(Box::new(id.clone()));
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
@@ -210,6 +225,54 @@ pub async fn delete_task(app: AppHandle, id: String) -> Result<(), String> {
         [&id]
     ).map_err(|e| format!("Failed to delete task: {}", e))?;
 
+    Ok(())
+}
+
+#[derive(Deserialize)]
+pub struct ReorderItem {
+    pub id: String,
+    pub sort_order: f64,
+}
+
+#[tauri::command]
+pub async fn reorder_tasks(app: AppHandle, items: Vec<ReorderItem>) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
+    for item in &items {
+        tx.execute(
+            "UPDATE tasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            (&item.sort_order, &item.id),
+        ).map_err(|e| format!("Failed to reorder task: {}", e))?;
+    }
+    tx.commit().map_err(|e| format!("Failed to commit: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reorder_subtasks(app: AppHandle, items: Vec<ReorderItem>) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
+    for item in &items {
+        tx.execute(
+            "UPDATE subtasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            (&item.sort_order, &item.id),
+        ).map_err(|e| format!("Failed to reorder subtask: {}", e))?;
+    }
+    tx.commit().map_err(|e| format!("Failed to commit: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reorder_steps(app: AppHandle, items: Vec<ReorderItem>) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
+    for item in &items {
+        tx.execute(
+            "UPDATE steps SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            (&item.sort_order, &item.id),
+        ).map_err(|e| format!("Failed to reorder step: {}", e))?;
+    }
+    tx.commit().map_err(|e| format!("Failed to commit: {}", e))?;
     Ok(())
 }
 

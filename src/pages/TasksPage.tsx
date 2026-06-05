@@ -1,12 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
   useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
   useCreateSubtask, useUpdateSubtask, useDeleteSubtask,
   useCreateStep, useUpdateStep, useDeleteStep,
-  useCreateTag,
+  useCreateTag, useReorderTasks, useReorderSubtasks, useReorderSteps,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK, VIEW_MODES } from '@/lib/constants';
@@ -67,6 +75,8 @@ function TaskDetailPanel({
   const updateStep = useUpdateStep();
   const deleteStep = useDeleteStep();
   const createTag = useCreateTag();
+  const reorderSubtasks = useReorderSubtasks();
+  const reorderSteps = useReorderSteps();
 
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -322,6 +332,7 @@ function TaskDetailPanel({
             onToggle={handleToggleSubtask}
             onDelete={handleDeleteSubtask}
             onUpdateTitle={handleUpdateSubtaskTitle}
+            onReorder={(items) => reorderSubtasks.mutate(items)}
           />
         </div>
 
@@ -335,8 +346,127 @@ function TaskDetailPanel({
             onUpdateDescription={handleUpdateStepDescription}
             onUpdateDueDate={handleUpdateStepDueDate}
             onUpdateDueTime={handleUpdateStepDueTime}
+            onReorder={(items) => reorderSteps.mutate(items)}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== Sortable Task Row ====================
+function SortableTaskRow({
+  task,
+  allTags,
+  isSelected,
+  onSelect,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  task: Task;
+  allTags: Tag[];
+  isSelected: boolean;
+  onSelect: () => void;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation('common');
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  };
+
+  const taskTags = getTaskTags(task, allTags);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onSelect}
+      className={`group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+        isSelected ? 'ring-2 ring-blue-500' : ''
+      } ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        title={t('tasks.views.drag_to_reorder')}
+      >
+        <Bars3Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+      </button>
+
+      <input
+        type="checkbox"
+        checked={task.isCompleted}
+        onChange={(e) => { e.stopPropagation(); onToggle(); }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
+      />
+      <div className="flex-1 min-w-0">
+        <h3 className={`text-base truncate ${
+          task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+        }`}>
+          {task.title}
+        </h3>
+        {task.description && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{task.description}</p>
+        )}
+        {taskTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {taskTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs text-white"
+                style={{ backgroundColor: tag.color || '#3B82F6' }}
+              >
+                {tag.emoji && <span className="text-xs">{tag.emoji}</span>}
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
+        title={`${t('tasks.priority.label')}: ${task.priority}`}
+      />
+      {task.dueDate && (
+        <span className="text-sm text-gray-500 flex-shrink-0">
+          {parseLocalDate(task.dueDate).toLocaleDateString()}
+        </span>
+      )}
+      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
+          title={t('common.edit')}
+        >
+          <PencilIcon className="w-4 h-4 text-gray-500" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+          title={t('common.delete')}
+        >
+          <TrashIcon className="w-4 h-4 text-red-500" />
+        </button>
       </div>
     </div>
   );
@@ -358,6 +488,11 @@ export default function TasksPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const toggleTask = useToggleTaskCompletion();
+  const reorderTasks = useReorderTasks();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) || null,
@@ -398,6 +533,22 @@ export default function TasksPage() {
 
     return true;
   });
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filteredTasks.findIndex((t) => t.id === active.id);
+    const newIndex = filteredTasks.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...filteredTasks];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const items = reordered.map((task, idx) => ({ id: task.id, sortOrder: idx }));
+    reorderTasks.mutate(items);
+  }, [filteredTasks, reorderTasks]);
 
   const closeForm = () => {
     setShowTaskForm(false);
@@ -591,93 +742,24 @@ export default function TasksPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredTasks.map((task) => {
-                const taskTags = getTaskTags(task, allTags);
-
-                return (
-                  <div
-                    key={task.id}
-                    onClick={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
-                    className={`group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                      selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={task.isCompleted}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleToggleTask(task.id, task.isCompleted);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {filteredTasks.map((task) => (
+                    <SortableTaskRow
+                      key={task.id}
+                      task={task}
+                      allTags={allTags}
+                      isSelected={selectedTaskId === task.id}
+                      onSelect={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
+                      onToggle={() => handleToggleTask(task.id, task.isCompleted)}
+                      onEdit={() => { setEditingTask(task); setShowTaskForm(true); }}
+                      onDelete={() => handleDeleteTask(task.id)}
                     />
-                    <div className="flex-1 min-w-0">
-                      <h3
-                        className={`text-base truncate ${
-                          task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-                        }`}
-                      >
-                        {task.title}
-                      </h3>
-                      {task.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{task.description}</p>
-                      )}
-                      {/* Tag chips */}
-                      {taskTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {taskTags.map((tag) => (
-                            <span
-                              key={tag.id}
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs text-white"
-                              style={{ backgroundColor: tag.color || '#3B82F6' }}
-                            >
-                              {tag.emoji && <span className="text-xs">{tag.emoji}</span>}
-                              {tag.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
-                      title={`${t('tasks.priority.label')}: ${task.priority}`}
-                    />
-                    {task.dueDate && (
-                      <span className="text-sm text-gray-500 flex-shrink-0">
-                        {parseLocalDate(task.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                    {/* Inline actions */}
-                    <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingTask(task);
-                          setShowTaskForm(true);
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
-                        title={t('common.edit')}
-                      >
-                        <PencilIcon className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTask(task.id);
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                        title={t('common.delete')}
-                      >
-                        <TrashIcon className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
         )}

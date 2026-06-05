@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CalendarIcon, ClockIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Step {
   id: string;
@@ -20,6 +28,7 @@ interface StepListProps {
   onUpdateDescription: (id: string, description: string) => void;
   onUpdateDueDate: (id: string, dueDate?: string) => void;
   onUpdateDueTime: (id: string, dueTime?: string) => void;
+  onReorder?: (items: { id: string; sortOrder: number }[]) => void;
 }
 
 export default function StepList({
@@ -30,9 +39,31 @@ export default function StepList({
   onUpdateDescription,
   onUpdateDueDate,
   onUpdateDueTime,
+  onReorder,
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    if (!onReorder) return;
+
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...steps];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const items = reordered.map((step, idx) => ({ id: step.id, sortOrder: idx }));
+    onReorder(items);
+  }, [steps, onReorder]);
 
   return (
     <div className="space-y-3">
@@ -49,6 +80,27 @@ export default function StepList({
 
       {steps.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.steps.empty')}</p>
+      ) : onReorder ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {steps.map((step) => (
+                <SortableStepItem
+                  key={step.id}
+                  step={step}
+                  isEditing={editingId === step.id}
+                  onStartEdit={() => setEditingId(step.id)}
+                  onFinishEdit={() => setEditingId(null)}
+                  onToggle={() => onToggle(step.id)}
+                  onDelete={() => onDelete(step.id)}
+                  onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
+                  onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
+                  onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="space-y-2">
           {steps.map((step) => (
@@ -229,6 +281,63 @@ function StepItem({
       >
         <TrashIcon className="w-4 h-4 text-red-500" />
       </button>
+    </div>
+  );
+}
+
+// ==================== Sortable Step Wrapper ====================
+function SortableStepItem({
+  step,
+  isEditing,
+  onStartEdit,
+  onFinishEdit,
+  onToggle,
+  onDelete,
+  onUpdateDescription,
+  onUpdateDueDate,
+  onUpdateDueTime,
+}: StepItemProps) {
+  const { t } = useTranslation('common');
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: step.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-start gap-1">
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="p-2 mt-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        title={t('tasks.views.drag_to_reorder')}
+      >
+        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+      </button>
+      <div className="flex-1">
+        <StepItem
+          step={step}
+          isEditing={isEditing}
+          onStartEdit={onStartEdit}
+          onFinishEdit={onFinishEdit}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onUpdateDescription={onUpdateDescription}
+          onUpdateDueDate={onUpdateDueDate}
+          onUpdateDueTime={onUpdateDueTime}
+        />
+      </div>
     </div>
   );
 }

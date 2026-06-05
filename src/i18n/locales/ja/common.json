@@ -117,7 +117,8 @@
       "urgent": "緊急",
       "not_urgent": "緊急でない",
       "important": "重要",
-      "not_important": "重要でない"
+      "not_important": "重要でない",
+      "drag_to_reorder": "ドラッグして並び替え"
     }
   },
   "lists": {

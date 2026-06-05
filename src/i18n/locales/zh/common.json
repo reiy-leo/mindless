@@ -117,7 +117,8 @@
       "urgent": "紧急",
       "not_urgent": "不紧急",
       "important": "重要",
-      "not_important": "不重要"
+      "not_important": "不重要",
+      "drag_to_reorder": "拖拽排序"
     }
   },
   "lists": {
