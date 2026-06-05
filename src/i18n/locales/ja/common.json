@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "Mindless",
+    "tagline": "あなたの個人タスクマネージャー"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "create": "作成",
+    "search": "検索",
+    "loading": "読み込み中...",
+    "empty": "データなし",
+    "confirm": "確認",
+    "close": "閉じる"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "tasks": "タスク",
+    "habits": "習慣",
+    "countdowns": "カウントダウン",
+    "settings": "設定"
+  },
+  "tasks": {
+    "filters": "フィルター",
+    "new_task": "新規タスク",
+    "search_placeholder": "タスクを検索...",
+    "no_tasks": "タスクなし",
+    "create_first": "最初のタスクを作成",
+    "title": "タイトル",
+    "title_placeholder": "タスクタイトルを入力",
+    "description": "説明",
+    "description_placeholder": "タスク説明を追加（Markdown対応）",
+    "start_date": "開始日",
+    "due_date": "期限",
+    "due_time": "期限時間",
+    "status": {
+      "all": "すべて",
+      "active": "進行中",
+      "completed": "完了"
+    },
+    "priority": "優先度",
+    "priority.none": "なし",
+    "priority.low": "低",
+    "priority.medium": "中",
+    "priority.high": "高",
+    "subtasks": {
+      "title": "サブタスク",
+      "add": "サブタスクを追加",
+      "add_child": "子項目を追加",
+      "empty": "サブタスクなし"
+    },
+    "steps": {
+      "title": "ステップ",
+      "add": "ステップを追加",
+      "empty": "ステップなし",
+      "description_placeholder": "ステップ説明を入力...",
+      "set_date": "日付を設定",
+      "set_time": "時間を設定"
+    },
+    "tags": {
+      "title": "タグ",
+      "add": "新規タグ",
+      "empty": "タグなし",
+      "click_to_remove": "クリックで削除",
+      "name_placeholder": "タグ名..."
+    },
+    "edit_task": "タスクを編集",
+    "delete_confirm": "このタスクを削除しますか？"
+  },
+  "habits": {
+    "new_habit": "新規習慣",
+    "create_habit": "習慣を作成",
+    "habit_name": "習慣名",
+    "frequency": "頻度",
+    "no_habits": "習慣なし",
+    "create_first": "最初の習慣を作成",
+    "check_in": "チェックイン",
+    "frequency": {
+      "daily": "毎日",
+      "weekly": "毎週",
+      "monthly": "毎月"
+    }
+  },
+  "countdowns": {
+    "new_countdown": "新規カウントダウン",
+    "create_countdown": "カウントダウンを作成",
+    "event_name": "イベント名",
+    "target_date": "目標日",
+    "no_countdowns": "カウントダウンなし",
+    "create_first": "最初のカウントダウンを作成",
+    "days_left": "日残り",
+    "days_ago": "日前",
+    "today": "今日"
+  },
+  "settings": {
+    "language": "言語",
+    "theme": "テーマ",
+    "theme.light": "ライト",
+    "theme.dark": "ダーク",
+    "theme.system": "システム",
+    "priority_mode": "優先度モード",
+    "priority_mode.simple": "シンプル（4段階）",
+    "priority_mode.simple_desc": "なし、低、中、高の4段階",
+    "priority_mode.detailed": "詳細（11段階）",
+    "priority_mode.detailed_desc": "0-10の11段階",
+    "about": "について",
+    "version": "バージョン"
+  }
+}

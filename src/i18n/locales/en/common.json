@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "Mindless",
+    "tagline": "Your personal task manager"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "empty": "No data",
+    "confirm": "Confirm",
+    "close": "Close"
+  },
+  "navigation": {
+    "home": "Home",
+    "tasks": "Tasks",
+    "habits": "Habits",
+    "countdowns": "Countdowns",
+    "settings": "Settings"
+  },
+  "tasks": {
+    "filters": "Filters",
+    "new_task": "New Task",
+    "search_placeholder": "Search tasks...",
+    "no_tasks": "No tasks",
+    "create_first": "Create your first task",
+    "title": "Title",
+    "title_placeholder": "Enter task title",
+    "description": "Description",
+    "description_placeholder": "Add task description (Markdown supported)",
+    "start_date": "Start Date",
+    "due_date": "Due Date",
+    "due_time": "Due Time",
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "priority": "Priority",
+    "priority.none": "None",
+    "priority.low": "Low",
+    "priority.medium": "Medium",
+    "priority.high": "High",
+    "subtasks": {
+      "title": "Subtasks",
+      "add": "Add Subtask",
+      "add_child": "Add Child",
+      "empty": "No subtasks"
+    },
+    "steps": {
+      "title": "Steps",
+      "add": "Add Step",
+      "empty": "No steps",
+      "description_placeholder": "Enter step description...",
+      "set_date": "Set Date",
+      "set_time": "Set Time"
+    },
+    "tags": {
+      "title": "Tags",
+      "add": "New Tag",
+      "empty": "No tags",
+      "click_to_remove": "Click to remove",
+      "name_placeholder": "Tag name..."
+    },
+    "edit_task": "Edit Task",
+    "delete_confirm": "Are you sure you want to delete this task?"
+  },
+  "habits": {
+    "new_habit": "New Habit",
+    "create_habit": "Create Habit",
+    "habit_name": "Habit Name",
+    "frequency": "Frequency",
+    "no_habits": "No habits",
+    "create_first": "Create your first habit",
+    "check_in": "Check In",
+    "frequency": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "countdowns": {
+    "new_countdown": "New Countdown",
+    "create_countdown": "Create Countdown",
+    "event_name": "Event Name",
+    "target_date": "Target Date",
+    "no_countdowns": "No countdowns",
+    "create_first": "Create your first countdown",
+    "days_left": "days left",
+    "days_ago": "days ago",
+    "today": "Today"
+  },
+  "settings": {
+    "language": "Language",
+    "theme": "Theme",
+    "theme.light": "Light",
+    "theme.dark": "Dark",
+    "theme.system": "System",
+    "priority_mode": "Priority Mode",
+    "priority_mode.simple": "Simple (4 levels)",
+    "priority_mode.simple_desc": "None, Low, Medium, High",
+    "priority_mode.detailed": "Detailed (11 levels)",
+    "priority_mode.detailed_desc": "0-10 priority levels",
+    "about": "About",
+    "version": "Version"
+  }
+}

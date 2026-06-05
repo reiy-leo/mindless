@@ -1,0 +1,183 @@
+use tauri::AppHandle;
+use std::path::PathBuf;
+
+/// 运行数据库迁移
+pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
+    let db_path = crate::db::connection::get_db_connection(app);
+
+    // SQL migrations
+    let sql = r#"
+        CREATE TABLE IF NOT EXISTS lists (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color TEXT DEFAULT '#3B82F6',
+            icon TEXT DEFAULT 'folder',
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS tasks (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            priority INTEGER NOT NULL DEFAULT 0,
+            due_date TEXT,
+            due_time TEXT,
+            start_date TEXT,
+            reminder_time TEXT,
+            recurrence_rule TEXT,
+            recurrence_end_date TEXT,
+            list_id TEXT REFERENCES lists(id),
+            tag_ids TEXT,
+            sort_by TEXT NOT NULL DEFAULT 'due_date',
+            group_by TEXT NOT NULL DEFAULT 'none',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            completed_at TEXT,
+            deleted_at TEXT,
+            sort_order REAL NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS tags (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color TEXT DEFAULT '#3B82F6',
+            emoji TEXT DEFAULT '',
+            parent_id TEXT REFERENCES tags(id),
+            level INTEGER NOT NULL DEFAULT 0,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            parent_subtask_id TEXT REFERENCES subtasks(id),
+            title TEXT NOT NULL,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            sort_order REAL NOT NULL DEFAULT 0,
+            level INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS steps (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            description TEXT NOT NULL,
+            due_date TEXT,
+            due_time TEXT,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS habits (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            icon TEXT DEFAULT 'star',
+            color TEXT DEFAULT '#8B5CF6',
+            target_type TEXT NOT NULL DEFAULT 'binary',
+            target_value INTEGER DEFAULT 1,
+            frequency TEXT NOT NULL DEFAULT 'daily',
+            frequency_days TEXT,
+            reminder_time TEXT,
+            reminder_enabled INTEGER NOT NULL DEFAULT 0,
+            current_streak INTEGER NOT NULL DEFAULT 0,
+            longest_streak INTEGER NOT NULL DEFAULT 0,
+            total_completions INTEGER NOT NULL DEFAULT 0,
+            start_date TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            archived_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS habit_logs (
+            id TEXT PRIMARY KEY,
+            habit_id TEXT NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+            log_date TEXT NOT NULL,
+            log_time TEXT NOT NULL DEFAULT (datetime('now')),
+            completed INTEGER NOT NULL DEFAULT 1,
+            value INTEGER DEFAULT 0,
+            note TEXT DEFAULT '',
+            UNIQUE(habit_id, log_date)
+        );
+
+        CREATE TABLE IF NOT EXISTS countdowns (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            icon TEXT DEFAULT 'flag',
+            color TEXT DEFAULT '#EF4444',
+            target_date TEXT NOT NULL,
+            target_time TEXT,
+            event_type TEXT NOT NULL DEFAULT 'countdown',
+            reminder_enabled INTEGER NOT NULL DEFAULT 0,
+            reminder_days_before INTEGER DEFAULT 0,
+            reminder_time TEXT,
+            is_recurring INTEGER NOT NULL DEFAULT 0,
+            recurrence_rule TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
+        INSERT OR IGNORE INTO lists (id, name, color, icon) VALUES
+            ('inbox', 'Inbox', '#3B82F6', 'inbox'),
+            ('today', 'Today', '#10B981', 'calendar'),
+            ('next7days', 'Next 7 Days', '#F59E0B', 'clock'),
+            ('eisenhower', 'Eisenhower Matrix', '#8B5CF6', 'grid');
+
+        INSERT OR IGNORE INTO settings (key, value) VALUES
+            ('language', 'zh'),
+            ('theme', 'system'),
+            ('start_day_of_week', '1'),
+            ('notification_enabled', '1'),
+            ('default_list_id', 'inbox'),
+            ('priority_mode', 'simple'),
+            ('task_sort_by', 'due_date'),
+            ('task_group_by', 'none');
+
+        CREATE INDEX IF NOT EXISTS idx_tasks_list_id ON tasks(list_id);
+        CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+        CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
+        CREATE INDEX IF NOT EXISTS idx_tasks_is_completed ON tasks(is_completed);
+        CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+        CREATE INDEX IF NOT EXISTS idx_tasks_deleted_at ON tasks(deleted_at);
+        CREATE INDEX IF NOT EXISTS idx_tasks_sort_order ON tasks(sort_order);
+        CREATE INDEX IF NOT EXISTS idx_tags_parent_id ON tags(parent_id);
+        CREATE INDEX IF NOT EXISTS idx_tags_level ON tags(level);
+        CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
+        CREATE INDEX IF NOT EXISTS idx_subtasks_parent_id ON subtasks(parent_subtask_id);
+        CREATE INDEX IF NOT EXISTS idx_subtasks_level ON subtasks(level);
+        CREATE INDEX IF NOT EXISTS idx_steps_task_id ON steps(task_id);
+        CREATE INDEX IF NOT EXISTS idx_steps_due_date ON steps(due_date);
+        CREATE INDEX IF NOT EXISTS idx_habits_archived_at ON habits(archived_at);
+        CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id ON habit_logs(habit_id);
+        CREATE INDEX IF NOT EXISTS idx_habit_logs_log_date ON habit_logs(log_date);
+        CREATE INDEX IF NOT EXISTS idx_countdowns_target_date ON countdowns(target_date);
+    "#;
+
+    // Use rusqlite directly for migrations
+    let db_path_buf = PathBuf::from(&db_path);
+    match rusqlite::Connection::open(&db_path_buf) {
+        Ok(conn) => {
+            conn.execute_batch(sql).map_err(|e| format!("Migration failed: {}", e))?;
+            println!("Migrations applied successfully");
+        }
+        Err(e) => {
+            return Err(format!("Failed to open database: {}", e));
+        }
+    }
+
+    Ok(())
+}

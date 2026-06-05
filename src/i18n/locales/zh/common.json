@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "Mindless",
+    "tagline": "你的个人任务管理器"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "create": "创建",
+    "search": "搜索",
+    "loading": "加载中...",
+    "empty": "暂无数据",
+    "confirm": "确认",
+    "close": "关闭"
+  },
+  "navigation": {
+    "home": "首页",
+    "tasks": "任务",
+    "habits": "习惯",
+    "countdowns": "倒数日",
+    "settings": "设置"
+  },
+  "tasks": {
+    "filters": "过滤器",
+    "new_task": "新建任务",
+    "search_placeholder": "搜索任务...",
+    "no_tasks": "暂无任务",
+    "create_first": "创建第一个任务",
+    "title": "标题",
+    "title_placeholder": "输入任务标题",
+    "description": "描述",
+    "description_placeholder": "添加任务描述（支持 Markdown）",
+    "start_date": "开始日期",
+    "due_date": "截止日期",
+    "due_time": "截止时间",
+    "status": {
+      "all": "全部",
+      "active": "进行中",
+      "completed": "已完成"
+    },
+    "priority": "优先级",
+    "priority.none": "无",
+    "priority.low": "低",
+    "priority.medium": "中",
+    "priority.high": "高",
+    "subtasks": {
+      "title": "子任务",
+      "add": "添加子任务",
+      "add_child": "添加子项",
+      "empty": "暂无子任务"
+    },
+    "steps": {
+      "title": "步骤",
+      "add": "添加步骤",
+      "empty": "暂无步骤",
+      "description_placeholder": "输入步骤描述...",
+      "set_date": "设置日期",
+      "set_time": "设置时间"
+    },
+    "tags": {
+      "title": "标签",
+      "add": "新建标签",
+      "empty": "暂无标签",
+      "click_to_remove": "点击移除",
+      "name_placeholder": "标签名称..."
+    },
+    "edit_task": "编辑任务",
+    "delete_confirm": "确定要删除此任务吗？"
+  },
+  "habits": {
+    "new_habit": "新建习惯",
+    "create_habit": "创建习惯",
+    "habit_name": "习惯名称",
+    "frequency": "频率",
+    "no_habits": "暂无习惯",
+    "create_first": "创建第一个习惯",
+    "check_in": "打卡",
+    "frequency": {
+      "daily": "每天",
+      "weekly": "每周",
+      "monthly": "每月"
+    }
+  },
+  "countdowns": {
+    "new_countdown": "新建倒数日",
+    "create_countdown": "创建倒数日",
+    "event_name": "事件名称",
+    "target_date": "目标日期",
+    "no_countdowns": "暂无倒数日",
+    "create_first": "创建第一个倒数日",
+    "days_left": "天",
+    "days_ago": "天前",
+    "today": "今天"
+  },
+  "settings": {
+    "language": "语言",
+    "theme": "主题",
+    "theme.light": "浅色",
+    "theme.dark": "深色",
+    "theme.system": "跟随系统",
+    "priority_mode": "优先级模式",
+    "priority_mode.simple": "简单模式 (4级)",
+    "priority_mode.simple_desc": "无、低、中、高四个级别",
+    "priority_mode.detailed": "详细模式 (11级)",
+    "priority_mode.detailed_desc": "0-10共11个优先级",
+    "about": "关于",
+    "version": "版本"
+  }
+}
