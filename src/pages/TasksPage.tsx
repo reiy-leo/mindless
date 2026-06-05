@@ -13,6 +13,9 @@ import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants';
 import TaskForm from '@/components/tasks/TaskForm';
 import SubtaskList from '@/components/tasks/SubtaskList';
 import StepList from '@/components/tasks/StepList';
+import CalendarView from '@/components/tasks/CalendarView';
+import KanbanView from '@/components/tasks/KanbanView';
+import GridView from '@/components/tasks/GridView';
 import type { Task, Priority, Subtask as SubtaskType, Step as StepType } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -409,6 +412,10 @@ export default function TasksPage() {
     }
   };
 
+  const handleUpdateTaskInline = (id: string, params: any) => {
+    updateTask.mutate({ id, ...params });
+  };
+
   const getPriorityColor = (priority: Priority) => {
     return PRIORITY_COLORS[priority];
   };
@@ -488,7 +495,35 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Task list */}
+        {/* Task content area */}
+        {viewMode === 'calendar' ? (
+          <CalendarView
+            tasks={filteredTasks}
+            allTags={allTags}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
+            onToggleTask={handleToggleTask}
+          />
+        ) : viewMode === 'kanban' ? (
+          <KanbanView
+            tasks={filteredTasks}
+            allTags={allTags}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
+            onToggleTask={handleToggleTask}
+            onUpdateTask={handleUpdateTaskInline}
+          />
+        ) : viewMode === 'grid' ? (
+          <GridView
+            tasks={filteredTasks}
+            allTags={allTags}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
+            onToggleTask={handleToggleTask}
+            onEditTask={(task) => { setEditingTask(task); setShowTaskForm(true); }}
+            onDeleteTask={handleDeleteTask}
+          />
+        ) : (
         <div className="flex-1 overflow-auto p-6">
           {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -598,6 +633,7 @@ export default function TasksPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Task Detail Panel */}

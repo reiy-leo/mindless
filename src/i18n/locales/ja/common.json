@@ -68,7 +68,15 @@
       "name_placeholder": "タグ名..."
     },
     "edit_task": "タスクを編集",
-    "delete_confirm": "このタスクを削除しますか？"
+    "delete_confirm": "このタスクを削除しますか？",
+    "views": {
+      "list": "リスト",
+      "calendar": "カレンダー",
+      "kanban": "カンバン",
+      "grid": "グリッド",
+      "today": "今日",
+      "no_due_date": "期限なし"
+    }
   },
   "habits": {
     "new_habit": "新規習慣",

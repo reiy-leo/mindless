@@ -68,7 +68,15 @@
       "name_placeholder": "Tag name..."
     },
     "edit_task": "Edit Task",
-    "delete_confirm": "Are you sure you want to delete this task?"
+    "delete_confirm": "Are you sure you want to delete this task?",
+    "views": {
+      "list": "List",
+      "calendar": "Calendar",
+      "kanban": "Kanban",
+      "grid": "Grid",
+      "today": "Today",
+      "no_due_date": "No due date"
+    }
   },
   "habits": {
     "new_habit": "New Habit",

@@ -24,10 +24,10 @@ export const PRIORITY_COLORS: Record<number, string> = {
 
 // View modes
 export const VIEW_MODES = {
-  LIST: 'list',
-  CALENDAR: 'calendar',
-  KANBAN: 'kanban',
-  GRID: 'grid',
+  list: 'tasks.views.list',
+  calendar: 'tasks.views.calendar',
+  kanban: 'tasks.views.kanban',
+  grid: 'tasks.views.grid',
 } as const;
 
 // Languages

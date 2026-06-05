@@ -68,7 +68,15 @@
       "name_placeholder": "标签名称..."
     },
     "edit_task": "编辑任务",
-    "delete_confirm": "确定要删除此任务吗？"
+    "delete_confirm": "确定要删除此任务吗？",
+    "views": {
+      "list": "列表",
+      "calendar": "日历",
+      "kanban": "看板",
+      "grid": "四宫格",
+      "today": "今天",
+      "no_due_date": "无截止日期"
+    }
   },
   "habits": {
     "new_habit": "新建习惯",
