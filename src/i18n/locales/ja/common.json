@@ -41,11 +41,13 @@
       "active": "進行中",
       "completed": "完了"
     },
-    "priority": "優先度",
-    "priority.none": "なし",
-    "priority.low": "低",
-    "priority.medium": "中",
-    "priority.high": "高",
+    "priority": {
+      "label": "優先度",
+      "none": "なし",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
     "subtasks": {
       "title": "サブタスク",
       "add": "サブタスクを追加",
@@ -75,7 +77,13 @@
       "kanban": "カンバン",
       "grid": "グリッド",
       "today": "今日",
-      "no_due_date": "期限なし"
+      "no_due_date": "期限なし",
+      "prev_month": "前月",
+      "next_month": "翌月",
+      "more_tasks": "他{{count}}件",
+      "empty_column": "タスクなし",
+      "kanban_hint": "ドラッグまたは←→キーで優先度を変更",
+      "toggle_complete": "{{title}}の完了状態を切り替え"
     }
   },
   "habits": {

@@ -41,11 +41,13 @@
       "active": "进行中",
       "completed": "已完成"
     },
-    "priority": "优先级",
-    "priority.none": "无",
-    "priority.low": "低",
-    "priority.medium": "中",
-    "priority.high": "高",
+    "priority": {
+      "label": "优先级",
+      "none": "无",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
     "subtasks": {
       "title": "子任务",
       "add": "添加子任务",
@@ -75,7 +77,13 @@
       "kanban": "看板",
       "grid": "四宫格",
       "today": "今天",
-      "no_due_date": "无截止日期"
+      "no_due_date": "无截止日期",
+      "prev_month": "上个月",
+      "next_month": "下个月",
+      "more_tasks": "还有{{count}}个",
+      "empty_column": "暂无任务",
+      "kanban_hint": "拖拽或用方向键 ← → 调整优先级",
+      "toggle_complete": "标记{{title}}完成状态"
     }
   },
   "habits": {

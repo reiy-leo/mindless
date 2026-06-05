@@ -6,14 +6,6 @@ export const PRIORITY = {
   HIGH: 3,    // 高优先级
 } as const;
 
-// Priority labels
-export const PRIORITY_LABELS: Record<number, string> = {
-  [PRIORITY.NONE]: '无',
-  [PRIORITY.LOW]: '低',
-  [PRIORITY.MEDIUM]: '中',
-  [PRIORITY.HIGH]: '高',
-};
-
 // Priority colors
 export const PRIORITY_COLORS: Record<number, string> = {
   [PRIORITY.NONE]: '#9CA3AF', // gray
@@ -21,6 +13,7 @@ export const PRIORITY_COLORS: Record<number, string> = {
   [PRIORITY.MEDIUM]: '#F59E0B', // yellow
   [PRIORITY.HIGH]: '#EF4444',  // red
 };
+export const PRIORITY_COLOR_FALLBACK = '#9CA3AF';
 
 // View modes
 export const VIEW_MODES = {

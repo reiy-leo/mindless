@@ -9,7 +9,8 @@ import {
   useCreateTag,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
-import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants';
+import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK, VIEW_MODES } from '@/lib/constants';
+import { getTaskTags, parseLocalDate } from '@/lib/taskHelpers';
 import TaskForm from '@/components/tasks/TaskForm';
 import SubtaskList from '@/components/tasks/SubtaskList';
 import StepList from '@/components/tasks/StepList';
@@ -208,13 +209,13 @@ function TaskDetailPanel({
                 style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
               />
               <span className="text-gray-600 dark:text-gray-400">
-                {t('tasks.priority')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
+                {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
               </span>
             </div>
           )}
           {task.dueDate && (
             <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.due_date')}: {new Date(task.dueDate).toLocaleDateString()}
+              {t('tasks.due_date')}: {parseLocalDate(task.dueDate).toLocaleDateString()}
             </div>
           )}
           {task.dueTime && (
@@ -224,7 +225,7 @@ function TaskDetailPanel({
           )}
           {task.startDate && (
             <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.start_date')}: {new Date(task.startDate).toLocaleDateString()}
+              {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
             </div>
           )}
         </div>
@@ -416,10 +417,6 @@ export default function TasksPage() {
     updateTask.mutate({ id, ...params });
   };
 
-  const getPriorityColor = (priority: Priority) => {
-    return PRIORITY_COLORS[priority];
-  };
-
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -468,7 +465,7 @@ export default function TasksPage() {
             />
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'completed')}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">{t('tasks.status.all')}</option>
@@ -482,7 +479,7 @@ export default function TasksPage() {
             {Object.entries(VIEW_MODES).map(([key, label]) => (
               <button
                 key={key}
-                onClick={() => setViewMode(key as any)}
+                onClick={() => setViewMode(key as keyof typeof VIEW_MODES)}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   viewMode === key
                     ? 'bg-blue-500 text-white'
@@ -541,18 +538,13 @@ export default function TasksPage() {
           ) : (
             <div className="space-y-2">
               {filteredTasks.map((task) => {
-                // Parse tag_ids for display
-                const taskTagIds: string[] =
-                  task.tagIds && task.tagIds.length > 0
-                    ? task.tagIds.split(',').filter(Boolean)
-                    : [];
-                const taskTags = allTags.filter((tag) => taskTagIds.includes(tag.id));
+                const taskTags = getTaskTags(task, allTags);
 
                 return (
                   <div
                     key={task.id}
                     onClick={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
-                    className={`flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+                    className={`group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
                       selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
                     }`}
                   >
@@ -575,7 +567,7 @@ export default function TasksPage() {
                         {task.title}
                       </h3>
                       {task.description && (
-                        <p className="text-sm text-gray-500 mt-1 truncate">{task.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{task.description}</p>
                       )}
                       {/* Tag chips */}
                       {taskTags.length > 0 && (
@@ -595,16 +587,16 @@ export default function TasksPage() {
                     </div>
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: getPriorityColor(task.priority) }}
-                      title={`${t('tasks.priority')}: ${task.priority}`}
+                      style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
+                      title={`${t('tasks.priority.label')}: ${task.priority}`}
                     />
                     {task.dueDate && (
                       <span className="text-sm text-gray-500 flex-shrink-0">
-                        {new Date(task.dueDate).toLocaleDateString()}
+                        {parseLocalDate(task.dueDate).toLocaleDateString()}
                       </span>
                     )}
                     {/* Inline actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

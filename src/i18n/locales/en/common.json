@@ -41,11 +41,13 @@
       "active": "Active",
       "completed": "Completed"
     },
-    "priority": "Priority",
-    "priority.none": "None",
-    "priority.low": "Low",
-    "priority.medium": "Medium",
-    "priority.high": "High",
+    "priority": {
+      "label": "Priority",
+      "none": "None",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "subtasks": {
       "title": "Subtasks",
       "add": "Add Subtask",
@@ -75,7 +77,13 @@
       "kanban": "Kanban",
       "grid": "Grid",
       "today": "Today",
-      "no_due_date": "No due date"
+      "no_due_date": "No due date",
+      "prev_month": "Previous month",
+      "next_month": "Next month",
+      "more_tasks": "+{{count}} more",
+      "empty_column": "No tasks",
+      "kanban_hint": "Drag or use ← → keys to change priority",
+      "toggle_complete": "Toggle {{title}} completion"
     }
   },
   "habits": {
