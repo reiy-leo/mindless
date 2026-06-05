@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
@@ -11,6 +11,7 @@ import {
 } from '@/queries/useHabitQueries';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
+import { getLunarDayStr } from '@/lib/lunar';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
 // ==================== Due Today Helper ====================
@@ -400,60 +401,301 @@ function HabitFormDialog({
 }
 
 // ==================== Check-in History Calendar ====================
-function CheckInCalendar({ habitId, color }: { habitId: string; color: string }) {
-  const { t } = useTranslation('common');
+function CheckInCalendar({ habit }: { habit: Habit }) {
+  const { t, i18n } = useTranslation('common');
+  const color = habit.color;
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const startDate = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-01`;
   const endDate = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-31`;
-  const { data: logs = [] } = useHabitLogs(habitId, startDate, endDate);
+  const { data: logs = [] } = useHabitLogs(habit.id, startDate, endDate);
 
-  const checkedDates = useMemo(() => new Set(logs.map((l) => l.logDate)), [logs]);
+  // Build logs map: date -> log
+  const logsByDate = useMemo(() => {
+    const map = new Map<string, typeof logs[0]>();
+    logs.forEach((l) => map.set(l.logDate, l));
+    return map;
+  }, [logs]);
 
   const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
   const firstDayOfWeek = new Date(viewMonth.year, viewMonth.month, 1).getDay();
   const today = new Date().toISOString().split('T')[0];
 
-  const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+  const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(i18n.language, {
+    year: 'numeric', month: 'long',
+  });
+
+  // Lunar data for all days in month
+  const lunarDataByDay = useMemo(() => {
+    const data: Map<number, { str: string; kind: 'festival' | 'term' | 'month' | 'normal' }> = new Map();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const lunarStr = getLunarDayStr(viewMonth.year, viewMonth.month + 1, day);
+      // Classify
+      const solarTerms = [
+        '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
+        '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+        '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
+        '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
+      ];
+      let kind: 'festival' | 'term' | 'month' | 'normal' = 'normal';
+      if (solarTerms.includes(lunarStr)) kind = 'term';
+      else {
+        const monthNames = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+        if (monthNames.includes(lunarStr)) kind = 'month';
+        else {
+          const festivals = ['春节', '元宵节', '端午节', '七夕节', '中秋节', '重阳节', '腊八节', '除夕', '元旦', '国庆节', '劳动节', '儿童节'];
+          if (festivals.some((f) => lunarStr.includes(f))) kind = 'festival';
+        }
+      }
+      data.set(day, { str: lunarStr, kind });
+    }
+    return data;
+  }, [viewMonth.year, viewMonth.month, daysInMonth]);
+
+  // Check if a date is "due" based on habit frequency
+  const isDateDue = useCallback((dateStr: string): boolean => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const habitStart = habit.startDate || today;
+    if (dateStr < habitStart) return false;
+    // Don't count future dates
+    if (dateStr > today) return false;
+
+    switch (habit.frequency) {
+      case 'daily': return true;
+      case 'every_x_days': {
+        const interval = habit.frequencyDays ? parseInt(habit.frequencyDays) : 1;
+        if (interval <= 1) return true;
+        const start = new Date(habitStart + 'T12:00:00');
+        const diffDays = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays % interval === 0;
+      }
+      case 'weekly': {
+        if (!habit.frequencyDays) return true;
+        const dayKeys = habit.frequencyDays.split(',').filter(Boolean);
+        if (dayKeys.length === 0) return true;
+        const weekDayMap: Record<number, string> = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat', 0: 'sun' };
+        return dayKeys.includes(weekDayMap[d.getDay()]);
+      }
+      case 'monthly': {
+        const start = new Date(habitStart + 'T12:00:00');
+        return d.getDate() === start.getDate();
+      }
+      default: return true;
+    }
+  }, [habit, today]);
+
+  // Month statistics
+  const stats = useMemo(() => {
+    let dueDays = 0;
+    let checkedDays = 0;
+    let missedDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (dateStr > today) continue;
+      const due = isDateDue(dateStr);
+      const checked = logsByDate.has(dateStr);
+      if (due) {
+        dueDays++;
+        if (checked) checkedDays++;
+        else missedDays++;
+      }
+    }
+    const rate = dueDays > 0 ? Math.round((checkedDays / dueDays) * 100) : 0;
+    return { dueDays, checkedDays, missedDays, rate };
+  }, [viewMonth, daysInMonth, today, isDateDue, logsByDate]);
+
+  // Selected day detail
+  const selectedLog = selectedDay ? logsByDate.get(selectedDay) : null;
 
   const prevMonth = () => {
     setViewMonth((v) => v.month === 0 ? { year: v.year - 1, month: 11 } : { ...v, month: v.month - 1 });
+    setSelectedDay(null);
   };
   const nextMonth = () => {
     setViewMonth((v) => v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 });
+    setSelectedDay(null);
+  };
+  const goToday = () => {
+    const now = new Date();
+    setViewMonth({ year: now.getFullYear(), month: now.getMonth() });
   };
 
   const dayLabels = [t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'), t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'), t('habits.calendar.sat')];
 
+  function getLunarColor(kind: string): string {
+    if (kind === 'festival') return 'text-red-500 dark:text-red-400';
+    if (kind === 'term') return 'text-green-600 dark:text-green-400';
+    if (kind === 'month') return 'text-orange-500 dark:text-orange-400';
+    return 'text-gray-400 dark:text-gray-500';
+  }
+
   return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeftIcon className="w-4 h-4 text-gray-500" /></button>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{monthLabel}</span>
-        <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRightIcon className="w-4 h-4 text-gray-500" /></button>
+    <div className="mt-4 border border-gray-100 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
+      {/* Header: month nav + stats */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1">
+          <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <ChevronLeftIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          </button>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[130px] text-center">{monthLabel}</span>
+          <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <ChevronRightIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          </button>
+          <button onClick={goToday} className="ml-1 px-2 py-0.5 text-[10px] rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+            {t('tasks.views.today')}
+          </button>
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-gray-500 dark:text-gray-400">
+            <span className="font-semibold" style={{ color }}>{stats.checkedDays}</span>/{stats.dueDays}
+          </span>
+          <span className={`px-1.5 py-0.5 rounded-full font-medium ${
+            stats.rate >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
+            stats.rate >= 50 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
+            'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400'
+          }`}>
+            {stats.rate}%
+          </span>
+        </div>
       </div>
-      <div className="grid grid-cols-7 gap-1">
-        {dayLabels.map((d) => <div key={d} className="text-center text-xs text-gray-400 dark:text-gray-500 py-1">{d}</div>)}
+
+      {/* Day labels */}
+      <div className="grid grid-cols-7 gap-0.5 mb-1">
+        {dayLabels.map((d) => (
+          <div key={d} className="text-center text-[10px] text-gray-400 dark:text-gray-500 py-0.5">{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-0.5">
         {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
           const dateStr = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isChecked = checkedDates.has(dateStr);
+          const log = logsByDate.get(dateStr);
+          const isChecked = !!log;
           const isToday = dateStr === today;
+          const isSelected = dateStr === selectedDay;
+          const due = isDateDue(dateStr);
+          const missed = due && !isChecked && dateStr <= today;
+          const lunarDay = lunarDataByDay.get(day);
+
+          // Heatmap: for value habits, compute fill intensity
+          let fillOpacity = 0;
+          if (isChecked) {
+            if (habit.targetType !== 'binary' && habit.targetValue > 1 && log) {
+              fillOpacity = Math.min(1, Math.max(0.25, log.value / habit.targetValue));
+            } else {
+              fillOpacity = 1;
+            }
+          }
+
           return (
-            <div key={day}
-              className={`aspect-square flex items-center justify-center rounded-full text-xs relative
-                ${isChecked ? 'text-white font-bold' : 'text-gray-600 dark:text-gray-400'}
-                ${isToday ? 'ring-2 ring-gray-300 dark:ring-gray-600' : ''}
+            <button
+              key={day}
+              type="button"
+              onClick={() => setSelectedDay(selectedDay === dateStr ? null : dateStr)}
+              className={`relative flex flex-col items-center justify-start rounded-lg py-0.5 transition-all
+                ${missed && !isSelected ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}
+                hover:bg-gray-100 dark:hover:bg-gray-700
               `}
-              style={isChecked ? { backgroundColor: color } : {}}
+              style={{
+                backgroundColor: isChecked ? `${color}${Math.round(fillOpacity * 255).toString(16).padStart(2, '0')}` : undefined,
+                boxShadow: isSelected ? `0 0 0 2px #fff, 0 0 0 4px ${color}` : undefined,
+              }}
             >
-              {day}
-            </div>
+              <span className={`text-xs leading-none ${
+                isChecked
+                  ? fillOpacity > 0.5 ? 'text-white font-bold' : 'font-semibold'
+                  : isToday ? 'font-bold' : 'text-gray-600 dark:text-gray-400'
+              }`} style={isToday && !isChecked ? { color } : isChecked && fillOpacity > 0.5 ? { color: '#fff' } : {}}>
+                {day}
+              </span>
+              {lunarDay && (
+                <span className={`text-[8px] leading-tight truncate max-w-full px-0.5 ${
+                  isChecked && fillOpacity > 0.5
+                    ? 'text-white/70'
+                    : getLunarColor(lunarDay.kind)
+                }`}>
+                  {lunarDay.str}
+                </span>
+              )}
+              {/* Value label for non-binary habits */}
+              {isChecked && log && habit.targetType !== 'binary' && (
+                <span className={`text-[8px] leading-tight font-medium ${
+                  fillOpacity > 0.5 ? 'text-white/80' : ''
+                }`} style={fillOpacity <= 0.5 ? { color } : {}}>
+                  {log.value}{habit.targetType === 'duration' ? 'm' : ''}
+                </span>
+              )}
+              {/* Today indicator */}
+              {isToday && !isChecked && (
+                <span className="absolute -bottom-0.5 w-1 h-1 rounded-full" style={{ backgroundColor: color }} />
+              )}
+            </button>
           );
         })}
+      </div>
+
+      {/* Selected day detail panel */}
+      {selectedDay && (
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{selectedDay}</span>
+              {(() => {
+                const parts = selectedDay.split('-').map(Number);
+                const lunar = getLunarDayStr(parts[0], parts[1], parts[2]);
+                return <span className="text-[10px] text-gray-400 dark:text-gray-500">{lunar}</span>;
+              })()}
+            </div>
+            {selectedLog ? (
+              <div className="flex items-center gap-2">
+                {habit.targetType !== 'binary' && (
+                  <span className="text-xs font-semibold" style={{ color }}>
+                    {selectedLog.value} / {habit.targetValue}
+                    {habit.targetType === 'duration' ? ` ${t('habits.target_unit_duration')}` : ` ${t('habits.target_unit_count')}`}
+                  </span>
+                )}
+                <span className="flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400">
+                  <CheckCircleIcon className="w-3 h-3" />
+                  {selectedLog.logTime ? selectedLog.logTime.slice(0, 5) : t('habits.checked_in')}
+                </span>
+              </div>
+            ) : (
+              <span className={`text-[10px] ${
+                isDateDue(selectedDay) ? 'text-red-400' : 'text-gray-400 dark:text-gray-500'
+              }`}>
+                {isDateDue(selectedDay) ? t('habits.missed') : t('habits.not_due')}
+              </span>
+            )}
+          </div>
+          {selectedLog?.note && (
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{selectedLog.note}</p>
+          )}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="flex items-center justify-between mt-3 text-[10px] text-gray-400 dark:text-gray-500">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: color }} />
+            {t('habits.checked_in')}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded ring-1 ring-red-300 dark:ring-red-700" />
+            {t('habits.missed')}
+          </span>
+        </div>
+        {stats.missedDays > 0 && (
+          <span className="text-red-400">
+            {t('habits.missed_count', { count: stats.missedDays })}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -691,7 +933,7 @@ function HabitCard({
         {showCalendar ? t('habits.hide_history') : t('habits.show_history')}
       </button>
 
-      {showCalendar && <CheckInCalendar habitId={habit.id} color={habit.color} />}
+      {showCalendar && <CheckInCalendar habit={habit} />}
     </div>
   );
 }

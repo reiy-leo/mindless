@@ -224,7 +224,10 @@
     "start_date": "Start Date",
     "due_today": "Due today",
     "not_due_today": "Not due today",
-    "refresh_streaks": "Refresh streaks"
+    "refresh_streaks": "Refresh streaks",
+    "missed": "Missed",
+    "not_due": "Not due",
+    "missed_count": "{{count}} missed this month"
   },
   "countdowns": {
     "new_countdown": "New Countdown",

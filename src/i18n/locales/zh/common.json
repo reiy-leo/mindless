@@ -224,7 +224,10 @@
     "start_date": "开始日期",
     "due_today": "今日需打卡",
     "not_due_today": "今日无需打卡",
-    "refresh_streaks": "刷新连续天数"
+    "refresh_streaks": "刷新连续天数",
+    "missed": "漏打卡",
+    "not_due": "无需打卡",
+    "missed_count": "本月漏打 {{count}} 天"
   },
   "countdowns": {
     "new_countdown": "新建倒数日",

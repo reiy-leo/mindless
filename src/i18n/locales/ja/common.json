@@ -224,7 +224,10 @@
     "start_date": "開始日",
     "due_today": "今日が期限",
     "not_due_today": "今日は期限ではない",
-    "refresh_streaks": "連続日数を更新"
+    "refresh_streaks": "連続日数を更新",
+    "missed": "未達成",
+    "not_due": "対象外",
+    "missed_count": "今月 {{count}} 日未達成"
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",
