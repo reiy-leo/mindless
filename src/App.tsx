@@ -10,6 +10,7 @@ import TagsPage from './pages/TagsPage';
 import SettingsPage from './pages/SettingsPage';
 import { useAppStore } from './stores/useAppStore';
 import * as api from './lib/api';
+import { startNotificationService, stopNotificationService, ensurePermission } from './services/notificationService';
 
 function ThemeManager() {
   const theme = useAppStore((s) => s.theme);
@@ -45,7 +46,7 @@ function ThemeManager() {
  */
 function SettingsSync() {
   const { i18n } = useTranslation();
-  const { theme, language, priorityMode, setTheme, setLanguage, setPriorityMode } = useAppStore();
+  const { theme, language, priorityMode, notificationEnabled, setTheme, setLanguage, setPriorityMode, setNotificationEnabled } = useAppStore();
   const isInitialLoad = useRef(true);
 
   // Load settings from SQLite on mount
@@ -55,6 +56,7 @@ function SettingsSync() {
       const dbTheme = map.get('theme') as 'light' | 'dark' | 'system' | undefined;
       const dbLang = map.get('language') as 'zh' | 'en' | 'ja' | undefined;
       const dbPriority = map.get('priority_mode') as 'simple' | 'detailed' | undefined;
+      const dbNotif = map.get('notification_enabled');
 
       if (dbTheme && ['light', 'dark', 'system'].includes(dbTheme)) {
         setTheme(dbTheme);
@@ -65,6 +67,9 @@ function SettingsSync() {
       }
       if (dbPriority && ['simple', 'detailed'].includes(dbPriority)) {
         setPriorityMode(dbPriority);
+      }
+      if (dbNotif !== undefined) {
+        setNotificationEnabled(dbNotif === '1');
       }
       isInitialLoad.current = false;
     }).catch((err) => {
@@ -80,10 +85,43 @@ function SettingsSync() {
       ['theme', theme],
       ['language', language],
       ['priority_mode', priorityMode],
+      ['notification_enabled', notificationEnabled ? '1' : '0'],
     ]).catch((err) => {
       console.warn('Failed to save settings to database:', err);
     });
-  }, [theme, language, priorityMode]);
+  }, [theme, language, priorityMode, notificationEnabled]);
+
+  return null;
+}
+
+/**
+ * Manages the notification service lifecycle.
+ * Starts/stops periodic checks based on user preference.
+ */
+function NotificationManager() {
+  const notificationEnabled = useAppStore((s) => s.notificationEnabled);
+
+  useEffect(() => {
+    if (!notificationEnabled) {
+      stopNotificationService();
+      return;
+    }
+
+    let stopped = false;
+
+    ensurePermission().then((granted) => {
+      if (granted && !stopped) {
+        startNotificationService();
+      }
+    }).catch((err) => {
+      console.warn('Notification permission request failed:', err);
+    });
+
+    return () => {
+      stopped = true;
+      stopNotificationService();
+    };
+  }, [notificationEnabled]);
 
   return null;
 }
@@ -93,6 +131,7 @@ function App() {
     <BrowserRouter>
       <ThemeManager />
       <SettingsSync />
+      <NotificationManager />
       <AppLayout>
         <Routes>
           <Route path="/" element={<HomePage />} />

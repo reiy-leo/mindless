@@ -6,6 +6,7 @@ pub mod subtasks;
 pub mod steps;
 pub mod settings;
 pub mod lists;
+pub mod notifications;
 
 pub use tasks::*;
 pub use habits::*;
@@ -15,3 +16,4 @@ pub use subtasks::*;
 pub use steps::*;
 pub use settings::*;
 pub use lists::*;
+pub use notifications::*;

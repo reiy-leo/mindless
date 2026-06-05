@@ -222,6 +222,18 @@
     "priority_mode.simple_desc": "None, Low, Medium, High",
     "priority_mode.detailed": "Detailed (11 levels)",
     "priority_mode.detailed_desc": "0-10 priority levels",
+    "notifications": {
+      "title": "Notifications",
+      "enable": "Enable Notifications",
+      "enable_desc": "Get notified about due tasks, habit reminders, and upcoming countdowns",
+      "test": "Send Test Notification",
+      "test_title": "Test Notification",
+      "test_body": "Notifications are working!",
+      "check_now": "Check Now",
+      "checked": "Check completed",
+      "granted": "Notification permission granted",
+      "denied": "Notification permission denied. Please enable it in System Settings."
+    },
     "about": "About",
     "version": "Version"
   }

@@ -222,6 +222,18 @@
     "priority_mode.simple_desc": "无、低、中、高四个级别",
     "priority_mode.detailed": "详细模式 (11级)",
     "priority_mode.detailed_desc": "0-10共11个优先级",
+    "notifications": {
+      "title": "通知提醒",
+      "enable": "启用通知",
+      "enable_desc": "到期任务、习惯打卡和倒计时到期时发送系统通知",
+      "test": "发送测试通知",
+      "test_title": "测试通知",
+      "test_body": "通知功能正常工作！",
+      "check_now": "立即检查",
+      "checked": "已检查完毕",
+      "granted": "通知权限已授权",
+      "denied": "通知权限被拒绝，请在系统设置中开启"
+    },
     "about": "关于",
     "version": "版本"
   }

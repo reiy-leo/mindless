@@ -222,6 +222,18 @@
     "priority_mode.simple_desc": "なし、低、中、高の4段階",
     "priority_mode.detailed": "詳細（11段階）",
     "priority_mode.detailed_desc": "0-10の11段階",
+    "notifications": {
+      "title": "通知",
+      "enable": "通知を有効にする",
+      "enable_desc": "期限タスク、習慣リマインダー、カウントダウンについて通知を受け取る",
+      "test": "テスト通知を送信",
+      "test_title": "テスト通知",
+      "test_body": "通知は正常に動作しています！",
+      "check_now": "今すぐ確認",
+      "checked": "確認完了",
+      "granted": "通知権限が付与されました",
+      "denied": "通知権限が拒否されました。システム設定で有効にしてください。"
+    },
     "about": "について",
     "version": "バージョン"
   }

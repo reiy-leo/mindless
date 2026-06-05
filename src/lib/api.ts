@@ -259,3 +259,38 @@ export async function updateSetting(key: string, value: string): Promise<void> {
 export async function updateSettings(settings: [string, string][]): Promise<void> {
   return await invoke<void>('update_settings', { settings });
 }
+
+// Notification APIs
+export interface TaskReminder {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  dueTime: string | null;
+  priority: number;
+}
+
+export interface HabitReminder {
+  id: string;
+  name: string;
+  reminderTime: string | null;
+  currentStreak: number;
+}
+
+export interface CountdownReminder {
+  id: string;
+  title: string;
+  targetDate: string;
+  daysRemaining: number;
+}
+
+export async function getDueTasks(): Promise<TaskReminder[]> {
+  return await invoke<TaskReminder[]>('get_due_tasks');
+}
+
+export async function getReminderHabits(): Promise<HabitReminder[]> {
+  return await invoke<HabitReminder[]>('get_reminder_habits');
+}
+
+export async function getReminderCountdowns(): Promise<CountdownReminder[]> {
+  return await invoke<CountdownReminder[]>('get_reminder_countdowns');
+}
