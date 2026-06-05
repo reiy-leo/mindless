@@ -160,6 +160,9 @@
     "delete_confirm": "この習慣をアーカイブしますか？チェックイン記録は保持されます。",
     "frequency": {
       "daily": "毎日",
+      "every_x_days": "N日ごと",
+      "every_x_days_value": "{{days}}日ごと",
+      "days_unit": "日",
       "weekly": "毎週",
       "monthly": "毎月"
     },
@@ -183,6 +186,10 @@
       "mon": "月", "tue": "火", "wed": "水",
       "thu": "木", "fri": "金", "sat": "土", "sun": "日"
     },
+    "every_x_days_label": "間隔日数",
+    "progress": "今日の進捗",
+    "target_met": "目標達成！",
+    "add_value": "記録",
     "reminder": "リマインダー",
     "reminder_time": "リマインダー時間",
     "reminder_enabled": "リマインダーを有効にする",

@@ -66,8 +66,8 @@ export function useCheckInHabit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ habitId, date }: { habitId: string; date: string }) =>
-      api.checkInHabit(habitId, date),
+    mutationFn: ({ habitId, date, value }: { habitId: string; date: string; value?: number }) =>
+      api.checkInHabit(habitId, date, value),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['habit', variables.habitId] });
@@ -82,4 +82,15 @@ export function useTodayCheckins() {
     queryKey: ['today-checkins'],
     queryFn: () => api.getTodayCheckins(),
   });
+}
+
+export function useTodayCheckinMap(): Map<string, number> {
+  const { data } = useTodayCheckins();
+  const map = new Map<string, number>();
+  if (data) {
+    for (const info of data) {
+      map.set(info.habitId, info.value);
+    }
+  }
+  return map;
 }

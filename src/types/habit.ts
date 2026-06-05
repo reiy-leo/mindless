@@ -1,7 +1,7 @@
 // Habit types
 
 export type TargetType = 'binary' | 'count' | 'duration';
-export type HabitFrequency = 'daily' | 'weekly' | 'monthly';
+export type HabitFrequency = 'daily' | 'every_x_days' | 'weekly' | 'monthly';
 
 export interface Habit {
   id: string;
@@ -35,6 +35,7 @@ export interface CreateHabitParams {
   frequencyDays?: string;
   reminderTime?: string;
   reminderEnabled?: boolean;
+  startDate?: string;
 }
 
 export interface UpdateHabitParams {
@@ -48,6 +49,7 @@ export interface UpdateHabitParams {
   frequencyDays?: string;
   reminderTime?: string;
   reminderEnabled?: boolean;
+  startDate?: string;
 }
 
 export interface HabitLog {
@@ -58,4 +60,9 @@ export interface HabitLog {
   completed: boolean;
   value: number;
   note: string;
+}
+
+export interface TodayCheckinInfo {
+  habitId: string;
+  value: number;
 }

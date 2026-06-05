@@ -160,6 +160,9 @@
     "delete_confirm": "确定要归档此习惯吗？相关打卡记录将被保留。",
     "frequency": {
       "daily": "每天",
+      "every_x_days": "每 N 天",
+      "every_x_days_value": "每 {{days}} 天",
+      "days_unit": "天",
       "weekly": "每周",
       "monthly": "每月"
     },
@@ -183,6 +186,10 @@
       "mon": "周一", "tue": "周二", "wed": "周三",
       "thu": "周四", "fri": "周五", "sat": "周六", "sun": "周日"
     },
+    "every_x_days_label": "间隔天数",
+    "progress": "今日进度",
+    "target_met": "目标达成",
+    "add_value": "记录",
     "reminder": "提醒",
     "reminder_time": "提醒时间",
     "reminder_enabled": "开启提醒",

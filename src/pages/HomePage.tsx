@@ -61,10 +61,10 @@ export default function HomePage() {
 
   // Habits: show active habits with check-in status
   const habitStatus = useMemo(() => {
-    const checkinSet = new Set(todayCheckins);
+    const checkinIds = new Set(todayCheckins.map((c) => c.habitId));
     return habits.map((habit) => ({
       ...habit,
-      checkedIn: checkinSet.has(habit.id),
+      checkedIn: checkinIds.has(habit.id),
     }));
   }, [habits, todayCheckins]);
 

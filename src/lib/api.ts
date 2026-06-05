@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Subtask, Step, List } from '@/types';
+import type { Task, Habit, Countdown, Tag, Subtask, Step, List, TodayCheckinInfo, HabitLog } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -171,15 +171,22 @@ export async function getHabitById(id: string): Promise<Habit> {
   return await invoke<Habit>('get_habit_by_id', { id });
 }
 
-export async function getHabitLogs(habitId: string, startDate?: string, endDate?: string): Promise<any[]> {
-  return await invoke<any[]>('get_habit_logs', { habitId, startDate, endDate });
+export async function getHabitLogs(habitId: string, startDate?: string, endDate?: string): Promise<HabitLog[]> {
+  return await invoke<HabitLog[]>('get_habit_logs', { habitId, startDate, endDate });
 }
 
 export async function createHabit(params: {
   name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
   targetType?: string;
+  targetValue?: number;
   frequency?: string;
+  frequencyDays?: string;
+  reminderTime?: string;
   reminderEnabled?: boolean;
+  startDate?: string;
 }): Promise<Habit> {
   return await invoke<Habit>('create_habit', params);
 }
@@ -192,12 +199,12 @@ export async function deleteHabit(id: string): Promise<void> {
   return await invoke<void>('delete_habit', { id });
 }
 
-export async function checkInHabit(habitId: string, date: string): Promise<void> {
-  return await invoke<void>('check_in_habit', { habitId, date });
+export async function checkInHabit(habitId: string, date: string, value?: number): Promise<void> {
+  return await invoke<void>('check_in_habit', { habitId, date, value });
 }
 
-export async function getTodayCheckins(): Promise<string[]> {
-  return await invoke<string[]>('get_today_checkins');
+export async function getTodayCheckins(): Promise<TodayCheckinInfo[]> {
+  return await invoke<TodayCheckinInfo[]>('get_today_checkins');
 }
 
 // Countdown APIs

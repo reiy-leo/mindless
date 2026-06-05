@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
   ChevronLeftIcon, ChevronRightIcon, TrophyIcon, CheckCircleIcon,
-  ChevronDownIcon, ChevronUpIcon,
+  ChevronDownIcon, ChevronUpIcon, MinusIcon,
 } from '@heroicons/react/24/outline';
 import {
   useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit,
-  useCheckInHabit, useHabitLogs, useTodayCheckins,
+  useCheckInHabit, useHabitLogs, useTodayCheckinMap,
 } from '@/queries/useHabitQueries';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
@@ -33,13 +33,27 @@ function HabitFormDialog({
   const [color, setColor] = useState(habit?.color || '#8B5CF6');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // Every X days
+  const [everyXDays, setEveryXDays] = useState(() => {
+    if (habit?.frequency === 'every_x_days' && habit.frequencyDays) {
+      return parseInt(habit.frequencyDays) || 2;
+    }
+    return 2;
+  });
+
+  // Weekly custom days
+  const [frequencyDays, setFrequencyDays] = useState<string>(
+    habit?.frequency === 'weekly' ? (habit?.frequencyDays || '') : ''
+  );
+
+  // Start date — main form field
+  const [startDate, setStartDate] = useState(habit?.startDate || new Date().toISOString().split('T')[0]);
+
   // Advanced fields
   const [targetType, setTargetType] = useState<TargetType>(habit?.targetType || 'binary');
   const [targetValue, setTargetValue] = useState(habit?.targetValue || 1);
-  const [frequencyDays, setFrequencyDays] = useState<string>(habit?.frequencyDays || '');
   const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled || false);
   const [reminderTime, setReminderTime] = useState(habit?.reminderTime || '09:00');
-  const [startDate, setStartDate] = useState(habit?.startDate || new Date().toISOString().split('T')[0]);
 
   const icons = ['star', 'heart', 'fire', 'book', 'dumbbell', 'moon', 'sun', 'leaf'];
   const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
@@ -70,12 +84,13 @@ function HabitFormDialog({
       setFrequency(habit.frequency);
       setIcon(habit.icon || 'star');
       setColor(habit.color || '#8B5CF6');
+      setEveryXDays(habit.frequency === 'every_x_days' && habit.frequencyDays ? parseInt(habit.frequencyDays) || 2 : 2);
+      setFrequencyDays(habit.frequency === 'weekly' ? (habit.frequencyDays || '') : '');
+      setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
       setTargetType(habit.targetType || 'binary');
       setTargetValue(habit.targetValue || 1);
-      setFrequencyDays(habit.frequencyDays || '');
       setReminderEnabled(habit.reminderEnabled || false);
       setReminderTime(habit.reminderTime || '09:00');
-      setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
       setShowAdvanced(false);
     } else if (isOpen) {
       setName('');
@@ -83,12 +98,13 @@ function HabitFormDialog({
       setFrequency('daily');
       setIcon('star');
       setColor('#8B5CF6');
+      setEveryXDays(2);
+      setFrequencyDays('');
+      setStartDate(new Date().toISOString().split('T')[0]);
       setTargetType('binary');
       setTargetValue(1);
-      setFrequencyDays('');
       setReminderEnabled(false);
       setReminderTime('09:00');
-      setStartDate(new Date().toISOString().split('T')[0]);
       setShowAdvanced(false);
     }
   }, [isOpen, habit]);
@@ -96,6 +112,14 @@ function HabitFormDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    let fDays: string | undefined;
+    if (frequency === 'weekly') {
+      fDays = frequencyDays || undefined;
+    } else if (frequency === 'every_x_days') {
+      fDays = String(everyXDays);
+    }
+
     onSubmit({
       name: name.trim(),
       description: description.trim() || undefined,
@@ -104,9 +128,10 @@ function HabitFormDialog({
       frequency,
       targetType,
       targetValue: targetType === 'binary' ? 1 : targetValue,
-      frequencyDays: frequency === 'weekly' ? frequencyDays : undefined,
+      frequencyDays: fDays,
       reminderEnabled,
       reminderTime: reminderEnabled ? reminderTime : undefined,
+      startDate,
     });
     onClose();
   };
@@ -166,6 +191,7 @@ function HabitFormDialog({
               ))}
             </div>
           </div>
+
           {/* Frequency */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.frequency')}</label>
@@ -173,10 +199,42 @@ function HabitFormDialog({
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="daily">{t('habits.frequency.daily')}</option>
+              <option value="every_x_days">{t('habits.frequency.every_x_days')}</option>
               <option value="weekly">{t('habits.frequency.weekly')}</option>
               <option value="monthly">{t('habits.frequency.monthly')}</option>
             </select>
           </div>
+
+          {/* Every X Days input */}
+          {frequency === 'every_x_days' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('habits.every_x_days_label')}
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEveryXDays(Math.max(2, everyXDays - 1))}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  <MinusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                </button>
+                <input
+                  type="number" min={2} max={365} value={everyXDays}
+                  onChange={(e) => setEveryXDays(Math.max(2, parseInt(e.target.value) || 2))}
+                  className="w-20 px-3 py-2 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEveryXDays(Math.min(365, everyXDays + 1))}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                </button>
+                <span className="text-sm text-gray-500">{t('habits.frequency.days_unit')}</span>
+              </div>
+            </div>
+          )}
 
           {/* Weekly custom days picker */}
           {frequency === 'weekly' && (
@@ -196,6 +254,16 @@ function HabitFormDialog({
               </div>
             </div>
           )}
+
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.start_date')}</label>
+            <input
+              type="date" value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
 
           {/* Advanced Settings Toggle */}
           <button
@@ -274,16 +342,6 @@ function HabitFormDialog({
                   </div>
                 )}
               </div>
-
-              {/* Start Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.start_date')}</label>
-                <input
-                  type="date" value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
             </div>
           )}
 
@@ -360,9 +418,13 @@ function CheckInCalendar({ habitId, color }: { habitId: string; color: string })
 
 // ==================== Habit Card ====================
 function HabitCard({
-  habit, onEdit, onDelete, onCheckIn, checkedInToday,
+  habit, onEdit, onDelete, onCheckIn, todayValue,
 }: {
-  habit: Habit; onEdit: () => void; onDelete: () => void; onCheckIn: () => void; checkedInToday: boolean;
+  habit: Habit;
+  onEdit: () => void;
+  onDelete: () => void;
+  onCheckIn: (value?: number) => void;
+  todayValue: number;
 }) {
   const { t } = useTranslation('common');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -375,6 +437,10 @@ function HabitCard({
   const getFrequencyLabel = (freq: HabitFrequency) => {
     switch (freq) {
       case 'daily': return t('habits.frequency.daily');
+      case 'every_x_days': {
+        const n = habit.frequencyDays ? parseInt(habit.frequencyDays) : 2;
+        return t('habits.frequency.every_x_days_value', { days: n });
+      }
       case 'weekly': {
         const days = habit.frequencyDays ? habit.frequencyDays.split(',').filter(Boolean) : [];
         if (days.length > 0 && days.length < 7) {
@@ -391,7 +457,7 @@ function HabitCard({
     }
   };
 
-  const getTargetLabel = () => {
+  const getTargetBadge = () => {
     if (habit.targetType === 'count' && habit.targetValue > 1) {
       return `${habit.targetValue} ${t('habits.target_unit_count')}`;
     }
@@ -401,7 +467,15 @@ function HabitCard({
     return null;
   };
 
-  const targetLabel = getTargetLabel();
+  const targetBadge = getTargetBadge();
+  const hasValueTarget = habit.targetType !== 'binary' && habit.targetValue > 1;
+  const targetMet = hasValueTarget && todayValue >= habit.targetValue;
+  const progressPercent = hasValueTarget ? Math.min(100, (todayValue / habit.targetValue) * 100) : 0;
+
+  const handleValueChange = (delta: number) => {
+    const newValue = Math.max(0, todayValue + delta);
+    onCheckIn(newValue);
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
@@ -427,11 +501,11 @@ function HabitCard({
       </div>
 
       {/* Target & Reminder badges */}
-      {(targetLabel || habit.reminderEnabled) && (
+      {(targetBadge || habit.reminderEnabled) && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {targetLabel && (
+          {targetBadge && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              {targetLabel}
+              {targetBadge}
             </span>
           )}
           {habit.reminderEnabled && habit.reminderTime && (
@@ -463,23 +537,98 @@ function HabitCard({
         </div>
       </div>
 
-      {/* Check-in button */}
-      <button
-        onClick={onCheckIn}
-        disabled={checkedInToday}
-        className={`w-full py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-          checkedInToday
-            ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 cursor-default'
-            : 'text-white hover:opacity-90'
-        }`}
-        style={!checkedInToday ? { backgroundColor: habit.color } : {}}
-      >
-        {checkedInToday ? (
-          <><CheckCircleIcon className="w-5 h-5" />{t('habits.checked_in')}</>
-        ) : (
-          <>{t('habits.check_in')}</>
-        )}
-      </button>
+      {/* Check-in Area */}
+      {hasValueTarget ? (
+        <div className="space-y-3">
+          {/* Progress bar */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {t('habits.progress')}
+              </span>
+              <span className={`text-sm font-bold ${targetMet ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                {todayValue} / {habit.targetValue}
+                {habit.targetType === 'duration' ? ` ${t('habits.target_unit_duration')}` : ''}
+                {habit.targetType === 'count' ? ` ${t('habits.target_unit_count')}` : ''}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${progressPercent}%`, backgroundColor: targetMet ? '#10B981' : habit.color }}
+              />
+            </div>
+          </div>
+
+          {/* Value controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleValueChange(-1)}
+              disabled={todayValue <= 0}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <MinusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </button>
+
+            <button
+              onClick={() => {
+                if (targetMet) return;
+                handleValueChange(1);
+              }}
+              disabled={targetMet}
+              className={`flex-1 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                targetMet
+                  ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                  : 'text-white hover:opacity-90'
+              }`}
+              style={!targetMet ? { backgroundColor: habit.color } : {}}
+            >
+              {targetMet ? (
+                <><CheckCircleIcon className="w-5 h-5" />{t('habits.target_met')}</>
+              ) : (
+                <><PlusIcon className="w-5 h-5" />{t('habits.add_value')}</>
+              )}
+            </button>
+
+            <button
+              onClick={() => handleValueChange(1)}
+              disabled={targetMet}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </button>
+          </div>
+
+          {/* Binary fallback for value=0 state */}
+          {todayValue === 0 && !targetMet && (
+            <button
+              onClick={() => onCheckIn(undefined)}
+              className="w-full py-2 rounded-lg font-medium text-white hover:opacity-90 transition-all"
+              style={{ backgroundColor: habit.color }}
+            >
+              {t('habits.check_in')}
+            </button>
+          )}
+        </div>
+      ) : (
+        /* Binary check-in */
+        <button
+          onClick={() => onCheckIn(undefined)}
+          disabled={todayValue > 0}
+          className={`w-full py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+            todayValue > 0
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 cursor-default'
+              : 'text-white hover:opacity-90'
+          }`}
+          style={todayValue === 0 ? { backgroundColor: habit.color } : {}}
+        >
+          {todayValue > 0 ? (
+            <><CheckCircleIcon className="w-5 h-5" />{t('habits.checked_in')}</>
+          ) : (
+            <>{t('habits.check_in')}</>
+          )}
+        </button>
+      )}
 
       {/* Toggle calendar */}
       <button
@@ -508,9 +657,8 @@ export default function HabitsPage() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Fetch today's check-in status for all habits
-  const { data: todayCheckins = [] } = useTodayCheckins();
-  const checkedInHabitIds = useMemo(() => new Set(todayCheckins), [todayCheckins]);
+  // Fetch today's check-in values as a Map<habitId, value>
+  const todayCheckinMap = useTodayCheckinMap();
 
   const handleCreate = (params: CreateHabitParams) => {
     createHabit.mutate(params);
@@ -529,8 +677,8 @@ export default function HabitsPage() {
     }
   };
 
-  const handleCheckIn = (habitId: string) => {
-    checkIn.mutate({ habitId, date: today });
+  const handleCheckIn = (habitId: string, value?: number) => {
+    checkIn.mutate({ habitId, date: today, value });
   };
 
   if (isLoading) {
@@ -569,8 +717,8 @@ export default function HabitsPage() {
               habit={habit}
               onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
               onDelete={() => handleDelete(habit.id)}
-              onCheckIn={() => handleCheckIn(habit.id)}
-              checkedInToday={checkedInHabitIds.has(habit.id)}
+              onCheckIn={(value) => handleCheckIn(habit.id, value)}
+              todayValue={todayCheckinMap.get(habit.id) || 0}
             />
           ))}
         </div>

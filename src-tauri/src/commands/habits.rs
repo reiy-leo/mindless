@@ -42,28 +42,28 @@ fn row_to_habit_log(row: &rusqlite::Row) -> rusqlite::Result<HabitLog> {
     })
 }
 
-/// Calculate streak based on habit frequency and log history.
-/// Returns (current_streak, longest_streak).
-fn calculate_streaks(
-    conn: &rusqlite::Connection,
-    habit_id: &str,
-    frequency: &str,
-    start_date: &str,
-) -> Result<(i32, i32), String> {
-    match frequency {
-        "daily" => calculate_daily_streaks(conn, habit_id, start_date),
-        "weekly" => calculate_weekly_streaks(conn, habit_id, start_date),
-        "monthly" => calculate_monthly_streaks(conn, habit_id, start_date),
-        _ => Ok((0, 0)),
+// ==================== Streak Calculation ====================
+
+fn parse_date(s: &str) -> Option<chrono::NaiveDate> {
+    chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()
+}
+
+fn parse_weekday(s: &str) -> Option<chrono::Weekday> {
+    use chrono::Weekday::*;
+    match s.trim().to_lowercase().as_str() {
+        "mon" => Some(Mon),
+        "tue" => Some(Tue),
+        "wed" => Some(Wed),
+        "thu" => Some(Thu),
+        "fri" => Some(Fri),
+        "sat" => Some(Sat),
+        "sun" => Some(Sun),
+        _ => None,
     }
 }
 
-fn calculate_daily_streaks(
-    conn: &rusqlite::Connection,
-    habit_id: &str,
-    _start_date: &str,
-) -> Result<(i32, i32), String> {
-    // Get all checked-in dates sorted descending
+/// Get distinct completed check-in dates for a habit, sorted descending.
+fn get_checkin_dates(conn: &rusqlite::Connection, habit_id: &str) -> Result<Vec<chrono::NaiveDate>, String> {
     let mut stmt = conn.prepare(
         "SELECT DISTINCT log_date FROM habit_logs WHERE habit_id = ?1 AND completed = 1 ORDER BY log_date DESC"
     ).map_err(|e| format!("Failed to prepare: {}", e))?;
@@ -73,236 +73,353 @@ fn calculate_daily_streaks(
         .filter_map(|r| r.ok())
         .collect();
 
-    if dates.is_empty() {
-        return Ok((0, 0));
+    Ok(dates.iter().filter_map(|d| parse_date(d)).collect())
+}
+
+/// Calculate streak based on habit frequency and log history.
+fn calculate_streaks(
+    conn: &rusqlite::Connection,
+    habit_id: &str,
+    frequency: &str,
+    start_date: &str,
+    frequency_days: &str,
+) -> Result<(i32, i32), String> {
+    match frequency {
+        "daily" => calculate_daily_streaks(conn, habit_id, start_date),
+        "every_x_days" => calculate_every_x_days_streaks(conn, habit_id, start_date, frequency_days),
+        "weekly" => calculate_weekly_streaks(conn, habit_id, start_date, frequency_days),
+        "monthly" => calculate_monthly_streaks(conn, habit_id, start_date),
+        _ => Ok((0, 0)),
     }
+}
 
-    // Parse dates
-    let parsed: Vec<chrono::NaiveDate> = dates
-        .iter()
-        .filter_map(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
-        .collect();
+// ==================== Daily Streaks ====================
 
+fn calculate_daily_streaks(
+    conn: &rusqlite::Connection,
+    habit_id: &str,
+    start_date: &str,
+) -> Result<(i32, i32), String> {
+    let parsed = get_checkin_dates(conn, habit_id)?;
     if parsed.is_empty() {
         return Ok((0, 0));
     }
 
+    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
     let today = chrono::Local::now().date_naive();
     let yesterday = today - chrono::Duration::days(1);
 
     // Current streak: count consecutive days backward from today or yesterday
+    // Only count days >= start_date
     let mut current_streak = 0i32;
-    if parsed[0] == today || parsed[0] == yesterday {
+    if parsed[0] >= start && (parsed[0] == today || parsed[0] == yesterday) {
         current_streak = 1;
         let mut prev = parsed[0];
         for date in parsed.iter().skip(1) {
+            if *date < start {
+                break;
+            }
             let expected = prev - chrono::Duration::days(1);
             if *date == expected {
                 current_streak += 1;
                 prev = *date;
             } else if *date == prev {
-                continue; // skip duplicates
+                continue;
             } else {
                 break;
             }
         }
     }
 
-    let longest = calculate_longest_daily_streak(&parsed);
+    let longest = calculate_longest_daily_streak(&parsed, &start);
     let longest = longest.max(current_streak);
 
     Ok((current_streak, longest))
 }
 
-fn calculate_longest_daily_streak(sorted_desc: &[chrono::NaiveDate]) -> i32 {
+fn calculate_longest_daily_streak(sorted_desc: &[chrono::NaiveDate], start: &chrono::NaiveDate) -> i32 {
     if sorted_desc.is_empty() {
         return 0;
     }
 
-    let mut longest = 1i32;
-    let mut current = 1i32;
+    let mut longest = 0i32;
+    let mut current = 0i32;
+    let mut prev_date: Option<chrono::NaiveDate> = None;
 
-    // sorted_desc is descending, iterate from oldest to newest
-    for i in (0..sorted_desc.len() - 1).rev() {
-        let diff = (sorted_desc[i] - sorted_desc[i + 1]).num_days();
-        if diff == 1 {
-            current += 1;
-            longest = longest.max(current);
-        } else if diff > 1 {
-            current = 1;
+    // Iterate from oldest to newest
+    for i in (0..sorted_desc.len()).rev() {
+        let d = sorted_desc[i];
+        if d < *start {
+            continue;
         }
-        // diff == 0 means duplicate, ignore
+        match prev_date {
+            None => {
+                current = 1;
+            }
+            Some(prev) => {
+                let diff = (d - prev).num_days();
+                if diff == 1 {
+                    current += 1;
+                } else if diff > 1 {
+                    current = 1;
+                }
+                // diff == 0 means duplicate, ignore
+            }
+        }
+        longest = longest.max(current);
+        prev_date = Some(d);
     }
 
     longest
 }
+
+// ==================== Every X Days Streaks ====================
+
+fn calculate_every_x_days_streaks(
+    conn: &rusqlite::Connection,
+    habit_id: &str,
+    start_date: &str,
+    frequency_days: &str,
+) -> Result<(i32, i32), String> {
+    let interval: i64 = frequency_days.trim().parse().unwrap_or(1);
+    let interval = interval.max(1);
+    let start = match parse_date(start_date) {
+        Some(d) => d,
+        None => return Ok((0, 0)),
+    };
+
+    let parsed = get_checkin_dates(conn, habit_id)?;
+    if parsed.is_empty() {
+        return Ok((0, 0));
+    }
+
+    let today = chrono::Local::now().date_naive();
+
+    // Calculate period index for each check-in date
+    // Period N covers: start + N*interval .. start + (N+1)*interval - 1
+    let get_period = |d: chrono::NaiveDate| -> Option<i64> {
+        if d < start {
+            return None;
+        }
+        Some((d - start).num_days() / interval)
+    };
+
+    // Get unique period indices, sorted descending
+    let mut periods: Vec<i64> = parsed
+        .iter()
+        .filter_map(|d| get_period(*d))
+        .collect();
+    periods.sort_unstable();
+    periods.dedup();
+    periods.reverse();
+
+    if periods.is_empty() {
+        return Ok((0, 0));
+    }
+
+    let today_period = get_period(today).unwrap_or(-1);
+    let prev_period = today_period - 1;
+
+    // Current streak: consecutive periods from current or previous period
+    let mut current_streak = 0i32;
+    if !periods.is_empty() && (periods[0] == today_period || periods[0] == prev_period) {
+        current_streak = 1;
+        for i in 1..periods.len() {
+            if periods[i - 1] - periods[i] == 1 {
+                current_streak += 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Longest streak
+    let mut longest = 1i32;
+    let mut current = 1i32;
+    for i in 1..periods.len() {
+        let diff = periods[i - 1] - periods[i];
+        if diff == 1 {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 1;
+        }
+    }
+    longest = longest.max(current_streak);
+
+    Ok((current_streak, longest))
+}
+
+// ==================== Weekly Streaks ====================
 
 fn calculate_weekly_streaks(
     conn: &rusqlite::Connection,
     habit_id: &str,
-    _start_date: &str,
+    start_date: &str,
+    frequency_days: &str,
 ) -> Result<(i32, i32), String> {
-    // Get distinct ISO weeks with check-ins
-    let mut stmt = conn.prepare(
-        "SELECT DISTINCT strftime('%Y-W%W', log_date) as week FROM habit_logs WHERE habit_id = ?1 AND completed = 1 ORDER BY week DESC"
-    ).map_err(|e| format!("Failed to prepare: {}", e))?;
-
-    let weeks: Vec<String> = stmt.query_map([habit_id], |row| row.get(0))
-        .map_err(|e| format!("Failed to query: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    if weeks.is_empty() {
+    let parsed = get_checkin_dates(conn, habit_id)?;
+    if parsed.is_empty() {
         return Ok((0, 0));
     }
 
-    let current_week = chrono::Local::now().format("%Y-W%W").to_string();
-    let last_week = (chrono::Local::now() - chrono::Duration::days(7)).format("%Y-W%W").to_string();
+    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
 
-    let mut current_streak = 0i32;
-    if weeks[0] == current_week || weeks[0] == last_week {
-        current_streak = count_consecutive_weeks(&weeks);
+    // Parse custom days (e.g. "mon,wed,fri")
+    let custom_days: Vec<chrono::Weekday> = if frequency_days.is_empty() {
+        vec![]
+    } else {
+        frequency_days.split(',')
+            .filter_map(|s| parse_weekday(s))
+            .collect()
+    };
+
+    let has_custom_days = !custom_days.is_empty();
+
+    // Get ISO weeks with valid check-ins
+    // A week is valid if it has at least one check-in on an allowed day
+    let mut valid_weeks: Vec<(i32, u32)> = Vec::new(); // (year, iso_week)
+    {
+        let mut seen = std::collections::HashSet::new();
+        for date in &parsed {
+            if *date < start {
+                continue;
+            }
+            if has_custom_days && !custom_days.iter().any(|wd| date.weekday() == *wd) {
+                continue;
+            }
+            let iso_week = date.iso_week();
+            let key = (iso_week.year(), iso_week.week());
+            if seen.insert(key) {
+                valid_weeks.push(key);
+            }
+        }
     }
 
-    let longest = count_longest_consecutive_weeks(&weeks);
-    let longest = longest.max(current_streak);
+    // Sort descending
+    valid_weeks.sort_by(|a, b| b.cmp(a));
+
+    if valid_weeks.is_empty() {
+        return Ok((0, 0));
+    }
+
+    let now = chrono::Local::now().date_naive();
+    let current_iso = now.iso_week();
+    let current_week = (current_iso.year(), current_iso.week());
+    let last_week_date = now - chrono::Duration::days(7);
+    let last_iso = last_week_date.iso_week();
+    let prev_week = (last_iso.year(), last_iso.week());
+
+    let mut current_streak = 0i32;
+    if valid_weeks[0] == current_week || valid_weeks[0] == prev_week {
+        current_streak = 1;
+        for i in 1..valid_weeks.len() {
+            if is_consecutive_week(valid_weeks[i - 1], valid_weeks[i]) {
+                current_streak += 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Longest streak
+    let mut longest = 1i32;
+    let mut current = 1i32;
+    for i in 1..valid_weeks.len() {
+        if is_consecutive_week(valid_weeks[i - 1], valid_weeks[i]) {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 1;
+        }
+    }
+    longest = longest.max(current_streak);
 
     Ok((current_streak, longest))
 }
 
-fn count_consecutive_weeks(sorted_desc: &[String]) -> i32 {
-    if sorted_desc.is_empty() {
-        return 0;
-    }
-    let mut count = 1i32;
-    for i in 1..sorted_desc.len() {
-        if let (Some(prev_wk), Some(curr_wk)) = (parse_week(&sorted_desc[i - 1]), parse_week(&sorted_desc[i])) {
-            let diff = prev_wk.0 * 52 + prev_wk.1 - (curr_wk.0 * 52 + curr_wk.1);
-            if diff == 1 {
-                count += 1;
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-    count
+fn is_consecutive_week(newer: (i32, u32), older: (i32, u32)) -> bool {
+    // newer should be exactly 1 week after older
+    let newer_val = newer.0 as i64 * 52 + newer.1 as i64;
+    let older_val = older.0 as i64 * 52 + older.1 as i64;
+    newer_val - older_val == 1
 }
 
-fn count_longest_consecutive_weeks(sorted_desc: &[String]) -> i32 {
-    if sorted_desc.is_empty() {
-        return 0;
-    }
-    let mut longest = 1i32;
-    let mut current = 1i32;
-    for i in (0..sorted_desc.len() - 1).rev() {
-        if let (Some(next_wk), Some(curr_wk)) = (parse_week(&sorted_desc[i + 1]), parse_week(&sorted_desc[i])) {
-            let diff = next_wk.0 * 52 + next_wk.1 - (curr_wk.0 * 52 + curr_wk.1);
-            if diff == -1 {
-                current += 1;
-                longest = longest.max(current);
-            } else if diff != 0 {
-                current = 1;
-            }
-        }
-    }
-    longest
-}
-
-fn parse_week(s: &str) -> Option<(i32, i32)> {
-    // Format: "YYYY-Www"
-    let parts: Vec<&str> = s.split("-W").collect();
-    if parts.len() == 2 {
-        let year = parts[0].parse::<i32>().ok()?;
-        let week = parts[1].parse::<i32>().ok()?;
-        Some((year, week))
-    } else {
-        None
-    }
-}
+// ==================== Monthly Streaks ====================
 
 fn calculate_monthly_streaks(
     conn: &rusqlite::Connection,
     habit_id: &str,
-    _start_date: &str,
+    start_date: &str,
 ) -> Result<(i32, i32), String> {
-    let mut stmt = conn.prepare(
-        "SELECT DISTINCT strftime('%Y-%m', log_date) as month FROM habit_logs WHERE habit_id = ?1 AND completed = 1 ORDER BY month DESC"
-    ).map_err(|e| format!("Failed to prepare: {}", e))?;
+    let parsed = get_checkin_dates(conn, habit_id)?;
+    if parsed.is_empty() {
+        return Ok((0, 0));
+    }
 
-    let months: Vec<String> = stmt.query_map([habit_id], |row| row.get(0))
-        .map_err(|e| format!("Failed to query: {}", e))?
-        .filter_map(|r| r.ok())
-        .collect();
+    let start = parse_date(start_date).unwrap_or(parsed[parsed.len() - 1]);
+
+    // Get unique months with check-ins >= start_date
+    let mut months: Vec<(i32, u32)> = Vec::new();
+    {
+        let mut seen = std::collections::HashSet::new();
+        for date in &parsed {
+            if *date < start {
+                continue;
+            }
+            let key = (date.year(), date.month());
+            if seen.insert(key) {
+                months.push(key);
+            }
+        }
+    }
+
+    months.sort_by(|a, b| b.cmp(a));
 
     if months.is_empty() {
         return Ok((0, 0));
     }
 
-    let current_month = chrono::Local::now().format("%Y-%m").to_string();
-    let last_month = {
-        let now = chrono::Local::now();
-        let prev = now.month() - 1;
-        if prev == 0 {
-            format!("{}-12", now.year() - 1)
-        } else {
-            format!("{}-{:02}", now.year(), prev)
-        }
+    let now = chrono::Local::now().date_naive();
+    let current_month = (now.year(), now.month());
+    let prev_month = if now.month() == 1 {
+        (now.year() - 1, 12u32)
+    } else {
+        (now.year(), now.month() - 1)
     };
 
     let mut current_streak = 0i32;
-    if months[0] == current_month || months[0] == last_month {
+    if months[0] == current_month || months[0] == prev_month {
         current_streak = 1;
         for i in 1..months.len() {
-            if let (Some(prev_m), Some(curr_m)) = (parse_month(&months[i - 1]), parse_month(&months[i])) {
-                let diff = prev_m.0 * 12 + prev_m.1 - (curr_m.0 * 12 + curr_m.1);
-                if diff == 1 {
-                    current_streak += 1;
-                } else {
-                    break;
-                }
+            if is_consecutive_month(months[i - 1], months[i]) {
+                current_streak += 1;
             } else {
                 break;
             }
         }
     }
 
-    let longest = count_longest_consecutive_months(&months);
-    let longest = longest.max(current_streak);
+    // Longest
+    let mut longest = 1i32;
+    let mut current = 1i32;
+    for i in 1..months.len() {
+        if is_consecutive_month(months[i - 1], months[i]) {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 1;
+        }
+    }
+    longest = longest.max(current_streak);
 
     Ok((current_streak, longest))
 }
 
-fn parse_month(s: &str) -> Option<(i32, i32)> {
-    let parts: Vec<&str> = s.split('-').collect();
-    if parts.len() == 2 {
-        let year = parts[0].parse::<i32>().ok()?;
-        let month = parts[1].parse::<i32>().ok()?;
-        Some((year, month))
-    } else {
-        None
-    }
-}
-
-fn count_longest_consecutive_months(sorted_desc: &[String]) -> i32 {
-    if sorted_desc.is_empty() {
-        return 0;
-    }
-    let mut longest = 1i32;
-    let mut current = 1i32;
-    for i in (0..sorted_desc.len() - 1).rev() {
-        if let (Some(next_m), Some(curr_m)) = (parse_month(&sorted_desc[i + 1]), parse_month(&sorted_desc[i])) {
-            let diff = next_m.0 * 12 + next_m.1 - (curr_m.0 * 12 + curr_m.1);
-            if diff == -1 {
-                current += 1;
-                longest = longest.max(current);
-            } else if diff != 0 {
-                current = 1;
-            }
-        }
-    }
-    longest
+fn is_consecutive_month(newer: (i32, u32), older: (i32, u32)) -> bool {
+    let newer_val = newer.0 as i64 * 12 + newer.1 as i64;
+    let older_val = older.0 as i64 * 12 + older.1 as i64;
+    newer_val - older_val == 1
 }
 
 // ==================== Commands ====================
@@ -341,6 +458,7 @@ pub async fn create_habit(
     frequency_days: Option<String>,
     reminder_time: Option<String>,
     reminder_enabled: Option<bool>,
+    start_date: Option<String>,
 ) -> Result<Habit, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -349,9 +467,10 @@ pub async fn create_habit(
     let target_type = target_type.unwrap_or_else(|| "binary".to_string());
     let icon = icon.unwrap_or_else(|| "star".to_string());
     let color = color.unwrap_or_else(|| "#8B5CF6".to_string());
+    let start_date = start_date.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
     conn.execute(
-        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, date('now'), 0, 0, 0)",
+        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 0, 0)",
         rusqlite::params![
             id,
             name,
@@ -364,6 +483,7 @@ pub async fn create_habit(
             frequency_days.as_deref().unwrap_or(""),
             reminder_time.as_deref().unwrap_or(""),
             reminder,
+            start_date,
         ]
     ).map_err(|e| format!("Failed to create habit: {}", e))?;
 
@@ -387,6 +507,7 @@ pub async fn update_habit(
     frequency_days: Option<String>,
     reminder_time: Option<String>,
     reminder_enabled: Option<bool>,
+    start_date: Option<String>,
 ) -> Result<Habit, String> {
     let conn = get_db(&app)?;
 
@@ -431,6 +552,10 @@ pub async fn update_habit(
         conn.execute("UPDATE habits SET reminder_enabled = ?1, updated_at = datetime('now') WHERE id = ?2", (&val, &id))
             .map_err(|e| format!("Failed to update reminder: {}", e))?;
     }
+    if let Some(ref start_date) = start_date {
+        conn.execute("UPDATE habits SET start_date = ?1, updated_at = datetime('now') WHERE id = ?2", (start_date, &id))
+            .map_err(|e| format!("Failed to update start_date: {}", e))?;
+    }
 
     let habit = conn.query_row("SELECT * FROM habits WHERE id = ?1", [&id], row_to_habit)
         .map_err(|e| format!("Failed to fetch habit: {}", e))?;
@@ -441,7 +566,6 @@ pub async fn update_habit(
 #[tauri::command]
 pub async fn delete_habit(app: AppHandle, id: String) -> Result<(), String> {
     let conn = get_db(&app)?;
-    // Soft delete: set archived_at
     conn.execute(
         "UPDATE habits SET archived_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
         [&id]
@@ -450,24 +574,31 @@ pub async fn delete_habit(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn check_in_habit(app: AppHandle, habit_id: String, date: String) -> Result<(), String> {
+pub async fn check_in_habit(app: AppHandle, habit_id: String, date: String, value: Option<i32>) -> Result<(), String> {
     let conn = get_db(&app)?;
+    let val = value.unwrap_or(1);
 
-    // Insert or replace the check-in log
+    // Insert or replace the check-in log with the provided value
     conn.execute(
-        "INSERT OR REPLACE INTO habit_logs (id, habit_id, log_date, completed, value) VALUES (?1, ?2, ?3, 1, 1)",
-        (Uuid::new_v4().to_string(), &habit_id, &date)
+        "INSERT OR REPLACE INTO habit_logs (id, habit_id, log_date, completed, value) VALUES (?1, ?2, ?3, 1, ?4)",
+        (Uuid::new_v4().to_string(), &habit_id, &date, &val)
     ).map_err(|e| format!("Failed to check in: {}", e))?;
 
     // Fetch habit details for streak calculation
-    let (frequency, start_date) = conn.query_row(
-        "SELECT frequency, start_date FROM habits WHERE id = ?1",
+    let (frequency, start_date, frequency_days) = conn.query_row(
+        "SELECT frequency, start_date, frequency_days FROM habits WHERE id = ?1",
         [&habit_id],
-        |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        |row| Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+        ))
     ).map_err(|e| format!("Failed to fetch habit: {}", e))?;
 
     // Calculate updated streaks
-    let (current_streak, longest_streak) = calculate_streaks(&conn, &habit_id, &frequency, &start_date)?;
+    let (current_streak, longest_streak) = calculate_streaks(
+        &conn, &habit_id, &frequency, &start_date, &frequency_days,
+    )?;
 
     // Count total completions
     let total: i32 = conn.query_row(
@@ -534,18 +665,29 @@ pub async fn get_habit_logs(
 }
 
 #[tauri::command]
-pub async fn get_today_checkins(app: AppHandle) -> Result<Vec<String>, String> {
+pub async fn get_today_checkins(app: AppHandle) -> Result<Vec<TodayCheckinInfo>, String> {
     let conn = get_db(&app)?;
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     let mut stmt = conn.prepare(
-        "SELECT DISTINCT habit_id FROM habit_logs WHERE log_date = ?1 AND completed = 1"
+        "SELECT hl.habit_id, hl.value FROM habit_logs hl WHERE hl.log_date = ?1 AND hl.completed = 1"
     ).map_err(|e| format!("Failed to prepare: {}", e))?;
 
-    let ids: Vec<String> = stmt.query_map([&today], |row| row.get(0))
+    let infos: Vec<TodayCheckinInfo> = stmt.query_map([&today], |row| {
+        Ok(TodayCheckinInfo {
+            habit_id: row.get(0)?,
+            value: row.get::<_, Option<i32>>(1)?.unwrap_or(1),
+        })
+    })
         .map_err(|e| format!("Failed to query: {}", e))?
         .filter_map(|r| r.ok())
         .collect();
 
-    Ok(ids)
+    Ok(infos)
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct TodayCheckinInfo {
+    pub habit_id: String,
+    pub value: i32,
 }
