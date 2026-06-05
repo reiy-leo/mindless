@@ -86,6 +86,24 @@
       "toggle_complete": "标记{{title}}完成状态"
     }
   },
+  "lists": {
+    "title": "列表",
+    "smart": "智能列表",
+    "my_lists": "我的列表",
+    "today": "今天",
+    "next_7_days": "近 7 天",
+    "inbox": "收集箱",
+    "create_list": "新建列表",
+    "edit_list": "编辑列表",
+    "delete_list": "删除列表",
+    "name": "列表名称",
+    "name_placeholder": "输入列表名称",
+    "icon": "图标",
+    "color": "颜色",
+    "delete_confirm": "确定要删除此列表吗？列表中的任务将移至收集箱。",
+    "manage": "管理列表",
+    "task_count": "{{count}} 个任务"
+  },
   "habits": {
     "new_habit": "新建习惯",
     "edit_habit": "编辑习惯",

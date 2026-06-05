@@ -23,6 +23,10 @@ pub fn run() {
             commands::update_task,
             commands::delete_task,
             commands::get_lists,
+            // Lists
+            commands::create_list,
+            commands::update_list,
+            commands::delete_list,
             // Subtasks
             commands::get_subtasks,
             commands::create_subtask,

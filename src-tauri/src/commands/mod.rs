@@ -5,6 +5,7 @@ pub mod tags;
 pub mod subtasks;
 pub mod steps;
 pub mod settings;
+pub mod lists;
 
 pub use tasks::*;
 pub use habits::*;
@@ -13,3 +14,4 @@ pub use tags::*;
 pub use subtasks::*;
 pub use steps::*;
 pub use settings::*;
+pub use lists::*;

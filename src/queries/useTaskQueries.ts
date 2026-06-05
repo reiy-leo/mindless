@@ -177,6 +177,43 @@ export function useDeleteStep() {
   });
 }
 
+// ==================== List Mutations ====================
+
+export function useCreateList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { name: string; color?: string; icon?: string }) =>
+      api.createList(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
+
+export function useUpdateList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...params }: { id: string; name?: string; color?: string; icon?: string; sortOrder?: number }) =>
+      api.updateList(id, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
+
+export function useDeleteList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteList(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
+
 // ==================== Tag Mutations ====================
 
 export function useCreateTag() {

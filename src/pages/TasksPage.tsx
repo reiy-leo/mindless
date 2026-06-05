@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon } from '@heroicons/react/24/outline';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
-  useToggleTaskCompletion, useTags, useSubtasks, useSteps,
+  useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
   useCreateSubtask, useUpdateSubtask, useDeleteSubtask,
   useCreateStep, useUpdateStep, useDeleteStep,
   useCreateTag,
@@ -344,7 +344,7 @@ function TaskDetailPanel({
 // ==================== Main Page ====================
 export default function TasksPage() {
   const { t } = useTranslation('common');
-  const { viewMode, filterStatus, searchQuery, setViewMode, setFilterStatus, setSearchQuery } = useViewStore();
+  const { viewMode, filterStatus, searchQuery, selectedListId, setViewMode, setFilterStatus, setSearchQuery } = useViewStore();
   const [showFilters, setShowFilters] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -352,6 +352,7 @@ export default function TasksPage() {
 
   const { data: tasks = [], isLoading } = useTasks();
   const { data: allTags = [] } = useTags();
+  const { data: allLists = [] } = useLists();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -367,6 +368,31 @@ export default function TasksPage() {
     if (filterStatus === 'active' && task.isCompleted) return false;
     if (filterStatus === 'completed' && !task.isCompleted) return false;
     if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+    // List filtering
+    if (selectedListId) {
+      if (selectedListId === 'smart:today') {
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        if (task.dueDate !== todayStr) return false;
+      } else if (selectedListId === 'smart:next7days') {
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const next7 = new Date(now);
+        next7.setDate(next7.getDate() + 7);
+        const next7Str = `${next7.getFullYear()}-${String(next7.getMonth() + 1).padStart(2, '0')}-${String(next7.getDate()).padStart(2, '0')}`;
+        if (!task.dueDate || task.dueDate < todayStr || task.dueDate > next7Str) return false;
+      } else {
+        // Regular list: match listId (inbox = null or 'inbox')
+        const taskListId = task.listId || 'inbox';
+        if (selectedListId === 'inbox') {
+          if (taskListId !== 'inbox') return false;
+        } else {
+          if (task.listId !== selectedListId) return false;
+        }
+      }
+    }
+
     return true;
   });
 
@@ -377,6 +403,7 @@ export default function TasksPage() {
     dueDate?: string;
     dueTime?: string;
     startDate?: string;
+    listId?: string;
   }) => {
     createTask.mutate(taskData);
   };
@@ -388,6 +415,7 @@ export default function TasksPage() {
     dueDate?: string;
     dueTime?: string;
     startDate?: string;
+    listId?: string;
   }) => {
     if (editingTask) {
       updateTask.mutate({ id: editingTask.id, ...taskData });
@@ -417,6 +445,16 @@ export default function TasksPage() {
     updateTask.mutate({ id, ...params });
   };
 
+  // Compute header title based on selected list
+  const headerTitle = useMemo(() => {
+    if (!selectedListId) return t('navigation.tasks');
+    if (selectedListId === 'smart:today') return t('lists.today');
+    if (selectedListId === 'smart:next7days') return t('lists.next_7_days');
+    if (selectedListId === 'inbox') return t('lists.inbox');
+    const list = allLists.find((l) => l.id === selectedListId);
+    return list?.name || t('navigation.tasks');
+  }, [selectedListId, allLists, t]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -432,7 +470,7 @@ export default function TasksPage() {
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.tasks')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}

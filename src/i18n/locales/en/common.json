@@ -86,6 +86,24 @@
       "toggle_complete": "Toggle {{title}} completion"
     }
   },
+  "lists": {
+    "title": "Lists",
+    "smart": "Smart Lists",
+    "my_lists": "My Lists",
+    "today": "Today",
+    "next_7_days": "Next 7 Days",
+    "inbox": "Inbox",
+    "create_list": "New List",
+    "edit_list": "Edit List",
+    "delete_list": "Delete List",
+    "name": "List Name",
+    "name_placeholder": "Enter list name",
+    "icon": "Icon",
+    "color": "Color",
+    "delete_confirm": "Are you sure you want to delete this list? Tasks will be moved to Inbox.",
+    "manage": "Manage Lists",
+    "task_count": "{{count}} tasks"
+  },
   "habits": {
     "new_habit": "New Habit",
     "edit_habit": "Edit Habit",

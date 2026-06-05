@@ -46,6 +46,27 @@ export async function getLists(): Promise<List[]> {
   return await invoke<List[]>('get_lists');
 }
 
+export async function createList(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<List> {
+  return await invoke<List>('create_list', params);
+}
+
+export async function updateList(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+  sortOrder?: number;
+}): Promise<List> {
+  return await invoke<List>('update_list', { id, ...params });
+}
+
+export async function deleteList(id: string): Promise<void> {
+  return await invoke<void>('delete_list', { id });
+}
+
 // Tag APIs
 export async function getTags(): Promise<Tag[]> {
   return await invoke<Tag[]>('get_tags');

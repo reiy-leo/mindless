@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { PRIORITY } from '@/lib/constants';
+import { useLists } from '@/queries/useTaskQueries';
+import { useViewStore } from '@/stores/useViewStore';
 import type { Priority, Task } from '@/types/task';
 
 interface TaskFormProps {
@@ -14,6 +16,7 @@ interface TaskFormProps {
     dueDate?: string;
     dueTime?: string;
     startDate?: string;
+    listId?: string;
     tagIds?: string;
   }) => void;
   task?: Task | null;
@@ -21,14 +24,20 @@ interface TaskFormProps {
 
 export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
   const { t } = useTranslation('common');
+  const { selectedListId } = useViewStore();
+  const { data: lists = [] } = useLists();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(PRIORITY.NONE);
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [listId, setListId] = useState('');
 
   const isEditing = !!task;
+
+  // Determine effective list: if a list is selected in sidebar, pre-fill it
+  const effectiveSelectedListId = selectedListId && !selectedListId.startsWith('smart:') ? selectedListId : '';
 
   // Reset form when dialog opens/closes, or pre-fill for editing
   useEffect(() => {
@@ -39,6 +48,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       setDueDate(task.dueDate || '');
       setDueTime(task.dueTime || '');
       setStartDate(task.startDate || '');
+      setListId(task.listId || '');
     } else if (!isOpen) {
       setTitle('');
       setDescription('');
@@ -46,8 +56,12 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       setDueDate('');
       setDueTime('');
       setStartDate('');
+      setListId(effectiveSelectedListId);
+    } else {
+      // Opening without editing task
+      setListId(effectiveSelectedListId);
     }
-  }, [isOpen, task]);
+  }, [isOpen, task, effectiveSelectedListId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +74,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       dueDate: dueDate || undefined,
       dueTime: dueTime || undefined,
       startDate: startDate || undefined,
+      listId: listId || undefined,
     });
 
     onClose();
@@ -163,6 +178,23 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* List selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('lists.title')}
+            </label>
+            <select
+              value={listId}
+              onChange={(e) => setListId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">{t('lists.inbox')}</option>
+              {lists.filter((l) => l.id !== 'inbox' && l.id !== 'today' && l.id !== 'next7days' && l.id !== 'eisenhower').map((list) => (
+                <option key={list.id} value={list.id}>{list.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Dates */}

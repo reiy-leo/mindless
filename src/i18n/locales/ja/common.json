@@ -86,6 +86,24 @@
       "toggle_complete": "{{title}}の完了状態を切り替え"
     }
   },
+  "lists": {
+    "title": "リスト",
+    "smart": "スマートリスト",
+    "my_lists": "マイリスト",
+    "today": "今日",
+    "next_7_days": "7日以内",
+    "inbox": "受信箱",
+    "create_list": "新規リスト",
+    "edit_list": "リストを編集",
+    "delete_list": "リストを削除",
+    "name": "リスト名",
+    "name_placeholder": "リスト名を入力",
+    "icon": "アイコン",
+    "color": "カラー",
+    "delete_confirm": "このリストを削除しますか？タスクは受信箱に移動されます。",
+    "manage": "リスト管理",
+    "task_count": "{{count}} タスク"
+  },
   "habits": {
     "new_habit": "新規習慣",
     "edit_habit": "習慣を編集",
