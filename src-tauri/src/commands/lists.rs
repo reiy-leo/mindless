@@ -59,6 +59,12 @@ pub async fn update_list(
 ) -> Result<List, String> {
     let conn = get_db(&app)?;
 
+    // Prevent updating seed lists
+    let seed_ids = ["inbox", "today", "next7days", "eisenhower"];
+    if seed_ids.contains(&id.as_str()) {
+        return Err("Cannot modify a built-in list".to_string());
+    }
+
     let mut sql = String::from("UPDATE lists SET updated_at = datetime('now')");
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
     let mut param_idx = 1;

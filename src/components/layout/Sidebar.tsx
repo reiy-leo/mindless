@@ -27,6 +27,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const SMART_LISTS = [
+  { id: 'inbox', iconKey: 'inbox', labelKey: 'lists.inbox' },
   { id: 'smart:today', iconKey: 'calendar', labelKey: 'lists.today' },
   { id: 'smart:next7days', iconKey: 'clock', labelKey: 'lists.next_7_days' },
 ] as const;
@@ -66,7 +67,7 @@ export default function Sidebar() {
     const next7Str = `${next7.getFullYear()}-${String(next7.getMonth() + 1).padStart(2, '0')}-${String(next7.getDate()).padStart(2, '0')}`;
 
     tasks.forEach((task) => {
-      // Count by list_id
+      // Count by list_id (null/undefined = inbox)
       const lid = task.listId || 'inbox';
       counts[lid] = (counts[lid] || 0) + 1;
 
