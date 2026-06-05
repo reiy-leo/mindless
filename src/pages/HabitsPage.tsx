@@ -9,6 +9,8 @@ import {
   useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit,
   useCheckInHabit, useHabitLogs, useTodayCheckinMap, useRefreshStreaks,
 } from '@/queries/useHabitQueries';
+import { useCalendarEvents } from '@/queries/useTaskQueries';
+import DateTimePicker from '@/components/DateTimePicker';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
 // ==================== Due Today Helper ====================
@@ -64,6 +66,7 @@ function HabitFormDialog({
 }) {
   const { t } = useTranslation('common');
   const isEditing = !!habit;
+  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const [name, setName] = useState(habit?.name || '');
   const [description, setDescription] = useState(habit?.description || '');
@@ -297,10 +300,11 @@ function HabitFormDialog({
           {/* Start Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.start_date')}</label>
-            <input
-              type="date" value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            <DateTimePicker
+              date={startDate || undefined}
+              onChange={(d) => setStartDate(d || new Date().toISOString().split('T')[0])}
+              events={calendarEvents}
+              showTime={false}
             />
           </div>
 

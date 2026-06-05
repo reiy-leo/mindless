@@ -294,8 +294,11 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('tasks.start_date')}</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <DateTimePicker
+                    date={startDate || undefined}
+                    onChange={(d) => setStartDate(d || '')}
+                    events={calendarEvents}
+                    showTime={false}
                   />
                 </div>
                 <div>
@@ -367,8 +370,11 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             {recurrenceType && (
               <div className="mt-2">
                 <label className="block text-xs text-gray-500 mb-1">{t('tasks.recurrence.end_date')}</label>
-                <input type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <DateTimePicker
+                  date={recurrenceEndDate || undefined}
+                  onChange={(d) => setRecurrenceEndDate(d || '')}
+                  events={calendarEvents}
+                  showTime={false}
                 />
               </div>
             )}

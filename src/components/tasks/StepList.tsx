@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, CalendarIcon, ClockIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -9,6 +9,8 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import DateTimePicker from '@/components/DateTimePicker';
+import { useCalendarEvents } from '@/queries/useTaskQueries';
 
 interface Step {
   id: string;
@@ -224,8 +226,7 @@ function StepItem({
 }: StepItemProps) {
   const { t } = useTranslation('common');
   const [description, setDescription] = useState(step.description);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const handleSave = () => {
     if (description.trim()) {
@@ -279,74 +280,17 @@ function StepItem({
           </p>
         )}
 
-        {/* Date and Time */}
-        <div className="flex items-center gap-2">
-          {/* Due Date */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                step.dueDate
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                  : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <CalendarIcon className="w-3 h-3" />
-              <span>{step.dueDate || t('tasks.steps.set_date')}</span>
-            </button>
-            {showDatePicker && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowDatePicker(false)}
-                />
-                <input
-                  type="date"
-                  value={step.dueDate || ''}
-                  onChange={(e) => {
-                    onUpdateDueDate(e.target.value || undefined);
-                    setShowDatePicker(false);
-                  }}
-                  className="absolute top-full left-0 mt-1 z-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded shadow-lg bg-white dark:bg-gray-800"
-                  autoFocus
-                />
-              </>
-            )}
-          </div>
-
-          {/* Due Time */}
-          <div className="relative">
-            <button
-              onClick={() => setShowTimePicker(!showTimePicker)}
-              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                step.dueTime
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                  : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <ClockIcon className="w-3 h-3" />
-              <span>{step.dueTime || t('tasks.steps.set_time')}</span>
-            </button>
-            {showTimePicker && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowTimePicker(false)}
-                />
-                <input
-                  type="time"
-                  value={step.dueTime || ''}
-                  onChange={(e) => {
-                    onUpdateDueTime(e.target.value || undefined);
-                    setShowTimePicker(false);
-                  }}
-                  className="absolute top-full left-0 mt-1 z-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded shadow-lg bg-white dark:bg-gray-800"
-                  autoFocus
-                />
-              </>
-            )}
-          </div>
-        </div>
+        {/* Date and Time via unified DateTimePicker */}
+        <DateTimePicker
+          date={step.dueDate || undefined}
+          time={step.dueTime || undefined}
+          onChange={(d, tm) => {
+            onUpdateDueDate(d || undefined);
+            onUpdateDueTime(tm || undefined);
+          }}
+          events={calendarEvents}
+          showTime={true}
+        />
       </div>
 
       {/* Actions */}

@@ -7,6 +7,8 @@ import {
 import {
   useCountdowns, useCreateCountdown, useUpdateCountdown, useDeleteCountdown,
 } from '@/queries/useCountdownQueries';
+import { useCalendarEvents } from '@/queries/useTaskQueries';
+import DateTimePicker from '@/components/DateTimePicker';
 import type { Countdown, EventType, CreateCountdownParams } from '@/types/countdown';
 
 // ==================== Icon & Color Options ====================
@@ -31,6 +33,7 @@ function CountdownFormDialog({
 }) {
   const { t } = useTranslation('common');
   const isEditing = !!countdown;
+  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const [title, setTitle] = useState(countdown?.title || '');
   const [description, setDescription] = useState(countdown?.description || '');
@@ -181,26 +184,17 @@ function CountdownFormDialog({
             </div>
           </div>
 
-          {/* Target Date */}
+          {/* Target Date & Time */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('countdowns.target_date')} *
             </label>
-            <input
-              type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          {/* Target Time (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.target_time')}
-            </label>
-            <input
-              type="time" value={targetTime} onChange={(e) => setTargetTime(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            <DateTimePicker
+              date={targetDate || undefined}
+              time={targetTime || undefined}
+              onChange={(d, tm) => { setTargetDate(d || ''); setTargetTime(tm || ''); }}
+              events={calendarEvents}
+              showTime={true}
             />
           </div>
 
