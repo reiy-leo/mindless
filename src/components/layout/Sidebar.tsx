@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, SettingsIcon,
   ChevronDownIcon, ChevronRightIcon, PlusIcon, PencilIcon,
-  CalendarIcon, ClockIcon, InboxIcon,
+  CalendarIcon, ClockIcon, InboxIcon, LayoutGrid,
 } from 'lucide-react';
 import { useLists, useTasks } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
@@ -24,12 +24,14 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   lightning: CheckSquareIcon,
   calendar: CalendarIcon,
   clock: ClockIcon,
+  eisenhower: LayoutGrid,
 };
 
 const SMART_LISTS = [
   { id: 'inbox', iconKey: 'inbox', labelKey: 'lists.inbox' },
   { id: 'smart:today', iconKey: 'calendar', labelKey: 'lists.today' },
   { id: 'smart:next7days', iconKey: 'clock', labelKey: 'lists.next_7_days' },
+  { id: 'eisenhower', iconKey: 'eisenhower', labelKey: 'tasks.views.matrix' },
 ] as const;
 
 const navItems = [
@@ -44,7 +46,7 @@ export default function Sidebar() {
   const { t } = useTranslation('common');
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedListId, setSelectedListId } = useViewStore();
+  const { selectedListId, setSelectedListId, setViewMode } = useViewStore();
 
   const [listsExpanded, setListsExpanded] = useState(true);
   const [showListForm, setShowListForm] = useState(false);
@@ -79,11 +81,19 @@ export default function Sidebar() {
         counts['smart:next7days'] = (counts['smart:next7days'] || 0) + 1;
       }
     });
+
+    // Eisenhower count: all incomplete tasks
+    counts['eisenhower'] = tasks.filter((t) => !t.isCompleted).length;
+
     return counts;
   }, [tasks]);
 
   const handleListClick = (listId: string) => {
     setSelectedListId(selectedListId === listId ? null : listId);
+    // Auto-switch to matrix view for eisenhower
+    if (listId === 'eisenhower' && selectedListId !== listId) {
+      setViewMode('matrix');
+    }
     // Navigate to tasks page when selecting a list
     if (location.pathname !== '/tasks') {
       navigate('/tasks');

@@ -103,7 +103,20 @@
       "more_tasks": "+{{count}} more",
       "empty_column": "No tasks",
       "kanban_hint": "Drag or use ← → keys to change priority",
-      "toggle_complete": "Toggle {{title}} completion"
+      "toggle_complete": "Toggle {{title}} completion",
+      "matrix": "Matrix",
+      "do_first": "Do First",
+      "do_first_hint": "Urgent & Important",
+      "schedule": "Schedule",
+      "schedule_hint": "Important, Not Urgent",
+      "delegate": "Delegate",
+      "delegate_hint": "Urgent, Not Important",
+      "eliminate": "Eliminate",
+      "eliminate_hint": "Not Urgent, Not Important",
+      "urgent": "Urgent",
+      "not_urgent": "Not Urgent",
+      "important": "Important",
+      "not_important": "Not Important"
     }
   },
   "lists": {

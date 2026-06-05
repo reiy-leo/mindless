@@ -103,7 +103,20 @@
       "more_tasks": "他{{count}}件",
       "empty_column": "タスクなし",
       "kanban_hint": "ドラッグまたは←→キーで優先度を変更",
-      "toggle_complete": "{{title}}の完了状態を切り替え"
+      "toggle_complete": "{{title}}の完了状態を切り替え",
+      "matrix": "マトリクス",
+      "do_first": "今すぐやる",
+      "do_first_hint": "緊急かつ重要",
+      "schedule": "計画する",
+      "schedule_hint": "重要だが緊急でない",
+      "delegate": "委任する",
+      "delegate_hint": "緊急だが重要でない",
+      "eliminate": "やめる",
+      "eliminate_hint": "緊急でも重要でもない",
+      "urgent": "緊急",
+      "not_urgent": "緊急でない",
+      "important": "重要",
+      "not_important": "重要でない"
     }
   },
   "lists": {

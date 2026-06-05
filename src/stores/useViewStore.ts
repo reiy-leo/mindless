@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type ViewMode = 'list' | 'calendar' | 'kanban' | 'grid';
+type ViewMode = 'list' | 'calendar' | 'kanban' | 'grid' | 'matrix';
 
 interface ViewState {
   viewMode: ViewMode;

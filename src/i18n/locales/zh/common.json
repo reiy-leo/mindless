@@ -103,7 +103,20 @@
       "more_tasks": "还有{{count}}个",
       "empty_column": "暂无任务",
       "kanban_hint": "拖拽或用方向键 ← → 调整优先级",
-      "toggle_complete": "标记{{title}}完成状态"
+      "toggle_complete": "标记{{title}}完成状态",
+      "matrix": "四象限",
+      "do_first": "立即执行",
+      "do_first_hint": "紧急且重要",
+      "schedule": "计划安排",
+      "schedule_hint": "重要不紧急",
+      "delegate": "委派他人",
+      "delegate_hint": "紧急不重要",
+      "eliminate": "考虑删除",
+      "eliminate_hint": "不紧急不重要",
+      "urgent": "紧急",
+      "not_urgent": "不紧急",
+      "important": "重要",
+      "not_important": "不重要"
     }
   },
   "lists": {

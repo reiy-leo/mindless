@@ -17,6 +17,7 @@ import StepList from '@/components/tasks/StepList';
 import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
 import GridView from '@/components/tasks/GridView';
+import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import type { Task, Priority, Subtask as SubtaskType, Step as StepType } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -382,6 +383,8 @@ export default function TasksPage() {
         next7.setDate(next7.getDate() + 7);
         const next7Str = `${next7.getFullYear()}-${String(next7.getMonth() + 1).padStart(2, '0')}-${String(next7.getDate()).padStart(2, '0')}`;
         if (!task.dueDate || task.dueDate < todayStr || task.dueDate > next7Str) return false;
+      } else if (selectedListId === 'eisenhower') {
+        // Eisenhower matrix shows all tasks — classification happens in the view component
       } else {
         // Regular list: match listId (inbox = null or 'inbox')
         const taskListId = task.listId || 'inbox';
@@ -455,6 +458,7 @@ export default function TasksPage() {
     if (selectedListId === 'smart:today') return t('lists.today');
     if (selectedListId === 'smart:next7days') return t('lists.next_7_days');
     if (selectedListId === 'inbox') return t('lists.inbox');
+    if (selectedListId === 'eisenhower') return t('tasks.views.matrix');
     const list = allLists.find((l) => l.id === selectedListId);
     return list?.name || t('navigation.tasks');
   }, [selectedListId, allLists, t]);
@@ -561,6 +565,15 @@ export default function TasksPage() {
             onToggleTask={handleToggleTask}
             onEditTask={(task) => { setEditingTask(task); setShowTaskForm(true); }}
             onDeleteTask={handleDeleteTask}
+          />
+        ) : viewMode === 'matrix' ? (
+          <EisenhowerMatrixView
+            tasks={filteredTasks}
+            allTags={allTags}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
+            onToggleTask={handleToggleTask}
+            onUpdateTask={handleUpdateTaskInline}
           />
         ) : (
         <div className="flex-1 overflow-auto p-6">
