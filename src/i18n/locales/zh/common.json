@@ -111,6 +111,15 @@
       "months": "个月",
       "end_date": "重复截止日期（可选）"
     },
+    "date_mode": {
+      "single": "单日期时间",
+      "range": "日期时间段"
+    },
+    "date_placeholder": "选择日期",
+    "time_placeholder": "选择时间",
+    "lunar_date": "农历",
+    "range_start": "开始",
+    "range_end": "结束",
     "views": {
       "list": "列表",
       "calendar": "日历",
@@ -284,6 +293,14 @@
       "denied": "通知权限被拒绝，请在系统设置中开启"
     },
     "about": "关于",
-    "version": "版本"
+    "version": "版本",
+    "calendar": {
+      "title": "日历",
+      "ics_desc": "导入ICS文件以显示农历节假日",
+      "import_ics": "导入ICS文件",
+      "clear_events": "清除事件",
+      "import_success": "成功导入{{count}}个事件",
+      "import_empty": "文件中未找到事件"
+    }
   }
 }

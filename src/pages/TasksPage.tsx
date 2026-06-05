@@ -318,6 +318,12 @@ function TaskDetailPanel({
               {t('tasks.due_time')}: {task.dueTime}
             </div>
           )}
+          {task.endDate && (
+            <div className="text-gray-600 dark:text-gray-400">
+              {t('tasks.range_end')}: {parseLocalDate(task.endDate).toLocaleDateString()}
+              {task.endTime && <span className="ml-1">{task.endTime}</span>}
+            </div>
+          )}
           {task.startDate && (
             <div className="text-gray-600 dark:text-gray-400">
               {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
@@ -572,6 +578,13 @@ function SortableTaskRow({
       {task.dueDate && (
         <span className="text-sm text-gray-500 flex-shrink-0">
           {parseLocalDate(task.dueDate).toLocaleDateString()}
+          {task.dueTime && <span className="ml-1">{task.dueTime}</span>}
+          {task.endDate && (
+            <span className="text-gray-400 ml-1">
+              &rarr; {parseLocalDate(task.endDate).toLocaleDateString()}
+              {task.endTime && <span className="ml-0.5">{task.endTime}</span>}
+            </span>
+          )}
         </span>
       )}
       <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
@@ -684,6 +697,8 @@ export default function TasksPage() {
     priority: Priority;
     dueDate?: string;
     dueTime?: string;
+    endDate?: string;
+    endTime?: string;
     startDate?: string;
     listId?: string;
     recurrenceRule?: string;
@@ -698,6 +713,8 @@ export default function TasksPage() {
     priority: Priority;
     dueDate?: string;
     dueTime?: string;
+    endDate?: string;
+    endTime?: string;
     startDate?: string;
     listId?: string;
     recurrenceRule?: string;

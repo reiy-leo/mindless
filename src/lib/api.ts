@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Subtask, Step, List, TodayCheckinInfo, HabitLog } from '@/types';
+import type { Task, Habit, Countdown, Tag, Subtask, Step, List, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -16,6 +16,8 @@ export async function createTask(params: {
   priority?: number;
   dueDate?: string;
   dueTime?: string;
+  endDate?: string;
+  endTime?: string;
   startDate?: string;
   listId?: string;
   tagIds?: string;
@@ -32,6 +34,8 @@ export async function updateTask(id: string, params: {
   priority?: number;
   dueDate?: string;
   dueTime?: string;
+  endDate?: string;
+  endTime?: string;
   startDate?: string;
   listId?: string;
   tagIds?: string;
@@ -277,6 +281,27 @@ export async function updateSetting(key: string, value: string): Promise<void> {
 
 export async function updateSettings(settings: [string, string][]): Promise<void> {
   return await invoke<void>('update_settings', { settings });
+}
+
+// Calendar Events APIs
+export async function getCalendarEvents(): Promise<CalendarEvent[]> {
+  return await invoke<CalendarEvent[]>('get_calendar_events');
+}
+
+export async function getCalendarEventsByRange(startDate: string, endDate: string): Promise<CalendarEvent[]> {
+  return await invoke<CalendarEvent[]>('get_calendar_events_by_range', { startDate, endDate });
+}
+
+export async function importCalendarEvents(events: { title: string; eventDate: string; eventType?: string; color?: string; isLunar?: boolean }[], source?: string): Promise<number> {
+  return await invoke<number>('import_calendar_events', { events, source });
+}
+
+export async function deleteCalendarEventsBySource(source: string): Promise<number> {
+  return await invoke<number>('delete_calendar_events_by_source', { source });
+}
+
+export async function clearAllCalendarEvents(): Promise<number> {
+  return await invoke<number>('clear_all_calendar_events');
 }
 
 // Notification APIs

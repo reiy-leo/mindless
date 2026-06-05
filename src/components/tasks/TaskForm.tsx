@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { PRIORITY } from '@/lib/constants';
-import { useLists } from '@/queries/useTaskQueries';
+import { useLists, useCalendarEvents } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
+import DateTimePicker from '@/components/DateTimePicker';
+import DateTimeRangePicker from '@/components/DateTimeRangePicker';
 import type { Priority, Task } from '@/types/task';
 
 // Recurrence rule options
@@ -25,6 +27,8 @@ interface TaskFormProps {
     priority: Priority;
     dueDate?: string;
     dueTime?: string;
+    endDate?: string;
+    endTime?: string;
     startDate?: string;
     listId?: string;
     tagIds?: string;
@@ -38,13 +42,17 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
   const { t } = useTranslation('common');
   const { selectedListId } = useViewStore();
   const { data: lists = [] } = useLists();
+  const { data: calendarEvents = [] } = useCalendarEvents();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(PRIORITY.NONE);
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [startDate, setStartDate] = useState('');
   const [listId, setListId] = useState('');
+  const [dateMode, setDateMode] = useState<'single' | 'range'>('single');
 
   // Recurrence state
   const [recurrenceType, setRecurrenceType] = useState('');
@@ -92,8 +100,12 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       setPriority(task.priority);
       setDueDate(task.dueDate || '');
       setDueTime(task.dueTime || '');
+      setEndDate(task.endDate || '');
+      setEndTime(task.endTime || '');
       setStartDate(task.startDate || '');
       setListId(task.listId || '');
+      // Auto-switch to range mode if the task has an endDate
+      setDateMode(task.endDate ? 'range' : 'single');
       const parsed = parseRecurrenceRule(task.recurrenceRule);
       setRecurrenceType(parsed.type);
       setCustomInterval(parsed.interval);
@@ -105,18 +117,24 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       setPriority(PRIORITY.NONE);
       setDueDate('');
       setDueTime('');
+      setEndDate('');
+      setEndTime('');
       setStartDate('');
       setListId(effectiveSelectedListId);
+      setDateMode('single');
       setRecurrenceType('');
       setCustomInterval(2);
       setCustomUnit('days');
       setRecurrenceEndDate('');
     } else {
       setListId(effectiveSelectedListId);
+      setDateMode('single');
       setRecurrenceType('');
       setCustomInterval(2);
       setCustomUnit('days');
       setRecurrenceEndDate('');
+      setEndDate('');
+      setEndTime('');
     }
   }, [isOpen, task, effectiveSelectedListId]);
 
@@ -131,6 +149,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
       priority,
       dueDate: dueDate || undefined,
       dueTime: dueTime || undefined,
+      endDate: endDate || undefined,
+      endTime: endTime || undefined,
       startDate: startDate || undefined,
       listId: listId || undefined,
       recurrenceRule: rule,
@@ -238,27 +258,77 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('tasks.start_date')}</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('tasks.due_date')}</label>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Due Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('tasks.due_time')}</label>
-            <input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            {/* Date mode toggle */}
+            <div className="flex items-center gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.start_date')} / {t('tasks.due_date')}
+              </label>
+              <div className="ml-auto flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setDateMode('single')}
+                  className={`px-3 py-1 text-xs transition-colors ${
+                    dateMode === 'single'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('tasks.date_mode.single')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateMode('range')}
+                  className={`px-3 py-1 text-xs transition-colors border-l border-gray-300 dark:border-gray-600 ${
+                    dateMode === 'range'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('tasks.date_mode.range')}
+                </button>
+              </div>
+            </div>
+
+            {dateMode === 'single' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('tasks.start_date')}</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('tasks.due_date')}</label>
+                  <DateTimePicker
+                    date={dueDate || undefined}
+                    time={dueTime || undefined}
+                    onChange={(d, tm) => { setDueDate(d || ''); setDueTime(tm || ''); }}
+                    events={calendarEvents}
+                    showTime={true}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  {t('tasks.range_start')} &rarr; {t('tasks.range_end')}
+                </label>
+                <DateTimeRangePicker
+                  startDate={dueDate || undefined}
+                  startTime={dueTime || undefined}
+                  endDate={endDate || undefined}
+                  endTime={endTime || undefined}
+                  onChange={(sd, st, ed, et) => {
+                    setDueDate(sd || '');
+                    setDueTime(st || '');
+                    setEndDate(ed || '');
+                    setEndTime(et || '');
+                  }}
+                  events={calendarEvents}
+                />
+              </div>
+            )}
           </div>
 
           {/* Recurrence */}

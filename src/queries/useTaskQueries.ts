@@ -294,3 +294,41 @@ export function useDeleteTag() {
     },
   });
 }
+
+// ==================== Calendar Event Queries ====================
+
+export function useCalendarEvents() {
+  return useQuery({
+    queryKey: ['calendar-events'],
+    queryFn: () => api.getCalendarEvents(),
+  });
+}
+
+export function useCalendarEventsByRange(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ['calendar-events', startDate, endDate],
+    queryFn: () => api.getCalendarEventsByRange(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useImportCalendarEvents() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { events: { title: string; eventDate: string; eventType?: string; color?: string; isLunar?: boolean }[]; source?: string }) =>
+      api.importCalendarEvents(params.events, params.source),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+    },
+  });
+}
+
+export function useClearAllCalendarEvents() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.clearAllCalendarEvents(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+    },
+  });
+}

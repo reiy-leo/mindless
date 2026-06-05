@@ -24,6 +24,8 @@ pub struct Task {
     pub completed_at: Option<String>,
     pub deleted_at: Option<String>,
     pub sort_order: f64,
+    pub end_date: Option<String>,
+    pub end_time: Option<String>,
 }
 
 // List model
@@ -148,4 +150,18 @@ pub struct Countdown {
 pub struct Setting {
     pub key: String,
     pub value: String,
+}
+
+// Calendar event model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalendarEvent {
+    pub id: String,
+    pub title: String,
+    pub event_date: String,
+    pub event_type: String,
+    pub color: Option<String>,
+    pub source: Option<String>,
+    pub is_lunar: bool,
+    pub created_at: String,
 }

@@ -111,6 +111,15 @@
       "months": "months",
       "end_date": "Repeat until (optional)"
     },
+    "date_mode": {
+      "single": "Single datetime",
+      "range": "Date-time range"
+    },
+    "date_placeholder": "Select date",
+    "time_placeholder": "Select time",
+    "lunar_date": "Lunar",
+    "range_start": "Start",
+    "range_end": "End",
     "views": {
       "list": "List",
       "calendar": "Calendar",
@@ -284,6 +293,14 @@
       "denied": "Notification permission denied. Please enable it in System Settings."
     },
     "about": "About",
-    "version": "Version"
+    "version": "Version",
+    "calendar": {
+      "title": "Calendar",
+      "ics_desc": "Import ICS file for lunar calendar holidays and events display",
+      "import_ics": "Import ICS File",
+      "clear_events": "Clear Events",
+      "import_success": "Successfully imported {{count}} events",
+      "import_empty": "No events found in the file"
+    }
   }
 }

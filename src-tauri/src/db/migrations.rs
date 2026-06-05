@@ -147,6 +147,17 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             ('task_sort_by', 'due_date'),
             ('task_group_by', 'none');
 
+        CREATE TABLE IF NOT EXISTS calendar_events (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            event_type TEXT NOT NULL DEFAULT 'holiday',
+            color TEXT DEFAULT '#EF4444',
+            source TEXT DEFAULT '',
+            is_lunar INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_tasks_list_id ON tasks(list_id);
         CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
         CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
@@ -165,6 +176,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id ON habit_logs(habit_id);
         CREATE INDEX IF NOT EXISTS idx_habit_logs_log_date ON habit_logs(log_date);
         CREATE INDEX IF NOT EXISTS idx_countdowns_target_date ON countdowns(target_date);
+        CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(event_date);
     "#;
 
     // Use rusqlite directly for migrations
@@ -172,6 +184,11 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
     match rusqlite::Connection::open(&db_path_buf) {
         Ok(conn) => {
             conn.execute_batch(sql).map_err(|e| format!("Migration failed: {}", e))?;
+
+            // Try adding new columns (ignore if they already exist)
+            let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_date TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_time TEXT;");
+
             println!("Migrations applied successfully");
         }
         Err(e) => {

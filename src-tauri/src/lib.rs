@@ -70,6 +70,12 @@ pub fn run() {
             commands::get_due_tasks,
             commands::get_reminder_habits,
             commands::get_reminder_countdowns,
+            // Calendar Events
+            commands::get_calendar_events,
+            commands::get_calendar_events_by_range,
+            commands::import_calendar_events,
+            commands::delete_calendar_events_by_source,
+            commands::clear_all_calendar_events,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

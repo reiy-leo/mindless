@@ -14,6 +14,8 @@ export interface Task {
   priority: Priority;           // 0-3 或 0-10 (取决于设置)
   dueDate?: string;             // ISO date
   dueTime?: string;             // HH:mm
+  endDate?: string;             // ISO date (end of range)
+  endTime?: string;             // HH:mm (end of range)
   startDate?: string;
   reminderTime?: string;        // ISO datetime
   recurrenceRule?: string;
@@ -38,6 +40,8 @@ export interface CreateTaskParams {
   priority?: number;
   dueDate?: string;
   dueTime?: string;
+  endDate?: string;
+  endTime?: string;
   startDate?: string;
   listId?: string;
   recurrenceRule?: string;
@@ -51,6 +55,8 @@ export interface UpdateTaskParams {
   priority?: number;
   dueDate?: string;
   dueTime?: string;
+  endDate?: string;
+  endTime?: string;
   startDate?: string;
   listId?: string;
   recurrenceRule?: string;
@@ -90,4 +96,15 @@ export interface List {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  eventDate: string;      // YYYY-MM-DD
+  eventType: string;       // 'holiday' | 'lunar' | 'custom'
+  color: string;
+  source: string;
+  isLunar: boolean;
+  createdAt: string;
 }

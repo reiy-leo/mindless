@@ -111,6 +111,15 @@
       "months": "ヶ月",
       "end_date": "繰り返し終了日（任意）"
     },
+    "date_mode": {
+      "single": "日時指定",
+      "range": "日時範囲"
+    },
+    "date_placeholder": "日付を選択",
+    "time_placeholder": "時間を選択",
+    "lunar_date": "旧暦",
+    "range_start": "開始",
+    "range_end": "終了",
     "views": {
       "list": "リスト",
       "calendar": "カレンダー",
@@ -284,6 +293,14 @@
       "denied": "通知権限が拒否されました。システム設定で有効にしてください。"
     },
     "about": "について",
-    "version": "バージョン"
+    "version": "バージョン",
+    "calendar": {
+      "title": "カレンダー",
+      "ics_desc": "ICSファイルをインポートして旧暦祝日を表示",
+      "import_ics": "ICSファイルをインポート",
+      "clear_events": "イベントを削除",
+      "import_success": "{{count}}件のイベントをインポートしました",
+      "import_empty": "ファイルにイベントが見つかりません"
+    }
   }
 }

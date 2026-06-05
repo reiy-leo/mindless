@@ -35,6 +35,8 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         completed_at: row.get(17)?,
         deleted_at: row.get(18)?,
         sort_order: row.get(19)?,
+        end_date: row.get(20)?,
+        end_time: row.get(21)?,
     })
 }
 
@@ -51,6 +53,8 @@ pub async fn create_task(
     tag_ids: Option<String>,
     recurrence_rule: Option<String>,
     recurrence_end_date: Option<String>,
+    end_date: Option<String>,
+    end_time: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -63,7 +67,7 @@ pub async fn create_task(
     ).unwrap_or(0.0);
 
     conn.execute(
-        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         rusqlite::params![
             &id,
             &title,
@@ -77,6 +81,8 @@ pub async fn create_task(
             &max_sort,
             opt_str(&recurrence_rule),
             opt_str(&recurrence_end_date),
+            opt_str(&end_date),
+            opt_str(&end_time),
         ]
     ).map_err(|e| format!("Failed to create task: {}", e))?;
 
@@ -126,6 +132,8 @@ pub async fn update_task(
     sort_order: Option<f64>,
     recurrence_rule: Option<String>,
     recurrence_end_date: Option<String>,
+    end_date: Option<String>,
+    end_time: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
@@ -137,6 +145,8 @@ pub async fn update_task(
     let tag_ids = tag_ids.filter(|s| !s.is_empty());
     let recurrence_rule = recurrence_rule.filter(|s| !s.is_empty());
     let recurrence_end_date = recurrence_end_date.filter(|s| !s.is_empty());
+    let end_date = end_date.filter(|s| !s.is_empty());
+    let end_time = end_time.filter(|s| !s.is_empty());
 
     let mut updates: Vec<String> = Vec::new();
     let mut param_idx = 1;
@@ -204,6 +214,16 @@ pub async fn update_task(
         updates.push("recurrence_end_date".to_string());
         param_idx += 1;
     }
+    if end_date.is_some() {
+        sql.push_str(&format!(", end_date = ?{}", param_idx));
+        updates.push("end_date".to_string());
+        param_idx += 1;
+    }
+    if end_time.is_some() {
+        sql.push_str(&format!(", end_time = ?{}", param_idx));
+        updates.push("end_time".to_string());
+        param_idx += 1;
+    }
 
     sql.push_str(&format!(" WHERE id = ?{}", param_idx));
 
@@ -224,6 +244,8 @@ pub async fn update_task(
     if let Some(v) = sort_order { params.push(Box::new(v)); }
     if let Some(ref v) = recurrence_rule { params.push(Box::new(v.clone())); }
     if let Some(ref v) = recurrence_end_date { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = end_date { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = end_time { params.push(Box::new(v.clone())); }
     params.push(Box::new(id.clone()));
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
@@ -431,8 +453,8 @@ pub async fn complete_recurring_task(
     // Create next occurrence
     let new_id = Uuid::new_v4().to_string();
     conn.execute(
-        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         rusqlite::params![
             &new_id,
             &task.title,
@@ -446,6 +468,8 @@ pub async fn complete_recurring_task(
             &task.sort_order,
             &task.recurrence_rule,
             &task.recurrence_end_date,
+            &task.end_date,
+            &task.end_time,
         ]
     ).map_err(|e| format!("Failed to create recurring task: {}", e))?;
 

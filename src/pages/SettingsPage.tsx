@@ -1,13 +1,82 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/useAppStore';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { checkAndNotify } from '@/services/notificationService';
+import { useCalendarEvents, useImportCalendarEvents, useClearAllCalendarEvents } from '@/queries/useTaskQueries';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation('common');
   const { theme, language, priorityMode, notificationEnabled, setTheme, setLanguage, setPriorityMode, setNotificationEnabled } = useAppStore();
   const [permStatus, setPermStatus] = useState<string | null>(null);
+
+  // Calendar / ICS import state
+  const { data: calendarEvents = [] } = useCalendarEvents();
+  const importMutation = useImportCalendarEvents();
+  const clearMutation = useClearAllCalendarEvents();
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const eventCount = calendarEvents.length;
+
+  function parseICS(content: string): { title: string; eventDate: string; eventType: string }[] {
+    const events: { title: string; eventDate: string; eventType: string }[] = [];
+    const blocks = content.split('BEGIN:VEVENT');
+
+    for (const block of blocks.slice(1)) {
+      const summaryMatch = block.match(/SUMMARY:(.*?)(?:\r?\n)/);
+      const dtStartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*?)(?:\r?\n)/);
+
+      if (summaryMatch && dtStartMatch) {
+        const title = summaryMatch[1].trim();
+        const dtRaw = dtStartMatch[1].trim();
+        let dateStr = '';
+        if (dtRaw.length >= 8) {
+          dateStr = `${dtRaw.slice(0, 4)}-${dtRaw.slice(4, 6)}-${dtRaw.slice(6, 8)}`;
+        }
+        if (dateStr) {
+          events.push({ title, eventDate: dateStr, eventType: 'holiday' });
+        }
+      }
+    }
+    return events;
+  }
+
+  const handleImportICS = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportStatus(null);
+
+    try {
+      const text = await file.text();
+      const events = parseICS(text);
+
+      if (events.length === 0) {
+        setImportStatus(t('settings.calendar.import_empty'));
+      } else {
+        const count = await importMutation.mutateAsync({ events, source: file.name });
+        setImportStatus(t('settings.calendar.import_success', { count }));
+      }
+    } catch (err) {
+      setImportStatus(String(err));
+    } finally {
+      setImporting(false);
+      // Reset the input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleClearEvents = () => {
+    clearMutation.mutate();
+    setImportStatus(null);
+  };
 
   const handleToggleNotification = async (enabled: boolean) => {
     if (enabled) {
@@ -180,6 +249,48 @@ export default function SettingsPage() {
             {permStatus && (
               <p className="text-sm text-gray-500 dark:text-gray-400 italic">{permStatus}</p>
             )}
+          </div>
+        </section>
+
+        {/* Calendar settings */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {t('settings.calendar.title')}
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                {t('settings.calendar.ics_desc')}
+              </p>
+              {/* Hidden file input for ICS */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".ics"
+                className="hidden"
+                onChange={handleFileSelected}
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleImportICS}
+                  disabled={importing}
+                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {importing ? t('common.loading') : t('settings.calendar.import_ics')}
+                </button>
+                {eventCount > 0 && (
+                  <button
+                    onClick={handleClearEvents}
+                    className="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    {t('settings.calendar.clear_events')} ({eventCount})
+                  </button>
+                )}
+              </div>
+              {importStatus && (
+                <p className="text-sm text-gray-500 mt-2">{importStatus}</p>
+              )}
+            </div>
           </div>
         </section>
 
