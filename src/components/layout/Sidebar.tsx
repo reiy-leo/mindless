@@ -115,20 +115,20 @@ export default function Sidebar() {
   const getIconComponent = (iconKey: string, color?: string) => {
     const Icon = ICON_MAP[iconKey] || CheckSquareIcon;
     if (color) {
-      return <span style={{ color }}><Icon className="w-4 h-4" /></span>;
+      return <span style={{ color }}><Icon className="w-3.5 h-3.5" /></span>;
     }
-    return <Icon className="w-4 h-4" />;
+    return <Icon className="w-3.5 h-3.5" />;
   };
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <div role="navigation" aria-label="Main navigation" className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Logo */}
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mindless</h1>
+      <div className="px-4 pt-4 pb-2">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Mindless</h1>
       </div>
 
       {/* Main navigation */}
-      <nav className="px-4 space-y-1">
+      <nav className="px-3 space-y-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path && !selectedListId;
@@ -138,16 +138,16 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               onClick={() => {
-                // Clear list filter when navigating to main pages
                 if (item.path !== '/tasks') setSelectedListId(null);
               }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-colors text-sm ${
                 isActive
                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
               <span>{t(item.labelKey)}</span>
             </Link>
           );
@@ -155,34 +155,34 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="mx-4 my-4 border-t border-gray-200 dark:border-gray-700" />
+      <div className="mx-3 my-2 border-t border-gray-200 dark:border-gray-700" />
 
       {/* Lists section */}
-      <div className="flex-1 overflow-auto px-4">
+      <div className="flex-1 overflow-auto px-3">
         {/* Section header */}
-        <div className="flex items-center justify-between mb-2 px-2">
+        <div className="flex items-center justify-between mb-1 px-1.5">
           <button
             onClick={() => setListsExpanded(!listsExpanded)}
-            className="flex items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
           >
             {listsExpanded ? (
-              <ChevronDownIcon className="w-3.5 h-3.5" />
+              <ChevronDownIcon className="w-3 h-3" />
             ) : (
-              <ChevronRightIcon className="w-3.5 h-3.5" />
+              <ChevronRightIcon className="w-3 h-3" />
             )}
             {t('lists.title')}
           </button>
           <button
             onClick={handleCreateList}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={t('lists.create_list')}
           >
-            <PlusIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <PlusIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
           </button>
         </div>
 
         {listsExpanded && (
-          <div className="space-y-0.5">
+          <div className="space-y-px">
             {/* Smart lists */}
             {SMART_LISTS.map((smartList) => {
               const isActive = selectedListId === smartList.id;
@@ -192,14 +192,14 @@ export default function Sidebar() {
                 <button
                   key={smartList.id}
                   onClick={() => handleListClick(smartList.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
                     isActive
                       ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   {getIconComponent(smartList.iconKey)}
-                  <span className="text-sm flex-1">{t(smartList.labelKey)}</span>
+                  <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
                   {count > 0 && (
                     <span className="text-xs text-gray-400 dark:text-gray-500">{count}</span>
                   )}
@@ -216,17 +216,17 @@ export default function Sidebar() {
                 <button
                   key={list.id}
                   onClick={() => handleListClick(list.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left group ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-colors text-left group text-sm ${
                     isActive
                       ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: list.color || '#3B82F6' }}
                   />
-                  <span className="text-sm flex-1 truncate">{list.name}</span>
+                  <span className="flex-1 truncate">{list.name}</span>
                   {count > 0 && (
                     <span className="text-xs text-gray-400 dark:text-gray-500 group-hover:hidden">{count}</span>
                   )}

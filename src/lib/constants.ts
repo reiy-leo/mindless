@@ -20,7 +20,6 @@ export const VIEW_MODES = {
   list: 'tasks.views.list',
   calendar: 'tasks.views.calendar',
   kanban: 'tasks.views.kanban',
-  grid: 'tasks.views.grid',
   matrix: 'tasks.views.matrix',
 } as const;
 

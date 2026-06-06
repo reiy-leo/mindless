@@ -12,6 +12,7 @@ import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
 import { getLunarDayStr, getLunarInfo } from '@/lib/lunar';
 import { getLocalToday } from '@/lib/taskHelpers';
+import { useAppStore } from '@/stores/useAppStore';
 import type { Countdown, EventType, CreateCountdownParams } from '@/types/countdown';
 
 // ==================== Icon & Color Options ====================
@@ -366,17 +367,22 @@ function CountdownCalendarView({
   onDelete: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation('common');
+  const weekStartDay = useAppStore((s) => s.weekStartDay);
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [selectedCountdown, setSelectedCountdown] = useState<Countdown | null>(null);
 
-  const dayLabels = useMemo(() => [
-    t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
-    t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
-    t('habits.calendar.sat'),
-  ], [t]);
+  const dayLabels = useMemo(() => {
+    const sun = [
+      t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
+      t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
+      t('habits.calendar.sat'),
+    ];
+    if (weekStartDay === 1) return [...sun.slice(1), sun[0]];
+    return sun;
+  }, [t, weekStartDay]);
 
   // Group countdowns by target date
   const countdownsByDate = useMemo(() => {
@@ -392,7 +398,8 @@ function CountdownCalendarView({
   // Calendar grid computations
   const { daysInMonth, firstDayOfWeek, trailingEmpty, monthLabel, lunarYearLabel, today } = useMemo(() => {
     const dim = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
-    const fdow = new Date(viewMonth.year, viewMonth.month, 1).getDay();
+    const rawDow = new Date(viewMonth.year, viewMonth.month, 1).getDay();
+    const fdow = (rawDow - weekStartDay + 7) % 7;
     const totalCells = fdow + dim;
     const trailing = (7 - (totalCells % 7)) % 7;
     const ml = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(i18n.language, {
@@ -404,7 +411,7 @@ function CountdownCalendarView({
       daysInMonth: dim, firstDayOfWeek: fdow, trailingEmpty: trailing,
       monthLabel: ml, lunarYearLabel: midLunar.yearStr, today: todayStr,
     };
-  }, [viewMonth, i18n.language]);
+  }, [viewMonth, i18n.language, weekStartDay]);
 
   // Precompute lunar data
   const lunarDataByDay = useMemo(() => {

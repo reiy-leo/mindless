@@ -44,6 +44,15 @@
     "tags": "タグ",
     "settings": "設定"
   },
+  "search": {
+    "placeholder": "タスク、習慣、カウントダウンを検索...",
+    "no_results": "結果が見つかりません",
+    "hint": "キーワードでタスク、習慣、カウントダウンを検索",
+    "type_task": "タスク",
+    "type_habit": "習慣",
+    "type_countdown": "カウントダウン",
+    "esc_to_close": "Escで閉じる"
+  },
   "tasks": {
     "filters": "フィルター",
     "new_task": "新規タスク",
@@ -124,7 +133,6 @@
       "list": "リスト",
       "calendar": "カレンダー",
       "kanban": "カンバン",
-      "grid": "グリッド",
       "today": "今日",
       "no_due_date": "期限なし",
       "prev_month": "前月",
@@ -310,6 +318,11 @@
     },
     "about": "について",
     "version": "バージョン",
+    "font_size": "フォントサイズ",
+    "font_size.small": "小",
+    "font_size.default": "デフォルト",
+    "font_size.large": "大",
+    "font_size.xlarge": "特大",
     "calendar": {
       "title": "カレンダー",
       "ics_desc": "ICSファイルをインポートして旧暦祝日を表示",

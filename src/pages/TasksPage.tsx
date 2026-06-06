@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -18,6 +19,7 @@ import {
   useCompleteRecurringTask,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
+import { useAppStore } from '@/stores/useAppStore';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK, VIEW_MODES } from '@/lib/constants';
 import { getTaskTags, parseLocalDate } from '@/lib/taskHelpers';
 import TaskForm from '@/components/tasks/TaskForm';
@@ -27,9 +29,10 @@ import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
 import Select from '@/components/Select';
 import TagCombobox from '@/components/TagCombobox';
-import GridView from '@/components/tasks/GridView';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { TaskSortControls } from '@/components/tasks/TaskSortControls';
+import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import type { Task, Priority, Subtask as SubtaskType, Step as StepType } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -532,7 +535,7 @@ function SortableTaskRow({
 // ==================== Main Page ====================
 export default function TasksPage() {
   const { t } = useTranslation('common');
-  const { viewMode, filterStatus, searchQuery, selectedListId, setViewMode, setFilterStatus, setSearchQuery } = useViewStore();
+  const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus } = useViewStore();
   const [showFilters, setShowFilters] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -552,16 +555,40 @@ export default function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  // Keyboard shortcut listeners
+  useEffect(() => {
+    const handleNewTask = () => {
+      setEditingTask(null);
+      setShowTaskForm(true);
+    };
+    const handleEscape = () => {
+      if (showTaskForm) {
+        setShowTaskForm(false);
+        setEditingTask(null);
+      }
+      if (selectedTaskId) {
+        setSelectedTaskId(null);
+      }
+    };
+
+    window.addEventListener('mindless:new-task', handleNewTask);
+    window.addEventListener('mindless:escape', handleEscape);
+
+    return () => {
+      window.removeEventListener('mindless:new-task', handleNewTask);
+      window.removeEventListener('mindless:escape', handleEscape);
+    };
+  }, [showTaskForm, selectedTaskId]);
+
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) || null,
     [tasks, selectedTaskId]
   );
 
   // Filter and search tasks
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasksBase = useMemo(() => tasks.filter((task) => {
     if (filterStatus === 'active' && task.isCompleted) return false;
     if (filterStatus === 'completed' && !task.isCompleted) return false;
-    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
     // List filtering
     if (selectedListId) {
@@ -590,7 +617,60 @@ export default function TasksPage() {
     }
 
     return true;
-  });
+  }), [tasks, filterStatus, selectedListId]);
+
+  // Sort tasks
+  const { taskSortBy, taskSortOrder, taskGroupBy } = useAppStore();
+  const filteredTasks = useMemo(() => {
+    const sorted = [...filteredTasksBase].sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (taskSortBy) {
+        case 'dueDate':
+          aVal = a.dueDate || '';
+          bVal = b.dueDate || '';
+          break;
+        case 'startDate':
+          aVal = a.startDate || '';
+          bVal = b.startDate || '';
+          break;
+        case 'priority':
+          aVal = a.priority;
+          bVal = b.priority;
+          break;
+        case 'createdAt':
+          aVal = a.createdAt;
+          bVal = b.createdAt;
+          break;
+      }
+      if (aVal < bVal) return taskSortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return taskSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Group tasks
+    if (taskGroupBy === 'priority') {
+      const groups: Record<number, typeof sorted> = {};
+      sorted.forEach((task) => {
+        const priority = task.priority || 0;
+        if (!groups[priority]) groups[priority] = [];
+        groups[priority].push(task);
+      });
+      return Object.entries(groups)
+        .sort(([a], [b]) => Number(b) - Number(a))
+        .flatMap(([, groupTasks]) => groupTasks);
+    }
+    if (taskGroupBy === 'list') {
+      const groups: Record<string, typeof sorted> = {};
+      sorted.forEach((task) => {
+        const listId = task.listId || 'inbox';
+        if (!groups[listId]) groups[listId] = [];
+        groups[listId].push(task);
+      });
+      return Object.values(groups).flat();
+    }
+
+    return sorted;
+  }, [filteredTasksBase, taskSortBy, taskSortOrder, taskGroupBy]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -686,6 +766,15 @@ export default function TasksPage() {
     return list?.name || t('navigation.tasks');
   }, [selectedListId, allLists, t]);
 
+  // Virtual scrolling for list view
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: filteredTasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 72,
+    overscan: 5,
+  });
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -723,15 +812,8 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* Search and filters */}
+          {/* Filters */}
           <div className="flex items-center gap-4">
-            <input
-              type="text"
-              placeholder={t('tasks.search_placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
             <Select
               value={filterStatus}
               onChange={(val) => setFilterStatus(val as 'all' | 'active' | 'completed')}
@@ -760,6 +842,12 @@ export default function TasksPage() {
               </button>
             ))}
           </div>
+
+          {/* Sort and Group controls */}
+          <div className="flex items-center gap-4 mt-4">
+            <TaskSortControls />
+            <TaskGroupControls />
+          </div>
         </div>
 
         {/* Task content area */}
@@ -780,16 +868,6 @@ export default function TasksPage() {
             onToggleTask={handleToggleTask}
             onUpdateTask={handleUpdateTaskInline}
           />
-        ) : viewMode === 'grid' ? (
-          <GridView
-            tasks={filteredTasks}
-            allTags={allTags}
-            selectedTaskId={selectedTaskId}
-            onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
-            onToggleTask={handleToggleTask}
-            onEditTask={(task) => { setEditingTask(task); setShowTaskForm(true); }}
-            onDeleteTask={handleDeleteTask}
-          />
         ) : viewMode === 'matrix' ? (
           <EisenhowerMatrixView
             tasks={filteredTasks}
@@ -800,7 +878,7 @@ export default function TasksPage() {
             onUpdateTask={handleUpdateTaskInline}
           />
         ) : (
-        <div className="flex-1 overflow-auto p-6">
+        <div ref={parentRef} className="flex-1 overflow-auto p-6">
           {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <p className="text-lg">{t('tasks.no_tasks')}</p>
@@ -817,19 +895,33 @@ export default function TasksPage() {
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {filteredTasks.map((task) => (
-                    <SortableTaskRow
-                      key={task.id}
-                      task={task}
-                      allTags={allTags}
-                      isSelected={selectedTaskId === task.id}
-                      onSelect={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
-                      onToggle={() => handleToggleTask(task.id, task.isCompleted)}
-                      onEdit={() => { setEditingTask(task); setShowTaskForm(true); }}
-                      onDelete={() => handleDeleteTask(task.id)}
-                    />
-                  ))}
+                <div style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+                  {virtualizer.getVirtualItems().map((virtualRow) => {
+                    const task = filteredTasks[virtualRow.index];
+                    return (
+                      <div
+                        key={task.id}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <SortableTaskRow
+                          task={task}
+                          allTags={allTags}
+                          isSelected={selectedTaskId === task.id}
+                          onSelect={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
+                          onToggle={() => handleToggleTask(task.id, task.isCompleted)}
+                          onEdit={() => { setEditingTask(task); setShowTaskForm(true); }}
+                          onDelete={() => handleDeleteTask(task.id)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>

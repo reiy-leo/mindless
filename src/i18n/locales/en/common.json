@@ -44,6 +44,15 @@
     "tags": "Tags",
     "settings": "Settings"
   },
+  "search": {
+    "placeholder": "Search tasks, habits, countdowns...",
+    "no_results": "No results found",
+    "hint": "Type to search tasks, habits, and countdowns",
+    "type_task": "Task",
+    "type_habit": "Habit",
+    "type_countdown": "Countdown",
+    "esc_to_close": "Press Esc to close"
+  },
   "tasks": {
     "filters": "Filters",
     "new_task": "New Task",
@@ -124,7 +133,6 @@
       "list": "List",
       "calendar": "Calendar",
       "kanban": "Kanban",
-      "grid": "Grid",
       "today": "Today",
       "no_due_date": "No due date",
       "prev_month": "Previous month",
@@ -310,6 +318,11 @@
     },
     "about": "About",
     "version": "Version",
+    "font_size": "Font Size",
+    "font_size.small": "Small",
+    "font_size.default": "Default",
+    "font_size.large": "Large",
+    "font_size.xlarge": "Extra Large",
     "calendar": {
       "title": "Calendar",
       "ics_desc": "Import ICS file for lunar calendar holidays and events display",

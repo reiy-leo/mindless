@@ -8,7 +8,7 @@ import Select from '@/components/Select';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation('common');
-  const { theme, language, priorityMode, notificationEnabled, setTheme, setLanguage, setPriorityMode, setNotificationEnabled } = useAppStore();
+  const { theme, language, priorityMode, notificationEnabled, fontSize, setTheme, setLanguage, setPriorityMode, setNotificationEnabled, setFontSize } = useAppStore();
   const [permStatus, setPermStatus] = useState<string | null>(null);
 
   // Calendar / ICS import state
@@ -157,6 +157,39 @@ export default function SettingsPage() {
                   className="w-4 h-4 text-blue-500"
                 />
                 <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Font size settings */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {t('settings.font_size')}
+          </h2>
+          <div className="space-y-2">
+            {[
+              { value: 'small', label: t('settings.font_size.small'), description: '14px' },
+              { value: 'default', label: t('settings.font_size.default'), description: '16px' },
+              { value: 'large', label: t('settings.font_size.large'), description: '18px' },
+              { value: 'xlarge', label: t('settings.font_size.xlarge'), description: '20px' },
+            ].map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <input
+                  type="radio"
+                  name="fontSize"
+                  value={option.value}
+                  checked={fontSize === option.value}
+                  onChange={() => setFontSize(option.value as any)}
+                  className="w-4 h-4 text-blue-500"
+                />
+                <div>
+                  <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{option.description}</div>
+                </div>
               </label>
             ))}
           </div>

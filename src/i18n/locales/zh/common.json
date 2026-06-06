@@ -44,6 +44,15 @@
     "tags": "标签",
     "settings": "设置"
   },
+  "search": {
+    "placeholder": "搜索任务、习惯、倒数日...",
+    "no_results": "未找到匹配结果",
+    "hint": "输入关键词搜索任务、习惯和倒数日",
+    "type_task": "任务",
+    "type_habit": "习惯",
+    "type_countdown": "倒数日",
+    "esc_to_close": "按 Esc 关闭"
+  },
   "tasks": {
     "filters": "过滤器",
     "new_task": "新建任务",
@@ -124,7 +133,6 @@
       "list": "列表",
       "calendar": "日历",
       "kanban": "看板",
-      "grid": "四宫格",
       "today": "今天",
       "no_due_date": "无截止日期",
       "prev_month": "上个月",
@@ -310,6 +318,11 @@
     },
     "about": "关于",
     "version": "版本",
+    "font_size": "字体大小",
+    "font_size.small": "小",
+    "font_size.default": "默认",
+    "font_size.large": "大",
+    "font_size.xlarge": "超大",
     "calendar": {
       "title": "日历",
       "ics_desc": "导入ICS文件以显示农历节假日",

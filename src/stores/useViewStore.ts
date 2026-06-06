@@ -1,36 +1,32 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type ViewMode = 'list' | 'calendar' | 'kanban' | 'grid' | 'matrix';
+type ViewMode = 'list' | 'calendar' | 'kanban' | 'matrix';
 
 interface ViewState {
   viewMode: ViewMode;
   selectedDate: Date | null;
   selectedListId: string | null;
   filterStatus: 'all' | 'active' | 'completed';
-  searchQuery: string;
 
   setViewMode: (mode: ViewMode) => void;
   setSelectedDate: (date: Date | null) => void;
   setSelectedListId: (id: string | null) => void;
   setFilterStatus: (status: 'all' | 'active' | 'completed') => void;
-  setSearchQuery: (query: string) => void;
 }
 
 export const useViewStore = create<ViewState>()(
   persist(
     (set) => ({
-      viewMode: 'list',
+      viewMode: 'list' as ViewMode,
       selectedDate: null,
       selectedListId: null,
       filterStatus: 'all',
-      searchQuery: '',
 
       setViewMode: (viewMode) => set({ viewMode }),
       setSelectedDate: (selectedDate) => set({ selectedDate }),
       setSelectedListId: (selectedListId) => set({ selectedListId }),
       setFilterStatus: (filterStatus) => set({ filterStatus }),
-      setSearchQuery: (searchQuery) => set({ searchQuery }),
     }),
     {
       name: 'mindless-view-settings',
@@ -38,6 +34,15 @@ export const useViewStore = create<ViewState>()(
         viewMode: state.viewMode,
         selectedListId: state.selectedListId,
       }),
+      merge: (persisted: unknown, current: ViewState) => {
+        const p = persisted as Partial<ViewState>;
+        const validModes: ViewMode[] = ['list', 'calendar', 'kanban', 'matrix'];
+        return {
+          ...current,
+          ...p,
+          viewMode: validModes.includes(p.viewMode as ViewMode) ? p.viewMode! : 'list',
+        };
+      },
     }
   )
 );
