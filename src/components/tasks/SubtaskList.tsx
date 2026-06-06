@@ -84,7 +84,7 @@ function InlineAddInput({
       />
       <button
         onClick={onCancel}
-        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
+        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 px-1"
       >
         {t('common.cancel')}
       </button>
@@ -147,9 +147,9 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             {isExpanded ? (
-              <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+              <ChevronDownIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             ) : (
-              <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+              <ChevronRightIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             )}
           </button>
         ) : (
@@ -194,7 +194,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={t('tasks.subtasks.add_child')}
             >
-              <PlusIcon className="w-4 h-4 text-gray-500" />
+              <PlusIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </button>
           )}
           <button
@@ -202,7 +202,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
             className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title={t('common.delete')}
           >
-            <TrashIcon className="w-4 h-4 text-red-500" />
+            <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
           </button>
         </div>
       </div>

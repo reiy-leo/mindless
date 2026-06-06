@@ -137,7 +137,7 @@ export default function HomePage() {
               </h2>
               <Link
                 to="/tasks"
-                className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
               >
                 {t('dashboard.view_all')}
                 <ArrowRightIcon className="w-3.5 h-3.5" />
@@ -182,7 +182,7 @@ export default function HomePage() {
               </h2>
               <Link
                 to="/habits"
-                className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
               >
                 {t('dashboard.view_all')}
                 <ArrowRightIcon className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export default function HomePage() {
               </h2>
               <Link
                 to="/countdowns"
-                className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
               >
                 {t('dashboard.view_all')}
                 <ArrowRightIcon className="w-3.5 h-3.5" />

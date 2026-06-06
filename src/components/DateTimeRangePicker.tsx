@@ -248,7 +248,7 @@ export default function DateTimeRangePicker({
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
       >
-        <CalendarIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
         <span className={`text-sm truncate ${startDate || endDate ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
           {triggerText}
         </span>
@@ -270,7 +270,7 @@ export default function DateTimeRangePicker({
               >
                 {t('tasks.range_start')}
               </button>
-              <span className="text-gray-400">&rarr;</span>
+              <span className="text-gray-400 dark:text-gray-500">&rarr;</span>
               <button
                 type="button"
                 onClick={() => setPickingEnd(true)}

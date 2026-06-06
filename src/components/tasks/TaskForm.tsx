@@ -183,7 +183,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             {isEditing ? t('tasks.edit_task') : t('tasks.new_task')}
           </h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
+            <XMarkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -205,7 +205,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('tasks.description')}
-              <span className="ml-2 text-xs text-gray-400 font-normal">({t('tasks.supports_markdown')})</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">({t('tasks.supports_markdown')})</span>
             </label>
             <textarea
               value={description} onChange={(e) => setDescription(e.target.value)}
@@ -375,7 +375,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             {/* Recurrence end date */}
             {recurrenceType && (
               <div className="mt-2">
-                <label className="block text-xs text-gray-500 mb-1">{t('tasks.recurrence.end_date')}</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('tasks.recurrence.end_date')}</label>
                 <DateTimePicker
                   date={recurrenceEndDate || undefined}
                   onChange={(d) => setRecurrenceEndDate(d || '')}

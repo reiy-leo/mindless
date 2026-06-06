@@ -118,7 +118,7 @@ export default function Select({
             <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>
           )}
         </span>
-        <ChevronDownIcon className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDownIcon className={`w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

@@ -283,7 +283,7 @@ function CountdownCard({
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h3>
             {countdown.description && (
-              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{countdown.description}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{countdown.description}</p>
             )}
           </div>
         </div>
@@ -291,7 +291,7 @@ function CountdownCard({
           <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
             <PencilIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50" title={t('common.delete')}>
+          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
             <TrashIcon className="w-4 h-4 text-red-400" />
           </button>
         </div>
@@ -302,7 +302,7 @@ function CountdownCard({
         <span className={`text-4xl font-bold ${getNumberColor()}`}>
           {getDisplayValue()}
         </span>
-        <span className="text-gray-500 text-sm">{getStatusText()}</span>
+        <span className="text-gray-500 dark:text-gray-400 text-sm">{getStatusText()}</span>
       </div>
 
       {/* Footer */}
@@ -314,7 +314,7 @@ function CountdownCard({
           {countdown.targetTime && ` ${countdown.targetTime.slice(0, 5)}`}
         </span>
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-          isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700'
+          isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
         }`}>
           {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
         </span>
@@ -607,7 +607,7 @@ function SelectedCountdownDetail({
         <div>
           <h4 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h4>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-            isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700'
+            isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
           }`}>
             {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
           </span>
@@ -620,7 +620,7 @@ function SelectedCountdownDetail({
         }`}>
           {diff === 0 && !isCountup ? t('countdowns.today') : displayDays}
         </div>
-        <div className="text-xs text-gray-500 mt-1">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {isCountup
             ? (diff >= 0 ? t('countdowns.days_since') : t('countdowns.days_until'))
             : (diff < 0 ? t('countdowns.days_ago') : t('countdowns.days_left'))
@@ -645,7 +645,7 @@ function SelectedCountdownDetail({
         )}
         {countdown.description && (
           <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs text-gray-500">{countdown.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{countdown.description}</p>
           </div>
         )}
       </div>
@@ -774,7 +774,7 @@ export default function CountdownsPage() {
   if (isError) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-red-500">Failed to load countdowns. Please try again.</div>
+        <div className="text-red-500 dark:text-red-400">Failed to load countdowns. Please try again.</div>
       </div>
     );
   }
@@ -822,10 +822,10 @@ export default function CountdownsPage() {
 
       {/* Content area */}
       {countdowns.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
           <ClockIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
           <p className="text-lg">{t('countdowns.no_countdowns')}</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 text-purple-500 hover:text-purple-600">
+          <button onClick={() => setShowForm(true)} className="mt-4 text-purple-500 hover:text-purple-600 dark:hover:text-purple-400">
             {t('countdowns.create_first')}
           </button>
         </div>

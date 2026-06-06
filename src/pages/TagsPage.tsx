@@ -103,7 +103,7 @@ function TagFormDialog({
             {isEditing ? t('tags.edit_tag') : t('tags.new_tag')}
           </h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
+            <XMarkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -287,9 +287,9 @@ function TagRow({
           className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
         >
           {isCollapsed ? (
-            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+            <ChevronRightIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           ) : (
-            <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+            <ChevronDownIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           )}
         </button>
       ) : (
@@ -338,7 +338,7 @@ function TagRow({
           className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           title={t('common.delete')}
         >
-          <TrashIcon className="w-3.5 h-3.5 text-red-500" />
+          <TrashIcon className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
         </button>
       </div>
     </div>
@@ -608,7 +608,7 @@ export default function TagsPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500">{t('common.loading')}</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
       </div>
     );
   }
@@ -643,7 +643,7 @@ export default function TagsPage() {
       {/* Tag tree with drag-and-drop */}
       <div className="flex-1 overflow-auto p-4">
         {rootTags.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <TagIcon className="w-12 h-12 mb-4 text-gray-300 dark:text-gray-600" />
             <p className="text-lg">
               {searchQuery ? t('tags.no_results') : t('tags.no_tags')}
@@ -651,7 +651,7 @@ export default function TagsPage() {
             {!searchQuery && (
               <button
                 onClick={handleCreateRoot}
-                className="mt-4 text-blue-500 hover:text-blue-600"
+                className="mt-4 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
               >
                 {t('tags.create_first')}
               </button>

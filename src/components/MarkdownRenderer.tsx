@@ -24,7 +24,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="mr-1.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                  className="mr-1.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
                   {...props}
                 />
               );
@@ -37,7 +37,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600 underline"
+              className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 underline"
               {...props}
             >
               {children}

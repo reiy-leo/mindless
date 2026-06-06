@@ -232,14 +232,14 @@ function TaskDetailPanel({
             className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title={t('common.delete')}
           >
-            <TrashIcon className="w-4 h-4 text-red-500" />
+            <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
           </button>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={t('common.close')}
           >
-            <XMarkIcon className="w-4 h-4 text-gray-500" />
+            <XMarkIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
       </div>
@@ -274,7 +274,7 @@ function TaskDetailPanel({
         {/* Description */}
         {task.description && (
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">{t('tasks.description')}</h3>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
             <MarkdownRenderer content={task.description} />
           </div>
         )}
@@ -498,11 +498,11 @@ function SortableTaskRow({
         </div>
       )}
       {task.dueDate && (
-        <span className="text-sm text-gray-500 flex-shrink-0">
+        <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
           {parseLocalDate(task.dueDate).toLocaleDateString()}
           {task.dueTime && <span className="ml-1">{task.dueTime}</span>}
           {task.endDate && (
-            <span className="text-gray-400 ml-1">
+            <span className="text-gray-400 dark:text-gray-500 ml-1">
               &rarr; {parseLocalDate(task.endDate).toLocaleDateString()}
               {task.endTime && <span className="ml-0.5">{task.endTime}</span>}
             </span>
@@ -515,14 +515,14 @@ function SortableTaskRow({
           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
           title={t('common.edit')}
         >
-          <PencilIcon className="w-4 h-4 text-gray-500" />
+          <PencilIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
           title={t('common.delete')}
         >
-          <TrashIcon className="w-4 h-4 text-red-500" />
+          <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
         </button>
       </div>
     </div>
@@ -689,7 +689,7 @@ export default function TasksPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500">{t('common.loading')}</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
       </div>
     );
   }
@@ -802,14 +802,14 @@ export default function TasksPage() {
         ) : (
         <div className="flex-1 overflow-auto p-6">
           {filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <p className="text-lg">{t('tasks.no_tasks')}</p>
               <button
                 onClick={() => {
                   setEditingTask(null);
                   setShowTaskForm(true);
                 }}
-                className="mt-4 text-blue-500 hover:text-blue-600"
+                className="mt-4 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
               >
                 {t('tasks.create_first')}
               </button>

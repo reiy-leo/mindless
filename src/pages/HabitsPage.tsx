@@ -229,7 +229,7 @@ function HabitFormDialog({
             <div className="flex gap-2">
               {colors.map((c) => (
                 <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-green-500' : ''}`}
+                  className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-green-500 dark:ring-offset-gray-800' : ''}`}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -277,7 +277,7 @@ function HabitFormDialog({
                 >
                   <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                 </button>
-                <span className="text-sm text-gray-500">{t('habits.frequency.days_unit')}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('habits.frequency.days_unit')}</span>
               </div>
             </div>
           )}
@@ -342,7 +342,7 @@ function HabitFormDialog({
                       />
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{opt.label}</div>
-                        <div className="text-xs text-gray-500">{opt.desc}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
                       </div>
                     </label>
                   ))}
@@ -670,7 +670,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
               </div>
             ) : (
               <span className={`text-[10px] ${
-                isDateDue(selectedDay) ? 'text-red-400' : 'text-gray-400 dark:text-gray-500'
+                isDateDue(selectedDay) ? 'text-red-400 dark:text-red-500' : 'text-gray-400 dark:text-gray-500'
               }`}>
                 {isDateDue(selectedDay) ? t('habits.missed') : t('habits.not_due')}
               </span>
@@ -695,7 +695,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
           </span>
         </div>
         {stats.missedDays > 0 && (
-          <span className="text-red-400">
+          <span className="text-red-400 dark:text-red-500">
             {t('habits.missed_count', { count: stats.missedDays })}
           </span>
         )}
@@ -776,7 +776,7 @@ function HabitCard({
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">{habit.name}</h3>
-            <p className="text-xs text-gray-500">{getFrequencyLabel(habit.frequency)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{getFrequencyLabel(habit.frequency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -820,14 +820,14 @@ function HabitCard({
           <div className="flex items-center gap-1 text-orange-500">
             <FireIcon className="w-4 h-4" />
             <span className="font-bold">{habit.currentStreak}</span>
-            <span className="text-xs text-gray-500">{t('habits.streak_days')}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('habits.streak_days')}</span>
           </div>
         )}
         {habit.longestStreak > 0 && (
           <div className="flex items-center gap-1 text-yellow-500">
             <TrophyIcon className="w-4 h-4" />
             <span className="font-bold">{habit.longestStreak}</span>
-            <span className="text-xs text-gray-500">{t('habits.best')}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('habits.best')}</span>
           </div>
         )}
         <div className="text-gray-500 text-xs">
@@ -989,7 +989,7 @@ export default function HabitsPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500">{t('common.loading')}</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
       </div>
     );
   }
@@ -1018,9 +1018,9 @@ export default function HabitsPage() {
       </div>
 
       {habits.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
           <p className="text-lg">{t('habits.no_habits')}</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 text-green-500 hover:text-green-600">
+          <button onClick={() => setShowForm(true)} className="mt-4 text-green-500 hover:text-green-600 dark:hover:text-green-400">
             {t('habits.create_first')}
           </button>
         </div>

@@ -194,7 +194,7 @@ export default function SettingsPage() {
                 />
                 <div>
                   <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
-                  <div className="text-sm text-gray-500 mt-1">{option.description}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{option.description}</div>
                 </div>
               </label>
             ))}
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                 <div className="text-gray-900 dark:text-gray-100 font-medium">
                   {t('settings.notifications.enable')}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {t('settings.notifications.enable_desc')}
                 </div>
               </div>
@@ -282,14 +282,14 @@ export default function SettingsPage() {
                 {eventCount > 0 && (
                   <button
                     onClick={handleClearEvents}
-                    className="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="px-4 py-2 text-sm border border-red-300 dark:border-red-700 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     {t('settings.calendar.clear_events')} ({eventCount})
                   </button>
                 )}
               </div>
               {importStatus && (
-                <p className="text-sm text-gray-500 mt-2">{importStatus}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{importStatus}</p>
               )}
             </div>
           </div>
