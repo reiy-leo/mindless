@@ -210,7 +210,7 @@ export default function CalendarView({
                   {day}
                 </span>
                 {lunarDay && (
-                  <span className={`text-[10px] leading-tight truncate ${getLunarColorClass(lunarDay.kind, isToday)}`}>
+                  <span className={`text-xs leading-tight truncate ${getLunarColorClass(lunarDay.kind, isToday)}`}>
                     {lunarDay.str}
                   </span>
                 )}
@@ -222,7 +222,7 @@ export default function CalendarView({
                   {dayEvents.slice(0, 2).map((ev) => (
                     <span
                       key={ev.id}
-                      className="inline-flex items-center gap-0.5 text-[10px] leading-tight px-1 py-px rounded truncate max-w-full"
+                      className="inline-flex items-center gap-0.5 text-xs leading-tight px-1 py-px rounded truncate max-w-full"
                       style={{
                         backgroundColor: (ev.color || '#3B82F6') + '20',
                         color: ev.color || '#3B82F6',
@@ -237,7 +237,7 @@ export default function CalendarView({
                     </span>
                   ))}
                   {dayEvents.length > 2 && (
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       +{dayEvents.length - 2}
                     </span>
                   )}

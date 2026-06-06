@@ -225,7 +225,7 @@ export default function DateTimePicker({
                     {cell.day}
                   </span>
                   {lunarStr && (
-                    <span className={`text-[10px] leading-tight mt-0.5 truncate max-w-full px-0.5 ${
+                    <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
                       isSelected
                         ? 'text-blue-100'
                         : cell.inMonth

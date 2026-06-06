@@ -304,7 +304,7 @@ export default function EisenhowerMatrixView({
                             {taskTags.slice(0, 2).map((tag) => (
                               <span
                                 key={tag.id}
-                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] text-white"
+                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs text-white"
                                 style={{ backgroundColor: tag.color || '#3B82F6' }}
                               >
                                 {tag.emoji && <span className="mr-0.5">{tag.emoji}</span>}
@@ -312,7 +312,7 @@ export default function EisenhowerMatrixView({
                               </span>
                             ))}
                             {taskTags.length > 2 && (
-                              <span className="text-[10px] text-gray-400 dark:text-gray-500">+{taskTags.length - 2}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">+{taskTags.length - 2}</span>
                             )}
                           </div>
                         </div>

@@ -548,7 +548,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
           <button onClick={nextMonth} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             <ChevronRightIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
-          <button onClick={goToday} className="ml-1 px-2 py-0.5 text-[10px] rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+          <button onClick={goToday} className="ml-1 px-2 py-0.5 text-xs rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
             {t('tasks.views.today')}
           </button>
         </div>
@@ -569,7 +569,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
       {/* Day labels */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {dayLabels.map((d) => (
-          <div key={d} className="text-center text-[10px] text-gray-400 dark:text-gray-500 py-0.5">{d}</div>
+          <div key={d} className="text-center text-xs text-gray-400 dark:text-gray-500 py-0.5">{d}</div>
         ))}
       </div>
 
@@ -618,7 +618,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                 {day}
               </span>
               {lunarDay && (
-                <span className={`text-[8px] leading-tight truncate max-w-full px-0.5 ${
+                <span className={`text-xs leading-tight truncate max-w-full px-0.5 ${
                   isChecked && fillOpacity > 0.5
                     ? 'text-white/70'
                     : getLunarColor(lunarDay.kind)
@@ -628,7 +628,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
               )}
               {/* Value label for non-binary habits */}
               {isChecked && log && habit.targetType !== 'binary' && (
-                <span className={`text-[8px] leading-tight font-medium ${
+                <span className={`text-xs leading-tight font-medium ${
                   fillOpacity > 0.5 ? 'text-white/80' : ''
                 }`} style={fillOpacity <= 0.5 ? { color } : {}}>
                   {log.value}{habit.targetType === 'duration' ? 'm' : ''}
@@ -652,7 +652,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
               {(() => {
                 const parts = selectedDay.split('-').map(Number);
                 const lunar = getLunarDayStr(parts[0], parts[1], parts[2]);
-                return <span className="text-[10px] text-gray-400 dark:text-gray-500">{lunar}</span>;
+                return <span className="text-xs text-gray-400 dark:text-gray-500">{lunar}</span>;
               })()}
             </div>
             {selectedLog ? (
@@ -663,13 +663,13 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                     {habit.targetType === 'duration' ? ` ${t('habits.target_unit_duration')}` : ` ${t('habits.target_unit_count')}`}
                   </span>
                 )}
-                <span className="flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400">
+                <span className="flex items-center gap-0.5 text-xs text-green-600 dark:text-green-400">
                   <CheckCircleIcon className="w-3 h-3" />
                   {selectedLog.logTime ? selectedLog.logTime.slice(0, 5) : t('habits.checked_in')}
                 </span>
               </div>
             ) : (
-              <span className={`text-[10px] ${
+              <span className={`text-xs ${
                 isDateDue(selectedDay) ? 'text-red-400 dark:text-red-500' : 'text-gray-400 dark:text-gray-500'
               }`}>
                 {isDateDue(selectedDay) ? t('habits.missed') : t('habits.not_due')}
@@ -677,13 +677,13 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
             )}
           </div>
           {selectedLog?.note && (
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{selectedLog.note}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{selectedLog.note}</p>
           )}
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex items-center justify-between mt-3 text-[10px] text-gray-400 dark:text-gray-500">
+      <div className="flex items-center justify-between mt-3 text-xs text-gray-400 dark:text-gray-500">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: color }} />

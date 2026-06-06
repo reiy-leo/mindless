@@ -496,7 +496,7 @@ function CountdownCalendarView({
                       {day}
                     </span>
                     {lunarDay && (
-                      <span className={`text-[10px] leading-tight truncate ${getLunarColorClass(lunarDay.kind, isToday)}`}>
+                      <span className={`text-xs leading-tight truncate ${getLunarColorClass(lunarDay.kind, isToday)}`}>
                         {lunarDay.str}
                       </span>
                     )}
@@ -534,13 +534,13 @@ function CountdownCalendarView({
                               style={!isSelected ? { color: cd.color } : {}}>
                               {cd.title}
                             </div>
-                            <div className="text-[10px] text-gray-500 dark:text-gray-400">{diffLabel}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{diffLabel}</div>
                           </div>
                         </div>
                       );
                     })}
                     {dayCountdowns.length > 3 && (
-                      <div className="text-[10px] text-purple-500 dark:text-purple-400 px-1">
+                      <div className="text-xs text-purple-500 dark:text-purple-400 px-1">
                         +{dayCountdowns.length - 3}
                       </div>
                     )}
@@ -606,7 +606,7 @@ function SelectedCountdownDetail({
         </div>
         <div>
           <h4 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h4>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
           }`}>
             {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
@@ -705,7 +705,7 @@ function MonthEventsList({
               <span className="text-lg">{ICON_MAP[cd.icon] || '🚩'}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{cd.title}</div>
-                <div className={`text-[10px] font-medium ${
+                <div className={`text-xs font-medium ${
                   isCountup ? 'text-green-500' : daysDiff < 0 ? 'text-red-500' : daysDiff === 0 ? 'text-green-500' : 'text-purple-500'
                 }`}>
                   {diffLabel}

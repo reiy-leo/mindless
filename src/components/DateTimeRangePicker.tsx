@@ -177,7 +177,7 @@ export default function DateTimeRangePicker({
       {/* Weekday header */}
       <div className="grid grid-cols-7 mb-1">
         {WEEKDAY_KEYS.map((key) => (
-          <div key={key} className="text-center text-[10px] text-gray-500 dark:text-gray-400 py-0.5">
+          <div key={key} className="text-center text-xs text-gray-500 dark:text-gray-400 py-0.5">
             {t(`habits.days.${key}`)}
           </div>
         ))}
@@ -212,7 +212,7 @@ export default function DateTimeRangePicker({
                 {cell.day}
               </span>
               {lunarStr && (
-                <span className={`text-[9px] leading-tight mt-0.5 truncate max-w-full px-0.5 ${
+                <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
                   isSelectedStart || isSelectedEnd
                     ? 'text-blue-100'
                     : cell.inMonth
