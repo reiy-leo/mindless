@@ -6,6 +6,7 @@ import { useLists, useCalendarEvents } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import DateTimePicker from '@/components/DateTimePicker';
 import DateTimeRangePicker from '@/components/DateTimeRangePicker';
+import Select from '@/components/Select';
 import type { Priority, Task } from '@/types/task';
 
 // Recurrence rule options
@@ -247,14 +248,16 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('lists.title')}
             </label>
-            <select value={listId} onChange={(e) => setListId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{t('lists.inbox')}</option>
-              {lists.filter((l) => l.id !== 'inbox' && l.id !== 'today' && l.id !== 'next7days' && l.id !== 'eisenhower').map((list) => (
-                <option key={list.id} value={list.id}>{list.name}</option>
-              ))}
-            </select>
+            <Select
+              value={listId}
+              onChange={(val) => setListId(val)}
+              options={[
+                { value: '', label: t('lists.inbox') },
+                ...lists.filter((l) => l.id !== 'inbox' && l.id !== 'today' && l.id !== 'next7days' && l.id !== 'eisenhower').map((list) => ({
+                  value: list.id, label: list.name,
+                })),
+              ]}
+            />
           </div>
 
           {/* Dates */}
@@ -339,13 +342,13 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('tasks.recurrence.label')}
             </label>
-            <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {RECURRENCE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
-              ))}
-            </select>
+            <Select
+              value={recurrenceType}
+              onChange={(val) => setRecurrenceType(val)}
+              options={RECURRENCE_OPTIONS.map((opt) => ({
+                value: opt.value, label: t(opt.labelKey),
+              }))}
+            />
 
             {/* Custom interval */}
             {recurrenceType === 'custom' && (
@@ -356,13 +359,16 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                   onChange={(e) => setCustomInterval(Math.max(2, parseInt(e.target.value) || 2))}
                   className="w-16 px-2 py-1.5 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <select value={customUnit} onChange={(e) => setCustomUnit(e.target.value as 'days' | 'weeks' | 'months')}
-                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="days">{t('tasks.recurrence.days')}</option>
-                  <option value="weeks">{t('tasks.recurrence.weeks')}</option>
-                  <option value="months">{t('tasks.recurrence.months')}</option>
-                </select>
+                <Select
+                  value={customUnit}
+                  onChange={(val) => setCustomUnit(val as 'days' | 'weeks' | 'months')}
+                  options={[
+                    { value: 'days', label: t('tasks.recurrence.days') },
+                    { value: 'weeks', label: t('tasks.recurrence.weeks') },
+                    { value: 'months', label: t('tasks.recurrence.months') },
+                  ]}
+                  className="w-28"
+                />
               </div>
             )}
 

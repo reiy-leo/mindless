@@ -46,6 +46,7 @@ pub fn run() {
             commands::create_tag,
             commands::update_tag,
             commands::delete_tag,
+            commands::move_tags,
             // Habits
             commands::get_habits,
             commands::get_habit_by_id,

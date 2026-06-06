@@ -279,7 +279,11 @@
     "creating_subtag": "新建子标签",
     "task_count": "{{count}} 个任务",
     "delete_confirm": "确定要删除标签「{{name}}」吗？",
-    "delete_confirm_with_children": "确定要删除标签「{{name}}」及其 {{count}} 个子标签吗？"
+    "delete_confirm_with_children": "确定要删除标签「{{name}}」及其 {{count}} 个子标签吗？",
+    "search_or_create": "搜索或创建标签...",
+    "add_more": "添加更多标签...",
+    "create_new": "创建新标签：{{name}}",
+    "drag_to_reorder": "拖拽排序"
   },
   "settings": {
     "language": "语言",

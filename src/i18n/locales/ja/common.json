@@ -279,7 +279,11 @@
     "creating_subtag": "新規サブタグ",
     "task_count": "{{count}} タスク",
     "delete_confirm": "タグ「{{name}}」を削除しますか？",
-    "delete_confirm_with_children": "タグ「{{name}}」とその {{count}} 個のサブタグを削除しますか？"
+    "delete_confirm_with_children": "タグ「{{name}}」とその {{count}} 個のサブタグを削除しますか？",
+    "search_or_create": "タグを検索または作成...",
+    "add_more": "タグを追加...",
+    "create_new": "新規タグを作成：{{name}}",
+    "drag_to_reorder": "ドラッグして並べ替え"
   },
   "settings": {
     "language": "言語",

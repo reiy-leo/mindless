@@ -279,7 +279,11 @@
     "creating_subtag": "New sub-tag",
     "task_count": "{{count}} tasks",
     "delete_confirm": "Are you sure you want to delete tag \"{{name}}\"?",
-    "delete_confirm_with_children": "Are you sure you want to delete tag \"{{name}}\" and its {{count}} sub-tags?"
+    "delete_confirm_with_children": "Are you sure you want to delete tag \"{{name}}\" and its {{count}} sub-tags?",
+    "search_or_create": "Search or create tags...",
+    "add_more": "Add more tags...",
+    "create_new": "Create new tag: {{name}}",
+    "drag_to_reorder": "Drag to reorder"
   },
   "settings": {
     "language": "Language",

@@ -2,11 +2,19 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, PencilIcon, TrashIcon, XMarkIcon,
-  ChevronDownIcon, ChevronRightIcon, TagIcon,
+  ChevronDownIcon, ChevronRightIcon, TagIcon, Bars3Icon,
 } from '@heroicons/react/24/outline';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useTasks } from '@/queries/useTaskQueries';
 import {
-  useTags, useCreateTag, useUpdateTag, useDeleteTag,
+  useTags, useCreateTag, useUpdateTag, useDeleteTag, useMoveTags,
 } from '@/queries/useTaskQueries';
 import type { Tag } from '@/types/tag';
 
@@ -206,12 +214,143 @@ function TagFormDialog({
   );
 }
 
-// ==================== Tag Row ====================
+// ==================== Flatten Tree Helper ====================
+
+function flattenTree(tags: Tag[], collapsedIds: Set<string>): Tag[] {
+  const result: Tag[] = [];
+  const rootTags = tags.filter((t) => !t.parentId);
+  const walk = (tag: Tag) => {
+    result.push(tag);
+    if (!collapsedIds.has(tag.id)) {
+      const children = tags.filter((c) => c.parentId === tag.id);
+      children.forEach(walk);
+    }
+  };
+  rootTags.forEach(walk);
+  return result;
+}
+
+// ==================== Tag Row (display only) ====================
 
 function TagRow({
   tag,
   depth,
+  tagTaskCounts,
+  hasChildren,
+  isCollapsed,
+  toggleCollapse,
+  onEdit,
+  onDelete,
+  onAddChild,
+  dragHandle,
+  isDragging,
+  setNodeRef,
+  style,
+}: {
+  tag: Tag;
+  depth: number;
+  tagTaskCounts: Record<string, number>;
+  hasChildren: boolean;
+  isCollapsed: boolean;
+  toggleCollapse: (id: string) => void;
+  onEdit: (tag: Tag) => void;
+  onDelete: (tag: Tag) => void;
+  onAddChild: (tag: Tag) => void;
+  dragHandle?: React.HTMLAttributes<HTMLElement> & Record<string, unknown>;
+  isDragging?: boolean;
+  setNodeRef?: (node: HTMLElement | null) => void;
+  style?: React.CSSProperties;
+}) {
+  const { t } = useTranslation('common');
+  const count = tagTaskCounts[tag.id] || 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ ...style, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 50 : 'auto' as const }}
+      className={`group flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-lg`}
+    >
+      {/* Drag handle */}
+      <button
+        {...dragHandle}
+        onClick={(e) => e.stopPropagation()}
+        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        title={t('tags.drag_to_reorder')}
+      >
+        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+      </button>
+
+      {/* Expand/Collapse */}
+      {hasChildren ? (
+        <button
+          onClick={() => toggleCollapse(tag.id)}
+          className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+        >
+          {isCollapsed ? (
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+      ) : (
+        <span className="w-5 flex-shrink-0" />
+      )}
+
+      {/* Emoji + Color chip */}
+      <span className="text-base flex-shrink-0">{tag.emoji || '🏷️'}</span>
+      <span
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={{ backgroundColor: tag.color || '#3B82F6' }}
+      />
+
+      {/* Name */}
+      <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate" style={{ paddingLeft: `${depth * 24}px` }}>
+        {tag.name}
+      </span>
+
+      {/* Task count */}
+      {count > 0 && (
+        <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full flex-shrink-0">
+          {t('tags.task_count', { count })}
+        </span>
+      )}
+
+      {/* Actions (visible on hover) */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {depth < 3 && (
+          <button
+            onClick={() => onAddChild(tag)}
+            className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            title={t('tags.add_subtag')}
+          >
+            <PlusIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+          </button>
+        )}
+        <button
+          onClick={() => onEdit(tag)}
+          className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title={t('common.edit')}
+        >
+          <PencilIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+        </button>
+        <button
+          onClick={() => onDelete(tag)}
+          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          title={t('common.delete')}
+        >
+          <TrashIcon className="w-3.5 h-3.5 text-red-500" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==================== Sortable Tag Row ====================
+
+function SortableTagRow({
+  tag,
   allTags,
+  depth,
   tagTaskCounts,
   collapsedIds,
   toggleCollapse,
@@ -220,8 +359,8 @@ function TagRow({
   onAddChild,
 }: {
   tag: Tag;
-  depth: number;
   allTags: Tag[];
+  depth: number;
   tagTaskCounts: Record<string, number>;
   collapsedIds: Set<string>;
   toggleCollapse: (id: string) => void;
@@ -229,91 +368,49 @@ function TagRow({
   onDelete: (tag: Tag) => void;
   onAddChild: (tag: Tag) => void;
 }) {
-  const { t } = useTranslation('common');
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tag.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   const children = allTags.filter((c) => c.parentId === tag.id);
   const hasChildren = children.length > 0;
   const isCollapsed = collapsedIds.has(tag.id);
-  const count = tagTaskCounts[tag.id] || 0;
 
   return (
     <>
-      <div
-        className={`group flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-lg`}
-        style={{ paddingLeft: `${16 + depth * 24}px` }}
-      >
-        {/* Expand/Collapse */}
-        {hasChildren ? (
-          <button
-            onClick={() => toggleCollapse(tag.id)}
-            className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-          >
-            {isCollapsed ? (
-              <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-            ) : (
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-            )}
-          </button>
-        ) : (
-          <span className="w-5 flex-shrink-0" />
-        )}
-
-        {/* Emoji + Color chip */}
-        <span className="text-base flex-shrink-0">{tag.emoji || '🏷️'}</span>
-        <span
-          className="w-3 h-3 rounded-full flex-shrink-0"
-          style={{ backgroundColor: tag.color || '#3B82F6' }}
-        />
-
-        {/* Name */}
-        <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">
-          {tag.name}
-        </span>
-
-        {/* Task count */}
-        {count > 0 && (
-          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full flex-shrink-0">
-            {t('tags.task_count', { count })}
-          </span>
-        )}
-
-        {/* Actions (visible on hover) */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          {/* Add child tag (only if depth < 3) */}
-          {depth < 3 && (
-            <button
-              onClick={() => onAddChild(tag)}
-              className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              title={t('tags.add_subtag')}
-            >
-              <PlusIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-            </button>
-          )}
-          <button
-            onClick={() => onEdit(tag)}
-            className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title={t('common.edit')}
-          >
-            <PencilIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-          </button>
-          <button
-            onClick={() => onDelete(tag)}
-            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            title={t('common.delete')}
-          >
-            <TrashIcon className="w-3.5 h-3.5 text-red-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Children (recursive) */}
+      <TagRow
+        tag={tag}
+        depth={0}
+        tagTaskCounts={tagTaskCounts}
+        hasChildren={hasChildren}
+        isCollapsed={isCollapsed}
+        toggleCollapse={toggleCollapse}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onAddChild={onAddChild}
+        dragHandle={{ ...attributes, ...listeners }}
+        isDragging={isDragging}
+        setNodeRef={setNodeRef}
+        style={style}
+      />
       {hasChildren && !isCollapsed && (
         <div>
           {children.map((child) => (
-            <TagRow
+            <SortableTagRow
               key={child.id}
               tag={child}
-              depth={depth + 1}
               allTags={allTags}
+              depth={depth + 1}
               tagTaskCounts={tagTaskCounts}
               collapsedIds={collapsedIds}
               toggleCollapse={toggleCollapse}
@@ -335,12 +432,17 @@ export default function TagsPage() {
   const { data: tags = [], isLoading } = useTags();
   const { data: tasks = [] } = useTasks();
   const deleteTag = useDeleteTag();
+  const moveTags = useMoveTags();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [parentForNew, setParentForNew] = useState<Tag | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   // Compute task counts per tag
   const tagTaskCounts = useMemo(() => {
@@ -367,6 +469,11 @@ export default function TagsPage() {
     return filteredTags.filter((tag) => !tag.parentId);
   }, [filteredTags]);
 
+  // Flatten tree for SortableContext
+  const flatTree = useMemo(() => {
+    return flattenTree(filteredTags, collapsedIds);
+  }, [filteredTags, collapsedIds]);
+
   const toggleCollapse = (id: string) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
@@ -375,6 +482,93 @@ export default function TagsPage() {
       return next;
     });
   };
+
+  // Get all descendant IDs recursively
+  const getDescendants = useCallback((tagId: string, allTags: Tag[]): Tag[] => {
+    const result: Tag[] = [];
+    const children = allTags.filter((t) => t.parentId === tagId);
+    for (const child of children) {
+      result.push(child);
+      result.push(...getDescendants(child.id, allTags));
+    }
+    return result;
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const activeTag = tags.find((t) => t.id === activeId);
+    const overTag = tags.find((t) => t.id === overId);
+    if (!activeTag || !overTag) return;
+
+    // Calculate depth levels from horizontal drag delta
+    const translated = active.rect.current.translated;
+    const initial = active.rect.current.initial;
+    const depthDelta = Math.round(((translated?.left ?? 0) - (initial?.left ?? 0)) / 24);
+    const newLevel = Math.max(0, Math.min(3, activeTag.level + depthDelta));
+
+    // Determine new parent based on over target
+    let newParentId: string | undefined;
+
+    // Find the position of overTag in flatTree
+    const overIdx = flatTree.findIndex((t) => t.id === overId);
+
+    if (newLevel > overTag.level) {
+      // Deeper than over tag → become child
+      newParentId = overId;
+    } else if (newLevel === overTag.level) {
+      // Same level → become sibling (share parent)
+      newParentId = overTag.parentId;
+    } else {
+      // Shallower → go up the ancestor chain
+      let target: Tag | undefined = overTag;
+      const stepsUp = overTag.level - newLevel;
+      for (let i = 0; i < stepsUp && target; i++) {
+        target = tags.find((t) => t.id === target?.parentId);
+      }
+      newParentId = target?.parentId;
+    }
+
+    // Enforce max depth: check if activeTag's descendants would exceed level 3
+    const descendants = getDescendants(activeId, tags);
+    const maxDescendantDepth = descendants.reduce((max, d) => Math.max(max, d.level - activeTag.level), 0);
+    const effectiveLevel = Math.min(newLevel, 3 - maxDescendantDepth);
+
+    // Prevent circular reference: newParentId must not be a descendant of activeTag
+    const descendantIds = new Set(descendants.map((d) => d.id));
+    if (newParentId && descendantIds.has(newParentId)) {
+      newParentId = activeTag.parentId; // fallback to original position
+    }
+
+    // Calculate sort_order
+    const sortOrder = overIdx;
+
+    // Build move operations
+    const levelDelta = effectiveLevel - activeTag.level;
+    const moves: { id: string; parentId?: string | null; level?: number; sortOrder?: number }[] = [
+      {
+        id: activeId,
+        parentId: newParentId ?? '',
+        level: effectiveLevel,
+        sortOrder,
+      },
+    ];
+
+    // Update descendants' levels
+    for (const desc of descendants) {
+      moves.push({
+        id: desc.id,
+        level: desc.level + levelDelta,
+        sortOrder: undefined,
+        parentId: undefined,
+      });
+    }
+
+    moveTags.mutate(moves);
+  }, [tags, flatTree, moveTags, getDescendants]);
 
   const handleCreateRoot = () => {
     setEditingTag(null);
@@ -446,7 +640,7 @@ export default function TagsPage() {
         />
       </div>
 
-      {/* Tag tree */}
+      {/* Tag tree with drag-and-drop */}
       <div className="flex-1 overflow-auto p-4">
         {rootTags.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -464,22 +658,26 @@ export default function TagsPage() {
             )}
           </div>
         ) : (
-          <div className="max-w-2xl space-y-1">
-            {rootTags.map((tag) => (
-              <TagRow
-                key={tag.id}
-                tag={tag}
-                depth={0}
-                allTags={filteredTags}
-                tagTaskCounts={tagTaskCounts}
-                collapsedIds={collapsedIds}
-                toggleCollapse={toggleCollapse}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onAddChild={handleCreateChild}
-              />
-            ))}
-          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={flatTree.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <div className="max-w-2xl space-y-1">
+                {rootTags.map((tag) => (
+                  <SortableTagRow
+                    key={tag.id}
+                    tag={tag}
+                    allTags={filteredTags}
+                    depth={0}
+                    tagTaskCounts={tagTaskCounts}
+                    collapsedIds={collapsedIds}
+                    toggleCollapse={toggleCollapse}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onAddChild={handleCreateChild}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 

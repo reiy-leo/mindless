@@ -1,6 +1,15 @@
 use tauri::AppHandle;
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::db::models::Tag;
+
+#[derive(Deserialize)]
+pub struct TagMoveItem {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub level: Option<i32>,
+    pub sort_order: Option<f64>,
+}
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
@@ -126,5 +135,38 @@ pub async fn delete_tag(app: AppHandle, id: String) -> Result<(), String> {
 
     tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn move_tags(app: AppHandle, items: Vec<TagMoveItem>) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
+
+    for item in &items {
+        if let Some(ref parent_id) = item.parent_id {
+            let parent = if parent_id.is_empty() { None } else { Some(parent_id.as_str()) };
+            tx.execute(
+                "UPDATE tags SET parent_id = ?1, updated_at = datetime('now') WHERE id = ?2",
+                (parent, &item.id),
+            ).map_err(|e| format!("Failed to update tag parent: {}", e))?;
+        }
+
+        if let Some(level) = item.level {
+            tx.execute(
+                "UPDATE tags SET level = ?1, updated_at = datetime('now') WHERE id = ?2",
+                (level, &item.id),
+            ).map_err(|e| format!("Failed to update tag level: {}", e))?;
+        }
+
+        if let Some(sort_order) = item.sort_order {
+            tx.execute(
+                "UPDATE tags SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+                (sort_order, &item.id),
+            ).map_err(|e| format!("Failed to update tag sort order: {}", e))?;
+        }
+    }
+
+    tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
     Ok(())
 }

@@ -11,6 +11,7 @@ import {
 } from '@/queries/useHabitQueries';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
+import Select from '@/components/Select';
 import { getLunarDayStr } from '@/lib/lunar';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
@@ -238,14 +239,16 @@ function HabitFormDialog({
           {/* Frequency */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.frequency')}</label>
-            <select value={frequency} onChange={(e) => setFrequency(e.target.value as HabitFrequency)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="daily">{t('habits.frequency.daily')}</option>
-              <option value="every_x_days">{t('habits.frequency.every_x_days')}</option>
-              <option value="weekly">{t('habits.frequency.weekly')}</option>
-              <option value="monthly">{t('habits.frequency.monthly')}</option>
-            </select>
+            <Select
+              value={frequency}
+              onChange={(val) => setFrequency(val as HabitFrequency)}
+              options={[
+                { value: 'daily', label: t('habits.frequency.daily') },
+                { value: 'every_x_days', label: t('habits.frequency.every_x_days') },
+                { value: 'weekly', label: t('habits.frequency.weekly') },
+                { value: 'monthly', label: t('habits.frequency.monthly') },
+              ]}
+            />
           </div>
 
           {/* Every X Days input */}

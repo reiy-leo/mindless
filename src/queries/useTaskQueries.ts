@@ -295,6 +295,18 @@ export function useDeleteTag() {
   });
 }
 
+export function useMoveTags() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (items: { id: string; parentId?: string | null; level?: number; sortOrder?: number }[]) =>
+      api.moveTags(items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+    },
+  });
+}
+
 // ==================== Calendar Event Queries ====================
 
 export function useCalendarEvents() {

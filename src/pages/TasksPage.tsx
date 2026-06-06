@@ -25,6 +25,8 @@ import SubtaskList from '@/components/tasks/SubtaskList';
 import StepList from '@/components/tasks/StepList';
 import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
+import Select from '@/components/Select';
+import TagCombobox from '@/components/TagCombobox';
 import GridView from '@/components/tasks/GridView';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -122,9 +124,7 @@ function TaskDetailPanel({
   const reorderSubtasks = useReorderSubtasks();
   const reorderSteps = useReorderSteps();
 
-  const [showTagInput, setShowTagInput] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#3B82F6');
+
 
   const subtaskTree = useMemo(() => buildSubtaskTree(flatSubtasks), [flatSubtasks]);
 
@@ -145,9 +145,6 @@ function TaskDetailPanel({
     return task.tagIds.split(',').filter(Boolean);
   }, [task.tagIds]);
 
-  const taskTags = useMemo(() => {
-    return allTags.filter((tag) => taskTagIds.includes(tag.id));
-  }, [allTags, taskTagIds]);
 
   const handleAddSubtask = (title: string, parentSubtaskId?: string) => {
     const level = parentSubtaskId
@@ -215,20 +212,7 @@ function TaskDetailPanel({
     onUpdateTask({ tagIds: currentIds.join(',') });
   };
 
-  const handleCreateAndAssignTag = () => {
-    if (!newTagName.trim()) return;
-    createTag.mutate(
-      { name: newTagName.trim(), color: newTagColor },
-      {
-        onSuccess: (newTag) => {
-          const currentIds = [...taskTagIds, newTag.id];
-          onUpdateTask({ tagIds: currentIds.join(',') });
-          setNewTagName('');
-          setShowTagInput(false);
-        },
-      }
-    );
-  };
+
 
   return (
     <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -338,85 +322,23 @@ function TaskDetailPanel({
 
         {/* Tags */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
-              <TagIcon className="w-4 h-4" />
-              {t('tasks.tags.title')}
-            </h3>
-            <button
-              onClick={() => setShowTagInput(!showTagInput)}
-              className="text-xs text-blue-600 hover:text-blue-700"
-            >
-              {t('tasks.tags.add')}
-            </button>
-          </div>
-
-          {/* Tag chips */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {taskTags.length === 0 && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 italic">{t('tasks.tags.empty')}</span>
-            )}
-            {taskTags.map((tag) => (
-              <span
-                key={tag.id}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white cursor-pointer"
-                style={{ backgroundColor: tag.color || '#3B82F6' }}
-                onClick={() => handleToggleTag(tag.id)}
-                title={t('tasks.tags.click_to_remove')}
-              >
-                {tag.emoji && <span>{tag.emoji}</span>}
-                {tag.name}
-                <XMarkIcon className="w-3 h-3 opacity-60" />
-              </span>
-            ))}
-          </div>
-
-          {/* Available tags to assign */}
-          {allTags.filter((tg) => !taskTagIds.includes(tg.id)).length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {allTags
-                .filter((tg) => !taskTagIds.includes(tg.id))
-                .map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => handleToggleTag(tag.id)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors"
-                  >
-                    {tag.emoji && <span>{tag.emoji}</span>}
-                    + {tag.name}
-                  </button>
-                ))}
-            </div>
-          )}
-
-          {/* New tag creation */}
-          {showTagInput && (
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="color"
-                value={newTagColor}
-                onChange={(e) => setNewTagColor(e.target.value)}
-                className="w-8 h-8 rounded cursor-pointer border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-              <input
-                type="text"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                placeholder={t('tasks.tags.name_placeholder')}
-                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateAndAssignTag();
-                  if (e.key === 'Escape') setShowTagInput(false);
-                }}
-              />
-              <button
-                onClick={handleCreateAndAssignTag}
-                className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                {t('common.add')}
-              </button>
-            </div>
-          )}
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
+            <TagIcon className="w-4 h-4" />
+            {t('tasks.tags.title')}
+          </h3>
+          <TagCombobox
+            allTags={allTags}
+            selectedIds={taskTagIds}
+            onToggle={handleToggleTag}
+            onCreateTag={(name) => {
+              createTag.mutate({ name }, {
+                onSuccess: (newTag) => {
+                  const currentIds = [...taskTagIds, newTag.id];
+                  onUpdateTask({ tagIds: currentIds.join(',') });
+                },
+              });
+            }}
+          />
         </div>
 
         {/* Subtasks */}
@@ -810,15 +732,16 @@ export default function TasksPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <select
+            <Select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'completed')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">{t('tasks.status.all')}</option>
-              <option value="active">{t('tasks.status.active')}</option>
-              <option value="completed">{t('tasks.status.completed')}</option>
-            </select>
+              onChange={(val) => setFilterStatus(val as 'all' | 'active' | 'completed')}
+              options={[
+                { value: 'all', label: t('tasks.status.all') },
+                { value: 'active', label: t('tasks.status.active') },
+                { value: 'completed', label: t('tasks.status.completed') },
+              ]}
+              className="w-36"
+            />
           </div>
 
           {/* View mode tabs */}

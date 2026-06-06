@@ -120,6 +120,12 @@ export async function deleteTag(id: string): Promise<void> {
   return await invoke<void>('delete_tag', { id });
 }
 
+export async function moveTags(items: {
+  id: string; parentId?: string | null; level?: number; sortOrder?: number;
+}[]): Promise<void> {
+  return await invoke<void>('move_tags', { items });
+}
+
 // Subtask APIs
 export async function getSubtasks(taskId: string): Promise<Subtask[]> {
   return await invoke<Subtask[]>('get_subtasks', { taskId });
