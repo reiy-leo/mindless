@@ -789,8 +789,8 @@ export default function CountdownsPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Page header */}
-      <div className="flex items-center justify-between px-8 pt-8 pb-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.countdowns')}</h1>
+      <div data-tauri-drag-region className="flex items-center justify-between px-8 pt-4 pb-4">
+        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.countdowns')}</h1>
         <div className="flex items-center gap-3">
           {/* View mode toggle */}
           <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">

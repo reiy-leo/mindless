@@ -103,6 +103,8 @@ export default function Select({
         onClick={() => !disabled && setOpen(!open)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className={`w-full flex items-center justify-between gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
       >
         <span className="flex items-center gap-2 truncate">
@@ -122,11 +124,12 @@ export default function Select({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-[160px] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
+        <div role="listbox" className="absolute z-50 mt-1 w-full min-w-[160px] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
           {options.map((option, idx) => (
             <button
               key={option.value}
               type="button"
+              role="option"
               onClick={() => {
                 if (!option.disabled) {
                   onChange(option.value);

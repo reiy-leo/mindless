@@ -101,6 +101,7 @@ export default function TagCombobox({
 
       {/* Input trigger */}
       <div
+        aria-expanded={open}
         className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 transition-colors cursor-text"
         onClick={() => { inputRef.current?.focus(); setOpen(true); }}
       >
@@ -118,7 +119,7 @@ export default function TagCombobox({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
+        <div role="listbox" className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 max-h-60 overflow-auto">
           {filtered.length === 0 && !query.trim() && (
             <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">
               {t('tags.no_tags')}

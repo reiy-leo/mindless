@@ -995,9 +995,9 @@ export default function HabitsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto p-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.habits')}</h1>
+    <div className="flex-1 overflow-auto px-8 py-4">
+      <div data-tauri-drag-region className="flex items-center justify-between mb-8">
+        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.habits')}</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => refreshStreaks.mutate()}

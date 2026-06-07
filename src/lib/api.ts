@@ -344,3 +344,12 @@ export async function getReminderHabits(): Promise<HabitReminder[]> {
 export async function getReminderCountdowns(): Promise<CountdownReminder[]> {
   return await invoke<CountdownReminder[]>('get_reminder_countdowns');
 }
+
+// Data Export/Import APIs
+export async function exportAllData(): Promise<string> {
+  return await invoke<string>('export_all_data');
+}
+
+export async function importAllData(json: string): Promise<void> {
+  return await invoke<void>('import_all_data', { json });
+}

@@ -94,10 +94,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-8">
+    <div className="flex-1 overflow-auto px-8 py-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           {t('navigation.home')}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">

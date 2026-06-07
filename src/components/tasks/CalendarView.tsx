@@ -5,6 +5,7 @@ import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
 import { getLocalToday } from '@/lib/taskHelpers';
 import { getLunarDayStr, getLunarInfo } from '@/lib/lunar';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
+import { useAppStore } from '@/stores/useAppStore';
 import type { Task, CalendarEvent } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -55,16 +56,21 @@ export default function CalendarView({
   tasks, allTags: _allTags, selectedTaskId, onSelectTask, onToggleTask,
 }: CalendarViewProps) {
   const { t, i18n } = useTranslation('common');
+  const weekStartDay = useAppStore((s) => s.weekStartDay);
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
 
-  const dayLabels = useMemo(() => [
-    t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
-    t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
-    t('habits.calendar.sat'),
-  ], [t]);
+  const dayLabels = useMemo(() => {
+    const sun = [
+      t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
+      t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
+      t('habits.calendar.sat'),
+    ];
+    if (weekStartDay === 1) return [...sun.slice(1), sun[0]];
+    return sun;
+  }, [t, weekStartDay]);
 
   // Group tasks by due date
   const tasksByDate = useMemo(() => {
@@ -96,7 +102,8 @@ export default function CalendarView({
   // Memoize calendar computations
   const { daysInMonth, firstDayOfWeek, trailingEmpty, monthLabel, lunarYearLabel, today } = useMemo(() => {
     const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
-    const firstDayOfWeek = new Date(viewMonth.year, viewMonth.month, 1).getDay();
+    const rawDow = new Date(viewMonth.year, viewMonth.month, 1).getDay();
+    const firstDayOfWeek = (rawDow - weekStartDay + 7) % 7;
     const totalCells = firstDayOfWeek + daysInMonth;
     const trailingEmpty = (7 - (totalCells % 7)) % 7;
     const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(i18n.language, {
@@ -109,7 +116,7 @@ export default function CalendarView({
     const lunarYearLabel = midLunar.yearStr;
 
     return { daysInMonth, firstDayOfWeek, trailingEmpty, monthLabel, lunarYearLabel, today };
-  }, [viewMonth, i18n.language]);
+  }, [viewMonth, i18n.language, weekStartDay]);
 
   // Precompute lunar day strings for all days in the visible month
   const lunarDataByDay = useMemo(() => {

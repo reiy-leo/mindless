@@ -26,6 +26,7 @@ interface SubtaskListProps {
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
   onReorder?: (items: { id: string; sortOrder: number }[]) => void;
+  onSubtaskClick?: (id: string) => void;
 }
 
 interface SubtaskItemProps {
@@ -34,6 +35,7 @@ interface SubtaskItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
+  onSubtaskClick?: (id: string) => void;
   depth: number;
 }
 
@@ -92,7 +94,7 @@ function InlineAddInput({
   );
 }
 
-function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth }: SubtaskItemProps) {
+function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubtaskClick, depth }: SubtaskItemProps) {
   const { t } = useTranslation('common');
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(subtask.title);
@@ -176,14 +178,14 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
             className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         ) : (
-          <span
-            onDoubleClick={() => setIsEditing(true)}
-            className={`flex-1 text-sm cursor-text ${
+          <button
+            onClick={() => onSubtaskClick ? onSubtaskClick(subtask.id) : onToggle(subtask.id)}
+            className={`flex-1 text-sm text-left truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
               subtask.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
             }`}
           >
             {subtask.title}
-          </span>
+          </button>
         )}
 
         {/* Actions */}
@@ -231,6 +233,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, depth 
               onToggle={onToggle}
               onDelete={onDelete}
               onUpdateTitle={onUpdateTitle}
+              onSubtaskClick={onSubtaskClick}
               depth={depth + 1}
             />
           ))}
@@ -247,12 +250,14 @@ function SortableSubtaskItem({
   onToggle,
   onDelete,
   onUpdateTitle,
+  onSubtaskClick,
 }: {
   subtask: Subtask;
   onAdd: (title: string, parentId?: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
+  onSubtaskClick?: (id: string) => void;
 }) {
   const { t } = useTranslation('common');
   const {
@@ -284,14 +289,15 @@ function SortableSubtaskItem({
           <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
         </button>
         <div className="flex-1">
-          <SubtaskItem
-            subtask={subtask}
-            onAdd={onAdd}
-            onToggle={onToggle}
-            onDelete={onDelete}
-            onUpdateTitle={onUpdateTitle}
-            depth={0}
-          />
+           <SubtaskItem
+              subtask={subtask}
+              onAdd={onAdd}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onUpdateTitle={onUpdateTitle}
+              onSubtaskClick={onSubtaskClick}
+              depth={0}
+            />
         </div>
       </div>
     </div>
@@ -305,6 +311,7 @@ export default function SubtaskList({
   onDelete,
   onUpdateTitle,
   onReorder,
+  onSubtaskClick,
 }: Omit<SubtaskListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [showAddInput, setShowAddInput] = useState(false);
@@ -387,6 +394,7 @@ export default function SubtaskList({
                   onToggle={onToggle}
                   onDelete={onDelete}
                   onUpdateTitle={onUpdateTitle}
+                  onSubtaskClick={onSubtaskClick}
                 />
               ))}
             </div>
@@ -402,6 +410,7 @@ export default function SubtaskList({
               onToggle={onToggle}
               onDelete={onDelete}
               onUpdateTitle={onUpdateTitle}
+              onSubtaskClick={onSubtaskClick}
               depth={0}
             />
           ))}

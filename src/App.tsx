@@ -78,7 +78,7 @@ function SettingsSync() {
       const dbPriority = map.get('priority_mode') as 'simple' | 'detailed' | undefined;
       const dbNotif = map.get('notification_enabled');
       const dbWeekStart = map.get('week_start_day');
-      const dbTaskSortBy = map.get('task_sort_by') as 'dueDate' | 'startDate' | 'priority' | 'createdAt' | undefined;
+      const dbTaskSortBy = map.get('task_sort_by') as 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt' | undefined;
       const dbTaskSortOrder = map.get('task_sort_order') as 'asc' | 'desc' | undefined;
       const dbTaskGroupBy = map.get('task_group_by') as 'none' | 'priority' | 'list' | undefined;
       const dbFontSize = map.get('font_size') as 'small' | 'default' | 'large' | 'xlarge' | undefined;
@@ -100,7 +100,7 @@ function SettingsSync() {
         const val = parseInt(dbWeekStart, 10);
         if (val === 0 || val === 1) setWeekStartDay(val);
       }
-      if (dbTaskSortBy && ['dueDate', 'startDate', 'priority', 'createdAt'].includes(dbTaskSortBy)) {
+      if (dbTaskSortBy && ['sortOrder', 'dueDate', 'startDate', 'priority', 'createdAt'].includes(dbTaskSortBy)) {
         useAppStore.getState().setTaskSortBy(dbTaskSortBy);
       }
       if (dbTaskSortOrder && ['asc', 'desc'].includes(dbTaskSortOrder)) {

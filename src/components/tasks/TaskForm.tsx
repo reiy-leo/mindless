@@ -253,7 +253,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               onChange={(val) => setListId(val)}
               options={[
                 { value: '', label: t('lists.inbox') },
-                ...lists.filter((l) => l.id !== 'inbox' && l.id !== 'today' && l.id !== 'next7days' && l.id !== 'eisenhower').map((list) => ({
+                ...lists.filter((l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent', 'eisenhower'].includes(l.id)).map((list) => ({
                   value: list.id, label: list.name,
                 })),
               ]}

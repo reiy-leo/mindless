@@ -9,7 +9,7 @@
 
   color-scheme: light dark;
   color: rgba(0, 0, 0, 0.87);
-  background-color: #ffffff;
+  background-color: transparent;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,13 +20,14 @@
 
 .dark {
   color: rgba(255, 255, 255, 0.87);
-  background-color: #111827;
+  background-color: transparent;
 }
 
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: transparent;
 }
 
 #root {

@@ -8,6 +8,7 @@ pub mod settings;
 pub mod lists;
 pub mod notifications;
 pub mod calendar;
+pub mod data;
 
 pub use tasks::*;
 pub use habits::*;
@@ -19,3 +20,4 @@ pub use settings::*;
 pub use lists::*;
 pub use notifications::*;
 pub use calendar::*;
+pub use data::*;

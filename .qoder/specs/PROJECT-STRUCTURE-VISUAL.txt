@@ -1,0 +1,369 @@
+================================================================================
+                    MINDLESS - 项目结构可视化
+================================================================================
+
+mindless/
+│
+├── 📁 src-tauri/                      [Rust 后端 - Tauri v2]
+│   ├── Cargo.toml                     # Rust 依赖配置
+│   ├── tauri.conf.json                # Tauri 应用配置
+│   ├── capabilities/                  # 权限能力定义
+│   │   ├── default.json               # 默认权限 (sql, notification)
+│   │   └── desktop.json               # 桌面端特定权限
+│   │
+│   ├── 📁 src/
+│   │   ├── main.rs                    # 应用入口点
+│   │   ├── lib.rs                     # 库导出
+│   │   │
+│   │   ├── 📁 commands/               # Tauri IPC 命令
+│   │   │   ├── mod.rs                 # 模块导出
+│   │   │   ├── tasks.rs               # 任务 CRUD 命令
+│   │   │   ├── habits.rs              # 习惯管理命令
+│   │   │   ├── countdowns.rs          # 倒数日命令
+│   │   │   └── notifications.rs       # 通知命令
+│   │   │
+│   │   ├── 📁 db/                     # 数据库层
+│   │   │   ├── mod.rs
+│   │   │   ├── connection.rs          # SQLite 连接池
+│   │   │   ├── migrations.rs          # 自动迁移执行
+│   │   │   └── models.rs              # Rust 数据模型
+│   │   │
+│   │   ├── 📁 services/               # 业务逻辑服务
+│   │   │   ├── mod.rs
+│   │   │   ├── task_service.rs        # 任务业务逻辑
+│   │   │   ├── habit_service.rs       # 习惯计算逻辑
+│   │   │   └── countdown_service.rs   # 倒数日逻辑
+│   │   │
+│   │   └── 📁 utils/                  # 工具函数
+│   │       ├── mod.rs
+│   │       ├── date_utils.rs          # 日期计算
+│   │       └── notification_utils.rs  # 通知辅助
+│   │
+│   ├── 📁 icons/                      # 应用图标资源
+│   │   ├── icon.icns                  # macOS 图标
+│   │   └── icon.png                   # PNG 图标
+│   │
+│   └── build.rs                       # 构建脚本
+│
+│
+├── 📁 src/                            [React 前端]
+│   ├── main.tsx                       # React 入口
+│   ├── App.tsx                        # 根组件 + 路由
+│   ├── vite-env.d.ts                  # Vite 类型声明
+│   │
+│   ├── 📁 components/                 # UI 组件库
+│   │   │
+│   │   ├── 📁 ui/                     # 基础 UI (Radix + Tailwind)
+│   │   │   ├── button.tsx             # 按钮组件
+│   │   │   ├── input.tsx              # 输入框
+│   │   │   ├── dialog.tsx             # 模态对话框
+│   │   │   ├── dropdown.tsx           # 下拉菜单
+│   │   │   ├── calendar.tsx           # 日历选择器
+│   │   │   ├── checkbox.tsx           # 复选框
+│   │   │   ├── badge.tsx              # 徽章
+│   │   │   ├── card.tsx               # 卡片容器
+│   │   │   └── tabs.tsx               # 标签页
+│   │   │
+│   │   ├── 📁 layout/                 # 布局组件
+│   │   │   ├── AppLayout.tsx          # 主布局框架
+│   │   │   ├── Sidebar.tsx            # 侧边栏导航
+│   │   │   ├── Header.tsx             # 顶部栏
+│   │   │   └── MainContent.tsx        # 主内容区
+│   │   │
+│   │   ├── 📁 task/                   # 任务相关组件
+│   │   │   ├── TaskList.tsx           # 任务列表容器
+│   │   │   ├── TaskItem.tsx           # 单个任务项
+│   │   │   ├── TaskForm.tsx           # 任务表单
+│   │   │   ├── TaskDetail.tsx         # 任务详情面板
+│   │   │   ├── TaskFilters.tsx        # 过滤器
+│   │   │   ├── PrioritySelector.tsx   # 优先级选择器
+│   │   │   ├── TagInput.tsx           # 标签输入
+│   │   │   ├── DueDatePicker.tsx      # 日期选择
+│   │   │   └── RecurrenceEditor.tsx   # 重复规则编辑器
+│   │   │
+│   │   ├── 📁 habit/                  # 习惯相关组件
+│   │   │   ├── HabitList.tsx          # 习惯列表
+│   │   │   ├── HabitItem.tsx          # 习惯项
+│   │   │   ├── HabitForm.tsx          # 习惯表单
+│   │   │   ├── HabitCalendar.tsx      # 习惯日历
+│   │   │   ├── StreakDisplay.tsx      # 连续天数显示
+│   │   │   └── HabitStats.tsx         # 统计面板
+│   │   │
+│   │   ├── 📁 countdown/              # 倒数日组件
+│   │   │   ├── CountdownList.tsx      # 倒数日列表
+│   │   │   ├── CountdownItem.tsx      # 倒数日项
+│   │   │   ├── CountdownForm.tsx      # 倒数日表单
+│   │   │   └── CountdownCard.tsx      # 倒数日卡片
+│   │   │
+│   │   ├── 📁 views/                  # 视图模式组件
+│   │   │   ├── ListView.tsx           # 列表视图
+│   │   │   ├── CalendarView.tsx       # 日历视图
+│   │   │   ├── KanbanView.tsx         # 看板视图
+│   │   │   └── GridView.tsx           # 四宫格视图
+│   │   │
+│   │   ├── 📁 common/                 # 通用组件
+│   │   │   ├── EmptyState.tsx         # 空状态
+│   │   │   ├── LoadingSpinner.tsx     # 加载动画
+│   │   │   ├── SearchBar.tsx          # 搜索栏
+│   │   │   ├── NotificationPanel.tsx  # 通知面板
+│   │   │   └── LanguageSwitcher.tsx   # 语言切换器
+│   │   │
+│   │   └── 📁 icons/                  # SVG 图标
+│   │       ├── CheckIcon.tsx
+│   │       ├── CalendarIcon.tsx
+│   │       └── ...
+│   │
+│   ├── 📁 pages/                      # 页面组件 (路由级)
+│   │   ├── HomePage.tsx               # 首页仪表板
+│   │   ├── TasksPage.tsx              # 任务页面
+│   │   ├── HabitsPage.tsx             # 习惯页面
+│   │   ├── CountdownsPage.tsx         # 倒数日页面
+│   │   ├── SettingsPage.tsx           # 设置页面
+│   │   └── NotFoundPage.tsx           # 404 页面
+│   │
+│   ├── 📁 hooks/                      # 自定义 Hooks
+│   │   ├── useTasks.ts                # 任务 Hook
+│   │   ├── useHabits.ts               # 习惯 Hook
+│   │   ├── useCountdowns.ts           # 倒数日 Hook
+│   │   ├── useNotifications.ts        # 通知 Hook
+│   │   ├── useTheme.ts                # 主题 Hook
+│   │   ├── useLanguage.ts             # 语言 Hook
+│   │   └── useKeyboardShortcuts.ts    # 快捷键 Hook
+│   │
+│   ├── 📁 stores/                     # Zustand Stores
+│   │   ├── useTaskStore.ts            # 任务状态
+│   │   ├── useHabitStore.ts           # 习惯状态
+│   │   ├── useCountdownStore.ts       # 倒数日状态
+│   │   ├── useAppStore.ts             # 全局应用状态
+│   │   └── useViewStore.ts            # 视图状态
+│   │
+│   ├── 📁 services/                   # 前端服务层
+│   │   ├── taskService.ts             # 任务服务
+│   │   ├── habitService.ts            # 习惯服务
+│   │   ├── countdownService.ts        # 倒数日服务
+│   │   └── notificationService.ts     # 通知服务
+│   │
+│   ├── 📁 queries/                    # React Query Hooks
+│   │   ├── useTaskQueries.ts          # 任务查询
+│   │   ├── useHabitQueries.ts         # 习惯查询
+│   │   └── useCountdownQueries.ts     # 倒数日查询
+│   │
+│   ├── 📁 lib/                        # 工具库
+│   │   ├── api.ts                     # Tauri invoke 封装
+│   │   ├── db.ts                      # 数据库客户端
+│   │   ├── date.ts                    # 日期工具 (date-fns)
+│   │   ├── validation.ts              # 表单验证 (Zod)
+│   │   └── constants.ts               # 常量定义
+│   │
+│   ├── 📁 i18n/                       # 国际化
+│   │   ├── config.ts                  # i18next 配置
+│   │   ├── index.ts                   # 导出
+│   │   └── 📁 locales/                # 翻译文件
+│   │       ├── 📁 zh/                 # 中文
+│   │       │   ├── common.json
+│   │       │   ├── tasks.json
+│   │       │   ├── habits.json
+│   │       │   └── countdowns.json
+│   │       ├── 📁 en/                 # 英文
+│   │       │   ├── common.json
+│   │       │   ├── tasks.json
+│   │       │   ├── habits.json
+│   │       │   └── countdowns.json
+│   │       └── 📁 ja/                 # 日文
+│   │           ├── common.json
+│   │           ├── tasks.json
+│   │           ├── habits.json
+│   │           └── countdowns.json
+│   │
+│   ├── 📁 styles/                     # 全局样式
+│   │   ├── globals.css                # 全局样式重置
+│   │   ├── theme.css                  # CSS 变量 (主题)
+│   │   └── animations.css             # 动画定义
+│   │
+│   ├── 📁 types/                      # TypeScript 类型
+│   │   ├── task.ts                    # 任务类型
+│   │   ├── habit.ts                   # 习惯类型
+│   │   ├── countdown.ts               # 倒数日类型
+│   │   ├── common.ts                  # 通用类型
+│   │   └── index.ts                   # 类型导出
+│   │
+│   └── 📁 assets/                     # 静态资源
+│       ├── 📁 images/                 # 图片
+│       └── 📁 fonts/                  # 字体
+│
+│
+├── 📁 public/                         # 公共静态文件
+│   └── favicon.ico
+│
+│
+├── 📁 drizzle/                        # Drizzle ORM 配置
+│   ├── schema.ts                      # 数据库 Schema
+│   ├── 📁 migrations/                 # 迁移文件
+│   │   └── 0001_initial.sql
+│   └── drizzle.config.ts              # Drizzle 配置
+│
+│
+├── package.json                       # Node 依赖
+├── tsconfig.json                      # TypeScript 配置
+├── vite.config.ts                     # Vite 配置
+├── tailwind.config.js                 # Tailwind CSS 配置
+├── postcss.config.js                  # PostCSS 配置
+├── components.json                    # shadcn/ui 配置 (可选)
+├── .env.example                       # 环境变量示例
+├── .gitignore                         # Git 忽略文件
+└── README.md                          # 项目文档
+
+
+================================================================================
+                    数据流架构图
+================================================================================
+
+用户交互
+   ↓
+┌─────────────────────────────────┐
+│   React Components (UI Layer)   │
+│   - TaskItem, HabitItem, etc.   │
+└─────────────────────────────────┘
+   ↓ 调用
+┌─────────────────────────────────┐
+│   Custom Hooks (Business Log)   │
+│   - useTasks, useHabits, etc.   │
+└─────────────────────────────────┘
+   ↓ 使用
+┌─────────────────────────────────┐
+│   React Query (Data Fetching)   │
+│   - useQuery, useMutation       │
+└─────────────────────────────────┘
+   ↓ 调用
+┌─────────────────────────────────┐
+│   Services (API Layer)          │
+│   - taskService, habitService   │
+└─────────────────────────────────┘
+   ↓ 通过
+┌─────────────────────────────────┐
+│   Tauri Invoke (IPC Bridge)     │
+│   - invoke('create_task', ...)  │
+└─────────────────────────────────┘
+   ↓ 执行
+┌─────────────────────────────────┐
+│   Rust Commands (Backend)       │
+│   - create_task(), get_tasks()  │
+└─────────────────────────────────┘
+   ↓ 操作
+┌─────────────────────────────────┐
+│   Drizzle ORM + SQLite          │
+│   - 类型安全的 SQL 查询          │
+└─────────────────────────────────┘
+   ↓ 存储
+┌─────────────────────────────────┐
+│   SQLite Database File          │
+│   - app_data/mindless.db        │
+└─────────────────────────────────┘
+
+
+================================================================================
+                    关键文件说明
+================================================================================
+
+🔧 配置文件:
+  • tauri.conf.json       - Tauri 应用配置 (窗口、权限、构建)
+  • package.json          - Node 依赖和脚本
+  • Cargo.toml            - Rust 依赖
+  • tsconfig.json         - TypeScript 编译选项
+  • tailwind.config.js    - Tailwind CSS 主题定制
+
+🗄️ 数据库相关:
+  • drizzle/schema.ts     - 数据库表结构定义 (TypeScript)
+  • drizzle/migrations/   - SQL 迁移文件
+  • src-tauri/src/db/     - Rust 数据库连接和迁移逻辑
+
+🌍 国际化:
+  • src/i18n/config.ts    - i18next 初始化配置
+  • src/i18n/locales/*/   - 三语翻译文件 (zh/en/ja)
+
+🎨 UI 组件:
+  • src/components/ui/    - 基础 UI 组件 (Radix UI)
+  • src/components/layout/- 应用布局组件
+  • src/components/*/     - 功能模块组件
+
+📊 状态管理:
+  • src/stores/           - Zustand stores (全局状态)
+  • src/queries/          - React Query hooks (服务端状态)
+
+🔌 Tauri 集成:
+  • src-tauri/src/commands/ - Rust 命令 (前端可调用的 API)
+  • src/lib/api.ts        - Tauri invoke 封装
+
+
+================================================================================
+                    开发工作流
+================================================================================
+
+1️⃣  启动开发服务器:
+    $ npm run tauri dev
+    
+    → 同时启动:
+      - Vite 开发服务器 (React 前端, localhost:1420)
+      - Tauri 应用窗口 (Rust 后端)
+      - 热重载 (HMR) 支持
+
+2️⃣  修改代码:
+    前端: 编辑 src/ 下的 React 组件
+    后端: 编辑 src-tauri/src/ 下的 Rust 代码
+    
+    → 自动重新编译和刷新
+
+3️⃣  数据库变更:
+    a. 修改 drizzle/schema.ts
+    b. 运行: npx drizzle-kit generate
+    c. 重启应用自动执行迁移
+
+4️⃣  添加新翻译:
+    a. 在 src/i18n/locales/{zh,en,ja}/ 添加 key
+    b. 使用 useTranslation hook: t('key')
+
+5️⃣  构建生产版本:
+    $ npm run tauri build
+    
+    → 生成:
+      - macOS: src-tauri/target/release/bundle/dmg/*.dmg
+      - 优化后的二进制文件
+
+
+================================================================================
+                    技术栈总览
+================================================================================
+
+前端:
+  ✓ React 18 + TypeScript
+  ✓ React Router v6 (路由)
+  ✓ Zustand (全局状态)
+  ✓ TanStack Query (服务端状态)
+  ✓ Radix UI (无样式组件)
+  ✓ Tailwind CSS (样式)
+  ✓ i18next (国际化)
+  ✓ date-fns (日期处理)
+  ✓ Zod (表单验证)
+  ✓ React Hook Form (表单管理)
+
+后端:
+  ✓ Tauri v2 (桌面框架)
+  ✓ Rust (系统级编程)
+  ✓ SQLite (本地数据库)
+  ✓ Drizzle ORM (类型安全查询)
+  ✓ Tokio (异步运行时)
+
+工具链:
+  ✓ Vite (构建工具)
+  ✓ Vitest (单元测试)
+  ✓ Playwright (E2E测试)
+  ✓ ESLint + Prettier (代码质量)
+
+插件:
+  ✓ tauri-plugin-sql (SQLite 访问)
+  ✓ tauri-plugin-notification (系统通知)
+  ✓ tauri-plugin-dialog (文件对话框)
+  ✓ tauri-plugin-system-tray (系统托盘)
+
+
+================================================================================

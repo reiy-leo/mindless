@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, FunnelIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, closestCorners, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import {
@@ -16,25 +15,27 @@ import {
   useCreateSubtask, useUpdateSubtask, useDeleteSubtask,
   useCreateStep, useUpdateStep, useDeleteStep,
   useCreateTag, useReorderTasks, useReorderSubtasks, useReorderSteps,
-  useCompleteRecurringTask,
+  useCompleteRecurringTask, useAllSubtasks,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { useAppStore } from '@/stores/useAppStore';
-import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK, VIEW_MODES } from '@/lib/constants';
-import { getTaskTags, parseLocalDate } from '@/lib/taskHelpers';
+import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants';
+import { parseLocalDate } from '@/lib/taskHelpers';
 import TaskForm from '@/components/tasks/TaskForm';
 import SubtaskList from '@/components/tasks/SubtaskList';
 import StepList from '@/components/tasks/StepList';
 import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
-import Select from '@/components/Select';
 import TagCombobox from '@/components/TagCombobox';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
-import type { Task, Priority, Subtask as SubtaskType, Step as StepType } from '@/types/task';
+import ListFormDialog from '@/components/lists/ListFormDialog';
+import AdvancedGroupFormDialog from '@/components/AdvancedGroupFormDialog';
+import type { Task, Priority, Subtask as SubtaskType, Step as StepType, List } from '@/types/task';
 import type { Tag } from '@/types/tag';
+import type { AdvancedGroup } from '@/stores/useAppStore';
 
 // ==================== Helper: Build subtask tree ====================
 function buildSubtaskTree(flatSubtasks: SubtaskType[]): (SubtaskType & { children?: any[] })[] {
@@ -66,8 +67,15 @@ function getDescendantIds(flatSubtasks: SubtaskType[], parentId: string): string
   return result;
 }
 
-// ==================== Helper: Calculate task progress ====================
-function calcTaskProgress(subtasks: SubtaskType[], steps: StepType[]): { completed: number; total: number } | null {
+// ==================== Helper: Calculate steps progress ====================
+function calcStepsProgress(steps: StepType[]): { completed: number; total: number } | null {
+  if (steps.length === 0) return null;
+  const completed = steps.filter((s) => s.isCompleted).length;
+  return { completed, total: steps.length };
+}
+
+// ==================== Helper: Calculate full progress (subtasks + steps) ====================
+function calcFullProgress(subtasks: SubtaskType[], steps: StepType[]): { completed: number; total: number } | null {
   const total = subtasks.length + steps.length;
   if (total === 0) return null;
   const completed = subtasks.filter((s) => s.isCompleted).length + steps.filter((s) => s.isCompleted).length;
@@ -101,17 +109,23 @@ function getRecurrenceLabel(rule: string, t: (key: string, opts?: any) => string
 function TaskDetailPanel({
   task,
   allTags,
+  selectedSubtaskId,
   onClose,
   onEdit,
   onDelete,
   onUpdateTask,
+  onSubtaskClick,
+  onSubtaskBack,
 }: {
   task: Task;
   allTags: Tag[];
+  selectedSubtaskId?: string | null;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onUpdateTask: (params: any) => void;
+  onSubtaskClick?: (id: string) => void;
+  onSubtaskBack?: () => void;
 }) {
   const { t } = useTranslation('common');
   const { data: flatSubtasks = [] } = useSubtasks(task.id);
@@ -131,8 +145,14 @@ function TaskDetailPanel({
 
   const subtaskTree = useMemo(() => buildSubtaskTree(flatSubtasks), [flatSubtasks]);
 
+  // Find selected subtask
+  const selectedSubtask = useMemo(() => {
+    if (!selectedSubtaskId) return null;
+    return flatSubtasks.find((s) => s.id === selectedSubtaskId) || null;
+  }, [flatSubtasks, selectedSubtaskId]);
+
   // Calculate progress
-  const progress = useMemo(() => calcTaskProgress(flatSubtasks, steps), [flatSubtasks, steps]);
+  const progress = useMemo(() => calcFullProgress(flatSubtasks, steps), [flatSubtasks, steps]);
 
   // Auto-complete task when all subtasks and steps are done
   useEffect(() => {
@@ -221,7 +241,22 @@ function TaskDetailPanel({
     <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Detail Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate flex-1">{task.title}</h2>
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          {selectedSubtask && onSubtaskBack ? (
+            <>
+              <button
+                onClick={onSubtaskBack}
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-[40%]"
+              >
+                {task.title}
+              </button>
+              <span className="text-gray-300 dark:text-gray-600">/</span>
+              <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{selectedSubtask.title}</span>
+            </>
+          ) : (
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{task.title}</h2>
+          )}
+        </div>
         <div className="flex items-center gap-1 ml-2">
           <button
             onClick={onEdit}
@@ -249,126 +284,153 @@ function TaskDetailPanel({
 
       {/* Detail Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
-        {/* Progress Bar */}
-        {progress && progress.total > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {t('tasks.progress_label')}
-              </span>
-              <span className={`text-xs font-bold ${
-                progress.completed === progress.total ? 'text-green-500' : 'text-gray-600 dark:text-gray-400'
-              }`}>
-                {progress.completed}/{progress.total}
+        {selectedSubtask ? (
+          /* Subtask detail - own content */
+          <>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.title')}</h3>
+              <p className="text-gray-900 dark:text-gray-100">{selectedSubtask.title}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedSubtask.isCompleted}
+                onChange={() => {
+                  updateSubtask.mutate({ id: selectedSubtask.id, taskId: task.id, isCompleted: !selectedSubtask.isCompleted });
+                }}
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedSubtask.isCompleted ? t('tasks.status.completed') : t('tasks.status.active')}
               </span>
             </div>
-            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${(progress.completed / progress.total) * 100}%`,
-                  backgroundColor: progress.completed === progress.total ? '#10B981' : '#3B82F6',
+          </>
+        ) : (
+          /* Parent task detail */
+          <>
+            {/* Progress Bar */}
+            {progress && progress.total > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('tasks.progress_label')}
+                  </span>
+                  <span className={`text-xs font-bold ${
+                    progress.completed === progress.total ? 'text-green-500' : 'text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {progress.completed}/{progress.total}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(progress.completed / progress.total) * 100}%`,
+                      backgroundColor: progress.completed === progress.total ? '#10B981' : '#3B82F6',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {task.description && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
+                <MarkdownRenderer content={task.description} />
+              </div>
+            )}
+
+            {/* Meta info */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {task.priority > 0 && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                  />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
+                  </span>
+                </div>
+              )}
+              {task.dueDate && (
+                <div className="text-gray-600 dark:text-gray-400">
+                  {t('tasks.due_date')}: {parseLocalDate(task.dueDate).toLocaleDateString()}
+                </div>
+              )}
+              {task.dueTime && (
+                <div className="text-gray-600 dark:text-gray-400">
+                  {t('tasks.due_time')}: {task.dueTime}
+                </div>
+              )}
+              {task.endDate && (
+                <div className="text-gray-600 dark:text-gray-400">
+                  {t('tasks.range_end')}: {parseLocalDate(task.endDate).toLocaleDateString()}
+                  {task.endTime && <span className="ml-1">{task.endTime}</span>}
+                </div>
+              )}
+              {task.startDate && (
+                <div className="text-gray-600 dark:text-gray-400">
+                  {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
+                </div>
+              )}
+              {task.recurrenceRule && (
+                <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(task.recurrenceRule, t)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Tags */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
+                <TagIcon className="w-4 h-4" />
+                {t('tasks.tags.title')}
+              </h3>
+              <TagCombobox
+                allTags={allTags}
+                selectedIds={taskTagIds}
+                onToggle={handleToggleTag}
+                onCreateTag={(name) => {
+                  createTag.mutate({ name }, {
+                    onSuccess: (newTag) => {
+                      const currentIds = [...taskTagIds, newTag.id];
+                      onUpdateTask({ tagIds: currentIds.join(',') });
+                    },
+                  });
                 }}
               />
             </div>
-          </div>
-        )}
 
-        {/* Description */}
-        {task.description && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
-            <MarkdownRenderer content={task.description} />
-          </div>
-        )}
-
-        {/* Meta info */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          {task.priority > 0 && (
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+            {/* Subtasks */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <SubtaskList
+                subtasks={subtaskTree}
+                onAdd={handleAddSubtask}
+                onToggle={handleToggleSubtask}
+                onDelete={handleDeleteSubtask}
+                onUpdateTitle={handleUpdateSubtaskTitle}
+                onReorder={(items) => reorderSubtasks.mutate(items)}
+                onSubtaskClick={onSubtaskClick}
               />
-              <span className="text-gray-600 dark:text-gray-400">
-                {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
-              </span>
             </div>
-          )}
-          {task.dueDate && (
-            <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.due_date')}: {parseLocalDate(task.dueDate).toLocaleDateString()}
-            </div>
-          )}
-          {task.dueTime && (
-            <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.due_time')}: {task.dueTime}
-            </div>
-          )}
-          {task.endDate && (
-            <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.range_end')}: {parseLocalDate(task.endDate).toLocaleDateString()}
-              {task.endTime && <span className="ml-1">{task.endTime}</span>}
-            </div>
-          )}
-          {task.startDate && (
-            <div className="text-gray-600 dark:text-gray-400">
-              {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
-            </div>
-          )}
-          {task.recurrenceRule && (
-            <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-              <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(task.recurrenceRule, t)}</span>
-            </div>
-          )}
-        </div>
 
-        {/* Tags */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
-            <TagIcon className="w-4 h-4" />
-            {t('tasks.tags.title')}
-          </h3>
-          <TagCombobox
-            allTags={allTags}
-            selectedIds={taskTagIds}
-            onToggle={handleToggleTag}
-            onCreateTag={(name) => {
-              createTag.mutate({ name }, {
-                onSuccess: (newTag) => {
-                  const currentIds = [...taskTagIds, newTag.id];
-                  onUpdateTask({ tagIds: currentIds.join(',') });
-                },
-              });
-            }}
-          />
-        </div>
-
-        {/* Subtasks */}
-        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <SubtaskList
-            subtasks={subtaskTree}
-            onAdd={handleAddSubtask}
-            onToggle={handleToggleSubtask}
-            onDelete={handleDeleteSubtask}
-            onUpdateTitle={handleUpdateSubtaskTitle}
-            onReorder={(items) => reorderSubtasks.mutate(items)}
-          />
-        </div>
-
-        {/* Steps */}
-        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <StepList
-            steps={steps}
-            onAdd={handleAddStep}
-            onToggle={handleToggleStep}
-            onDelete={handleDeleteStep}
-            onUpdateDescription={handleUpdateStepDescription}
-            onUpdateDueDate={handleUpdateStepDueDate}
-            onUpdateDueTime={handleUpdateStepDueTime}
-            onReorder={(items) => reorderSteps.mutate(items)}
-          />
-        </div>
+            {/* Steps */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <StepList
+                steps={steps}
+                onAdd={handleAddStep}
+                onToggle={handleToggleStep}
+                onDelete={handleDeleteStep}
+                onUpdateDescription={handleUpdateStepDescription}
+                onUpdateDueDate={handleUpdateStepDueDate}
+                onUpdateDueTime={handleUpdateStepDueTime}
+                onReorder={(items) => reorderSteps.mutate(items)}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -377,7 +439,6 @@ function TaskDetailPanel({
 // ==================== Sortable Task Row ====================
 function SortableTaskRow({
   task,
-  allTags,
   isSelected,
   onSelect,
   onToggle,
@@ -385,12 +446,11 @@ function SortableTaskRow({
   onDelete,
 }: {
   task: Task;
-  allTags: Tag[];
   isSelected: boolean;
   onSelect: () => void;
   onToggle: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const { t } = useTranslation('common');
   const {
@@ -402,11 +462,10 @@ function SortableTaskRow({
     isDragging,
   } = useSortable({ id: task.id });
 
-  const { data: taskSubtasks = [] } = useSubtasks(task.id);
   const { data: taskSteps = [] } = useSteps(task.id);
   const rowProgress = useMemo(
-    () => calcTaskProgress(taskSubtasks, taskSteps),
-    [taskSubtasks, taskSteps],
+    () => calcStepsProgress(taskSteps),
+    [taskSteps],
   );
 
   const style = {
@@ -416,14 +475,12 @@ function SortableTaskRow({
     zIndex: isDragging ? 50 : 'auto' as const,
   };
 
-  const taskTags = getTaskTags(task, allTags);
-
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+      className={`group flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
         isSelected ? 'ring-2 ring-blue-500' : ''
       } ${isDragging ? 'shadow-lg' : ''}`}
     >
@@ -435,7 +492,7 @@ function SortableTaskRow({
         className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
         title={t('tasks.views.drag_to_reorder')}
       >
-        <Bars3Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
       </button>
 
       <input
@@ -443,46 +500,17 @@ function SortableTaskRow({
         checked={task.isCompleted}
         onChange={(e) => { e.stopPropagation(); onToggle(); }}
         onClick={(e) => e.stopPropagation()}
-        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
+        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
       />
-      <div className="flex-1 min-w-0">
-        <h3 className={`text-base truncate ${
-          task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-        }`}>
-          {task.title}
-        </h3>
-        {task.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{task.description}</p>
-        )}
-        {taskTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {taskTags.map((tag) => (
-              <span
-                key={tag.id}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs text-white"
-                style={{ backgroundColor: tag.color || '#3B82F6' }}
-              >
-                {tag.emoji && <span className="text-xs">{tag.emoji}</span>}
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div
-        className="w-3 h-3 rounded-full flex-shrink-0"
-        style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
-        title={`${t('tasks.priority.label')}: ${task.priority}`}
-      />
-      {task.recurrenceRule && (
-        <span className="text-xs text-blue-500 flex-shrink-0" title={getRecurrenceLabel(task.recurrenceRule, t)}>
-          &#x21bb;
-        </span>
-      )}
+      <span className={`flex-1 min-w-0 truncate text-sm ${
+        task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+      }`}>
+        {task.title}
+      </span>
       {/* Subtask/Step progress badge */}
       {rowProgress && rowProgress.total > 0 && (
         <div className="flex items-center gap-1 flex-shrink-0" title={`${rowProgress.completed}/${rowProgress.total}`}>
-          <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+          <div className="w-10 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -500,46 +528,82 @@ function SortableTaskRow({
           </span>
         </div>
       )}
-      {task.dueDate && (
-        <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
-          {parseLocalDate(task.dueDate).toLocaleDateString()}
-          {task.dueTime && <span className="ml-1">{task.dueTime}</span>}
-          {task.endDate && (
-            <span className="text-gray-400 dark:text-gray-500 ml-1">
-              &rarr; {parseLocalDate(task.endDate).toLocaleDateString()}
-              {task.endTime && <span className="ml-0.5">{task.endTime}</span>}
-            </span>
-          )}
-        </span>
-      )}
-      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0">
+      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-0.5 flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
           title={t('common.edit')}
         >
-          <PencilIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <PencilIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
         </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-          title={t('common.delete')}
-        >
-          <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
-        </button>
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+            title={t('common.delete')}
+          >
+            <TrashIcon className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+          </button>
+        )}
       </div>
     </div>
+  );
+}
+
+// ==================== Resize Handle ====================
+function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    let lastX = e.clientX;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - lastX;
+      lastX = e.clientX;
+      onResize(delta);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      className="w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
+    />
   );
 }
 
 // ==================== Main Page ====================
 export default function TasksPage() {
   const { t } = useTranslation('common');
-  const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus } = useViewStore();
-  const [showFilters, setShowFilters] = useState(false);
+  const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus, setSelectedListId } = useViewStore();
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedSubtaskId, setSelectedSubtaskId] = useState<string | null>(null);
+  const [showListForm, setShowListForm] = useState(false);
+  const [editingList, setEditingList] = useState<List | null>(null);
+  const [listsExpanded, setListsExpanded] = useState(true);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [showAdvGroupForm, setShowAdvGroupForm] = useState(false);
+  const [editingAdvGroup, setEditingAdvGroup] = useState<AdvancedGroup | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0);
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [groupsPanelWidth, setGroupsPanelWidth] = useState(192);
+  const [detailPanelWidth, setDetailPanelWidth] = useState(400);
 
   const { data: tasks = [], isLoading } = useTasks();
   const { data: allTags = [] } = useTags();
@@ -550,6 +614,7 @@ export default function TasksPage() {
   const toggleTask = useToggleTaskCompletion();
   const completeRecurring = useCompleteRecurringTask();
   const reorderTasks = useReorderTasks();
+  const updateSubtask = useUpdateSubtask();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -566,7 +631,9 @@ export default function TasksPage() {
         setShowTaskForm(false);
         setEditingTask(null);
       }
-      if (selectedTaskId) {
+      if (selectedSubtaskId) {
+        setSelectedSubtaskId(null);
+      } else if (selectedTaskId) {
         setSelectedTaskId(null);
       }
     };
@@ -578,12 +645,40 @@ export default function TasksPage() {
       window.removeEventListener('mindless:new-task', handleNewTask);
       window.removeEventListener('mindless:escape', handleEscape);
     };
-  }, [showTaskForm, selectedTaskId]);
+  }, [showTaskForm, selectedTaskId, selectedSubtaskId]);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) || null,
     [tasks, selectedTaskId]
   );
+
+  // Advanced group matching
+  const { smartGroupVisibility, setSmartGroupVisibility, advancedGroups, addAdvancedGroup, updateAdvancedGroup } = useAppStore();
+
+  const matchAdvancedGroup = useCallback((task: Task, group: AdvancedGroup): boolean => {
+    const f = group.filters;
+    if (f.listIds?.length) {
+      const taskListId = task.listId || 'inbox';
+      if (!f.listIds.includes(taskListId)) return false;
+    }
+    if (f.tagIds?.length) {
+      const taskTagIds = task.tagIds ? task.tagIds.split(',').filter(Boolean) : [];
+      if (!f.tagIds.some((tid) => taskTagIds.includes(tid))) return false;
+    }
+    if (f.titleRegex) {
+      try { if (!new RegExp(f.titleRegex).test(task.title)) return false; } catch { return false; }
+    }
+    if (f.dateType) {
+      const dateVal = f.dateType === 'due' ? task.dueDate : task.createdAt?.split('T')[0];
+      if (!dateVal) return false;
+      if (f.dateFrom && dateVal < f.dateFrom) return false;
+      if (f.dateTo && dateVal > f.dateTo) return false;
+    }
+    if (f.priorities?.length) {
+      if (!f.priorities.includes(task.priority)) return false;
+    }
+    return true;
+  }, []);
 
   // Filter and search tasks
   const filteredTasksBase = useMemo(() => tasks.filter((task) => {
@@ -592,19 +687,39 @@ export default function TasksPage() {
 
     // List filtering
     if (selectedListId) {
-      if (selectedListId === 'smart:today') {
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      // Advanced groups
+      if (selectedListId.startsWith('adv:')) {
+        const groupId = selectedListId.slice(4);
+        const group = advancedGroups.find((g) => g.id === groupId);
+        if (group && !matchAdvancedGroup(task, group)) return false;
+      } else if (selectedListId === 'smart:today') {
         if (task.dueDate !== todayStr) return false;
-      } else if (selectedListId === 'smart:next7days') {
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      } else if (selectedListId === 'smart:tomorrow') {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        if (task.dueDate !== tomorrowStr) return false;
+      } else if (selectedListId === 'smart:recent7days') {
         const next7 = new Date(now);
         next7.setDate(next7.getDate() + 7);
         const next7Str = `${next7.getFullYear()}-${String(next7.getMonth() + 1).padStart(2, '0')}-${String(next7.getDate()).padStart(2, '0')}`;
         if (!task.dueDate || task.dueDate < todayStr || task.dueDate > next7Str) return false;
-      } else if (selectedListId === 'eisenhower') {
-        // Eisenhower matrix shows all tasks — classification happens in the view component
+      } else if (selectedListId === 'smart:thisMonth') {
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const monthEndStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+        if (!task.dueDate || task.dueDate < monthStart || task.dueDate > monthEndStr) return false;
+      } else if (selectedListId === 'smart:recent') {
+        const recentStart = new Date(now);
+        recentStart.setDate(recentStart.getDate() - 30);
+        const recentStartStr = `${recentStart.getFullYear()}-${String(recentStart.getMonth() + 1).padStart(2, '0')}-${String(recentStart.getDate()).padStart(2, '0')}`;
+        const recentEnd = new Date(now);
+        recentEnd.setDate(recentEnd.getDate() + 30);
+        const recentEndStr = `${recentEnd.getFullYear()}-${String(recentEnd.getMonth() + 1).padStart(2, '0')}-${String(recentEnd.getDate()).padStart(2, '0')}`;
+        if (!task.dueDate || task.dueDate < recentStartStr || task.dueDate > recentEndStr) return false;
       } else {
         // Regular list: match listId (inbox = null or 'inbox')
         const taskListId = task.listId || 'inbox';
@@ -617,14 +732,18 @@ export default function TasksPage() {
     }
 
     return true;
-  }), [tasks, filterStatus, selectedListId]);
+  }), [tasks, filterStatus, selectedListId, advancedGroups, matchAdvancedGroup]);
 
   // Sort tasks
-  const { taskSortBy, taskSortOrder, taskGroupBy } = useAppStore();
+  const { taskSortBy, taskSortOrder, taskGroupBy, setTaskSortBy } = useAppStore();
   const filteredTasks = useMemo(() => {
     const sorted = [...filteredTasksBase].sort((a, b) => {
       let aVal: any, bVal: any;
       switch (taskSortBy) {
+        case 'sortOrder':
+          aVal = a.sortOrder ?? 0;
+          bVal = b.sortOrder ?? 0;
+          break;
         case 'dueDate':
           aVal = a.dueDate || '';
           bVal = b.dueDate || '';
@@ -644,7 +763,8 @@ export default function TasksPage() {
       }
       if (aVal < bVal) return taskSortOrder === 'asc' ? -1 : 1;
       if (aVal > bVal) return taskSortOrder === 'asc' ? 1 : -1;
-      return 0;
+      // Tiebreaker: sortOrder (manual order)
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
     });
 
     // Group tasks
@@ -672,13 +792,46 @@ export default function TasksPage() {
     return sorted;
   }, [filteredTasksBase, taskSortBy, taskSortOrder, taskGroupBy]);
 
+  // Load subtasks for all visible tasks and flatten
+  const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks]);
+  const { allSubtasks } = useAllSubtasks(taskIds);
+
+  // Build flattened list: task followed by its subtasks
+  type FlatItem = { type: 'task'; task: Task } | { type: 'subtask'; subtask: SubtaskType; parentTask: Task };
+  const flatItems = useMemo<FlatItem[]>(() => {
+    const items: FlatItem[] = [];
+    const subtasksByTask = new Map<string, SubtaskType[]>();
+    allSubtasks.forEach((s) => {
+      if (!s.parentSubtaskId) {
+        const list = subtasksByTask.get(s.taskId) || [];
+        list.push(s);
+        subtasksByTask.set(s.taskId, list);
+      }
+    });
+    filteredTasks.forEach((task) => {
+      items.push({ type: 'task', task });
+      const subs = subtasksByTask.get(task.id) || [];
+      subs.sort((a, b) => a.sortOrder - b.sortOrder);
+      subs.forEach((sub) => {
+        items.push({ type: 'subtask', subtask: sub, parentTask: task });
+      });
+    });
+    return items;
+  }, [filteredTasks, allSubtasks]);
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    // Only support reordering tasks (not subtasks) for now
     const oldIndex = filteredTasks.findIndex((t) => t.id === active.id);
     const newIndex = filteredTasks.findIndex((t) => t.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
+
+    // Switch to manual sort order when dragging
+    if (taskSortBy !== 'sortOrder') {
+      setTaskSortBy('sortOrder');
+    }
 
     const reordered = [...filteredTasks];
     const [moved] = reordered.splice(oldIndex, 1);
@@ -686,7 +839,35 @@ export default function TasksPage() {
 
     const items = reordered.map((task, idx) => ({ id: task.id, sortOrder: idx }));
     reorderTasks.mutate(items);
-  }, [filteredTasks, reorderTasks]);
+  }, [filteredTasks, reorderTasks, taskSortBy, setTaskSortBy]);
+
+  const handleCreateInline = () => {
+    if (!newTaskTitle.trim()) return;
+    createTask.mutate({
+      title: newTaskTitle.trim(),
+      description: newTaskDescription.trim() || undefined,
+      priority: newTaskPriority,
+      listId: selectedListId && !selectedListId.startsWith('smart:') && !selectedListId.startsWith('adv:') ? selectedListId : undefined,
+    }, {
+      onSuccess: () => {
+        setNewTaskTitle('');
+        setNewTaskDescription('');
+        setNewTaskPriority(0);
+      },
+    });
+  };
+
+  const handleInlineKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleCreateInline();
+    }
+    if (e.key === 'Escape') {
+      setNewTaskTitle('');
+      setNewTaskDescription('');
+      setNewTaskPriority(0);
+    }
+  };
 
   const closeForm = () => {
     setShowTaskForm(false);
@@ -755,25 +936,139 @@ export default function TasksPage() {
     updateTask.mutate({ id, ...params });
   };
 
+  // Task groups (smart lists + user lists)
+  const SMART_LISTS = [
+    { id: 'inbox', iconKey: 'inbox', labelKey: 'lists.inbox', required: true },
+    { id: 'smart:today', iconKey: 'calendar', labelKey: 'lists.today', required: true },
+    { id: 'smart:tomorrow', iconKey: 'clock', labelKey: 'lists.tomorrow', required: false },
+    { id: 'smart:recent7days', iconKey: 'recent7days', labelKey: 'lists.next_7_days', required: false },
+    { id: 'smart:thisMonth', iconKey: 'thisMonth', labelKey: 'lists.this_month', required: false },
+    { id: 'smart:recent', iconKey: 'recent', labelKey: 'lists.recent', required: true },
+  ] as const;
+
+  const GROUP_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+    inbox: InboxIcon,
+    calendar: CalendarIcon,
+    clock: ClockIcon,
+    recent7days: ClockIcon,
+    thisMonth: CalendarIcon,
+    recent: ClockIcon,
+  };
+
+  const visibleSmartLists = useMemo(() =>
+    SMART_LISTS.filter((sl) => sl.required || smartGroupVisibility[sl.id.replace('smart:', '') as keyof typeof smartGroupVisibility]),
+    [smartGroupVisibility]
+  );
+
+  const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent']);
+  const userLists = useMemo(() => allLists.filter((l) => !seedIds.has(l.id)), [allLists]);
+
+  const listTaskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // Tomorrow
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+    // Next 7 days
+    const next7 = new Date(now);
+    next7.setDate(next7.getDate() + 7);
+    const next7Str = `${next7.getFullYear()}-${String(next7.getMonth() + 1).padStart(2, '0')}-${String(next7.getDate()).padStart(2, '0')}`;
+
+    // This month (natural month)
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const monthEndStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+
+    // Recent (±30 days)
+    const recentStart = new Date(now);
+    recentStart.setDate(recentStart.getDate() - 30);
+    const recentStartStr = `${recentStart.getFullYear()}-${String(recentStart.getMonth() + 1).padStart(2, '0')}-${String(recentStart.getDate()).padStart(2, '0')}`;
+    const recentEnd = new Date(now);
+    recentEnd.setDate(recentEnd.getDate() + 30);
+    const recentEndStr = `${recentEnd.getFullYear()}-${String(recentEnd.getMonth() + 1).padStart(2, '0')}-${String(recentEnd.getDate()).padStart(2, '0')}`;
+
+    tasks.forEach((task) => {
+      const lid = task.listId || 'inbox';
+      counts[lid] = (counts[lid] || 0) + 1;
+      if (task.dueDate === todayStr) {
+        counts['smart:today'] = (counts['smart:today'] || 0) + 1;
+      }
+      if (task.dueDate === tomorrowStr) {
+        counts['smart:tomorrow'] = (counts['smart:tomorrow'] || 0) + 1;
+      }
+      if (task.dueDate && task.dueDate >= todayStr && task.dueDate <= next7Str) {
+        counts['smart:recent7days'] = (counts['smart:recent7days'] || 0) + 1;
+      }
+      if (task.dueDate && task.dueDate >= monthStart && task.dueDate <= monthEndStr) {
+        counts['smart:thisMonth'] = (counts['smart:thisMonth'] || 0) + 1;
+      }
+      if (task.dueDate && task.dueDate >= recentStartStr && task.dueDate <= recentEndStr) {
+        counts['smart:recent'] = (counts['smart:recent'] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [tasks]);
+
+  // Advanced group task counts
+  const advGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    advancedGroups.forEach((group) => {
+      counts[group.id] = tasks.filter((task) => matchAdvancedGroup(task, group)).length;
+    });
+    return counts;
+  }, [tasks, advancedGroups, matchAdvancedGroup]);
+
+  const handleAdvGroupClick = (groupId: string) => {
+    setSelectedListId(selectedListId === `adv:${groupId}` ? null : `adv:${groupId}`);
+  };
+
+  const handleEditAdvGroup = (e: React.MouseEvent, group: AdvancedGroup) => {
+    e.stopPropagation();
+    setEditingAdvGroup(group);
+    setShowAdvGroupForm(true);
+  };
+
+  const handleListClick = (listId: string) => {
+    setSelectedListId(selectedListId === listId ? null : listId);
+  };
+
+  const handleCreateList = () => {
+    setEditingList(null);
+    setShowListForm(true);
+  };
+
+  const handleEditList = (e: React.MouseEvent, list: List) => {
+    e.stopPropagation();
+    setEditingList(list);
+    setShowListForm(true);
+  };
+
+  const getGroupIcon = (iconKey: string) => {
+    const Icon = GROUP_ICON_MAP[iconKey] || InboxIcon;
+    return <Icon className="w-3.5 h-3.5" />;
+  };
+
   // Compute header title based on selected list
   const headerTitle = useMemo(() => {
     if (!selectedListId) return t('navigation.tasks');
+    if (selectedListId.startsWith('adv:')) {
+      const groupId = selectedListId.slice(4);
+      const group = advancedGroups.find((g) => g.id === groupId);
+      return group?.name || t('navigation.tasks');
+    }
     if (selectedListId === 'smart:today') return t('lists.today');
-    if (selectedListId === 'smart:next7days') return t('lists.next_7_days');
+    if (selectedListId === 'smart:tomorrow') return t('lists.tomorrow');
+    if (selectedListId === 'smart:recent7days') return t('lists.next_7_days');
+    if (selectedListId === 'smart:thisMonth') return t('lists.this_month');
+    if (selectedListId === 'smart:recent') return t('lists.recent');
     if (selectedListId === 'inbox') return t('lists.inbox');
-    if (selectedListId === 'eisenhower') return t('tasks.views.matrix');
     const list = allLists.find((l) => l.id === selectedListId);
     return list?.name || t('navigation.tasks');
-  }, [selectedListId, allLists, t]);
-
-  // Virtual scrolling for list view
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: filteredTasks.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 72,
-    overscan: 5,
-  });
+  }, [selectedListId, allLists, advancedGroups, t]);
 
   if (isLoading) {
     return (
@@ -782,71 +1077,250 @@ export default function TasksPage() {
       </div>
     );
   }
-
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* Task List Panel */}
-      <div className={`flex flex-col overflow-hidden transition-all ${selectedTask ? 'w-1/2' : 'w-full'}`}>
-        {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
-            <div className="flex items-center gap-2">
+      {/* Task Groups Panel */}
+      <div className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden" style={{ width: groupsPanelWidth, minWidth: 160, flexShrink: 0 }}>
+        {/* Smart lists - fixed at top */}
+        <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
+          <div className="space-y-px">
+            {visibleSmartLists.map((smartList) => {
+              const isActive = selectedListId === smartList.id;
+              const count = listTaskCounts[smartList.id] || 0;
+              const groupKey = smartList.id.replace('smart:', '') as keyof typeof smartGroupVisibility;
+              const isToggleable = !smartList.required;
+
+              return (
+                <div key={smartList.id} className="relative group">
+                  <button
+                    onClick={() => handleListClick(smartList.id)}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
+                      isActive
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {getGroupIcon(smartList.iconKey)}
+                    <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
+                    {count > 0 && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{count}</span>
+                    )}
+                  </button>
+                  {showGroupSettings && isToggleable && (
+                    <button
+                      onClick={() => setSmartGroupVisibility(groupKey, !smartGroupVisibility[groupKey])}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 opacity-70 hover:opacity-100"
+                    >
+                      {smartGroupVisibility[groupKey] ? (
+                        <EyeIcon className="w-3 h-3 text-gray-400" />
+                      ) : (
+                        <EyeSlashIcon className="w-3 h-3 text-gray-400" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable: groups */}
+        <div className="flex-1 overflow-auto px-2 py-2">
+          {/* Section header */}
+          <div className="flex items-center justify-between mb-1 px-1.5">
+            <button
+              onClick={() => setListsExpanded(!listsExpanded)}
+              className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              {listsExpanded ? (
+                <ChevronDownIcon className="w-3 h-3" />
+              ) : (
+                <ChevronRightIcon className="w-3 h-3" />
+              )}
+              {t('lists.title')}
+            </button>
+            <div className="flex items-center gap-0.5">
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title={t('tasks.filters')}
+                onClick={() => setShowGroupSettings(!showGroupSettings)}
+                className={`p-0.5 rounded transition-colors ${showGroupSettings ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500'}`}
+                title={t('lists.manage')}
               >
-                <FunnelIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <EyeIcon className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => {
-                  setEditingTask(null);
-                  setShowTaskForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                onClick={handleCreateList}
+                className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={t('lists.create_list')}
               >
-                <PlusIcon className="w-5 h-5" />
-                <span>{t('tasks.new_task')}</span>
+                <PlusIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
               </button>
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-4">
-            <Select
-              value={filterStatus}
-              onChange={(val) => setFilterStatus(val as 'all' | 'active' | 'completed')}
-              options={[
-                { value: 'all', label: t('tasks.status.all') },
-                { value: 'active', label: t('tasks.status.active') },
-                { value: 'completed', label: t('tasks.status.completed') },
-              ]}
-              className="w-36"
-            />
-          </div>
+          {listsExpanded && (
+            <div className="space-y-px">
+              {/* Advanced groups */}
+              {advancedGroups.map((group) => {
+                const isActive = selectedListId === `adv:${group.id}`;
+                const count = advGroupCounts[group.id] || 0;
 
-          {/* View mode tabs */}
-          <div className="flex items-center gap-2 mt-4">
-            {Object.entries(VIEW_MODES).map(([key, label]) => (
+                return (
+                  <div key={group.id} className="relative group">
+                    <button
+                      onClick={() => handleAdvGroupClick(group.id)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: group.color }}
+                      />
+                      <span className="flex-1 truncate">{group.name}</span>
+                      {count > 0 && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 group-hover/item:hidden">{count}</span>
+                      )}
+                      <span
+                        onClick={(e) => handleEditAdvGroup(e, group)}
+                        className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                      >
+                        <PencilIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* User lists */}
+              {userLists.map((list) => {
+                const isActive = selectedListId === list.id;
+                const count = listTaskCounts[list.id] || 0;
+
+                return (
+                  <div key={list.id} className="relative group">
+                    <button
+                      onClick={() => handleListClick(list.id)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: list.color || '#3B82F6' }}
+                      />
+                      <span className="flex-1 truncate">{list.name}</span>
+                      {count > 0 && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 group-hover/item:hidden">{count}</span>
+                      )}
+                      <span
+                        onClick={(e) => handleEditList(e, list)}
+                        className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                      >
+                        <PencilIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Add group button */}
               <button
-                key={key}
-                onClick={() => setViewMode(key as keyof typeof VIEW_MODES)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  viewMode === key
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                onClick={() => { setEditingAdvGroup(null); setShowAdvGroupForm(true); }}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                {t(label)}
+                <PlusIcon className="w-3 h-3" />
+                <span>{t('advanced_groups.create')}</span>
               </button>
-            ))}
-          </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-          {/* Sort and Group controls */}
-          <div className="flex items-center gap-4 mt-4">
-            <TaskSortControls />
-            <TaskGroupControls />
+      {/* Resize handle: groups <-> list */}
+      <ResizeHandle onResize={(delta) => setGroupsPanelWidth((w) => Math.max(160, Math.min(400, w + delta)))} />
+
+      {/* Task List Panel */}
+      <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+        {/* Header */}
+        <div data-tauri-drag-region className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <h1 data-tauri-drag-region className="text-2xl font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
+            <div className="flex items-center gap-2">
+              <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowSettings(false); }} tabIndex={-1}>
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}`}
+                  title={t('tasks.settings')}
+                >
+                  <Cog6ToothIcon className="w-5 h-5" />
+                </button>
+
+                {/* Settings popup */}
+                {showSettings && (
+                  <div className="absolute right-0 top-full mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
+                    {/* View mode */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_view')}</label>
+                      <div className="flex gap-1">
+                        {Object.entries(VIEW_MODES).map(([key, label]) => (
+                          <button
+                            key={key}
+                            onClick={() => setViewMode(key as keyof typeof VIEW_MODES)}
+                            className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
+                              viewMode === key
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {t(label)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status filter */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_status')}</label>
+                      <div className="flex gap-1">
+                        {[
+                          { value: 'all', label: t('tasks.status.all') },
+                          { value: 'active', label: t('tasks.status.active') },
+                          { value: 'completed', label: t('tasks.status.completed') },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setFilterStatus(opt.value as any)}
+                            className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
+                              filterStatus === opt.value
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sort */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_sort')}</label>
+                      <TaskSortControls />
+                    </div>
+
+                    {/* Group */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_group')}</label>
+                      <TaskGroupControls />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -878,48 +1352,124 @@ export default function TasksPage() {
             onUpdateTask={handleUpdateTaskInline}
           />
         ) : (
-        <div ref={parentRef} className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4">
+          {/* Inline new task form */}
+          <div className="mb-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <textarea
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={handleInlineKeyDown}
+              placeholder={t('tasks.inline_placeholder')}
+              rows={2}
+              className="w-full px-4 pt-3 pb-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent resize-none focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+            />
+            <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-1">
+                {/* Priority */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowPriorityPicker(!showPriorityPicker)}
+                    className={`p-1.5 rounded transition-colors ${newTaskPriority > 0 ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500'}`}
+                    title={t('tasks.priority.label')}
+                  >
+                    <FlagIcon className="w-4 h-4" />
+                  </button>
+                  {showPriorityPicker && (
+                    <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1.5 flex gap-1 z-50">
+                      {[0, 1, 2, 3].map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => { setNewTaskPriority(p as Priority); setShowPriorityPicker(false); }}
+                          className={`px-2 py-1 rounded text-xs transition-colors ${
+                            newTaskPriority === p
+                              ? 'bg-blue-500 text-white'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}
+                        >
+                          {t(`tasks.priority.${['none', 'low', 'medium', 'high'][p]}`)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Tags */}
+                <button
+                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 transition-colors"
+                  title={t('tasks.tags.title')}
+                >
+                  <TagIcon className="w-4 h-4" />
+                </button>
+                {/* Attachment */}
+                <button
+                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 transition-colors"
+                  title={t('tasks.attachment')}
+                >
+                  <PaperClipIcon className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={handleCreateInline}
+                disabled={!newTaskTitle.trim()}
+                className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              >
+                {t('tasks.create_task')}
+              </button>
+            </div>
+          </div>
+
           {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <p className="text-lg">{t('tasks.no_tasks')}</p>
-              <button
-                onClick={() => {
-                  setEditingTask(null);
-                  setShowTaskForm(true);
-                }}
-                className="mt-4 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                {t('tasks.create_first')}
-              </button>
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={filteredTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
-                  {virtualizer.getVirtualItems().map((virtualRow) => {
-                    const task = filteredTasks[virtualRow.index];
+            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+              <SortableContext items={flatItems.map((item) => item.type === 'task' ? item.task.id : item.subtask.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-1">
+                  {flatItems.map((item) => {
+                    const isSubtask = item.type === 'subtask';
+                    const displayTask = isSubtask ? {
+                      ...item.subtask,
+                      description: '',
+                      priority: 0 as Priority,
+                      createdAt: item.subtask.createdAt || '',
+                      updatedAt: item.subtask.updatedAt || '',
+                      sortOrder: item.subtask.sortOrder,
+                      sortBy: 'sortOrder' as const,
+                      groupBy: 'none' as const,
+                    } : item.task;
+
                     return (
-                      <div
-                        key={task.id}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
+                      <SortableTaskRow
+                        key={displayTask.id}
+                        task={displayTask as Task}
+                        isSelected={isSubtask ? selectedSubtaskId === displayTask.id : (selectedTaskId === displayTask.id && !selectedSubtaskId)}
+                        onSelect={() => {
+                          if (isSubtask) {
+                            setSelectedTaskId(item.parentTask.id);
+                            setSelectedSubtaskId(item.subtask.id);
+                          } else {
+                            setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id);
+                            setSelectedSubtaskId(null);
+                          }
                         }}
-                      >
-                        <SortableTaskRow
-                          task={task}
-                          allTags={allTags}
-                          isSelected={selectedTaskId === task.id}
-                          onSelect={() => setSelectedTaskId(selectedTaskId === task.id ? null : task.id)}
-                          onToggle={() => handleToggleTask(task.id, task.isCompleted)}
-                          onEdit={() => { setEditingTask(task); setShowTaskForm(true); }}
-                          onDelete={() => handleDeleteTask(task.id)}
-                        />
-                      </div>
+                        onToggle={() => {
+                          if (isSubtask) {
+                            updateSubtask.mutate({ id: item.subtask.id, taskId: item.parentTask.id, isCompleted: !item.subtask.isCompleted });
+                          } else {
+                            handleToggleTask(item.task.id, item.task.isCompleted);
+                          }
+                        }}
+                        onEdit={() => {
+                          if (isSubtask) {
+                            setSelectedTaskId(item.parentTask.id);
+                            setSelectedSubtaskId(item.subtask.id);
+                          } else {
+                            setEditingTask(item.task);
+                            setShowTaskForm(true);
+                          }
+                        }}
+                        onDelete={isSubtask ? undefined : () => handleDeleteTask(item.task.id)}
+                      />
                     );
                   })}
                 </div>
@@ -930,22 +1480,32 @@ export default function TasksPage() {
         )}
       </div>
 
+      {/* Resize handle: list <-> detail */}
+      <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
+
       {/* Task Detail Panel */}
-      {selectedTask && (
-        <div className="w-1/2 overflow-hidden">
+      <div className="overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0" style={{ width: detailPanelWidth }}>
+        {selectedTask ? (
           <TaskDetailPanel
             task={selectedTask}
             allTags={allTags}
-            onClose={() => setSelectedTaskId(null)}
+            selectedSubtaskId={selectedSubtaskId}
+            onClose={() => { setSelectedTaskId(null); setSelectedSubtaskId(null); }}
             onEdit={() => {
               setEditingTask(selectedTask);
               setShowTaskForm(true);
             }}
             onDelete={() => handleDeleteTask(selectedTask.id)}
             onUpdateTask={handleUpdateTaskField}
+            onSubtaskClick={(id) => setSelectedSubtaskId(id)}
+            onSubtaskBack={() => setSelectedSubtaskId(null)}
           />
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+            <p className="text-sm">{t('tasks.select_task')}</p>
+          </div>
+        )}
+      </div>
 
       {/* Task Form Dialog */}
       <TaskForm
@@ -956,6 +1516,27 @@ export default function TasksPage() {
         }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask}
+      />
+
+      {/* List Form Dialog */}
+      <ListFormDialog
+        isOpen={showListForm}
+        onClose={() => { setShowListForm(false); setEditingList(null); }}
+        list={editingList}
+      />
+
+      {/* Advanced Group Form Dialog */}
+      <AdvancedGroupFormDialog
+        isOpen={showAdvGroupForm}
+        onClose={() => { setShowAdvGroupForm(false); setEditingAdvGroup(null); }}
+        onSubmit={(group) => {
+          if (editingAdvGroup) {
+            updateAdvancedGroup(group);
+          } else {
+            addAdvancedGroup(group);
+          }
+        }}
+        group={editingAdvGroup}
       />
     </div>
   );

@@ -616,9 +616,9 @@ export default function TagsPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
+      <div data-tauri-drag-region className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 data-tauri-drag-region className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {t('tags.title')}
           </h1>
           <button

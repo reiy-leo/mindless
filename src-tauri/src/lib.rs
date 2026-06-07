@@ -10,7 +10,6 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            // Run database migrations
             let app_handle = app.handle();
             db::migrations::run_migrations(&app_handle)?;
             Ok(())
@@ -77,6 +76,9 @@ pub fn run() {
             commands::import_calendar_events,
             commands::delete_calendar_events_by_source,
             commands::clear_all_calendar_events,
+            // Data Export/Import
+            commands::export_all_data,
+            commands::import_all_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
