@@ -37,6 +37,8 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         sort_order: row.get(19)?,
         end_date: row.get(20)?,
         end_time: row.get(21)?,
+        parent_task_id: row.get(22)?,
+        level: row.get(23)?,
     })
 }
 
@@ -55,19 +57,43 @@ pub async fn create_task(
     recurrence_end_date: Option<String>,
     end_date: Option<String>,
     end_time: Option<String>,
+    parent_task_id: Option<String>,
+    level: Option<i32>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
     let priority = priority.unwrap_or(0);
+    let level = level.unwrap_or(0);
 
-    let max_sort: f64 = conn.query_row(
-        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks",
-        [],
-        |row| row.get(0),
-    ).unwrap_or(0.0);
+    // If parent_task_id is set, inherit list_id from parent if not provided
+    let effective_list_id = if list_id.is_none() && parent_task_id.is_some() {
+        let pid = parent_task_id.as_ref().unwrap();
+        conn.query_row(
+            "SELECT list_id FROM tasks WHERE id = ?1",
+            [pid],
+            |row| row.get::<_, Option<String>>(0),
+        ).ok().flatten()
+    } else {
+        list_id
+    };
+
+    // Calculate sort_order within siblings
+    let max_sort: f64 = if let Some(ref pid) = parent_task_id {
+        conn.query_row(
+            "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks WHERE parent_task_id = ?1 AND deleted_at IS NULL",
+            [pid],
+            |row| row.get(0),
+        ).unwrap_or(0.0)
+    } else {
+        conn.query_row(
+            "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks WHERE parent_task_id IS NULL AND deleted_at IS NULL",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0.0)
+    };
 
     conn.execute(
-        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time, parent_task_id, level) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
         rusqlite::params![
             &id,
             &title,
@@ -76,13 +102,15 @@ pub async fn create_task(
             opt_str(&due_date),
             opt_str(&due_time),
             opt_str(&start_date),
-            opt_str(&list_id),
+            opt_str(&effective_list_id),
             opt_str(&tag_ids),
             &max_sort,
             opt_str(&recurrence_rule),
             opt_str(&recurrence_end_date),
             opt_str(&end_date),
             opt_str(&end_time),
+            opt_str(&parent_task_id),
+            &level,
         ]
     ).map_err(|e| format!("Failed to create task: {}", e))?;
 
@@ -96,7 +124,7 @@ pub async fn create_task(
 pub async fn get_tasks(app: AppHandle) -> Result<Vec<Task>, String> {
     let conn = get_db(&app)?;
 
-    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY sort_order ASC, due_date ASC")
+    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE deleted_at IS NULL AND parent_task_id IS NULL ORDER BY sort_order ASC, due_date ASC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
 
     let tasks = stmt.query_map([], row_to_task)
@@ -262,9 +290,15 @@ pub async fn update_task(
 pub async fn delete_task(app: AppHandle, id: String) -> Result<(), String> {
     let conn = get_db(&app)?;
 
-    // Soft delete: set deleted_at timestamp
+    // Recursively soft-delete task and all descendants
     conn.execute(
-        "UPDATE tasks SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+        "WITH RECURSIVE descendants(id) AS (
+            SELECT id FROM tasks WHERE id = ?1
+            UNION ALL
+            SELECT t.id FROM tasks t INNER JOIN descendants d ON t.parent_task_id = d.id
+        )
+        UPDATE tasks SET deleted_at = datetime('now'), updated_at = datetime('now')
+        WHERE id IN (SELECT id FROM descendants)",
         [&id]
     ).map_err(|e| format!("Failed to delete task: {}", e))?;
 
@@ -297,7 +331,7 @@ pub async fn reorder_subtasks(app: AppHandle, items: Vec<ReorderItem>) -> Result
     let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
     for item in &items {
         tx.execute(
-            "UPDATE subtasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            "UPDATE tasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
             (&item.sort_order, &item.id),
         ).map_err(|e| format!("Failed to reorder subtask: {}", e))?;
     }

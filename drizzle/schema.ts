@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
-// Tasks table
+// Tasks table (unified tree: tasks with parent_task_id are subtasks)
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
@@ -18,6 +18,8 @@ export const tasks = sqliteTable('tasks', {
   tagIds: text('tag_ids'), // JSON array of tag IDs
   sortBy: text('sort_by').notNull().default('due_date'),
   groupBy: text('group_by').notNull().default('none'),
+  parentTaskId: text('parent_task_id'),  // null = top-level task, otherwise = subtask of this task
+  level: integer('level').notNull().default(0),  // nesting depth 0-3
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
   completedAt: text('completed_at'),
@@ -45,19 +47,6 @@ export const tags = sqliteTable('tags', {
   parentId: text('parent_id').references(() => tags.id),
   level: integer('level').notNull().default(0),  // 0-3
   sortOrder: real('sort_order').notNull().default(0),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
-});
-
-// Subtasks table (hierarchical, max 4 levels)
-export const subtasks = sqliteTable('subtasks', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  parentSubtaskId: text('parent_subtask_id').references(() => subtasks.id),
-  title: text('title').notNull(),
-  isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(false),
-  sortOrder: real('sort_order').notNull().default(0),
-  level: integer('level').notNull().default(0),  // 0-3
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });

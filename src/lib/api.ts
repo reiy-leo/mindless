@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Subtask, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -23,6 +23,8 @@ export async function createTask(params: {
   tagIds?: string;
   recurrenceRule?: string;
   recurrenceEndDate?: string;
+  parentTaskId?: string;
+  level?: number;
 }): Promise<Task> {
   return await invoke<Task>('create_task', params);
 }
@@ -126,9 +128,14 @@ export async function moveTags(items: {
   return await invoke<void>('move_tags', { items });
 }
 
-// Subtask APIs
-export async function getSubtasks(taskId: string): Promise<Subtask[]> {
-  return await invoke<Subtask[]>('get_subtasks', { taskId });
+// Subtask APIs (subtasks are now tasks with parentTaskId)
+export async function getSubtasks(taskId: string): Promise<Task[]> {
+  return await invoke<Task[]>('get_subtasks', { taskId });
+}
+
+export async function getAllSubtasks(taskIds: string[]): Promise<Task[]> {
+  if (taskIds.length === 0) return [];
+  return await invoke<Task[]>('get_all_subtasks', { taskIds });
 }
 
 export async function createSubtask(params: {
@@ -136,20 +143,21 @@ export async function createSubtask(params: {
   title: string;
   parentSubtaskId?: string;
   level?: number;
-}): Promise<Subtask> {
-  return await invoke<Subtask>('create_subtask', params);
+}): Promise<Task> {
+  return await invoke<Task>('create_subtask', params);
 }
 
 export async function updateSubtask(id: string, params: {
   title?: string;
   isCompleted?: boolean;
   sortOrder?: number;
-}): Promise<Subtask> {
-  return await invoke<Subtask>('update_subtask', { id, ...params });
+  taskId?: string;
+}): Promise<Task> {
+  return await invoke<Task>('update_subtask', { id, ...params });
 }
 
-export async function deleteSubtask(id: string): Promise<void> {
-  return await invoke<void>('delete_subtask', { id });
+export async function deleteSubtask(id: string, taskId?: string): Promise<void> {
+  return await invoke<void>('delete_subtask', { id, taskId });
 }
 
 // Step APIs

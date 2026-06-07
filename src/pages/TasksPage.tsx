@@ -26,21 +26,21 @@ import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
 import AdvancedGroupFormDialog from '@/components/AdvancedGroupFormDialog';
-import type { Task, Priority, SortBy, GroupBy, Subtask as SubtaskType, Step as StepType, List, ListSettings } from '@/types/task';
+import type { Task, Priority, SortBy, GroupBy, Step as StepType, List, ListSettings } from '@/types/task';
 import type { Tag } from '@/types/tag';
 import type { AdvancedGroup } from '@/stores/useAppStore';
 
 // ==================== Helper: Build subtask tree ====================
-function buildSubtaskTree(flatSubtasks: SubtaskType[]): (SubtaskType & { children?: any[] })[] {
-  const map = new Map<string, SubtaskType & { children?: any[] }>();
-  const roots: (SubtaskType & { children?: any[] })[] = [];
+function buildSubtaskTree(flatSubtasks: Task[]): (Task & { children?: Task[] })[] {
+  const map = new Map<string, Task & { children?: Task[] }>();
+  const roots: (Task & { children?: Task[] })[] = [];
 
   flatSubtasks.forEach((s) => map.set(s.id, { ...s, children: [] }));
 
   flatSubtasks.forEach((s) => {
     const node = map.get(s.id)!;
-    if (s.parentSubtaskId && map.has(s.parentSubtaskId)) {
-      map.get(s.parentSubtaskId)!.children!.push(node);
+    if (s.parentTaskId && map.has(s.parentTaskId)) {
+      map.get(s.parentTaskId)!.children!.push(node);
     } else {
       roots.push(node);
     }
@@ -50,8 +50,8 @@ function buildSubtaskTree(flatSubtasks: SubtaskType[]): (SubtaskType & { childre
 }
 
 // ==================== Helper: Get all descendant IDs ====================
-function getDescendantIds(flatSubtasks: SubtaskType[], parentId: string): string[] {
-  const children = flatSubtasks.filter((s) => s.parentSubtaskId === parentId);
+function getDescendantIds(flatSubtasks: Task[], parentId: string): string[] {
+  const children = flatSubtasks.filter((s) => s.parentTaskId === parentId);
   const result: string[] = [];
   for (const child of children) {
     result.push(child.id);
@@ -68,7 +68,7 @@ function calcStepsProgress(steps: StepType[]): { completed: number; total: numbe
 }
 
 // ==================== Helper: Calculate full progress (subtasks + steps) ====================
-function calcFullProgress(subtasks: SubtaskType[], steps: StepType[]): { completed: number; total: number } | null {
+function calcFullProgress(subtasks: Task[], steps: StepType[]): { completed: number; total: number } | null {
   const total = subtasks.length + steps.length;
   if (total === 0) return null;
   const completed = subtasks.filter((s) => s.isCompleted).length + steps.filter((s) => s.isCompleted).length;
@@ -806,18 +806,20 @@ export default function TasksPage() {
 
   // Load subtasks for all visible tasks and flatten
   const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks]);
-  const { allSubtasks } = useAllSubtasks(taskIds);
+  const { data: allSubtasksData } = useAllSubtasks(taskIds);
+  const allSubtasks = allSubtasksData ?? [];
 
   // Build flattened list: task followed by its subtasks
-  type FlatItem = { type: 'task'; task: Task } | { type: 'subtask'; subtask: SubtaskType; parentTask: Task };
+  type FlatItem = { type: 'task'; task: Task } | { type: 'subtask'; subtask: Task; parentTask: Task };
   const flatItems = useMemo<FlatItem[]>(() => {
     const items: FlatItem[] = [];
-    const subtasksByTask = new Map<string, SubtaskType[]>();
+    // allSubtasks are direct children of filteredTasks (parent_task_id = task.id)
+    const subtasksByTask = new Map<string, Task[]>();
     allSubtasks.forEach((s) => {
-      if (!s.parentSubtaskId) {
-        const list = subtasksByTask.get(s.taskId) || [];
+      if (s.parentTaskId) {
+        const list = subtasksByTask.get(s.parentTaskId) || [];
         list.push(s);
-        subtasksByTask.set(s.taskId, list);
+        subtasksByTask.set(s.parentTaskId, list);
       }
     });
     filteredTasks.forEach((task) => {

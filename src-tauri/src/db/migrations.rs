@@ -197,6 +197,58 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             // Try adding new columns (ignore if they already exist)
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_date TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_time TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN parent_task_id TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN level INTEGER NOT NULL DEFAULT 0;");
+
+            // Migrate existing subtasks into tasks table (if subtasks table exists)
+            let has_subtasks: bool = conn.query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='subtasks'",
+                [],
+                |row| row.get::<_, i32>(0),
+            ).unwrap_or(0) > 0;
+
+            if has_subtasks {
+                // Check if subtasks table has data
+                let subtask_count: i32 = conn.query_row(
+                    "SELECT COUNT(*) FROM subtasks",
+                    [],
+                    |row| row.get(0),
+                ).unwrap_or(0);
+
+                if subtask_count > 0 {
+                    // Insert subtasks as tasks, mapping task_id -> parent_task_id
+                    conn.execute_batch(
+                        "INSERT INTO tasks (id, title, description, is_completed, priority, list_id, sort_order, parent_task_id, level, created_at, updated_at)
+                         SELECT s.id, s.title, '', s.is_completed, 0, t.list_id, s.sort_order, s.task_id, s.level, s.created_at, s.updated_at
+                         FROM subtasks s
+                         JOIN tasks t ON s.task_id = t.id
+                         WHERE s.parent_subtask_id IS NULL"
+                    ).map_err(|e| format!("Failed to migrate top-level subtasks: {}", e))?;
+
+                    // Insert nested subtasks (with parent_subtask_id)
+                    conn.execute_batch(
+                        "INSERT INTO tasks (id, title, description, is_completed, priority, list_id, sort_order, parent_task_id, level, created_at, updated_at)
+                         SELECT s.id, s.title, '', s.is_completed, 0, t.list_id, s.sort_order, s.parent_subtask_id, s.level, s.created_at, s.updated_at
+                         FROM subtasks s
+                         JOIN tasks t ON s.task_id = t.id
+                         WHERE s.parent_subtask_id IS NOT NULL"
+                    ).map_err(|e| format!("Failed to migrate nested subtasks: {}", e))?;
+
+                    // Drop the old subtasks table
+                    conn.execute_batch("DROP TABLE IF EXISTS subtasks;")
+                        .map_err(|e| format!("Failed to drop subtasks table: {}", e))?;
+
+                    println!("Migrated {} subtasks to tasks table", subtask_count);
+                } else {
+                    // Empty subtasks table, just drop it
+                    conn.execute_batch("DROP TABLE IF EXISTS subtasks;")
+                        .map_err(|e| format!("Failed to drop subtasks table: {}", e))?;
+                }
+            }
+
+            // Add index for parent_task_id
+            conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON tasks(parent_task_id);")
+                .map_err(|e| format!("Failed to create index: {}", e))?;
 
             println!("Migrations applied successfully");
         }

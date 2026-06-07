@@ -13,24 +13,24 @@ const TABLES: &[&str] = &[
     "settings",
     "tags",
     "tasks",
-    "subtasks",
     "steps",
     "habits",
     "habit_logs",
     "countdowns",
     "calendar_events",
+    "list_settings",
 ];
 
 /// Deletion order respects foreign key constraints (child tables before parent tables).
 const DELETION_ORDER: &[&str] = &[
     "habit_logs",
     "steps",
-    "subtasks",
     "tasks",
     "tags",
     "habits",
     "countdowns",
     "calendar_events",
+    "list_settings",
     "lists",
     "settings",
 ];

@@ -15,6 +15,7 @@ interface Subtask {
   title: string;
   isCompleted: boolean;
   level: number;
+  parentTaskId?: string;
   children?: Subtask[];
 }
 
@@ -325,7 +326,7 @@ export default function SubtaskList({
     if (!over || active.id === over.id) return;
     if (!onReorder) return;
 
-    const topLevel = subtasks.filter((s) => !('parentSubtaskId' in s && (s as any).parentSubtaskId));
+    const topLevel = subtasks.filter((s) => !s.parentTaskId);
     const oldIndex = topLevel.findIndex((s) => s.id === active.id);
     const newIndex = topLevel.findIndex((s) => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;

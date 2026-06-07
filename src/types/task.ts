@@ -25,6 +25,8 @@ export interface Task {
   tags?: Tag[];                 // 关联的标签对象 (可选)
   sortBy: SortBy;               // 排序字段
   groupBy: GroupBy;             // 分组字段
+  parentTaskId?: string;        // 父任务ID (null = 顶级任务)
+  level: number;                // 嵌套层级 (0-3)
   subtasks?: Subtask[];         // 子任务列表 (可选)
   steps?: Step[];               // 步骤列表 (可选)
   createdAt: string;
@@ -63,18 +65,8 @@ export interface UpdateTaskParams {
   recurrenceEndDate?: string;
 }
 
-export interface Subtask {
-  id: string;
-  taskId: string;
-  parentSubtaskId?: string;     // 父子任务ID
-  title: string;
-  isCompleted: boolean;
-  sortOrder: number;
-  level: number;                // 层级深度 (0-3, 最多4级)
-  createdAt: string;
-  updatedAt: string;
-  children?: Subtask[];         // 子任务 (树形结构)
-}
+// Subtask is now just a Task with parentTaskId set
+export type Subtask = Task;
 
 export interface Step {
   id: string;

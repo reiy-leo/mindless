@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-// Task model
+// Task model (unified tree: tasks with parent_task_id are subtasks)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
@@ -19,6 +19,8 @@ pub struct Task {
     pub tag_ids: Option<String>,
     pub sort_by: Option<String>,
     pub group_by: Option<String>,
+    pub parent_task_id: Option<String>,
+    pub level: i32,
     pub created_at: String,
     pub updated_at: String,
     pub completed_at: Option<String>,

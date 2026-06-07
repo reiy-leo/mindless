@@ -1,32 +1,70 @@
 use tauri::AppHandle;
 use uuid::Uuid;
-use crate::db::models::Subtask;
+use crate::db::models::Task;
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
 }
 
-fn row_to_subtask(row: &rusqlite::Row) -> rusqlite::Result<Subtask> {
-    Ok(Subtask {
+fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
+    Ok(Task {
         id: row.get(0)?,
-        task_id: row.get(1)?,
-        parent_subtask_id: row.get(2)?,
-        title: row.get(3)?,
-        is_completed: row.get::<_, i32>(4)? != 0,
-        sort_order: row.get(5)?,
-        level: row.get(6)?,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        title: row.get(1)?,
+        description: row.get(2)?,
+        is_completed: row.get::<_, i32>(3)? != 0,
+        priority: row.get(4)?,
+        due_date: row.get(5)?,
+        due_time: row.get(6)?,
+        start_date: row.get(7)?,
+        reminder_time: row.get(8)?,
+        recurrence_rule: row.get(9)?,
+        recurrence_end_date: row.get(10)?,
+        list_id: row.get(11)?,
+        tag_ids: row.get(12)?,
+        sort_by: row.get(13)?,
+        group_by: row.get(14)?,
+        created_at: row.get(15)?,
+        updated_at: row.get(16)?,
+        completed_at: row.get(17)?,
+        deleted_at: row.get(18)?,
+        sort_order: row.get(19)?,
+        end_date: row.get(20)?,
+        end_time: row.get(21)?,
+        parent_task_id: row.get(22)?,
+        level: row.get(23)?,
     })
 }
 
 #[tauri::command]
-pub async fn get_subtasks(app: AppHandle, task_id: String) -> Result<Vec<Subtask>, String> {
+pub async fn get_subtasks(app: AppHandle, task_id: String) -> Result<Vec<Task>, String> {
     let conn = get_db(&app)?;
-    let mut stmt = conn.prepare("SELECT * FROM subtasks WHERE task_id = ?1 ORDER BY sort_order ASC")
+    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE parent_task_id = ?1 AND deleted_at IS NULL ORDER BY sort_order ASC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
 
-    let subtasks = stmt.query_map([&task_id], row_to_subtask)
+    let subtasks = stmt.query_map([&task_id], row_to_task)
+        .map_err(|e| format!("Failed to query: {}", e))?;
+
+    let result: Result<Vec<_>, _> = subtasks.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn get_all_subtasks(app: AppHandle, task_ids: Vec<String>) -> Result<Vec<Task>, String> {
+    let conn = get_db(&app)?;
+    if task_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    // Build query: get all descendants of the given task IDs
+    let placeholders: Vec<String> = task_ids.iter().enumerate().map(|(i, _)| format!("?{}", i + 1)).collect();
+    let sql = format!(
+        "SELECT * FROM tasks WHERE parent_task_id IN ({}) AND deleted_at IS NULL ORDER BY sort_order ASC",
+        placeholders.join(", ")
+    );
+
+    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Failed to prepare: {}", e))?;
+    let params: Vec<&dyn rusqlite::types::ToSql> = task_ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+    let subtasks = stmt.query_map(params.as_slice(), row_to_task)
         .map_err(|e| format!("Failed to query: {}", e))?;
 
     let result: Result<Vec<_>, _> = subtasks.collect();
@@ -40,29 +78,35 @@ pub async fn create_subtask(
     title: String,
     parent_subtask_id: Option<String>,
     level: Option<i32>,
-) -> Result<Subtask, String> {
+) -> Result<Task, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
+    let parent_id = parent_subtask_id.clone().filter(|s| !s.is_empty()).unwrap_or(task_id.clone());
     let level = level.unwrap_or(0);
 
+    // Inherit list_id from parent task
+    let list_id: Option<String> = conn.query_row(
+        "SELECT list_id FROM tasks WHERE id = ?1",
+        [&parent_id],
+        |row| row.get(0),
+    ).ok();
+
+    // Calculate sort_order within siblings
     let max_sort: f64 = conn.query_row(
-        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM subtasks WHERE task_id = ?1",
-        [&task_id],
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks WHERE parent_task_id = ?1 AND deleted_at IS NULL",
+        [&parent_id],
         |row| row.get(0),
     ).unwrap_or(0.0);
 
-    // Use proper NULL for optional foreign key
-    let parent_id = parent_subtask_id.filter(|s| !s.is_empty());
-
     conn.execute(
-        "INSERT INTO subtasks (id, task_id, parent_subtask_id, title, sort_order, level) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        rusqlite::params![id, task_id, parent_id, title, max_sort, level]
+        "INSERT INTO tasks (id, title, description, priority, list_id, sort_order, parent_task_id, level) VALUES (?1, ?2, '', 0, ?3, ?4, ?5, ?6)",
+        rusqlite::params![id, title, list_id, max_sort, parent_id, level],
     ).map_err(|e| format!("Failed to create subtask: {}", e))?;
 
-    let subtask = conn.query_row("SELECT * FROM subtasks WHERE id = ?1", [&id], row_to_subtask)
+    let task = conn.query_row("SELECT * FROM tasks WHERE id = ?1", [&id], row_to_task)
         .map_err(|e| format!("Failed to fetch subtask: {}", e))?;
 
-    Ok(subtask)
+    Ok(task)
 }
 
 #[tauri::command]
@@ -72,12 +116,13 @@ pub async fn update_subtask(
     title: Option<String>,
     is_completed: Option<bool>,
     sort_order: Option<f64>,
-) -> Result<Subtask, String> {
+    _task_id: Option<String>,
+) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
     if let Some(ref title) = title {
         conn.execute(
-            "UPDATE subtasks SET title = ?1, updated_at = datetime('now') WHERE id = ?2",
+            "UPDATE tasks SET title = ?1, updated_at = datetime('now') WHERE id = ?2",
             (title, &id)
         ).map_err(|e| format!("Failed to update subtask title: {}", e))?;
     }
@@ -85,45 +130,39 @@ pub async fn update_subtask(
     if let Some(is_completed) = is_completed {
         let completed_int: i32 = if is_completed { 1 } else { 0 };
         conn.execute(
-            "UPDATE subtasks SET is_completed = ?1, updated_at = datetime('now') WHERE id = ?2",
-            (&completed_int, &id)
+            "UPDATE tasks SET is_completed = ?1, completed_at = CASE WHEN ?1 = 1 THEN datetime('now') ELSE NULL END, updated_at = datetime('now') WHERE id = ?2",
+            (completed_int, &id)
         ).map_err(|e| format!("Failed to update subtask completion: {}", e))?;
     }
 
     if let Some(sort_order) = sort_order {
         conn.execute(
-            "UPDATE subtasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
+            "UPDATE tasks SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
             (&sort_order, &id)
         ).map_err(|e| format!("Failed to update subtask sort_order: {}", e))?;
     }
 
-    let subtask = conn.query_row("SELECT * FROM subtasks WHERE id = ?1", [&id], row_to_subtask)
+    let task = conn.query_row("SELECT * FROM tasks WHERE id = ?1", [&id], row_to_task)
         .map_err(|e| format!("Failed to fetch subtask: {}", e))?;
 
-    Ok(subtask)
+    Ok(task)
 }
 
 #[tauri::command]
-pub async fn delete_subtask(app: AppHandle, id: String) -> Result<(), String> {
+pub async fn delete_subtask(app: AppHandle, id: String, _task_id: Option<String>) -> Result<(), String> {
     let conn = get_db(&app)?;
 
-    // Collect all descendant IDs using recursive CTE, then delete in one transaction
-    let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
-
-    {
-        let mut stmt = tx.prepare(
-            "WITH RECURSIVE descendants(id) AS (
-                SELECT id FROM subtasks WHERE id = ?1
-                UNION ALL
-                SELECT s.id FROM subtasks s INNER JOIN descendants d ON s.parent_subtask_id = d.id
-            )
-            DELETE FROM subtasks WHERE id IN (SELECT id FROM descendants)"
-        ).map_err(|e| format!("Failed to prepare recursive delete: {}", e))?;
-
-        stmt.execute([&id]).map_err(|e| format!("Failed to delete subtask tree: {}", e))?;
-    }
-
-    tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
+    // Recursively soft-delete subtask and all descendants
+    conn.execute(
+        "WITH RECURSIVE descendants(id) AS (
+            SELECT id FROM tasks WHERE id = ?1
+            UNION ALL
+            SELECT t.id FROM tasks t INNER JOIN descendants d ON t.parent_task_id = d.id
+        )
+        UPDATE tasks SET deleted_at = datetime('now'), updated_at = datetime('now')
+        WHERE id IN (SELECT id FROM descendants)",
+        [&id]
+    ).map_err(|e| format!("Failed to delete subtask: {}", e))?;
 
     Ok(())
 }

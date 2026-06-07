@@ -1,4 +1,4 @@
-import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '@/lib/api';
 import type { CreateTaskParams, UpdateTaskParams, ListSettings } from '@/types/task';
 
@@ -42,18 +42,11 @@ export function useSubtasks(taskId: string) {
 }
 
 export function useAllSubtasks(taskIds: string[]) {
-  const queries = useQueries({
-    queries: taskIds.map((id) => ({
-      queryKey: ['subtasks', id],
-      queryFn: () => api.getSubtasks(id),
-      enabled: !!id,
-    })),
+  return useQuery({
+    queryKey: ['all-subtasks', ...taskIds.sort()],
+    queryFn: () => api.getAllSubtasks(taskIds),
+    enabled: taskIds.length > 0,
   });
-
-  const isLoading = queries.some((q) => q.isLoading);
-  const allSubtasks = queries.flatMap((q) => q.data ?? []);
-
-  return { allSubtasks, isLoading };
 }
 
 export function useSteps(taskId: string) {
@@ -187,7 +180,8 @@ export function useCreateSubtask() {
       api.createSubtask(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', variables.taskId] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['all-subtasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }
@@ -200,6 +194,8 @@ export function useUpdateSubtask() {
       api.updateSubtask(id, params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['all-subtasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }
@@ -209,9 +205,11 @@ export function useDeleteSubtask() {
 
   return useMutation({
     mutationFn: (params: { id: string; taskId: string }) =>
-      api.deleteSubtask(params.id),
+      api.deleteSubtask(params.id, params.taskId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['all-subtasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }
