@@ -121,8 +121,28 @@ function TaskDetailPanel({
   onSubtaskBack?: () => void;
 }) {
   const { t } = useTranslation('common');
+
+  // When a subtask is selected, treat it as the active task
   const { data: flatSubtasks = [] } = useSubtasks(task.id);
-  const { data: steps = [] } = useSteps(task.id);
+  const selectedSubtask = useMemo(() => {
+    if (!selectedSubtaskId) return null;
+    return flatSubtasks.find((s) => s.id === selectedSubtaskId) || null;
+  }, [flatSubtasks, selectedSubtaskId]);
+
+  const activeTask = selectedSubtask || task;
+  const { data: steps = [] } = useSteps(activeTask.id);
+  // Load subtasks of the active task (when viewing a subtask, this loads its children)
+  const { data: activeSubtasks = [] } = useSubtasks(activeTask.id);
+  // Merge: parent's subtasks + active task's subtasks (avoid duplicates)
+  const allFlatSubtasks = useMemo(() => {
+    if (!selectedSubtask) return flatSubtasks;
+    const ids = new Set(flatSubtasks.map((s) => s.id));
+    const merged = [...flatSubtasks];
+    for (const s of activeSubtasks) {
+      if (!ids.has(s.id)) merged.push(s);
+    }
+    return merged;
+  }, [flatSubtasks, activeSubtasks, selectedSubtask]);
 
   const createSubtask = useCreateSubtask();
   const updateSubtask = useUpdateSubtask();
@@ -136,89 +156,81 @@ function TaskDetailPanel({
 
 
 
-  const subtaskTree = useMemo(() => buildSubtaskTree(flatSubtasks), [flatSubtasks]);
-
-  // Find selected subtask
-  const selectedSubtask = useMemo(() => {
-    if (!selectedSubtaskId) return null;
-    return flatSubtasks.find((s) => s.id === selectedSubtaskId) || null;
-  }, [flatSubtasks, selectedSubtaskId]);
+  const subtaskTree = useMemo(() => buildSubtaskTree(allFlatSubtasks), [allFlatSubtasks]);
 
   // Calculate progress
-  const progress = useMemo(() => calcFullProgress(flatSubtasks, steps), [flatSubtasks, steps]);
+  const progress = useMemo(() => calcFullProgress(allFlatSubtasks, steps), [allFlatSubtasks, steps]);
 
   // Auto-complete task when all subtasks and steps are done
   useEffect(() => {
     if (!progress || progress.total === 0) return;
-    if (progress.completed === progress.total && !task.isCompleted) {
+    if (progress.completed === progress.total && !activeTask.isCompleted) {
       onUpdateTask({ isCompleted: true });
     }
-  }, [progress, task.isCompleted, onUpdateTask]);
+  }, [progress, activeTask.isCompleted, onUpdateTask]);
 
   // Parse task's tag_ids (comma-separated string)
   const taskTagIds: string[] = useMemo(() => {
-    if (!task.tagIds || task.tagIds.length === 0) return [];
-    return task.tagIds.split(',').filter(Boolean);
-  }, [task.tagIds]);
+    if (!activeTask.tagIds || activeTask.tagIds.length === 0) return [];
+    return activeTask.tagIds.split(',').filter(Boolean);
+  }, [activeTask.tagIds]);
 
 
   const handleAddSubtask = (title: string, parentSubtaskId?: string) => {
     const level = parentSubtaskId
-      ? (flatSubtasks.find((s) => s.id === parentSubtaskId)?.level ?? 0) + 1
+      ? (allFlatSubtasks.find((s) => s.id === parentSubtaskId)?.level ?? 0) + 1
       : 0;
-    createSubtask.mutate({ taskId: task.id, title, parentSubtaskId, level });
+    createSubtask.mutate({ taskId: activeTask.id, title, parentSubtaskId, level });
   };
 
   const handleToggleSubtask = (id: string) => {
-    const subtask = flatSubtasks.find((s) => s.id === id);
+    const subtask = allFlatSubtasks.find((s) => s.id === id);
     if (subtask) {
       const newCompleted = !subtask.isCompleted;
-      // Update the subtask itself
-      updateSubtask.mutate({ id, taskId: task.id, isCompleted: newCompleted });
-      // Cascade: update all descendants to the same state
-      const descendants = getDescendantIds(flatSubtasks, id);
+      updateSubtask.mutate({ id, taskId: activeTask.id, isCompleted: newCompleted });
+      const descendants = getDescendantIds(allFlatSubtasks, id);
       for (const descId of descendants) {
-        const desc = flatSubtasks.find((s) => s.id === descId);
+        const desc = allFlatSubtasks.find((s) => s.id === descId);
         if (desc && desc.isCompleted !== newCompleted) {
-          updateSubtask.mutate({ id: descId, taskId: task.id, isCompleted: newCompleted });
+          updateSubtask.mutate({ id: descId, taskId: activeTask.id, isCompleted: newCompleted });
         }
       }
     }
   };
 
   const handleDeleteSubtask = (id: string) => {
-    deleteSubtask.mutate({ id, taskId: task.id });
+    deleteSubtask.mutate({ id, taskId: activeTask.id });
   };
 
   const handleUpdateSubtaskTitle = (id: string, title: string) => {
-    updateSubtask.mutate({ id, taskId: task.id, title });
+    updateSubtask.mutate({ id, taskId: activeTask.id, title });
   };
 
   const handleAddStep = (description: string) => {
-    createStep.mutate({ taskId: task.id, description });
+    createStep.mutate({ taskId: activeTask.id, description });
   };
 
   const handleToggleStep = (id: string) => {
     const step = steps.find((s: StepType) => s.id === id);
     if (step) {
-      updateStep.mutate({ id, taskId: task.id, isCompleted: !step.isCompleted });
+      updateStep.mutate({ id, taskId: activeTask.id, isCompleted: !step.isCompleted });
     }
   };
 
   const handleDeleteStep = (id: string) => {
-    deleteStep.mutate({ id, taskId: task.id });
+    deleteStep.mutate({ id, taskId: activeTask.id });
   };
 
   const handleUpdateStepDescription = (id: string, description: string) => {
-    updateStep.mutate({ id, taskId: task.id, description });
+    updateStep.mutate({ id, taskId: activeTask.id, description });
   };
 
   const handleUpdateStepDueDate = (id: string, dueDate?: string) => {
-    updateStep.mutate({ id, taskId: task.id, dueDate });
+    updateStep.mutate({ id, taskId: activeTask.id, dueDate });
   };
 
   const handleUpdateStepDueTime = (id: string, dueTime?: string) => {
-    updateStep.mutate({ id, taskId: task.id, dueTime });
+    updateStep.mutate({ id, taskId: activeTask.id, dueTime });
   };
 
   const handleToggleTag = (tagId: string) => {
@@ -277,30 +289,6 @@ function TaskDetailPanel({
 
       {/* Detail Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
-        {selectedSubtask ? (
-          /* Subtask detail - own content */
-          <>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.title')}</h3>
-              <p className="text-gray-900 dark:text-gray-100">{selectedSubtask.title}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedSubtask.isCompleted}
-                onChange={() => {
-                  updateSubtask.mutate({ id: selectedSubtask.id, taskId: task.id, isCompleted: !selectedSubtask.isCompleted });
-                }}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500"
-              />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {selectedSubtask.isCompleted ? t('tasks.status.completed') : t('tasks.status.active')}
-              </span>
-            </div>
-          </>
-        ) : (
-          /* Parent task detail */
-          <>
             {/* Progress Bar */}
             {progress && progress.total > 0 && (
               <div>
@@ -327,50 +315,50 @@ function TaskDetailPanel({
             )}
 
             {/* Description */}
-            {task.description && (
+            {activeTask.description && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
-                <MarkdownRenderer content={task.description} />
+                <MarkdownRenderer content={activeTask.description} />
               </div>
             )}
 
             {/* Meta info */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {task.priority > 0 && (
+              {activeTask.priority > 0 && (
                 <div className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                    style={{ backgroundColor: PRIORITY_COLORS[activeTask.priority] }}
                   />
                   <span className="text-gray-600 dark:text-gray-400">
-                    {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][task.priority]}`)}
+                    {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][activeTask.priority]}`)}
                   </span>
                 </div>
               )}
-              {task.dueDate && (
+              {activeTask.dueDate && (
                 <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.due_date')}: {parseLocalDate(task.dueDate).toLocaleDateString()}
+                  {t('tasks.due_date')}: {parseLocalDate(activeTask.dueDate).toLocaleDateString()}
                 </div>
               )}
-              {task.dueTime && (
+              {activeTask.dueTime && (
                 <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.due_time')}: {task.dueTime}
+                  {t('tasks.due_time')}: {activeTask.dueTime}
                 </div>
               )}
-              {task.endDate && (
+              {activeTask.endDate && (
                 <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.range_end')}: {parseLocalDate(task.endDate).toLocaleDateString()}
-                  {task.endTime && <span className="ml-1">{task.endTime}</span>}
+                  {t('tasks.range_end')}: {parseLocalDate(activeTask.endDate).toLocaleDateString()}
+                  {activeTask.endTime && <span className="ml-1">{activeTask.endTime}</span>}
                 </div>
               )}
-              {task.startDate && (
+              {activeTask.startDate && (
                 <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.start_date')}: {parseLocalDate(task.startDate).toLocaleDateString()}
+                  {t('tasks.start_date')}: {parseLocalDate(activeTask.startDate).toLocaleDateString()}
                 </div>
               )}
-              {task.recurrenceRule && (
+              {activeTask.recurrenceRule && (
                 <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(task.recurrenceRule, t)}</span>
+                  <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(activeTask.recurrenceRule, t)}</span>
                 </div>
               )}
             </div>
@@ -422,8 +410,6 @@ function TaskDetailPanel({
                 onReorder={(items) => reorderSteps.mutate(items)}
               />
             </div>
-          </>
-        )}
       </div>
     </div>
   );
@@ -919,8 +905,9 @@ export default function TasksPage() {
   };
 
   const handleUpdateTaskField = (params: any) => {
-    if (selectedTask) {
-      updateTask.mutate({ id: selectedTask.id, ...params });
+    const targetId = selectedSubtaskId || selectedTask?.id;
+    if (targetId) {
+      updateTask.mutate({ id: targetId, ...params });
     }
   };
 
@@ -1495,7 +1482,7 @@ export default function TasksPage() {
                 setShowTaskForm(true);
               }
             }}
-            onDelete={() => handleDeleteTask(selectedTask.id)}
+            onDelete={() => handleDeleteTask(selectedSubtaskId || selectedTask.id)}
             onUpdateTask={handleUpdateTaskField}
             onSubtaskClick={(id) => setSelectedSubtaskId(id)}
             onSubtaskBack={() => setSelectedSubtaskId(null)}
