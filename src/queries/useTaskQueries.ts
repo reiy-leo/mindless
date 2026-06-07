@@ -1,6 +1,6 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '@/lib/api';
-import type { CreateTaskParams, UpdateTaskParams } from '@/types/task';
+import type { CreateTaskParams, UpdateTaskParams, ListSettings } from '@/types/task';
 
 // ==================== Queries ====================
 
@@ -132,7 +132,26 @@ export function useReorderTasks() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (items: { id: string; sortOrder: number }[]) => api.reorderTasks(items),
-    onSuccess: () => {
+    onMutate: async (items) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<any[]>(['tasks']);
+      queryClient.setQueryData(['tasks'], (old: any[] | undefined) => {
+        if (!old) return old;
+        const orderMap = new Map(items.map((item, idx) => [item.id, idx]));
+        return [...old].sort((a, b) => {
+          const aOrder = orderMap.get(a.id) ?? a.sortOrder ?? 0;
+          const bOrder = orderMap.get(b.id) ?? b.sortOrder ?? 0;
+          return aOrder - bOrder;
+        });
+      });
+      return { previousTasks };
+    },
+    onError: (_err, _items, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
@@ -356,6 +375,26 @@ export function useClearAllCalendarEvents() {
     mutationFn: () => api.clearAllCalendarEvents(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+    },
+  });
+}
+
+// List Settings
+export function useListSettings(listId: string | null) {
+  return useQuery({
+    queryKey: ['list-settings', listId],
+    queryFn: () => api.getListSettings(listId!),
+    enabled: !!listId,
+    staleTime: Infinity,
+  });
+}
+
+export function useSaveListSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: ListSettings) => api.saveListSettings(settings),
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData(['list-settings', variables.listId], variables);
     },
   });
 }

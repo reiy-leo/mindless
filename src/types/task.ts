@@ -3,7 +3,7 @@ import type { Tag } from './tag';
 
 export type PriorityMode = 'simple' | 'detailed';
 export type Priority = 0 | 1 | 2 | 3; // 4级优先级: 0=无, 1=低, 2=中, 3=高
-export type SortBy = 'dueDate' | 'startDate' | 'priority' | 'createdAt';
+export type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 export type GroupBy = 'none' | 'priority' | 'list';
 
 export interface Task {
@@ -96,6 +96,15 @@ export interface List {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ListSettings {
+  listId: string;
+  sortBy: SortBy;
+  sortOrder: 'asc' | 'desc';
+  groupBy: GroupBy;
+  filterStatus: 'all' | 'active' | 'completed';
+  viewMode: 'list' | 'calendar' | 'kanban' | 'matrix';
 }
 
 export interface CalendarEvent {

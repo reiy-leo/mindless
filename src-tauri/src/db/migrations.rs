@@ -131,6 +131,15 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             value TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS list_settings (
+            list_id TEXT PRIMARY KEY,
+            sort_by TEXT NOT NULL DEFAULT 'dueDate',
+            sort_order TEXT NOT NULL DEFAULT 'asc',
+            group_by TEXT NOT NULL DEFAULT 'none',
+            filter_status TEXT NOT NULL DEFAULT 'all',
+            view_mode TEXT NOT NULL DEFAULT 'list'
+        );
+
         INSERT OR IGNORE INTO lists (id, name, color, icon) VALUES
             ('inbox', 'Inbox', '#3B82F6', 'inbox'),
             ('today', 'Today', '#10B981', 'calendar'),

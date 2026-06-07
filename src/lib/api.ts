@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Subtask, Step, List, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
+import type { Task, Habit, Countdown, Tag, Subtask, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -287,6 +287,15 @@ export async function updateSetting(key: string, value: string): Promise<void> {
 
 export async function updateSettings(settings: [string, string][]): Promise<void> {
   return await invoke<void>('update_settings', { settings });
+}
+
+// List Settings APIs
+export async function getListSettings(listId: string): Promise<ListSettings | null> {
+  return await invoke<ListSettings | null>('get_list_settings', { listId });
+}
+
+export async function saveListSettings(settings: ListSettings): Promise<void> {
+  return await invoke<void>('save_list_settings', { settings });
 }
 
 // Calendar Events APIs

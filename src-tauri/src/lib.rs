@@ -66,6 +66,8 @@ pub fn run() {
             commands::get_settings,
             commands::update_setting,
             commands::update_settings,
+            commands::get_list_settings,
+            commands::save_list_settings,
             // Notifications
             commands::get_due_tasks,
             commands::get_reminder_habits,

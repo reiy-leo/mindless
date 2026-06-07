@@ -134,3 +134,13 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+// Per-list view settings
+export const listSettings = sqliteTable('list_settings', {
+  listId: text('list_id').primaryKey(),
+  sortBy: text('sort_by').notNull().default('dueDate'),
+  sortOrder: text('sort_order').notNull().default('asc'),
+  groupBy: text('group_by').notNull().default('none'),
+  filterStatus: text('filter_status').notNull().default('all'),
+  viewMode: text('view_mode').notNull().default('list'),
+});

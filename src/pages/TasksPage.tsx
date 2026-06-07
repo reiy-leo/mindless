@@ -1,21 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, Bars3Icon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
-import {
-  DndContext, closestCorners, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
   useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
   useCreateSubtask, useUpdateSubtask, useDeleteSubtask,
   useCreateStep, useUpdateStep, useDeleteStep,
-  useCreateTag, useReorderTasks, useReorderSubtasks, useReorderSteps,
+  useCreateTag, useReorderSubtasks, useReorderSteps,
   useCompleteRecurringTask, useAllSubtasks,
+  useSaveListSettings,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { useAppStore } from '@/stores/useAppStore';
@@ -33,7 +26,7 @@ import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
 import AdvancedGroupFormDialog from '@/components/AdvancedGroupFormDialog';
-import type { Task, Priority, Subtask as SubtaskType, Step as StepType, List } from '@/types/task';
+import type { Task, Priority, SortBy, GroupBy, Subtask as SubtaskType, Step as StepType, List, ListSettings } from '@/types/task';
 import type { Tag } from '@/types/tag';
 import type { AdvancedGroup } from '@/stores/useAppStore';
 
@@ -436,8 +429,8 @@ function TaskDetailPanel({
   );
 }
 
-// ==================== Sortable Task Row ====================
-function SortableTaskRow({
+// ==================== Task Row ====================
+function TaskRow({
   task,
   isSelected,
   onSelect,
@@ -453,14 +446,6 @@ function SortableTaskRow({
   onDelete?: () => void;
 }) {
   const { t } = useTranslation('common');
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id });
 
   const { data: taskSteps = [] } = useSteps(task.id);
   const rowProgress = useMemo(
@@ -468,33 +453,13 @@ function SortableTaskRow({
     [taskSteps],
   );
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto' as const,
-  };
-
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       onClick={onSelect}
       className={`group flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
         isSelected ? 'ring-2 ring-blue-500' : ''
-      } ${isDragging ? 'shadow-lg' : ''}`}
+      }`}
     >
-      {/* Drag handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        onClick={(e) => e.stopPropagation()}
-        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
-        title={t('tasks.views.drag_to_reorder')}
-      >
-        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-      </button>
-
       <input
         type="checkbox"
         checked={task.isCompleted}
@@ -587,6 +552,59 @@ function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
 export default function TasksPage() {
   const { t } = useTranslation('common');
   const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus, setSelectedListId } = useViewStore();
+  const { taskSortBy, taskSortOrder, taskGroupBy, setTaskSortBy, setTaskSortOrder, setTaskGroupBy } = useAppStore();
+  const saveListSettings = useSaveListSettings();
+  const isLoadingSettings = useRef(false);
+
+  // Load per-list settings when selectedListId changes
+  useEffect(() => {
+    if (selectedListId === null) return;
+    isLoadingSettings.current = true;
+    import('@/lib/api').then(({ getListSettings }) => {
+      getListSettings(selectedListId).then((settings) => {
+        if (settings) {
+          setTaskSortBy(settings.sortBy);
+          setTaskSortOrder(settings.sortOrder);
+          setTaskGroupBy(settings.groupBy);
+          setFilterStatus(settings.filterStatus);
+          setViewMode(settings.viewMode);
+        }
+        // Use setTimeout to ensure stores have been updated before we allow saving
+        setTimeout(() => { isLoadingSettings.current = false; }, 0);
+      }).catch(() => { isLoadingSettings.current = false; });
+    });
+  }, [selectedListId, setTaskSortBy, setTaskSortOrder, setTaskGroupBy, setFilterStatus, setViewMode]);
+
+  // Save current settings to DB when they change
+  const persistSettings = useCallback((overrides?: Partial<ListSettings>) => {
+    if (isLoadingSettings.current || !selectedListId) return;
+    const current: ListSettings = {
+      listId: selectedListId,
+      sortBy: overrides?.sortBy ?? taskSortBy,
+      sortOrder: overrides?.sortOrder ?? taskSortOrder,
+      groupBy: overrides?.groupBy ?? taskGroupBy,
+      filterStatus: overrides?.filterStatus ?? filterStatus,
+      viewMode: overrides?.viewMode ?? viewMode,
+    };
+    saveListSettings.mutate(current);
+  }, [selectedListId, taskSortBy, taskSortOrder, taskGroupBy, filterStatus, viewMode, saveListSettings]);
+
+  // Wrapper setters that also persist
+  const handleSetViewMode = useCallback((mode: 'list' | 'calendar' | 'kanban' | 'matrix') => {
+    setViewMode(mode);
+    persistSettings({ viewMode: mode });
+  }, [setViewMode, persistSettings]);
+
+  const handleSetFilterStatus = useCallback((status: 'all' | 'active' | 'completed') => {
+    setFilterStatus(status);
+    persistSettings({ filterStatus: status });
+  }, [setFilterStatus, persistSettings]);
+
+  const handleSetTaskGroupBy = useCallback((by: string) => {
+    setTaskGroupBy(by as GroupBy);
+    persistSettings({ groupBy: by as ListSettings['groupBy'] });
+  }, [setTaskGroupBy, persistSettings]);
+
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -613,12 +631,7 @@ export default function TasksPage() {
   const deleteTask = useDeleteTask();
   const toggleTask = useToggleTaskCompletion();
   const completeRecurring = useCompleteRecurringTask();
-  const reorderTasks = useReorderTasks();
   const updateSubtask = useUpdateSubtask();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
 
   // Keyboard shortcut listeners
   useEffect(() => {
@@ -735,7 +748,6 @@ export default function TasksPage() {
   }), [tasks, filterStatus, selectedListId, advancedGroups, matchAdvancedGroup]);
 
   // Sort tasks
-  const { taskSortBy, taskSortOrder, taskGroupBy, setTaskSortBy } = useAppStore();
   const filteredTasks = useMemo(() => {
     const sorted = [...filteredTasksBase].sort((a, b) => {
       let aVal: any, bVal: any;
@@ -818,28 +830,6 @@ export default function TasksPage() {
     });
     return items;
   }, [filteredTasks, allSubtasks]);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    // Only support reordering tasks (not subtasks) for now
-    const oldIndex = filteredTasks.findIndex((t) => t.id === active.id);
-    const newIndex = filteredTasks.findIndex((t) => t.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    // Switch to manual sort order when dragging
-    if (taskSortBy !== 'sortOrder') {
-      setTaskSortBy('sortOrder');
-    }
-
-    const reordered = [...filteredTasks];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-
-    const items = reordered.map((task, idx) => ({ id: task.id, sortOrder: idx }));
-    reorderTasks.mutate(items);
-  }, [filteredTasks, reorderTasks, taskSortBy, setTaskSortBy]);
 
   const handleCreateInline = () => {
     if (!newTaskTitle.trim()) return;
@@ -1269,7 +1259,7 @@ export default function TasksPage() {
                         {Object.entries(VIEW_MODES).map(([key, label]) => (
                           <button
                             key={key}
-                            onClick={() => setViewMode(key as keyof typeof VIEW_MODES)}
+                            onClick={() => handleSetViewMode(key as keyof typeof VIEW_MODES)}
                             className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
                               viewMode === key
                                 ? 'bg-blue-500 text-white'
@@ -1293,7 +1283,7 @@ export default function TasksPage() {
                         ].map((opt) => (
                           <button
                             key={opt.value}
-                            onClick={() => setFilterStatus(opt.value as any)}
+                            onClick={() => handleSetFilterStatus(opt.value as any)}
                             className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
                               filterStatus === opt.value
                                 ? 'bg-blue-500 text-white'
@@ -1309,13 +1299,17 @@ export default function TasksPage() {
                     {/* Sort */}
                     <div>
                       <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_sort')}</label>
-                      <TaskSortControls />
+                      <TaskSortControls onChange={(sortBy, sortOrder) => {
+                        setTaskSortBy(sortBy as SortBy);
+                        setTaskSortOrder(sortOrder);
+                        persistSettings({ sortBy: sortBy as ListSettings['sortBy'], sortOrder });
+                      }} />
                     </div>
 
                     {/* Group */}
                     <div>
                       <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">{t('tasks.settings_group')}</label>
-                      <TaskGroupControls />
+                      <TaskGroupControls onChange={(groupBy) => handleSetTaskGroupBy(groupBy)} />
                     </div>
                   </div>
                 )}
@@ -1422,59 +1416,55 @@ export default function TasksPage() {
               <p className="text-lg">{t('tasks.no_tasks')}</p>
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-              <SortableContext items={flatItems.map((item) => item.type === 'task' ? item.task.id : item.subtask.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-1">
-                  {flatItems.map((item) => {
-                    const isSubtask = item.type === 'subtask';
-                    const displayTask = isSubtask ? {
-                      ...item.subtask,
-                      description: '',
-                      priority: 0 as Priority,
-                      createdAt: item.subtask.createdAt || '',
-                      updatedAt: item.subtask.updatedAt || '',
-                      sortOrder: item.subtask.sortOrder,
-                      sortBy: 'sortOrder' as const,
-                      groupBy: 'none' as const,
-                    } : item.task;
+              <div className="space-y-1">
+                {flatItems.map((item) => {
+                  const isSubtask = item.type === 'subtask';
+                  const displayTask = isSubtask ? {
+                    ...item.subtask,
+                    description: '',
+                    priority: 0 as Priority,
+                    createdAt: item.subtask.createdAt || '',
+                    updatedAt: item.subtask.updatedAt || '',
+                    sortOrder: item.subtask.sortOrder,
+                    sortBy: 'sortOrder' as const,
+                    groupBy: 'none' as const,
+                  } : item.task;
 
-                    return (
-                      <SortableTaskRow
-                        key={displayTask.id}
-                        task={displayTask as Task}
-                        isSelected={isSubtask ? selectedSubtaskId === displayTask.id : (selectedTaskId === displayTask.id && !selectedSubtaskId)}
-                        onSelect={() => {
-                          if (isSubtask) {
-                            setSelectedTaskId(item.parentTask.id);
-                            setSelectedSubtaskId(item.subtask.id);
-                          } else {
-                            setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id);
-                            setSelectedSubtaskId(null);
-                          }
-                        }}
-                        onToggle={() => {
-                          if (isSubtask) {
-                            updateSubtask.mutate({ id: item.subtask.id, taskId: item.parentTask.id, isCompleted: !item.subtask.isCompleted });
-                          } else {
-                            handleToggleTask(item.task.id, item.task.isCompleted);
-                          }
-                        }}
-                        onEdit={() => {
-                          if (isSubtask) {
-                            setSelectedTaskId(item.parentTask.id);
-                            setSelectedSubtaskId(item.subtask.id);
-                          } else {
-                            setEditingTask(item.task);
-                            setShowTaskForm(true);
-                          }
-                        }}
-                        onDelete={isSubtask ? undefined : () => handleDeleteTask(item.task.id)}
-                      />
-                    );
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
+                  return (
+                    <TaskRow
+                      key={displayTask.id}
+                      task={displayTask as Task}
+                      isSelected={isSubtask ? selectedSubtaskId === displayTask.id : (selectedTaskId === displayTask.id && !selectedSubtaskId)}
+                      onSelect={() => {
+                        if (isSubtask) {
+                          setSelectedTaskId(item.parentTask.id);
+                          setSelectedSubtaskId(item.subtask.id);
+                        } else {
+                          setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id);
+                          setSelectedSubtaskId(null);
+                        }
+                      }}
+                      onToggle={() => {
+                        if (isSubtask) {
+                          updateSubtask.mutate({ id: item.subtask.id, taskId: item.parentTask.id, isCompleted: !item.subtask.isCompleted });
+                        } else {
+                          handleToggleTask(item.task.id, item.task.isCompleted);
+                        }
+                      }}
+                      onEdit={() => {
+                        if (isSubtask) {
+                          setSelectedTaskId(item.parentTask.id);
+                          setSelectedSubtaskId(item.subtask.id);
+                        } else {
+                          setEditingTask(item.task);
+                          setShowTaskForm(true);
+                        }
+                      }}
+                      onDelete={isSubtask ? undefined : () => handleDeleteTask(item.task.id)}
+                    />
+                  );
+                })}
+              </div>
           )}
         </div>
         )}

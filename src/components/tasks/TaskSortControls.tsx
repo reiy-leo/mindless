@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/useAppStore';
 import Select from '@/components/Select';
 
-export function TaskSortControls() {
+export function TaskSortControls({ onChange }: { onChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void } = {}) {
   const { t } = useTranslation('common');
   const { taskSortBy, taskSortOrder, setTaskSortBy, setTaskSortOrder } = useAppStore();
 
@@ -10,7 +10,10 @@ export function TaskSortControls() {
     <div className="flex items-center gap-2">
       <Select
         value={taskSortBy}
-        onChange={(val) => setTaskSortBy(val as any)}
+        onChange={(val) => {
+          setTaskSortBy(val as any);
+          onChange?.(val, taskSortOrder);
+        }}
         options={[
           { value: 'sortOrder', label: t('tasks.sort.manual') },
           { value: 'dueDate', label: t('tasks.sort.due_date') },
@@ -23,7 +26,10 @@ export function TaskSortControls() {
       />
       <Select
         value={taskSortOrder}
-        onChange={(val) => setTaskSortOrder(val as 'asc' | 'desc')}
+        onChange={(val) => {
+          setTaskSortOrder(val as 'asc' | 'desc');
+          onChange?.(taskSortBy, val as 'asc' | 'desc');
+        }}
         options={[
           { value: 'asc', label: t('tasks.sort.asc') },
           { value: 'desc', label: t('tasks.sort.desc') },

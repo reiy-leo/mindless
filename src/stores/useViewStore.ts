@@ -31,16 +31,13 @@ export const useViewStore = create<ViewState>()(
     {
       name: 'mindless-view-settings',
       partialize: (state) => ({
-        viewMode: state.viewMode,
         selectedListId: state.selectedListId,
       }),
       merge: (persisted: unknown, current: ViewState) => {
         const p = persisted as Partial<ViewState>;
-        const validModes: ViewMode[] = ['list', 'calendar', 'kanban', 'matrix'];
         return {
           ...current,
           ...p,
-          viewMode: validModes.includes(p.viewMode as ViewMode) ? p.viewMode! : 'list',
         };
       },
     }

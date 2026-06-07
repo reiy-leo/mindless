@@ -103,6 +103,17 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'mindless-app-settings',
+      partialize: (state) => ({
+        theme: state.theme,
+        language: state.language,
+        sidebarCollapsed: state.sidebarCollapsed,
+        priorityMode: state.priorityMode,
+        notificationEnabled: state.notificationEnabled,
+        weekStartDay: state.weekStartDay,
+        fontSize: state.fontSize,
+        smartGroupVisibility: state.smartGroupVisibility,
+        advancedGroups: state.advancedGroups,
+      }),
     }
   )
 );
