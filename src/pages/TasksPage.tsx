@@ -1484,8 +1484,16 @@ export default function TasksPage() {
             selectedSubtaskId={selectedSubtaskId}
             onClose={() => { setSelectedTaskId(null); setSelectedSubtaskId(null); }}
             onEdit={() => {
-              setEditingTask(selectedTask);
-              setShowTaskForm(true);
+              if (selectedSubtaskId) {
+                const subtask = allSubtasks.find((s) => s.id === selectedSubtaskId);
+                if (subtask) {
+                  setEditingTask(subtask);
+                  setShowTaskForm(true);
+                }
+              } else {
+                setEditingTask(selectedTask);
+                setShowTaskForm(true);
+              }
             }}
             onDelete={() => handleDeleteTask(selectedTask.id)}
             onUpdateTask={handleUpdateTaskField}
