@@ -395,7 +395,7 @@ function TaskDetailPanel({
             <MilkdownEditor
               markdown={localDesc}
               onChange={handleDescChange}
-              placeholder="详细说明"
+              // placeholder="详细说明"
             />
 
             {/* Tags */}
