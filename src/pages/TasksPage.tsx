@@ -399,25 +399,19 @@ function TaskDetailPanel({
             />
 
             {/* Tags */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
-                <TagIcon className="w-4 h-4" />
-                {t('tasks.tags.title')}
-              </h3>
-              <TagCombobox
-                allTags={allTags}
-                selectedIds={taskTagIds}
-                onToggle={handleToggleTag}
-                onCreateTag={(name) => {
-                  createTag.mutate({ name }, {
-                    onSuccess: (newTag) => {
-                      const currentIds = [...taskTagIds, newTag.id];
-                      onUpdateTask({ tagIds: currentIds.join(',') });
-                    },
-                  });
-                }}
-              />
-            </div>
+            <TagCombobox
+              allTags={allTags}
+              selectedIds={taskTagIds}
+              onToggle={handleToggleTag}
+              onCreateTag={(name) => {
+                createTag.mutate({ name }, {
+                  onSuccess: (newTag) => {
+                    const currentIds = [...taskTagIds, newTag.id];
+                    onUpdateTask({ tagIds: currentIds.join(',') });
+                  },
+                });
+              }}
+            />
 
             {/* Subtasks */}
             <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
