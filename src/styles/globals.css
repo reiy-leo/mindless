@@ -37,6 +37,9 @@ body {
 
 /* ===== Milkdown editor overrides ===== */
 
+/* Remove default padding */
+.milkdown .ProseMirror { padding: 0 !important; }
+
 /* Headings */
 .milkdown h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
 .milkdown h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
