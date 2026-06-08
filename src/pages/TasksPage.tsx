@@ -395,6 +395,7 @@ function TaskDetailPanel({
             <MDXEditorWrapper
               markdown={localDesc}
               onChange={handleDescChange}
+              placeholder="详细说明"
             />
 
             {/* Tags */}
