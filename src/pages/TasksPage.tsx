@@ -251,6 +251,24 @@ function TaskDetailPanel({
         </div>
       </div>
 
+      {/* Progress bar - tightly below header */}
+      {progress && progress.total > 0 && (
+        <div className="group relative">
+          <div className="w-full h-1 bg-gray-100 dark:bg-gray-700">
+            <div
+              className="h-full transition-all duration-300"
+              style={{
+                width: `${(progress.completed / progress.total) * 100}%`,
+                backgroundColor: progress.completed === progress.total ? '#10B981' : '#3B82F6',
+              }}
+            />
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-7 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-0.5 rounded whitespace-nowrap">
+            {Math.round((progress.completed / progress.total) * 100)}%
+          </div>
+        </div>
+      )}
+
       {/* Detail Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
             {/* Parent task link */}
@@ -262,31 +280,6 @@ function TaskDetailPanel({
                 <ChevronRightIcon className="w-3.5 h-3.5 rotate-180" />
                 <span className="truncate">{task.title}</span>
               </button>
-            )}
-
-            {/* Progress Bar */}
-            {progress && progress.total > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('tasks.progress_label')}
-                  </span>
-                  <span className={`text-xs font-bold ${
-                    progress.completed === progress.total ? 'text-green-500' : 'text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {progress.completed}/{progress.total}
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(progress.completed / progress.total) * 100}%`,
-                      backgroundColor: progress.completed === progress.total ? '#10B981' : '#3B82F6',
-                    }}
-                  />
-                </div>
-              </div>
             )}
 
             {/* Description */}
