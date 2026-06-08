@@ -14,25 +14,23 @@ function markdownToHtml(md: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Headers
+  // Headers (must come before bold/italic)
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-  // Bold and italic
+  // Bold+italic combo
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
+  // Bold
   html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  // Italic
   html = html.replace(/\*(.+?)\*/g, '<i>$1</i>');
 
   // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/`([^`]+)`/g, '<code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;font-size:0.9em">$1</code>');
 
-  // Unordered list
-  html = html.replace(/^[*-] (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-
-  // Ordered list
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Unordered list items
+  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
 
   // Line breaks
   html = html.replace(/\n/g, '<br>');
@@ -40,67 +38,65 @@ function markdownToHtml(md: string): string {
   return html;
 }
 
-function htmlToMarkdown(el: HTMLElement): string {
-  let md = '';
+function saveCursor(container: Node): { node: Node; offset: number } | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!container.contains(range.startContainer)) return null;
+  return { node: range.startContainer, offset: range.startOffset };
+}
 
-  for (const node of Array.from(el.childNodes)) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      md += node.textContent || '';
-    } else if (node instanceof HTMLElement) {
-      const tag = node.tagName.toLowerCase();
-      if (tag === 'br') {
-        md += '\n';
-      } else if (tag === 'h1') {
-        md += '# ' + node.textContent + '\n';
-      } else if (tag === 'h2') {
-        md += '## ' + node.textContent + '\n';
-      } else if (tag === 'h3') {
-        md += '### ' + node.textContent + '\n';
-      } else if (tag === 'b' || tag === 'strong') {
-        const inner = node.innerHTML;
-        if (inner.includes('<i>') || inner.includes('<em>')) {
-          md += '***' + node.textContent + '***';
-        } else {
-          md += '**' + node.textContent + '**';
-        }
-      } else if (tag === 'i' || tag === 'em') {
-        md += '*' + node.textContent + '*';
-      } else if (tag === 'code') {
-        md += '`' + node.textContent + '`';
-      } else if (tag === 'ul' || tag === 'ol') {
-        for (const li of Array.from(node.children)) {
-          if (li.tagName.toLowerCase() === 'li') {
-            md += '- ' + li.textContent + '\n';
-          }
-        }
-      } else if (tag === 'div' || tag === 'p') {
-        md += htmlToMarkdown(node) + '\n';
-      } else {
-        md += htmlToMarkdown(node);
-      }
-    }
+function restoreCursor(container: Node, saved: { node: Node; offset: number } | null) {
+  if (!saved) return;
+  const sel = window.getSelection();
+  if (!sel) return;
+  try {
+    const range = document.createRange();
+    range.setStart(saved.node, saved.offset);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch {
+    // If cursor node was removed, place at end
+    const range = document.createRange();
+    range.selectNodeContents(container);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
-
-  return md.replace(/\n+$/, '');
 }
 
 export default function MarkdownEditor({ value, onChange, placeholder, className }: MarkdownEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
 
+  // Sync value -> innerHTML (rendered markdown)
   useEffect(() => {
-    if (!editorRef.current || isInternalChange.current) return;
-    const currentHtml = htmlToMarkdown(editorRef.current);
-    if (currentHtml !== value) {
-      editorRef.current.innerHTML = value ? markdownToHtml(value) : '';
+    if (!editorRef.current) return;
+    if (isInternalChange.current) return;
+
+    const html = markdownToHtml(value);
+    if (editorRef.current.innerHTML !== html) {
+      const cursor = saveCursor(editorRef.current);
+      editorRef.current.innerHTML = html || '';
+      restoreCursor(editorRef.current, cursor);
     }
   }, [value]);
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return;
     isInternalChange.current = true;
-    const md = htmlToMarkdown(editorRef.current);
-    onChange(md);
+
+    // Read plain text from the editor
+    const text = editorRef.current.innerText || '';
+    onChange(text);
+
+    // Re-render with markdown
+    const html = markdownToHtml(text);
+    const cursor = saveCursor(editorRef.current);
+    editorRef.current.innerHTML = html;
+    restoreCursor(editorRef.current, cursor);
+
     setTimeout(() => { isInternalChange.current = false; }, 0);
   }, [onChange]);
 
@@ -111,9 +107,6 @@ export default function MarkdownEditor({ value, onChange, placeholder, className
     } else if (e.key === 'i' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       document.execCommand('italic');
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      document.execCommand('insertLineBreak');
     }
   }, []);
 
