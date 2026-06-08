@@ -22,7 +22,7 @@ import TagCombobox from '@/components/TagCombobox';
 import DateTimePicker from '@/components/DateTimePicker';
 import DateTimeRangePicker from '@/components/DateTimeRangePicker';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
-import MarkdownRenderer from '@/components/MarkdownRenderer';
+import MarkdownEditor from '@/components/MarkdownEditor';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
@@ -392,20 +392,11 @@ function TaskDetailPanel({
       <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
 
             {/* Description */}
-            <div>
-              <textarea
-                value={localDesc}
-                onChange={(e) => handleDescChange(e.target.value)}
-                placeholder="详细说明"
-                rows={3}
-                className="w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0"
-              />
-              {localDesc && (
-                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <MarkdownRenderer content={localDesc} />
-                </div>
-              )}
-            </div>
+            <MarkdownEditor
+              value={localDesc}
+              onChange={handleDescChange}
+              placeholder="详细说明"
+            />
 
             {/* Tags */}
             <div>
