@@ -9,11 +9,14 @@ interface MDXEditorWrapperProps {
 }
 
 export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MDXEditorWrapperProps) {
+  console.log('[MDXEditor] markdown prop:', JSON.stringify(markdown?.substring(0, 200)))
+
   return (
     <MDXEditor
       markdown={markdown}
       onChange={onChange}
       placeholder={placeholder}
+      onError={(error) => console.error('[MDXEditor] parse error:', error)}
       plugins={[
         headingsPlugin({ allowedHeadingLevels: [1, 2, 3, 4, 5, 6] }),
         listsPlugin(),
