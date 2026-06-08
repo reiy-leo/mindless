@@ -35,52 +35,39 @@ body {
   height: 100vh;
 }
 
-/* ===== MDXEditor overrides ===== */
+/* ===== Milkdown editor overrides ===== */
 
 /* Headings */
-.mdxeditor h1 { font-size: 2em !important; font-weight: bold !important; margin: 0.67em 0 !important; }
-.mdxeditor h2 { font-size: 1.5em !important; font-weight: bold !important; margin: 0.83em 0 !important; }
-.mdxeditor h3 { font-size: 1.17em !important; font-weight: bold !important; margin: 1em 0 !important; }
-.mdxeditor h4 { font-size: 1em !important; font-weight: bold !important; margin: 1.33em 0 !important; }
-.mdxeditor h5 { font-size: 0.83em !important; font-weight: bold !important; margin: 1.67em 0 !important; }
-.mdxeditor h6 { font-size: 0.67em !important; font-weight: bold !important; margin: 2.33em 0 !important; }
-
-/* Lists */
-.mdxeditor ol,
-.mdxeditor ul { list-style-type: disc !important; padding-left: 1.5em !important; margin: 0.5em 0 !important; }
-.mdxeditor ol { list-style-type: decimal !important; }
-.mdxeditor li { margin: 0.25em 0 !important; }
-.mdxeditor ul ul { list-style-type: circle !important; }
-.mdxeditor ul ul ul { list-style-type: square !important; }
-.mdxeditor ol ol { list-style-type: lower-alpha !important; }
-
-/* Todo/checkbox lists — no indentation */
-.mdxeditor li[class*="listItemChecked"],
-.mdxeditor li[class*="listItemUnchecked"] {
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-  list-style-type: none !important;
-  margin-inline-start: 0 !important;
-}
-
-/* Tables */
-.mdxeditor table { border-collapse: collapse !important; width: 100% !important; }
-.mdxeditor th,
-.mdxeditor td { border: 1px solid #d1d5db !important; padding: 0.5em 0.75em !important; }
-.mdxeditor th { background-color: #f3f4f6 !important; font-weight: 600 !important; }
-.dark .mdxeditor th { background-color: #374151 !important; }
-.dark .mdxeditor th,
-.dark .mdxeditor td { border-color: #4b5563 !important; }
-
-/* Code blocks */
-.mdxeditor pre { background-color: #f3f4f6 !important; border-radius: 6px !important; padding: 0.75em 1em !important; overflow-x: auto !important; }
-.dark .mdxeditor pre { background-color: #1f2937 !important; }
-.mdxeditor code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; font-size: 0.875em !important; }
-.mdxeditor pre code { background: none !important; padding: 0 !important; }
-.mdxeditor code:not(pre code) { background-color: #f3f4f6 !important; padding: 0.2em 0.4em !important; border-radius: 3px !important; }
-.dark .mdxeditor code:not(pre code) { background-color: #374151 !important; }
+.milkdown h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
+.milkdown h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
+.milkdown h3 { font-size: 1.17em; font-weight: bold; margin: 1em 0; }
+.milkdown h4 { font-size: 1em; font-weight: bold; margin: 1.33em 0; }
+.milkdown h5 { font-size: 0.83em; font-weight: bold; margin: 1.67em 0; }
+.milkdown h6 { font-size: 0.67em; font-weight: bold; margin: 2.33em 0; }
 
 /* Paragraph spacing */
-.mdxeditor p { margin: 0.5em 0 !important; }
-.mdxeditor blockquote { border-left: 3px solid #d1d5db !important; padding-left: 1em !important; margin-left: 0 !important; color: #6b7280 !important; }
-.dark .mdxeditor blockquote { border-left-color: #4b5563 !important; color: #9ca3af !important; }
+.milkdown p { margin: 0.5em 0; }
+
+/* Blockquote */
+.milkdown blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #6b7280;
+}
+.dark .milkdown blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* Inline code */
+.milkdown code:not(pre code) {
+  background-color: #f3f4f6;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+.dark .milkdown code:not(pre code) {
+  background-color: #374151;
+}

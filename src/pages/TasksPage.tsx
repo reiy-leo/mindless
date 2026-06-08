@@ -22,7 +22,7 @@ import TagCombobox from '@/components/TagCombobox';
 import DateTimePicker from '@/components/DateTimePicker';
 import DateTimeRangePicker from '@/components/DateTimeRangePicker';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
-import MDXEditorWrapper from '@/components/MDXEditorWrapper';
+import MilkdownEditor from '@/components/MilkdownEditor';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
@@ -392,7 +392,7 @@ function TaskDetailPanel({
       <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
 
             {/* Description */}
-            <MDXEditorWrapper
+            <MilkdownEditor
               markdown={localDesc}
               onChange={handleDescChange}
               placeholder="详细说明"
