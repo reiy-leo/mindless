@@ -14,6 +14,9 @@ export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MD
       markdown={markdown}
       onChange={onChange}
       placeholder={placeholder}
+      onError={(error) => {
+        console.error('MDXEditor error:', error)
+      }}
       plugins={[
         headingsPlugin(),
         listsPlugin(),
