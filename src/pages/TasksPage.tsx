@@ -19,6 +19,8 @@ import StepList from '@/components/tasks/StepList';
 import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
 import TagCombobox from '@/components/TagCombobox';
+import DateTimePicker from '@/components/DateTimePicker';
+import DateTimeRangePicker from '@/components/DateTimeRangePicker';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
@@ -203,6 +205,7 @@ function TaskDetailPanel({
 
 
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [dateMode, setDateMode] = useState<'single' | 'range'>(activeTask.endDate ? 'range' : 'single');
 
   return (
     <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -299,43 +302,59 @@ function TaskDetailPanel({
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.due_date')}</h3>
-                <input
-                  type="date"
-                  value={activeTask.dueDate || ''}
-                  onChange={(e) => onUpdateTask({ dueDate: e.target.value || undefined })}
-                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {dateMode === 'single' ? t('tasks.due_date') : `${t('tasks.range_start')} / ${t('tasks.range_end')}`}
+                </h3>
+                <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateMode('single');
+                      if (activeTask.endDate) onUpdateTask({ endDate: undefined, endTime: undefined });
+                    }}
+                    className={`px-2 py-0.5 text-xs transition-colors ${
+                      dateMode === 'single'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('tasks.date_mode.single')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDateMode('range')}
+                    className={`px-2 py-0.5 text-xs transition-colors border-l border-gray-300 dark:border-gray-600 ${
+                      dateMode === 'range'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('tasks.date_mode.range')}
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.due_time')}</h3>
-                <input
-                  type="time"
-                  value={activeTask.dueTime || ''}
-                  onChange={(e) => onUpdateTask({ dueTime: e.target.value || undefined })}
-                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              {dateMode === 'single' ? (
+                <DateTimePicker
+                  date={activeTask.dueDate || undefined}
+                  time={activeTask.dueTime || undefined}
+                  onChange={(d, tm) => onUpdateTask({ dueDate: d || undefined, dueTime: tm || undefined })}
                 />
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.start_date')}</h3>
-                <input
-                  type="date"
-                  value={activeTask.startDate || ''}
-                  onChange={(e) => onUpdateTask({ startDate: e.target.value || undefined })}
-                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              ) : (
+                <DateTimeRangePicker
+                  startDate={activeTask.dueDate || undefined}
+                  startTime={activeTask.dueTime || undefined}
+                  endDate={activeTask.endDate || undefined}
+                  endTime={activeTask.endTime || undefined}
+                  onChange={(sd, st, ed, et) => onUpdateTask({
+                    dueDate: sd || undefined,
+                    dueTime: st || undefined,
+                    endDate: ed || undefined,
+                    endTime: et || undefined,
+                  })}
                 />
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.range_end')}</h3>
-                <input
-                  type="date"
-                  value={activeTask.endDate || ''}
-                  onChange={(e) => onUpdateTask({ endDate: e.target.value || undefined })}
-                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+              )}
             </div>
 
             {/* Tags */}
