@@ -211,17 +211,6 @@ function TaskDetailPanel({
     <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Detail Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        {selectedSubtask && onSubtaskBack && (
-          <button
-            onClick={onSubtaskBack}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-[30%] flex-shrink-0"
-          >
-            {task.title}
-          </button>
-        )}
-        {selectedSubtask && onSubtaskBack && (
-          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">/</span>
-        )}
         <input
           type="text"
           value={activeTask.title}
@@ -264,6 +253,17 @@ function TaskDetailPanel({
 
       {/* Detail Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
+            {/* Parent task link */}
+            {selectedSubtask && onSubtaskBack && (
+              <button
+                onClick={onSubtaskBack}
+                className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                <ChevronRightIcon className="w-3.5 h-3.5 rotate-180" />
+                <span className="truncate">{task.title}</span>
+              </button>
+            )}
+
             {/* Progress Bar */}
             {progress && progress.total > 0 && (
               <div>
