@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin, markdownShortcutPlugin } from '@mdxeditor/editor'
+import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin, codeMirrorPlugin, markdownShortcutPlugin } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 
 interface MDXEditorWrapperProps {
@@ -21,7 +21,8 @@ export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MD
         thematicBreakPlugin(),
         linkPlugin(),
         tablePlugin(),
-        codeBlockPlugin(),
+        codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
+        codeMirrorPlugin({ codeBlockLanguages: { js: 'JavaScript', ts: 'TypeScript', tsx: 'TypeScript (React)', css: 'CSS', html: 'HTML', json: 'JSON', python: 'Python', rust: 'Rust', sql: 'SQL', bash: 'Bash', md: 'Markdown' } }),
         markdownShortcutPlugin()
       ]}
     />

@@ -44,23 +44,26 @@ body {
 [data-lexical-editor] h6 { font-size: 0.67em; font-weight: bold; margin: 2.33em 0; }
 
 /* Restore list styles inside MDXEditor (Tailwind Preflight strips them) */
-[data-lexical-editor] ul { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
-[data-lexical-editor] ol { list-style-type: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+[data-lexical-editor] ol,
+[data-lexical-editor] ul:not([class*="ListCheck"]) { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
+[data-lexical-editor] ol { list-style-type: decimal; }
 [data-lexical-editor] li { margin: 0.25em 0; }
 [data-lexical-editor] ul ul { list-style-type: circle; }
 [data-lexical-editor] ul ul ul { list-style-type: square; }
 [data-lexical-editor] ol ol { list-style-type: lower-alpha; }
-[data-lexical-editor] input[type="checkbox"] { margin-right: 0.5em; accent-color: #3b82f6; }
 
-/* Todo/checkbox lists: remove indentation */
-[data-lexical-editor] li:has(> input[type="checkbox"]) { list-style-type: none; padding-left: 0; }
-[data-lexical-editor] ul:has(> li > input[type="checkbox"]) { padding-left: 0; list-style-type: none; }
+/* Todo/checkbox lists: no indentation */
+[data-lexical-editor] ul[class*="ListCheck"],
+[data-lexical-editor] li[class*="listItemChecked"],
+[data-lexical-editor] li[class*="listItemUnchecked"] { padding-left: 0 !important; margin-left: 0 !important; list-style-type: none !important; }
+[data-lexical-editor] li[class*="listItemChecked"]::before,
+[data-lexical-editor] li[class*="listItemUnchecked"]::before { left: 0 !important; }
 
 /* Restore table styles inside MDXEditor (Tailwind Preflight strips them) */
-[data-lexical-editor] table { border-collapse: collapse; margin: 0.5em 0; width: 100%; }
-[data-lexical-editor] th,
-[data-lexical-editor] td { border: 1px solid #d1d5db; padding: 0.5em 0.75em; text-align: left; }
-[data-lexical-editor] th { background-color: #f3f4f6; font-weight: 600; }
-.dark [data-lexical-editor] th { background-color: #374151; }
-.dark [data-lexical-editor] th,
-.dark [data-lexical-editor] td { border-color: #4b5563; }
+[class*="tableEditor"] { border-collapse: collapse !important; width: 100%; }
+[class*="tableEditor"] th,
+[class*="tableEditor"] td { border: 1px solid var(--baseBorder, #d1d5db) !important; padding: 0.5em 0.75em !important; }
+[class*="tableEditor"] th { background-color: var(--baseBg, #f3f4f6); font-weight: 600; }
+
+/* Restore code block styles */
+[class*="codeMirrorWrapper"] { border: 1px solid var(--baseLine, #e5e7eb); border-radius: 6px; overflow: hidden; }
