@@ -1,14 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, Bars3Icon } from '@heroicons/react/24/outline';
-import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { PlusIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import DateTimePicker from '@/components/DateTimePicker';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 
@@ -22,8 +14,8 @@ interface Step {
 }
 
 interface StepListProps {
-  taskId: string;
   steps: Step[];
+  taskDueDate?: string;
   onAdd: (description: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -33,7 +25,16 @@ interface StepListProps {
   onReorder?: (items: { id: string; sortOrder: number }[]) => void;
 }
 
-// ==================== Inline Add Input ====================
+function formatStepDate(date?: string, time?: string, taskDueDate?: string): string {
+  if (!date) return '';
+  const parts = date.split('-');
+  if (parts.length !== 3) return '';
+  const [, m, d] = parts;
+  if (date === taskDueDate && time) return time;
+  if (date === taskDueDate) return `${m}-${d}`;
+  return time ? `${m}-${d} ${time}` : `${m}-${d}`;
+}
+
 function InlineAddInput({
   placeholder,
   onCancel,
@@ -43,7 +44,6 @@ function InlineAddInput({
   onCancel: () => void;
   onSubmit: (description: string) => void;
 }) {
-  const { t } = useTranslation('common');
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -61,8 +61,8 @@ function InlineAddInput({
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-      <div className="w-4 h-4 rounded border-2 border-dashed border-blue-300 dark:border-blue-600 flex-shrink-0" />
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex-shrink-0" />
       <input
         ref={inputRef}
         type="text"
@@ -74,148 +74,16 @@ function InlineAddInput({
           else onCancel();
         }}
         placeholder={placeholder}
-        className="flex-1 px-2 py-1 text-sm border border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 px-2 py-1 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
       />
-      <button
-        onClick={onCancel}
-        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
-      >
-        {t('common.cancel')}
-      </button>
     </div>
   );
-}
-
-export default function StepList({
-  steps,
-  onAdd,
-  onToggle,
-  onDelete,
-  onUpdateDescription,
-  onUpdateDueDate,
-  onUpdateDueTime,
-  onReorder,
-}: Omit<StepListProps, 'taskId'>) {
-  const { t } = useTranslation('common');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAddInput, setShowAddInput] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    if (!onReorder) return;
-
-    const oldIndex = steps.findIndex((s) => s.id === active.id);
-    const newIndex = steps.findIndex((s) => s.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const reordered = [...steps];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-
-    const items = reordered.map((step, idx) => ({ id: step.id, sortOrder: idx }));
-    onReorder(items);
-  }, [steps, onReorder]);
-
-  const total = steps.length;
-  const completed = steps.filter((s) => s.isCompleted).length;
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {t('tasks.steps.title')}
-          {total > 0 && (
-            <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
-              {completed}/{total}
-            </span>
-          )}
-        </h3>
-        <button
-          onClick={() => setShowAddInput(true)}
-          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span>{t('tasks.steps.add')}</span>
-        </button>
-      </div>
-
-      {/* Inline add input */}
-      {showAddInput && (
-        <InlineAddInput
-          placeholder={t('tasks.steps.description_placeholder')}
-          onCancel={() => setShowAddInput(false)}
-          onSubmit={(desc) => {
-            onAdd(desc);
-            setShowAddInput(false);
-          }}
-        />
-      )}
-
-      {steps.length === 0 && !showAddInput ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.steps.empty')}</p>
-      ) : onReorder ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {steps.map((step) => (
-                <SortableStepItem
-                  key={step.id}
-                  step={step}
-                  isEditing={editingId === step.id}
-                  onStartEdit={() => setEditingId(step.id)}
-                  onFinishEdit={() => setEditingId(null)}
-                  onToggle={() => onToggle(step.id)}
-                  onDelete={() => onDelete(step.id)}
-                  onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
-                  onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
-                  onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        <div className="space-y-2">
-          {steps.map((step) => (
-            <StepItem
-              key={step.id}
-              step={step}
-              isEditing={editingId === step.id}
-              onStartEdit={() => setEditingId(step.id)}
-              onFinishEdit={() => setEditingId(null)}
-              onToggle={() => onToggle(step.id)}
-              onDelete={() => onDelete(step.id)}
-              onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
-              onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
-              onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface StepItemProps {
-  step: Step;
-  isEditing: boolean;
-  onStartEdit: () => void;
-  onFinishEdit: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
-  onUpdateDescription: (description: string) => void;
-  onUpdateDueDate: (dueDate?: string) => void;
-  onUpdateDueTime: (dueTime?: string) => void;
 }
 
 function StepItem({
   step,
   isEditing,
+  taskDueDate,
   onStartEdit,
   onFinishEdit,
   onToggle,
@@ -223,10 +91,26 @@ function StepItem({
   onUpdateDescription,
   onUpdateDueDate,
   onUpdateDueTime,
-}: StepItemProps) {
+}: StepItemProps & { taskDueDate?: string }) {
   const { t } = useTranslation('common');
   const [description, setDescription] = useState(step.description);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const { data: calendarEvents = [] } = useCalendarEvents();
+  const dateRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDescription(step.description);
+  }, [step.description]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+    if (showDatePicker) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showDatePicker]);
 
   const handleSave = () => {
     if (description.trim()) {
@@ -245,119 +129,157 @@ function StepItem({
     }
   };
 
+  const dateDisplay = formatStepDate(step.dueDate, step.dueTime, taskDueDate);
+
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+    <div className="flex items-center gap-2 py-1.5 group">
       {/* Checkbox */}
       <input
         type="checkbox"
         checked={step.isCompleted}
         onChange={onToggle}
-        className="w-4 h-4 mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
+        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
       />
 
-      {/* Content */}
-      <div className="flex-1 space-y-2">
-        {/* Description */}
-        {isEditing ? (
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            rows={2}
-            placeholder={t('tasks.steps.description_placeholder')}
-            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-        ) : (
-          <p
-            onDoubleClick={onStartEdit}
-            className={`text-sm cursor-text ${
-              step.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-            }`}
-          >
-            {step.description}
-          </p>
-        )}
-
-        {/* Date and Time via unified DateTimePicker */}
-        <DateTimePicker
-          date={step.dueDate || undefined}
-          time={step.dueTime || undefined}
-          onChange={(d, tm) => {
-            onUpdateDueDate(d || undefined);
-            onUpdateDueTime(tm || undefined);
-          }}
-          events={calendarEvents}
-          showTime={true}
+      {/* Description */}
+      {isEditing ? (
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          className="flex-1 px-1 py-0.5 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 min-w-0"
         />
+      ) : (
+        <span
+          onDoubleClick={onStartEdit}
+          className={`flex-1 text-sm cursor-text min-w-0 truncate ${
+            step.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+          }`}
+        >
+          {step.description}
+        </span>
+      )}
+
+      {/* Date button - float right */}
+      <div ref={dateRef} className="relative flex-shrink-0">
+        <button
+          onClick={() => setShowDatePicker(!showDatePicker)}
+          className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs transition-colors ${
+            dateDisplay
+              ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              : 'text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <CalendarIcon className="w-3 h-3" />
+          {dateDisplay && <span>{dateDisplay}</span>}
+        </button>
+        {showDatePicker && (
+          <div className="absolute right-0 top-full mt-1 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2">
+              <DateTimePicker
+                date={step.dueDate || undefined}
+                time={step.dueTime || undefined}
+                onChange={(d, tm) => {
+                  onUpdateDueDate(d || undefined);
+                  onUpdateDueTime(tm || undefined);
+                }}
+                events={calendarEvents}
+                showTime={true}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Actions */}
+      {/* Delete */}
       <button
         onClick={onDelete}
-        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0"
         title={t('common.delete')}
       >
-        <TrashIcon className="w-4 h-4 text-red-500" />
+        <TrashIcon className="w-3.5 h-3.5 text-red-400" />
       </button>
     </div>
   );
 }
 
-// ==================== Sortable Step Wrapper ====================
-function SortableStepItem({
-  step,
-  isEditing,
-  onStartEdit,
-  onFinishEdit,
+export default function StepList({
+  steps,
+  taskDueDate,
+  onAdd,
   onToggle,
   onDelete,
   onUpdateDescription,
   onUpdateDueDate,
   onUpdateDueTime,
-}: StepItemProps) {
+}: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: step.id });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAddInput, setShowAddInput] = useState(false);
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto' as const,
-  };
+  const total = steps.length;
+  const completed = steps.filter((s) => s.isCompleted).length;
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-start gap-1">
-      <button
-        {...attributes}
-        {...listeners}
-        onClick={(e) => e.stopPropagation()}
-        className="p-2 mt-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
-        title={t('tasks.views.drag_to_reorder')}
-      >
-        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-      </button>
-      <div className="flex-1">
-        <StepItem
-          step={step}
-          isEditing={isEditing}
-          onStartEdit={onStartEdit}
-          onFinishEdit={onFinishEdit}
-          onToggle={onToggle}
-          onDelete={onDelete}
-          onUpdateDescription={onUpdateDescription}
-          onUpdateDueDate={onUpdateDueDate}
-          onUpdateDueTime={onUpdateDueTime}
-        />
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('tasks.steps.title')}
+          {total > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+              {completed}/{total}
+            </span>
+          )}
+        </h3>
+        <button
+          onClick={() => setShowAddInput(true)}
+          className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+        >
+          <PlusIcon className="w-4 h-4" />
+        </button>
       </div>
+
+      {showAddInput && (
+        <InlineAddInput
+          placeholder={t('tasks.steps.description_placeholder')}
+          onCancel={() => setShowAddInput(false)}
+          onSubmit={(desc) => {
+            onAdd(desc);
+            setShowAddInput(false);
+          }}
+        />
+      )}
+
+      {steps.map((step) => (
+        <StepItem
+          key={step.id}
+          step={step}
+          taskDueDate={taskDueDate}
+          isEditing={editingId === step.id}
+          onStartEdit={() => setEditingId(step.id)}
+          onFinishEdit={() => setEditingId(null)}
+          onToggle={() => onToggle(step.id)}
+          onDelete={() => onDelete(step.id)}
+          onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
+          onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
+          onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+        />
+      ))}
     </div>
   );
+}
+
+interface StepItemProps {
+  step: Step;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onFinishEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+  onUpdateDescription: (description: string) => void;
+  onUpdateDueDate: (dueDate?: string) => void;
+  onUpdateDueTime: (dueTime?: string) => void;
 }

@@ -413,6 +413,21 @@ function TaskDetailPanel({
               }}
             />
 
+            {/* Steps */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <StepList
+                steps={steps}
+                taskDueDate={activeTask.dueDate}
+                onAdd={handleAddStep}
+                onToggle={handleToggleStep}
+                onDelete={handleDeleteStep}
+                onUpdateDescription={handleUpdateStepDescription}
+                onUpdateDueDate={handleUpdateStepDueDate}
+                onUpdateDueTime={handleUpdateStepDueTime}
+                onReorder={(items) => reorderSteps.mutate(items)}
+              />
+            </div>
+
             {/* Subtasks */}
             <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
               <SubtaskList
@@ -423,20 +438,6 @@ function TaskDetailPanel({
                 onUpdateTitle={handleUpdateSubtaskTitle}
                 onReorder={(items) => reorderSubtasks.mutate(items)}
                 onSubtaskClick={onSubtaskClick}
-              />
-            </div>
-
-            {/* Steps */}
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-              <StepList
-                steps={steps}
-                onAdd={handleAddStep}
-                onToggle={handleToggleStep}
-                onDelete={handleDeleteStep}
-                onUpdateDescription={handleUpdateStepDescription}
-                onUpdateDueDate={handleUpdateStepDueDate}
-                onUpdateDueTime={handleUpdateStepDueTime}
-                onReorder={(items) => reorderSteps.mutate(items)}
               />
             </div>
       </div>
