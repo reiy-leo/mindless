@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react'
-import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin, codeMirrorPlugin, markdownShortcutPlugin } from '@mdxeditor/editor'
+import { type ReactNode, useRef, useEffect } from 'react'
+import { MDXEditor, type MDXEditorMethods, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin, codeMirrorPlugin, markdownShortcutPlugin } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 
 interface MDXEditorWrapperProps {
@@ -9,9 +9,17 @@ interface MDXEditorWrapperProps {
 }
 
 export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MDXEditorWrapperProps) {
-  console.log('[MDXEditor] markdown:', JSON.stringify(markdown?.substring(0, 300)))
+  const ref = useRef<MDXEditorMethods>(null)
+
+  useEffect(() => {
+    if (ref.current && markdown !== ref.current.getMarkdown()) {
+      ref.current.setMarkdown(markdown)
+    }
+  }, [markdown])
+
   return (
     <MDXEditor
+      ref={ref}
       markdown={markdown}
       onChange={onChange}
       placeholder={placeholder}
