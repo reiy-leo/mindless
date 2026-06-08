@@ -22,6 +22,7 @@ import TagCombobox from '@/components/TagCombobox';
 import DateTimePicker from '@/components/DateTimePicker';
 import DateTimeRangePicker from '@/components/DateTimeRangePicker';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
@@ -206,6 +207,7 @@ function TaskDetailPanel({
 
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [descFocused, setDescFocused] = useState(false);
   const [dateMode, setDateMode] = useState<'single' | 'range'>(activeTask.endDate ? 'range' : 'single');
 
   // Format date for display
@@ -375,13 +377,22 @@ function TaskDetailPanel({
       <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
 
             {/* Description */}
-            <textarea
-              value={activeTask.description || ''}
-              onChange={(e) => onUpdateTask({ description: e.target.value })}
-              placeholder="详细说明"
-              rows={2}
-              className="w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0 pt-2"
-            />
+            <div>
+              <textarea
+                value={activeTask.description || ''}
+                onChange={(e) => onUpdateTask({ description: e.target.value })}
+                onFocus={() => setDescFocused(true)}
+                onBlur={() => setDescFocused(false)}
+                placeholder="详细说明"
+                rows={descFocused ? 4 : 2}
+                className="w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0"
+              />
+              {!descFocused && activeTask.description && (
+                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  <MarkdownRenderer content={activeTask.description} />
+                </div>
+              )}
+            </div>
 
             {/* Tags */}
             <div>
