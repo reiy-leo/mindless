@@ -13,7 +13,6 @@ import {
 import { useViewStore } from '@/stores/useViewStore';
 import { useAppStore } from '@/stores/useAppStore';
 import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants';
-import { parseLocalDate } from '@/lib/taskHelpers';
 import TaskForm from '@/components/tasks/TaskForm';
 import SubtaskList from '@/components/tasks/SubtaskList';
 import StepList from '@/components/tasks/StepList';
@@ -21,7 +20,6 @@ import CalendarView from '@/components/tasks/CalendarView';
 import KanbanView from '@/components/tasks/KanbanView';
 import TagCombobox from '@/components/TagCombobox';
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
-import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
 import ListFormDialog from '@/components/lists/ListFormDialog';
@@ -75,28 +73,6 @@ function calcFullProgress(subtasks: Task[], steps: StepType[]): { completed: num
   return { completed, total };
 }
 
-// ==================== Helper: Recurrence label ====================
-function getRecurrenceLabel(rule: string, t: (key: string, opts?: any) => string): string {
-  const basic: Record<string, string> = {
-    daily: t('tasks.recurrence.daily'),
-    weekly: t('tasks.recurrence.weekly'),
-    monthly: t('tasks.recurrence.monthly'),
-    yearly: t('tasks.recurrence.yearly'),
-  };
-  if (basic[rule]) return basic[rule];
-  if (rule.startsWith('every_')) {
-    const parts = rule.split('_');
-    if (parts.length >= 3) {
-      const n = parts[1];
-      const unit = parts[2];
-      const unitLabel = unit === 'days' ? t('tasks.recurrence.days')
-        : unit === 'weeks' ? t('tasks.recurrence.weeks')
-        : t('tasks.recurrence.months');
-      return `${t('tasks.recurrence.every')} ${n} ${unitLabel}`;
-    }
-  }
-  return rule;
-}
 
 // ==================== Task Detail Panel ====================
 function TaskDetailPanel({
@@ -104,7 +80,6 @@ function TaskDetailPanel({
   allTags,
   selectedSubtaskId,
   onClose,
-  onEdit,
   onDelete,
   onUpdateTask,
   onSubtaskClick,
@@ -114,7 +89,6 @@ function TaskDetailPanel({
   allTags: Tag[];
   selectedSubtaskId?: string | null;
   onClose: () => void;
-  onEdit: () => void;
   onDelete: () => void;
   onUpdateTask: (params: any) => void;
   onSubtaskClick?: (id: string) => void;
@@ -244,20 +218,23 @@ function TaskDetailPanel({
                 {task.title}
               </button>
               <span className="text-gray-300 dark:text-gray-600">/</span>
-              <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{selectedSubtask.title}</span>
+              <input
+                type="text"
+                value={activeTask.title}
+                onChange={(e) => onUpdateTask({ title: e.target.value })}
+                className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate focus:ring-1 focus:ring-blue-500 rounded px-1"
+              />
             </>
           ) : (
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{task.title}</h2>
+            <input
+              type="text"
+              value={activeTask.title}
+              onChange={(e) => onUpdateTask({ title: e.target.value })}
+              className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate focus:ring-1 focus:ring-blue-500 rounded px-1"
+            />
           )}
         </div>
         <div className="flex items-center gap-1 ml-2">
-          <button
-            onClick={onEdit}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title={t('common.edit')}
-          >
-            <PencilIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </button>
           <button
             onClick={onDelete}
             className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -303,52 +280,76 @@ function TaskDetailPanel({
             )}
 
             {/* Description */}
-            {activeTask.description && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
-                <MarkdownRenderer content={activeTask.description} />
-              </div>
-            )}
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
+              <textarea
+                value={activeTask.description || ''}
+                onChange={(e) => onUpdateTask({ description: e.target.value })}
+                placeholder={t('tasks.description')}
+                rows={3}
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
 
-            {/* Meta info */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {activeTask.priority > 0 && (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: PRIORITY_COLORS[activeTask.priority] }}
-                  />
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {t('tasks.priority.label')}: {t(`tasks.priority.${['none','low','medium','high'][activeTask.priority]}`)}
-                  </span>
-                </div>
-              )}
-              {activeTask.dueDate && (
-                <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.due_date')}: {parseLocalDate(activeTask.dueDate).toLocaleDateString()}
-                </div>
-              )}
-              {activeTask.dueTime && (
-                <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.due_time')}: {activeTask.dueTime}
-                </div>
-              )}
-              {activeTask.endDate && (
-                <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.range_end')}: {parseLocalDate(activeTask.endDate).toLocaleDateString()}
-                  {activeTask.endTime && <span className="ml-1">{activeTask.endTime}</span>}
-                </div>
-              )}
-              {activeTask.startDate && (
-                <div className="text-gray-600 dark:text-gray-400">
-                  {t('tasks.start_date')}: {parseLocalDate(activeTask.startDate).toLocaleDateString()}
-                </div>
-              )}
-              {activeTask.recurrenceRule && (
-                <div className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <span>{t('tasks.recurrence.label')}: {getRecurrenceLabel(activeTask.recurrenceRule, t)}</span>
-                </div>
-              )}
+            {/* Priority */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.priority.label')}</h3>
+              <div className="flex gap-1">
+                {[0, 1, 2, 3].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => onUpdateTask({ priority: p })}
+                    className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
+                      activeTask.priority === p
+                        ? 'text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    style={activeTask.priority === p ? { backgroundColor: PRIORITY_COLORS[p] } : undefined}
+                  >
+                    {t(`tasks.priority.${['none','low','medium','high'][p]}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.due_date')}</h3>
+                <input
+                  type="date"
+                  value={activeTask.dueDate || ''}
+                  onChange={(e) => onUpdateTask({ dueDate: e.target.value || undefined })}
+                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.due_time')}</h3>
+                <input
+                  type="time"
+                  value={activeTask.dueTime || ''}
+                  onChange={(e) => onUpdateTask({ dueTime: e.target.value || undefined })}
+                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.start_date')}</h3>
+                <input
+                  type="date"
+                  value={activeTask.startDate || ''}
+                  onChange={(e) => onUpdateTask({ startDate: e.target.value || undefined })}
+                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.range_end')}</h3>
+                <input
+                  type="date"
+                  value={activeTask.endDate || ''}
+                  onChange={(e) => onUpdateTask({ endDate: e.target.value || undefined })}
+                  className="w-full px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
             </div>
 
             {/* Tags */}
@@ -1458,18 +1459,6 @@ export default function TasksPage() {
             allTags={allTags}
             selectedSubtaskId={selectedSubtaskId}
             onClose={() => { setSelectedTaskId(null); setSelectedSubtaskId(null); }}
-            onEdit={() => {
-              if (selectedSubtaskId) {
-                const subtask = allSubtasks.find((s) => s.id === selectedSubtaskId);
-                if (subtask) {
-                  setEditingTask(subtask);
-                  setShowTaskForm(true);
-                }
-              } else {
-                setEditingTask(selectedTask);
-                setShowTaskForm(true);
-              }
-            }}
             onDelete={() => handleDeleteTask(selectedSubtaskId || selectedTask.id)}
             onUpdateTask={handleUpdateTaskField}
             onSubtaskClick={(id) => setSelectedSubtaskId(id)}
