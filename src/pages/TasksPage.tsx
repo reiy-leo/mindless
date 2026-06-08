@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
   useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
@@ -79,8 +79,6 @@ function TaskDetailPanel({
   task,
   allTags,
   selectedSubtaskId,
-  onClose,
-  onDelete,
   onUpdateTask,
   onSubtaskClick,
   onSubtaskBack,
@@ -204,51 +202,60 @@ function TaskDetailPanel({
 
 
 
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+
   return (
     <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Detail Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-1 min-w-0 flex-1">
-          {selectedSubtask && onSubtaskBack ? (
-            <>
-              <button
-                onClick={onSubtaskBack}
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-[40%]"
-              >
-                {task.title}
-              </button>
-              <span className="text-gray-300 dark:text-gray-600">/</span>
-              <input
-                type="text"
-                value={activeTask.title}
-                onChange={(e) => onUpdateTask({ title: e.target.value })}
-                className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate focus:ring-1 focus:ring-blue-500 rounded px-1"
-              />
-            </>
-          ) : (
-            <input
-              type="text"
-              value={activeTask.title}
-              onChange={(e) => onUpdateTask({ title: e.target.value })}
-              className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate focus:ring-1 focus:ring-blue-500 rounded px-1"
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-1 ml-2">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        {selectedSubtask && onSubtaskBack && (
           <button
-            onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            title={t('common.delete')}
+            onClick={onSubtaskBack}
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-[30%] flex-shrink-0"
           >
-            <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
+            {task.title}
           </button>
+        )}
+        {selectedSubtask && onSubtaskBack && (
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">/</span>
+        )}
+        <input
+          type="text"
+          value={activeTask.title}
+          onChange={(e) => onUpdateTask({ title: e.target.value })}
+          className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate focus:ring-1 focus:ring-blue-500 rounded px-1"
+        />
+        {/* Priority icon button with dropdown */}
+        <div className="relative flex-shrink-0" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowPriorityPicker(false); }} tabIndex={-1}>
           <button
-            onClick={onClose}
+            onClick={() => setShowPriorityPicker(!showPriorityPicker)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title={t('common.close')}
+            title={t('tasks.priority.label')}
           >
-            <XMarkIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <FlagIcon className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
           </button>
+          {showPriorityPicker && (
+            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1 w-32">
+              {[0, 1, 2, 3].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => {
+                    onUpdateTask({ priority: p });
+                    setShowPriorityPicker(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: PRIORITY_COLORS[p] }}
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {t(`tasks.priority.${['none','low','medium','high'][p]}`)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -289,27 +296,6 @@ function TaskDetailPanel({
                 rows={3}
                 className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
-            </div>
-
-            {/* Priority */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.priority.label')}</h3>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => onUpdateTask({ priority: p })}
-                    className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
-                      activeTask.priority === p
-                        ? 'text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                    style={activeTask.priority === p ? { backgroundColor: PRIORITY_COLORS[p] } : undefined}
-                  >
-                    {t(`tasks.priority.${['none','low','medium','high'][p]}`)}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Dates */}
