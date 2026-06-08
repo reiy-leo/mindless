@@ -15,7 +15,7 @@ export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MD
       onChange={onChange}
       placeholder={placeholder}
       plugins={[
-        headingsPlugin(),
+        headingsPlugin({ allowedHeadingLevels: [1, 2, 3, 4, 5, 6] }),
         listsPlugin(),
         quotePlugin(),
         thematicBreakPlugin(),
