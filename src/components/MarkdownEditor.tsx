@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 
 interface MarkdownEditorProps {
   value: string;
@@ -57,7 +57,6 @@ function restoreCursor(container: Node, saved: { node: Node; offset: number } | 
     sel.removeAllRanges();
     sel.addRange(range);
   } catch {
-    // If cursor node was removed, place at end
     const range = document.createRange();
     range.selectNodeContents(container);
     range.collapse(false);
@@ -68,36 +67,29 @@ function restoreCursor(container: Node, saved: { node: Node; offset: number } | 
 
 export default function MarkdownEditor({ value, onChange, placeholder, className }: MarkdownEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const isInternalChange = useRef(false);
-
-  // Sync value -> innerHTML (rendered markdown)
-  useEffect(() => {
-    if (!editorRef.current) return;
-    if (isInternalChange.current) return;
-
-    const html = markdownToHtml(value);
-    if (editorRef.current.innerHTML !== html) {
-      const cursor = saveCursor(editorRef.current);
-      editorRef.current.innerHTML = html || '';
-      restoreCursor(editorRef.current, cursor);
-    }
-  }, [value]);
+  const lastRenderedHtml = useRef<string>('');
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return;
-    isInternalChange.current = true;
 
     // Read plain text from the editor
     const text = editorRef.current.innerText || '';
-    onChange(text);
 
-    // Re-render with markdown
+    // Render markdown in-place
     const html = markdownToHtml(text);
-    const cursor = saveCursor(editorRef.current);
-    editorRef.current.innerHTML = html;
-    restoreCursor(editorRef.current, cursor);
+    if (editorRef.current.innerHTML !== html) {
+      const cursor = saveCursor(editorRef.current);
+      editorRef.current.innerHTML = html;
+      restoreCursor(editorRef.current, cursor);
+    }
+    lastRenderedHtml.current = html;
 
-    setTimeout(() => { isInternalChange.current = false; }, 0);
+    // Debounced notify parent
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      onChange(text);
+    }, 300);
   }, [onChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -116,6 +108,17 @@ export default function MarkdownEditor({ value, onChange, placeholder, className
     document.execCommand('insertText', false, text);
   }, []);
 
+  // Initialize on first render / when value changes externally
+  const handleRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    const html = markdownToHtml(value);
+    if (node.innerHTML !== html) {
+      node.innerHTML = html;
+      lastRenderedHtml.current = html;
+    }
+  }, [value]);
+
   return (
     <div className="relative">
       {!value && (
@@ -124,7 +127,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, className
         </div>
       )}
       <div
-        ref={editorRef}
+        ref={handleRef}
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
