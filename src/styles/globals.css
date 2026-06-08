@@ -51,3 +51,16 @@ body {
 [data-lexical-editor] ul ul ul { list-style-type: square; }
 [data-lexical-editor] ol ol { list-style-type: lower-alpha; }
 [data-lexical-editor] input[type="checkbox"] { margin-right: 0.5em; accent-color: #3b82f6; }
+
+/* Todo/checkbox lists: remove indentation */
+[data-lexical-editor] li:has(> input[type="checkbox"]) { list-style-type: none; padding-left: 0; }
+[data-lexical-editor] ul:has(> li > input[type="checkbox"]) { padding-left: 0; list-style-type: none; }
+
+/* Restore table styles inside MDXEditor (Tailwind Preflight strips them) */
+[data-lexical-editor] table { border-collapse: collapse; margin: 0.5em 0; width: 100%; }
+[data-lexical-editor] th,
+[data-lexical-editor] td { border: 1px solid #d1d5db; padding: 0.5em 0.75em; text-align: left; }
+[data-lexical-editor] th { background-color: #f3f4f6; font-weight: 600; }
+.dark [data-lexical-editor] th { background-color: #374151; }
+.dark [data-lexical-editor] th,
+.dark [data-lexical-editor] td { border-color: #4b5563; }
