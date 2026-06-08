@@ -34,3 +34,11 @@ body {
   width: 100%;
   height: 100vh;
 }
+
+/* Restore heading styles inside MDXEditor (Tailwind Preflight strips them) */
+[data-lexical-editor] h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
+[data-lexical-editor] h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
+[data-lexical-editor] h3 { font-size: 1.17em; font-weight: bold; margin: 1em 0; }
+[data-lexical-editor] h4 { font-size: 1em; font-weight: bold; margin: 1.33em 0; }
+[data-lexical-editor] h5 { font-size: 0.83em; font-weight: bold; margin: 1.67em 0; }
+[data-lexical-editor] h6 { font-size: 0.67em; font-weight: bold; margin: 2.33em 0; }
