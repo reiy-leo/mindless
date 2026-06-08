@@ -372,19 +372,16 @@ function TaskDetailPanel({
       )}
 
       {/* Detail Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-6">
+      <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
 
             {/* Description */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t('tasks.description')}</h3>
-              <textarea
-                value={activeTask.description || ''}
-                onChange={(e) => onUpdateTask({ description: e.target.value })}
-                placeholder={t('tasks.description')}
-                rows={3}
-                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-            </div>
+            <textarea
+              value={activeTask.description || ''}
+              onChange={(e) => onUpdateTask({ description: e.target.value })}
+              placeholder="详细说明"
+              rows={2}
+              className="w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0 pt-2"
+            />
 
             {/* Tags */}
             <div>
