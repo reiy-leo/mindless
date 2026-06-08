@@ -131,18 +131,8 @@ function TaskDetailPanel({
 
   const activeTask = selectedSubtask || task;
   const { data: steps = [] } = useSteps(activeTask.id);
-  // Load subtasks of the active task (when viewing a subtask, this loads its children)
+  // Load subtasks of the active task (direct children only)
   const { data: activeSubtasks = [] } = useSubtasks(activeTask.id);
-  // Merge: parent's subtasks + active task's subtasks (avoid duplicates)
-  const allFlatSubtasks = useMemo(() => {
-    if (!selectedSubtask) return flatSubtasks;
-    const ids = new Set(flatSubtasks.map((s) => s.id));
-    const merged = [...flatSubtasks];
-    for (const s of activeSubtasks) {
-      if (!ids.has(s.id)) merged.push(s);
-    }
-    return merged;
-  }, [flatSubtasks, activeSubtasks, selectedSubtask]);
 
   const createSubtask = useCreateSubtask();
   const updateSubtask = useUpdateSubtask();
@@ -154,12 +144,10 @@ function TaskDetailPanel({
   const reorderSubtasks = useReorderSubtasks();
   const reorderSteps = useReorderSteps();
 
-
-
-  const subtaskTree = useMemo(() => buildSubtaskTree(allFlatSubtasks), [allFlatSubtasks]);
+  const subtaskTree = useMemo(() => buildSubtaskTree(activeSubtasks), [activeSubtasks]);
 
   // Calculate progress
-  const progress = useMemo(() => calcFullProgress(allFlatSubtasks, steps), [allFlatSubtasks, steps]);
+  const progress = useMemo(() => calcFullProgress(activeSubtasks, steps), [activeSubtasks, steps]);
 
   // Auto-complete task when all subtasks and steps are done
   useEffect(() => {
@@ -178,19 +166,19 @@ function TaskDetailPanel({
 
   const handleAddSubtask = (title: string, parentSubtaskId?: string) => {
     const level = parentSubtaskId
-      ? (allFlatSubtasks.find((s) => s.id === parentSubtaskId)?.level ?? 0) + 1
+      ? (activeSubtasks.find((s) => s.id === parentSubtaskId)?.level ?? 0) + 1
       : 0;
     createSubtask.mutate({ taskId: activeTask.id, title, parentSubtaskId, level });
   };
 
   const handleToggleSubtask = (id: string) => {
-    const subtask = allFlatSubtasks.find((s) => s.id === id);
+    const subtask = activeSubtasks.find((s) => s.id === id);
     if (subtask) {
       const newCompleted = !subtask.isCompleted;
       updateSubtask.mutate({ id, taskId: activeTask.id, isCompleted: newCompleted });
-      const descendants = getDescendantIds(allFlatSubtasks, id);
+      const descendants = getDescendantIds(activeSubtasks, id);
       for (const descId of descendants) {
-        const desc = allFlatSubtasks.find((s) => s.id === descId);
+        const desc = activeSubtasks.find((s) => s.id === descId);
         if (desc && desc.isCompleted !== newCompleted) {
           updateSubtask.mutate({ id: descId, taskId: activeTask.id, isCompleted: newCompleted });
         }
