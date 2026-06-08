@@ -42,3 +42,12 @@ body {
 [data-lexical-editor] h4 { font-size: 1em; font-weight: bold; margin: 1.33em 0; }
 [data-lexical-editor] h5 { font-size: 0.83em; font-weight: bold; margin: 1.67em 0; }
 [data-lexical-editor] h6 { font-size: 0.67em; font-weight: bold; margin: 2.33em 0; }
+
+/* Restore list styles inside MDXEditor (Tailwind Preflight strips them) */
+[data-lexical-editor] ul { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
+[data-lexical-editor] ol { list-style-type: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+[data-lexical-editor] li { margin: 0.25em 0; }
+[data-lexical-editor] ul ul { list-style-type: circle; }
+[data-lexical-editor] ul ul ul { list-style-type: square; }
+[data-lexical-editor] ol ol { list-style-type: lower-alpha; }
+[data-lexical-editor] input[type="checkbox"] { margin-right: 0.5em; accent-color: #3b82f6; }
