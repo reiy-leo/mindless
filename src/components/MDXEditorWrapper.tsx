@@ -10,18 +10,25 @@ interface MDXEditorWrapperProps {
 
 export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MDXEditorWrapperProps) {
   const ref = useRef<MDXEditorMethods>(null)
+  const lastSyncedRef = useRef<string>('')
 
   useEffect(() => {
-    if (ref.current && markdown !== ref.current.getMarkdown()) {
+    if (ref.current && markdown !== lastSyncedRef.current) {
+      lastSyncedRef.current = markdown
       ref.current.setMarkdown(markdown)
     }
   }, [markdown])
+
+  const handleChange = (md: string) => {
+    lastSyncedRef.current = md
+    onChange(md)
+  }
 
   return (
     <MDXEditor
       ref={ref}
       markdown={markdown}
-      onChange={onChange}
+      onChange={handleChange}
       placeholder={placeholder}
       onError={(error) => console.error('[MDXEditor] error:', error)}
       plugins={[
