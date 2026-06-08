@@ -9,10 +9,15 @@ interface MDXEditorWrapperProps {
 }
 
 export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MDXEditorWrapperProps) {
+  console.log('MDXEditorWrapper rendering with markdown:', markdown)
+  
   return (
     <MDXEditor
       markdown={markdown}
-      onChange={onChange}
+      onChange={(md) => {
+        console.log('MDXEditor onChange:', md)
+        onChange(md)
+      }}
       placeholder={placeholder}
       onError={(error) => {
         console.error('MDXEditor error:', error)
