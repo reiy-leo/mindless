@@ -207,8 +207,23 @@ function TaskDetailPanel({
 
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [descFocused, setDescFocused] = useState(false);
+  const [localDesc, setLocalDesc] = useState(activeTask.description || '');
   const [dateMode, setDateMode] = useState<'single' | 'range'>(activeTask.endDate ? 'range' : 'single');
+
+  // Sync local description when active task changes
+  useEffect(() => {
+    setLocalDesc(activeTask.description || '');
+  }, [activeTask.id, activeTask.description]);
+
+  // Debounced save description
+  const descTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleDescChange = (value: string) => {
+    setLocalDesc(value);
+    clearTimeout(descTimerRef.current);
+    descTimerRef.current = setTimeout(() => {
+      onUpdateTask({ description: value });
+    }, 500);
+  };
 
   // Format date for display
   const formatShortDate = (dateStr?: string, timeStr?: string): string => {
@@ -379,17 +394,15 @@ function TaskDetailPanel({
             {/* Description */}
             <div>
               <textarea
-                value={activeTask.description || ''}
-                onChange={(e) => onUpdateTask({ description: e.target.value })}
-                onFocus={() => setDescFocused(true)}
-                onBlur={() => setDescFocused(false)}
+                value={localDesc}
+                onChange={(e) => handleDescChange(e.target.value)}
                 placeholder="详细说明"
-                rows={descFocused ? 4 : 2}
+                rows={3}
                 className="w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0"
               />
-              {!descFocused && activeTask.description && (
-                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300 mt-1">
-                  <MarkdownRenderer content={activeTask.description} />
+              {localDesc && (
+                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <MarkdownRenderer content={localDesc} />
                 </div>
               )}
             </div>
