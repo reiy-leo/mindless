@@ -19,16 +19,14 @@ export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MD
     }
   }, [markdown])
 
-  const handleChange = (md: string) => {
-    lastSyncedRef.current = md
-    onChange(md)
-  }
-
   return (
     <MDXEditor
       ref={ref}
       markdown={markdown}
-      onChange={handleChange}
+      onChange={(md) => {
+        lastSyncedRef.current = md
+        onChange(md)
+      }}
       placeholder={placeholder}
       onError={(error) => console.error('[MDXEditor] error:', error)}
       plugins={[
