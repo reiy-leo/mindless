@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin } from '@mdxeditor/editor'
+import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, tablePlugin, codeBlockPlugin, markdownShortcutPlugin } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 
 interface MDXEditorWrapperProps {
@@ -9,19 +9,11 @@ interface MDXEditorWrapperProps {
 }
 
 export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MDXEditorWrapperProps) {
-  console.log('MDXEditorWrapper rendering with markdown:', markdown)
-  
   return (
     <MDXEditor
       markdown={markdown}
-      onChange={(md) => {
-        console.log('MDXEditor onChange:', md)
-        onChange(md)
-      }}
+      onChange={onChange}
       placeholder={placeholder}
-      onError={(error) => {
-        console.error('MDXEditor error:', error)
-      }}
       plugins={[
         headingsPlugin(),
         listsPlugin(),
@@ -29,7 +21,8 @@ export default function MDXEditorWrapper({ markdown, onChange, placeholder }: MD
         thematicBreakPlugin(),
         linkPlugin(),
         tablePlugin(),
-        codeBlockPlugin()
+        codeBlockPlugin(),
+        markdownShortcutPlugin()
       ]}
     />
   )
