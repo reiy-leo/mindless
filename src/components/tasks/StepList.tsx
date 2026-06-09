@@ -1,6 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CalendarIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import DateTimePicker from '@/components/DateTimePicker';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 
@@ -217,6 +225,58 @@ function StepItem({
   );
 }
 
+function SortableStepItem({
+  step,
+  taskDueDate,
+  onToggle,
+  onDelete,
+  onUpdateDescription,
+  onUpdateDueDate,
+  onUpdateDueTime,
+}: StepItemProps & { taskDueDate?: string }) {
+  const { t } = useTranslation('common');
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: step.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-start gap-1 group/sort">
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none mt-1 absolute -left-5"
+        title={t('tasks.views.drag_to_reorder')}
+      >
+        <Bars3Icon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+      </button>
+      <div className="flex-1">
+        <StepItem
+          step={step}
+          taskDueDate={taskDueDate}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onUpdateDescription={onUpdateDescription}
+          onUpdateDueDate={onUpdateDueDate}
+          onUpdateDueTime={onUpdateDueTime}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function StepList({
   steps,
   taskDueDate,
@@ -226,9 +286,31 @@ export default function StepList({
   onUpdateDescription,
   onUpdateDueDate,
   onUpdateDueTime,
+  onReorder,
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [showAddInput, setShowAddInput] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    if (!onReorder) return;
+
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...steps];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const items = reordered.map((s, idx) => ({ id: s.id, sortOrder: idx }));
+    onReorder(items);
+  }, [steps, onReorder]);
 
   const total = steps.length;
   const completed = steps.filter((s) => s.isCompleted).length;
@@ -263,18 +345,39 @@ export default function StepList({
         />
       )}
 
-      {steps.map((step) => (
-        <StepItem
-          key={step.id}
-          step={step}
-          taskDueDate={taskDueDate}
-          onToggle={() => onToggle(step.id)}
-          onDelete={() => onDelete(step.id)}
-          onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
-          onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
-          onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
-        />
-      ))}
+      {onReorder ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="relative">
+              {steps.map((step) => (
+                <SortableStepItem
+                  key={step.id}
+                  step={step}
+                  taskDueDate={taskDueDate}
+                  onToggle={() => onToggle(step.id)}
+                  onDelete={() => onDelete(step.id)}
+                  onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
+                  onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
+                  onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        steps.map((step) => (
+          <StepItem
+            key={step.id}
+            step={step}
+            taskDueDate={taskDueDate}
+            onToggle={() => onToggle(step.id)}
+            onDelete={() => onDelete(step.id)}
+            onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
+            onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
+            onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+          />
+        ))
+      )}
     </div>
   );
 }
