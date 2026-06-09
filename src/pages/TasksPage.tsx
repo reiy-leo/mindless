@@ -635,6 +635,24 @@ export default function TasksPage() {
   const completeRecurring = useCompleteRecurringTask();
   const updateSubtask = useUpdateSubtask();
 
+  // Adjust detail panel width when window resizes
+  useEffect(() => {
+    let prevWidth = window.innerWidth;
+
+    const handleResize = () => {
+      const newWidth = window.innerWidth;
+      const delta = newWidth - prevWidth;
+      prevWidth = newWidth;
+
+      if (delta !== 0) {
+        setDetailPanelWidth((w) => Math.max(300, Math.min(800, w + delta)));
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setDetailPanelWidth]);
+
   // Keyboard shortcut listeners
   useEffect(() => {
     const handleNewTask = () => {
@@ -1241,9 +1259,9 @@ export default function TasksPage() {
       {/* Task List Panel */}
       <div className="flex flex-col overflow-hidden flex-1 min-w-0">
         {/* Header */}
-        <div data-tauri-drag-region className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
+        <div data-tauri-drag-region className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1">
           <div className="flex items-center justify-between">
-            <h1 data-tauri-drag-region className="text-2xl font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
             <div className="flex items-center gap-2">
               <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowSettings(false); }} tabIndex={-1}>
                 <button
