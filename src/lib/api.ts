@@ -6,6 +6,10 @@ export async function getTasks(): Promise<Task[]> {
   return await invoke<Task[]>('get_tasks');
 }
 
+export async function getAllTasks(): Promise<Task[]> {
+  return await invoke<Task[]>('get_all_tasks');
+}
+
 export async function getTaskById(id: string): Promise<Task> {
   return await invoke<Task>('get_task_by_id', { id });
 }

@@ -84,10 +84,10 @@ pub async fn create_subtask(
     let parent_id = parent_subtask_id.clone().filter(|s| !s.is_empty()).unwrap_or(task_id.clone());
     let level = level.unwrap_or(0);
 
-    // Inherit list_id from parent task
+    // Inherit list_id from root task
     let list_id: Option<String> = conn.query_row(
         "SELECT list_id FROM tasks WHERE id = ?1",
-        [&parent_id],
+        [&task_id],
         |row| row.get(0),
     ).ok();
 

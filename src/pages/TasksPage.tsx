@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TrashIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
   useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
@@ -8,7 +8,7 @@ import {
   useCreateStep, useUpdateStep, useDeleteStep,
   useCreateTag, useReorderSubtasks, useReorderSteps,
   useCompleteRecurringTask, useAllSubtasks,
-  useSaveListSettings,
+  useSaveListSettings, useAllTasks,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { useAppStore } from '@/stores/useAppStore';
@@ -451,18 +451,13 @@ function TaskRow({
   isSelected,
   onSelect,
   onToggle,
-  onEdit,
-  onDelete,
 }: {
   task: Task;
   isSelected: boolean;
   onSelect: () => void;
   onToggle: () => void;
-  onEdit: () => void;
-  onDelete?: () => void;
 }) {
   const { t } = useTranslation('common');
-
   const { data: taskSteps = [] } = useSteps(task.id);
   const rowProgress = useMemo(
     () => calcStepsProgress(taskSteps),
@@ -500,33 +495,25 @@ function TaskRow({
               }}
             />
           </div>
-          <span className={`text-xs ${
-            rowProgress.completed === rowProgress.total
-              ? 'text-green-500 font-medium'
-              : 'text-gray-400 dark:text-gray-500'
-          }`}>
-            {rowProgress.completed}/{rowProgress.total}
-          </span>
         </div>
       )}
-      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-0.5 flex-shrink-0">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
-          title={t('common.edit')}
-        >
-          <PencilIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-        </button>
-        {onDelete && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-            title={t('common.delete')}
-          >
-            <TrashIcon className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-          </button>
-        )}
-      </div>
+      {/* Due date badge */}
+      {task.dueDate && (() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = new Date(task.dueDate + 'T00:00:00');
+        const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const isOverdue = diffDays < 0;
+        const absDays = Math.abs(diffDays);
+        const unit = t('dashboard.days_left');
+        const label = diffDays === 0 ? t('today') : isOverdue ? `-${absDays}${unit}` : `+${absDays}${unit}`;
+        return (
+          <span className={`text-xs font-medium flex-shrink-0 ${isOverdue ? 'text-red-500' : 'text-green-500'}`}>
+            {label}
+          </span>
+        );
+      })()}
+
     </div>
   );
 }
@@ -568,7 +555,7 @@ function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
 export default function TasksPage() {
   const { t } = useTranslation('common');
   const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus, setSelectedListId } = useViewStore();
-  const { taskSortBy, taskSortOrder, taskGroupBy, setTaskSortBy, setTaskSortOrder, setTaskGroupBy } = useAppStore();
+  const { taskSortBy, taskSortOrder, taskGroupBy, setTaskSortBy, setTaskSortOrder, setTaskGroupBy, groupsPanelWidth, detailPanelWidth, setGroupsPanelWidth, setDetailPanelWidth } = useAppStore();
   const saveListSettings = useSaveListSettings();
   const isLoadingSettings = useRef(false);
 
@@ -636,10 +623,9 @@ export default function TasksPage() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
-  const [groupsPanelWidth, setGroupsPanelWidth] = useState(192);
-  const [detailPanelWidth, setDetailPanelWidth] = useState(400);
 
   const { data: tasks = [], isLoading } = useTasks();
+  const { data: allTasksForCount = [] } = useAllTasks();
   const { data: allTags = [] } = useTags();
   const { data: allLists = [] } = useLists();
   const createTask = useCreateTask();
@@ -1000,7 +986,7 @@ export default function TasksPage() {
     recentEnd.setDate(recentEnd.getDate() + 30);
     const recentEndStr = `${recentEnd.getFullYear()}-${String(recentEnd.getMonth() + 1).padStart(2, '0')}-${String(recentEnd.getDate()).padStart(2, '0')}`;
 
-    tasks.forEach((task) => {
+    allTasksForCount.forEach((task) => {
       const lid = task.listId || 'inbox';
       counts[lid] = (counts[lid] || 0) + 1;
       if (task.dueDate === todayStr) {
@@ -1020,16 +1006,16 @@ export default function TasksPage() {
       }
     });
     return counts;
-  }, [tasks]);
+  }, [allTasksForCount]);
 
   // Advanced group task counts
   const advGroupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     advancedGroups.forEach((group) => {
-      counts[group.id] = tasks.filter((task) => matchAdvancedGroup(task, group)).length;
+      counts[group.id] = allTasksForCount.filter((task) => matchAdvancedGroup(task, group)).length;
     });
     return counts;
-  }, [tasks, advancedGroups, matchAdvancedGroup]);
+  }, [allTasksForCount, advancedGroups, matchAdvancedGroup]);
 
   const handleAdvGroupClick = (groupId: string) => {
     setSelectedListId(selectedListId === `adv:${groupId}` ? null : `adv:${groupId}`);
@@ -1470,16 +1456,6 @@ export default function TasksPage() {
                           handleToggleTask(item.task.id, item.task.isCompleted);
                         }
                       }}
-                      onEdit={() => {
-                        if (isSubtask) {
-                          setSelectedTaskId(item.parentTask.id);
-                          setSelectedSubtaskId(item.subtask.id);
-                        } else {
-                          setEditingTask(item.task);
-                          setShowTaskForm(true);
-                        }
-                      }}
-                      onDelete={isSubtask ? undefined : () => handleDeleteTask(item.task.id)}
                     />
                   );
                 })}

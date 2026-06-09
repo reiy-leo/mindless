@@ -135,6 +135,20 @@ pub async fn get_tasks(app: AppHandle) -> Result<Vec<Task>, String> {
 }
 
 #[tauri::command]
+pub async fn get_all_tasks(app: AppHandle) -> Result<Vec<Task>, String> {
+    let conn = get_db(&app)?;
+
+    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY sort_order ASC, due_date ASC")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+
+    let tasks = stmt.query_map([], row_to_task)
+        .map_err(|e| format!("Failed to query: {}", e))?;
+
+    let result: Result<Vec<_>, _> = tasks.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
 pub async fn get_task_by_id(app: AppHandle, id: String) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
@@ -308,6 +322,7 @@ pub async fn delete_task(app: AppHandle, id: String) -> Result<(), String> {
 #[derive(Deserialize)]
 pub struct ReorderItem {
     pub id: String,
+    #[serde(rename = "sortOrder")]
     pub sort_order: f64,
 }
 

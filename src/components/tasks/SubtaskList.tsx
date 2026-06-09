@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, ChevronRightIcon, ChevronDownIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -37,7 +37,6 @@ interface SubtaskItemProps {
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
   onSubtaskClick?: (id: string) => void;
-  depth: number;
 }
 
 // ==================== Inline Add Input ====================
@@ -45,12 +44,10 @@ function InlineAddInput({
   placeholder,
   onCancel,
   onSubmit,
-  indent = 0,
 }: {
   placeholder: string;
   onCancel: () => void;
   onSubmit: (title: string) => void;
-  indent?: number;
 }) {
   const { t } = useTranslation('common');
   const [value, setValue] = useState('');
@@ -70,8 +67,8 @@ function InlineAddInput({
   };
 
   return (
-    <div className="flex items-center gap-2" style={{ paddingLeft: `${indent * 24}px` }}>
-      <div className="w-6" />
+    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex-shrink-0" />
       <input
         ref={inputRef}
         type="text"
@@ -83,7 +80,7 @@ function InlineAddInput({
           else onCancel();
         }}
         placeholder={placeholder}
-        className="flex-1 px-2 py-1.5 text-sm border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 px-2 py-1 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
       />
       <button
         onClick={onCancel}
@@ -95,11 +92,10 @@ function InlineAddInput({
   );
 }
 
-function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubtaskClick, depth }: SubtaskItemProps) {
+function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubtaskClick }: SubtaskItemProps) {
   const { t } = useTranslation('common');
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(subtask.title);
-  const [isExpanded, setIsExpanded] = useState(true);
   const [showChildInput, setShowChildInput] = useState(false);
 
   const handleSave = () => {
@@ -119,9 +115,8 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
   };
 
   const hasChildren = subtask.children && subtask.children.length > 0;
-  const canAddChild = depth < 3; // Max 4 levels (0-3)
+  const canAddChild = subtask.level < 3;
 
-  // Count descendants for delete confirmation
   const countDescendants = (node: Subtask): number => {
     if (!node.children) return 0;
     return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0);
@@ -138,33 +133,19 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
   };
 
   return (
-    <div className="space-y-2">
+    <>
       <div
-        className="flex items-center gap-2 group"
-        style={{ paddingLeft: `${depth * 24}px` }}
+        className={`group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+        onClick={() => onSubtaskClick ? onSubtaskClick(subtask.id) : undefined}
       >
-        {/* Expand/Collapse button */}
-        {hasChildren ? (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            {isExpanded ? (
-              <ChevronDownIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            ) : (
-              <ChevronRightIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            )}
-          </button>
-        ) : (
-          <div className="w-6" />
-        )}
 
         {/* Checkbox */}
         <input
           type="checkbox"
           checked={subtask.isCompleted}
-          onChange={() => onToggle(subtask.id)}
-          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500"
+          onChange={(e) => { e.stopPropagation(); onToggle(subtask.id); }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
         />
 
         {/* Title */}
@@ -176,36 +157,34 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
+            onClick={(e) => e.stopPropagation()}
             className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         ) : (
-          <button
-            onClick={() => onSubtaskClick ? onSubtaskClick(subtask.id) : onToggle(subtask.id)}
-            className={`flex-1 text-sm text-left truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
-              subtask.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-            }`}
-          >
+          <span className={`flex-1 min-w-0 truncate text-sm ${
+            subtask.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+          }`}>
             {subtask.title}
-          </button>
+          </span>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Actions - hidden by default, shown on hover */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           {canAddChild && (
             <button
-              onClick={() => setShowChildInput(!showChildInput)}
+              onClick={(e) => { e.stopPropagation(); setShowChildInput(!showChildInput); }}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={t('tasks.subtasks.add_child')}
             >
-              <PlusIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <PlusIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
             </button>
           )}
           <button
-            onClick={handleDelete}
+            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
             className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title={t('common.delete')}
           >
-            <TrashIcon className="w-4 h-4 text-red-500 dark:text-red-400" />
+            <TrashIcon className="w-3.5 h-3.5 text-red-400 dark:text-red-500" />
           </button>
         </div>
       </div>
@@ -214,7 +193,6 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
       {showChildInput && (
         <InlineAddInput
           placeholder={t('tasks.subtasks.child_placeholder')}
-          indent={depth + 1}
           onCancel={() => setShowChildInput(false)}
           onSubmit={(childTitle) => {
             onAdd(childTitle, subtask.id);
@@ -224,7 +202,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
       )}
 
       {/* Children */}
-      {hasChildren && isExpanded && (
+      {hasChildren && (
         <div className="space-y-2">
           {subtask.children!.map((child) => (
             <SubtaskItem
@@ -235,12 +213,11 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
               onDelete={onDelete}
               onUpdateTitle={onUpdateTitle}
               onSubtaskClick={onSubtaskClick}
-              depth={depth + 1}
             />
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -278,28 +255,25 @@ function SortableSubtaskItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <div className="flex items-center gap-1 group/sort">
-        <button
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
-          title={t('tasks.views.drag_to_reorder')}
-        >
-          <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-        </button>
-        <div className="flex-1">
-           <SubtaskItem
-              subtask={subtask}
-              onAdd={onAdd}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              onUpdateTitle={onUpdateTitle}
-              onSubtaskClick={onSubtaskClick}
-              depth={0}
-            />
-        </div>
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1 group/sort">
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none absolute -left-5"
+        title={t('tasks.views.drag_to_reorder')}
+      >
+        <Bars3Icon className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500" />
+      </button>
+      <div className="flex-1">
+        <SubtaskItem
+          subtask={subtask}
+          onAdd={onAdd}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onUpdateTitle={onUpdateTitle}
+          onSubtaskClick={onSubtaskClick}
+        />
       </div>
     </div>
   );
@@ -326,12 +300,12 @@ export default function SubtaskList({
     if (!over || active.id === over.id) return;
     if (!onReorder) return;
 
-    const topLevel = subtasks.filter((s) => !s.parentTaskId);
-    const oldIndex = topLevel.findIndex((s) => s.id === active.id);
-    const newIndex = topLevel.findIndex((s) => s.id === over.id);
+    // subtasks is already the tree (top-level nodes only for drag)
+    const oldIndex = subtasks.findIndex((s) => s.id === active.id);
+    const newIndex = subtasks.findIndex((s) => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = [...topLevel];
+    const reordered = [...subtasks];
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
 
@@ -386,7 +360,7 @@ export default function SubtaskList({
       ) : onReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={subtasks.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               {subtasks.map((subtask) => (
                 <SortableSubtaskItem
                   key={subtask.id}
@@ -412,7 +386,6 @@ export default function SubtaskList({
               onDelete={onDelete}
               onUpdateTitle={onUpdateTitle}
               onSubtaskClick={onSubtaskClick}
-              depth={0}
             />
           ))}
         </div>

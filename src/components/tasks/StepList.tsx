@@ -45,27 +45,37 @@ function InlineAddInput({
   onSubmit: (description: string) => void;
 }) {
   const [value, setValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, [value]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && value.trim()) {
-      onSubmit(value.trim());
-      setValue('');
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (value.trim()) {
+        onSubmit(value.trim());
+        setValue('');
+      }
     } else if (e.key === 'Escape') {
       onCancel();
     }
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex-shrink-0" />
-      <input
-        ref={inputRef}
-        type="text"
+    <div className="flex items-start gap-2">
+      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex-shrink-0 mt-0.5" />
+      <textarea
+        ref={textareaRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -74,7 +84,8 @@ function InlineAddInput({
           else onCancel();
         }}
         placeholder={placeholder}
-        className="flex-1 px-2 py-1 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+        rows={1}
+        className="flex-1 px-2 py-1 text-sm bg-transparent border-none outline-none resize-none min-w-0 leading-snug text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
       />
     </div>
   );
@@ -82,10 +93,7 @@ function InlineAddInput({
 
 function StepItem({
   step,
-  isEditing,
   taskDueDate,
-  onStartEdit,
-  onFinishEdit,
   onToggle,
   onDelete,
   onUpdateDescription,
@@ -97,10 +105,19 @@ function StepItem({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { data: calendarEvents = [] } = useCalendarEvents();
   const dateRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setDescription(step.description);
   }, [step.description]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, [description]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -113,9 +130,11 @@ function StepItem({
   }, [showDatePicker]);
 
   const handleSave = () => {
-    if (description.trim()) {
-      onUpdateDescription(description.trim());
-      onFinishEdit();
+    const trimmed = description.trim();
+    if (trimmed && trimmed !== step.description) {
+      onUpdateDescription(trimmed);
+    } else if (!trimmed) {
+      setDescription(step.description);
     }
   };
 
@@ -123,45 +142,37 @@ function StepItem({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
+      (e.target as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       setDescription(step.description);
-      onFinishEdit();
+      (e.target as HTMLElement).blur();
     }
   };
 
   const dateDisplay = formatStepDate(step.dueDate, step.dueTime, taskDueDate);
 
   return (
-    <div className="flex items-center gap-2 py-1.5 group">
+    <div className="flex items-start gap-2 py-1.5 group">
       {/* Checkbox */}
       <input
         type="checkbox"
         checked={step.isCompleted}
         onChange={onToggle}
-        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0 mt-0.5"
       />
 
-      {/* Description */}
-      {isEditing ? (
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          className="flex-1 px-1 py-0.5 text-sm bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 min-w-0"
-        />
-      ) : (
-        <span
-          onDoubleClick={onStartEdit}
-          className={`flex-1 text-sm cursor-text min-w-0 truncate ${
-            step.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-          }`}
-        >
-          {step.description}
-        </span>
-      )}
+      {/* Description - always editable */}
+      <textarea
+        ref={textareaRef}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        rows={1}
+        className={`flex-1 px-1 py-0.5 text-sm bg-transparent border-none outline-none resize-none min-w-0 leading-snug ${
+          step.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+        }`}
+      />
 
       {/* Date button - float right */}
       <div ref={dateRef} className="relative flex-shrink-0">
@@ -217,7 +228,6 @@ export default function StepList({
   onUpdateDueTime,
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddInput, setShowAddInput] = useState(false);
 
   const total = steps.length;
@@ -258,9 +268,6 @@ export default function StepList({
           key={step.id}
           step={step}
           taskDueDate={taskDueDate}
-          isEditing={editingId === step.id}
-          onStartEdit={() => setEditingId(step.id)}
-          onFinishEdit={() => setEditingId(null)}
           onToggle={() => onToggle(step.id)}
           onDelete={() => onDelete(step.id)}
           onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
@@ -274,9 +281,6 @@ export default function StepList({
 
 interface StepItemProps {
   step: Step;
-  isEditing: boolean;
-  onStartEdit: () => void;
-  onFinishEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
   onUpdateDescription: (description: string) => void;

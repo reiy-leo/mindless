@@ -11,6 +11,13 @@ export function useTasks() {
   });
 }
 
+export function useAllTasks() {
+  return useQuery({
+    queryKey: ['allTasks'],
+    queryFn: () => api.getAllTasks(),
+  });
+}
+
 export function useTask(id: string) {
   return useQuery({
     queryKey: ['task', id],
@@ -155,7 +162,7 @@ export function useReorderSubtasks() {
   return useMutation({
     mutationFn: (items: { id: string; sortOrder: number }[]) => api.reorderSubtasks(items),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+      queryClient.invalidateQueries({ queryKey: ['subtasks'], exact: false });
     },
   });
 }

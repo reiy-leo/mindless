@@ -18,6 +18,7 @@ pub fn run() {
             // Tasks
             commands::create_task,
             commands::get_tasks,
+            commands::get_all_tasks,
             commands::get_task_by_id,
             commands::update_task,
             commands::delete_task,
