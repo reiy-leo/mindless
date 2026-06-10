@@ -15,6 +15,8 @@ fn row_to_list(row: &rusqlite::Row) -> rusqlite::Result<List> {
         sort_order: row.get(4)?,
         created_at: row.get(5)?,
         updated_at: row.get(6)?,
+        is_pinned: row.get::<_, i32>(7).unwrap_or(0) != 0,
+        is_archived: row.get::<_, i32>(8).unwrap_or(0) != 0,
     })
 }
 
@@ -56,6 +58,8 @@ pub async fn update_list(
     color: Option<String>,
     icon: Option<String>,
     sort_order: Option<f64>,
+    is_pinned: Option<bool>,
+    is_archived: Option<bool>,
 ) -> Result<List, String> {
     let conn = get_db(&app)?;
 
@@ -87,6 +91,16 @@ pub async fn update_list(
     if let Some(v) = sort_order {
         sql.push_str(&format!(", sort_order = ?{}", param_idx));
         params.push(Box::new(v));
+        param_idx += 1;
+    }
+    if let Some(v) = is_pinned {
+        sql.push_str(&format!(", is_pinned = ?{}", param_idx));
+        params.push(Box::new(v as i32));
+        param_idx += 1;
+    }
+    if let Some(v) = is_archived {
+        sql.push_str(&format!(", is_archived = ?{}", param_idx));
+        params.push(Box::new(v as i32));
         param_idx += 1;
     }
 

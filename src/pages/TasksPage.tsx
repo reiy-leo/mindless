@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, PencilIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, Cog6ToothIcon, PaperClipIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TagIcon, ChevronDownIcon, ChevronRightIcon, InboxIcon, CalendarIcon, ClockIcon, EyeIcon, EyeSlashIcon, PaperClipIcon, AdjustmentsHorizontalIcon, ArchiveBoxIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Pin } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useTasks, useCreateTask, useUpdateTask, useDeleteTask,
   useToggleTaskCompletion, useTags, useSubtasks, useSteps, useLists,
@@ -8,7 +10,7 @@ import {
   useCreateStep, useUpdateStep, useDeleteStep,
   useCreateTag, useReorderSubtasks, useReorderSteps,
   useCompleteRecurringTask, useAllSubtasks,
-  useSaveListSettings, useAllTasks,
+  useSaveListSettings, useAllTasks, useUpdateList, useDeleteList,
 } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { useAppStore } from '@/stores/useAppStore';
@@ -25,9 +27,20 @@ import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView';
 import MilkdownEditor from '@/components/MilkdownEditor';
 import { TaskSortControls } from '@/components/tasks/TaskSortControls';
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls';
-import ListFormDialog from '@/components/lists/ListFormDialog';
-import AdvancedGroupFormDialog from '@/components/AdvancedGroupFormDialog';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { listen } from '@tauri-apps/api/event';
 import type { Task, Priority, SortBy, GroupBy, Step as StepType, List, ListSettings } from '@/types/task';
+
+const ICON_KEY_TO_EMOJI: Record<string, string> = {
+  folder: '📁', inbox: '📥', star: '⭐', heart: '❤️', fire: '🔥', book: '📖',
+  flag: '🚩', target: '🎯', lightning: '⚡', briefcase: '💼', home: '🏠',
+};
+
+function resolveIcon(icon?: string): string {
+  if (!icon) return '📁';
+  if (icon.length <= 2) return icon;
+  return ICON_KEY_TO_EMOJI[icon] || '📁';
+}
 import type { Tag } from '@/types/tag';
 import type { AdvancedGroup } from '@/stores/useAppStore';
 
@@ -343,7 +356,7 @@ function TaskDetailPanel({
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={t('tasks.priority.label')}
           >
-            <FlagIcon className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
+            <AdjustmentsHorizontalIcon className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
           </button>
           {showPriorityPicker && (
             <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1 w-32">
@@ -395,6 +408,7 @@ function TaskDetailPanel({
             <MilkdownEditor
               markdown={localDesc}
               onChange={handleDescChange}
+
               // placeholder="详细说明"
             />
 
@@ -612,17 +626,16 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedSubtaskId, setSelectedSubtaskId] = useState<string | null>(null);
-  const [showListForm, setShowListForm] = useState(false);
-  const [editingList, setEditingList] = useState<List | null>(null);
   const [listsExpanded, setListsExpanded] = useState(true);
+  const [advListsExpanded, setAdvListsExpanded] = useState(true);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
-  const [showAdvGroupForm, setShowAdvGroupForm] = useState(false);
   const [editingAdvGroup, setEditingAdvGroup] = useState<AdvancedGroup | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'list' | 'advGroup'; id: string } | null>(null);
 
   const { data: tasks = [], isLoading } = useTasks();
   const { data: allTasksForCount = [] } = useAllTasks();
@@ -634,6 +647,8 @@ export default function TasksPage() {
   const toggleTask = useToggleTaskCompletion();
   const completeRecurring = useCompleteRecurringTask();
   const updateSubtask = useUpdateSubtask();
+  const updateList = useUpdateList();
+  const deleteList = useDeleteList();
 
   // Adjust detail panel width when window resizes
   useEffect(() => {
@@ -686,7 +701,36 @@ export default function TasksPage() {
   );
 
   // Advanced group matching
-  const { smartGroupVisibility, setSmartGroupVisibility, advancedGroups, addAdvancedGroup, updateAdvancedGroup } = useAppStore();
+  const { smartGroupVisibility, setSmartGroupVisibility, advancedGroups, addAdvancedGroup, updateAdvancedGroup, deleteAdvancedGroup } = useAppStore();
+  const queryClient = useQueryClient();
+
+  // Listen for dialog results from WebviewWindow
+  useEffect(() => {
+    const unlistenAdvGroup = listen<{ action: string; group?: AdvancedGroup }>('dialog:result', (event) => {
+      const { action } = event.payload;
+      if (action === 'submit' && event.payload.group) {
+        const group = event.payload.group;
+        if (editingAdvGroup) {
+          updateAdvancedGroup(group);
+        } else {
+          addAdvancedGroup(group);
+        }
+      }
+      setEditingAdvGroup(null);
+    });
+
+    const unlistList = listen<{ action: string }>('dialog:result', (event) => {
+      const { action } = event.payload;
+      if (action === 'submit' || action === 'delete') {
+        queryClient.invalidateQueries({ queryKey: ['lists'] });
+      }
+    });
+
+    return () => {
+      unlistenAdvGroup.then((fn) => fn());
+      unlistList.then((fn) => fn());
+    };
+  }, [editingAdvGroup, addAdvancedGroup, updateAdvancedGroup, queryClient]);
 
   const matchAdvancedGroup = useCallback((task: Task, group: AdvancedGroup): boolean => {
     const f = group.filters;
@@ -704,8 +748,22 @@ export default function TasksPage() {
     if (f.dateType) {
       const dateVal = f.dateType === 'due' ? task.dueDate : task.createdAt?.split('T')[0];
       if (!dateVal) return false;
-      if (f.dateFrom && dateVal < f.dateFrom) return false;
-      if (f.dateTo && dateVal > f.dateTo) return false;
+      if ((f.dateMode || 'absolute') === 'absolute') {
+        if (f.dateFrom && dateVal < f.dateFrom) return false;
+        if (f.dateTo && dateVal > f.dateTo) return false;
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const pastDays = f.datePastDays ?? 7;
+        const futureDays = f.dateFutureDays ?? 7;
+        const minDate = new Date(today);
+        minDate.setDate(minDate.getDate() - pastDays);
+        const maxDate = new Date(today);
+        maxDate.setDate(maxDate.getDate() + futureDays);
+        const minStr = minDate.toISOString().split('T')[0];
+        const maxStr = maxDate.toISOString().split('T')[0];
+        if (dateVal < minStr || dateVal > maxStr) return false;
+      }
     }
     if (f.priorities?.length) {
       if (!f.priorities.includes(task.priority)) return false;
@@ -974,7 +1032,24 @@ export default function TasksPage() {
   );
 
   const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent']);
-  const userLists = useMemo(() => allLists.filter((l) => !seedIds.has(l.id)), [allLists]);
+  const pinnedLists = useMemo(() =>
+    allLists.filter((l) => !seedIds.has(l.id) && l.isArchived !== true && l.isPinned),
+    [allLists]
+  );
+  const pinnedAdvGroups = useMemo(() =>
+    advancedGroups.filter((g) => g.isPinned),
+    [advancedGroups]
+  );
+  const userLists = useMemo(() =>
+    allLists
+      .filter((l) => !seedIds.has(l.id) && l.isArchived !== true)
+      .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return a.sortOrder - b.sortOrder;
+      }),
+    [allLists]
+  );
 
   const listTaskCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -1039,25 +1114,111 @@ export default function TasksPage() {
     setSelectedListId(selectedListId === `adv:${groupId}` ? null : `adv:${groupId}`);
   };
 
-  const handleEditAdvGroup = (e: React.MouseEvent, group: AdvancedGroup) => {
+  const handleEditAdvGroup = async (e: React.MouseEvent, group: AdvancedGroup) => {
     e.stopPropagation();
     setEditingAdvGroup(group);
-    setShowAdvGroupForm(true);
+    try {
+      const existingWindow = await WebviewWindow.getByLabel('advanced-group-form');
+      if (existingWindow) {
+        await existingWindow.setFocus();
+        return;
+      }
+    } catch {}
+
+    new WebviewWindow('advanced-group-form', {
+      url: `/dialog/advanced-group-form?groupId=${encodeURIComponent(group.id)}`,
+      title: t('advanced_groups.edit'),
+      width: 520,
+      height: 700,
+      resizable: false,
+      center: true,
+      alwaysOnTop: true,
+    });
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, type: 'list' | 'advGroup', id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, type, id });
+  };
+
+  const handlePinList = (listId: string) => {
+    const list = allLists.find(l => l.id === listId);
+    if (list) {
+      updateList.mutate({ id: listId, isPinned: !list.isPinned });
+    }
+    setContextMenu(null);
+  };
+
+  const handleArchiveList = (listId: string) => {
+    const list = allLists.find(l => l.id === listId);
+    if (list) {
+      updateList.mutate({ id: listId, isArchived: !list.isArchived });
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteList = (listId: string) => {
+    deleteList.mutate(listId);
+    setContextMenu(null);
+  };
+
+  const handlePinAdvGroup = (groupId: string) => {
+    const group = advancedGroups.find(g => g.id === groupId);
+    if (group) {
+      updateAdvancedGroup({ ...group, isPinned: !group.isPinned });
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteAdvGroup = (groupId: string) => {
+    deleteAdvancedGroup(groupId);
+    setContextMenu(null);
   };
 
   const handleListClick = (listId: string) => {
     setSelectedListId(selectedListId === listId ? null : listId);
   };
 
-  const handleCreateList = () => {
-    setEditingList(null);
-    setShowListForm(true);
+  const handleCreateList = async () => {
+    try {
+      const existingWindow = await WebviewWindow.getByLabel('list-form');
+      if (existingWindow) {
+        await existingWindow.setFocus();
+        return;
+      }
+    } catch {}
+
+    new WebviewWindow('list-form', {
+      url: '/dialog/list-form',
+      title: t('lists.create_list'),
+      width: 480,
+      height: 500,
+      resizable: false,
+      center: true,
+      alwaysOnTop: true,
+    });
   };
 
-  const handleEditList = (e: React.MouseEvent, list: List) => {
+  const handleEditList = async (e: React.MouseEvent, list: List) => {
     e.stopPropagation();
-    setEditingList(list);
-    setShowListForm(true);
+    try {
+      const existingWindow = await WebviewWindow.getByLabel('list-form');
+      if (existingWindow) {
+        await existingWindow.setFocus();
+        return;
+      }
+    } catch {}
+
+    new WebviewWindow('list-form', {
+      url: `/dialog/list-form?listId=${encodeURIComponent(list.id)}`,
+      title: t('lists.edit_list'),
+      width: 480,
+      height: 500,
+      resizable: false,
+      center: true,
+      alwaysOnTop: true,
+    });
   };
 
   const getGroupIcon = (iconKey: string) => {
@@ -1094,6 +1255,53 @@ export default function TasksPage() {
     <div className="flex-1 flex overflow-hidden">
       {/* Task Groups Panel */}
       <div className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden" style={{ width: groupsPanelWidth, minWidth: 160, flexShrink: 0 }}>
+
+        {/* Pinned items - icon only */}
+        {(pinnedLists.length > 0 || pinnedAdvGroups.length > 0) && (
+          <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex flex-wrap gap-1">
+              {pinnedLists.map((list) => {
+                const isActive = selectedListId === list.id;
+                return (
+                  <div key={list.id} className="relative group">
+                    <button
+                      onClick={() => handleListClick(list.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
+                      title={list.name}
+                      className={`p-1.5 rounded-lg transition-colors text-base ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {resolveIcon(list.icon)}
+                    </button>
+                  </div>
+                );
+              })}
+              {pinnedAdvGroups.map((group) => {
+                const isActive = selectedListId === `adv:${group.id}`;
+                return (
+                  <div key={group.id} className="relative group">
+                    <button
+                      onClick={() => handleAdvGroupClick(group.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
+                      title={group.name}
+                      className={`p-1.5 rounded-lg transition-colors text-base ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {resolveIcon(group.icon)}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Smart lists - fixed at top */}
         <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
           <div className="space-y-px">
@@ -1137,8 +1345,99 @@ export default function TasksPage() {
           </div>
         </div>
 
+        {/* Advanced groups */}
+        <div className="overflow-auto px-2 py-2">
+          {/* Section header */}
+          <div className="flex items-center justify-between mb-1 px-1.5">
+            <button
+              onClick={() => setAdvListsExpanded(!advListsExpanded)}
+              className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              {advListsExpanded ? (
+                <ChevronDownIcon className="w-3 h-3" />
+              ) : (
+                <ChevronRightIcon className="w-3 h-3" />
+              )}
+              {t('advanced_groups.title')}
+            </button>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setShowGroupSettings(!showGroupSettings)}
+                className={`p-0.5 rounded transition-colors ${showGroupSettings ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500'}`}
+                title={t('lists.manage')}
+              >
+                <EyeIcon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={async () => {
+                  setEditingAdvGroup(null);
+                  try {
+                    const existingWindow = await WebviewWindow.getByLabel('advanced-group-form');
+                    if (existingWindow) {
+                      await existingWindow.setFocus();
+                      return;
+                    }
+                  } catch {}
+
+                  new WebviewWindow('advanced-group-form', {
+                    url: '/dialog/advanced-group-form',
+                    title: t('advanced_groups.create'),
+                    width: 520,
+                    height: 700,
+                    resizable: false,
+                    center: true,
+                    alwaysOnTop: true,
+                  });
+                }}
+                className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={t('lists.create_list')}
+              >
+                <PlusIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+              </button>
+            </div>
+          </div>
+          {advListsExpanded && (
+            <div className="space-y-px">
+              {[...advancedGroups].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return 0;
+              }).map((group) => {
+                const isActive = selectedListId === `adv:${group.id}`;
+                const count = advGroupCounts[group.id] || 0;
+
+                return (
+                  <div key={group.id} className="relative group">
+                    <button
+                      onClick={() => handleAdvGroupClick(group.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <span className="text-base flex-shrink-0">{resolveIcon(group.icon)}</span>
+                      <span className="flex-1 truncate">{group.name}</span>
+                      {count > 0 && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 group-hover/item:hidden">{count}</span>
+                      )}
+                      <span
+                        onClick={(e) => handleEditAdvGroup(e, group)}
+                        className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                      >
+                        <PencilIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Scrollable: groups */}
-        <div className="flex-1 overflow-auto px-2 py-2">
+        <div className="overflow-auto px-2 py-2">
           {/* Section header */}
           <div className="flex items-center justify-between mb-1 px-1.5">
             <button
@@ -1172,39 +1471,6 @@ export default function TasksPage() {
 
           {listsExpanded && (
             <div className="space-y-px">
-              {/* Advanced groups */}
-              {advancedGroups.map((group) => {
-                const isActive = selectedListId === `adv:${group.id}`;
-                const count = advGroupCounts[group.id] || 0;
-
-                return (
-                  <div key={group.id} className="relative group">
-                    <button
-                      onClick={() => handleAdvGroupClick(group.id)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
-                        isActive
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: group.color }}
-                      />
-                      <span className="flex-1 truncate">{group.name}</span>
-                      {count > 0 && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500 group-hover/item:hidden">{count}</span>
-                      )}
-                      <span
-                        onClick={(e) => handleEditAdvGroup(e, group)}
-                        className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                      >
-                        <PencilIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                      </span>
-                    </button>
-                  </div>
-                );
-              })}
 
               {/* User lists */}
               {userLists.map((list) => {
@@ -1215,16 +1481,14 @@ export default function TasksPage() {
                   <div key={list.id} className="relative group">
                     <button
                       onClick={() => handleListClick(list.id)}
+                      onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
                       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
                         isActive
                           ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: list.color || '#3B82F6' }}
-                      />
+                      <span className="text-base flex-shrink-0">{resolveIcon(list.icon)}</span>
                       <span className="flex-1 truncate">{list.name}</span>
                       {count > 0 && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 group-hover/item:hidden">{count}</span>
@@ -1240,14 +1504,6 @@ export default function TasksPage() {
                 );
               })}
 
-              {/* Add group button */}
-              <button
-                onClick={() => { setEditingAdvGroup(null); setShowAdvGroupForm(true); }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <PlusIcon className="w-3 h-3" />
-                <span>{t('advanced_groups.create')}</span>
-              </button>
             </div>
           )}
         </div>
@@ -1259,8 +1515,8 @@ export default function TasksPage() {
       {/* Task List Panel */}
       <div className="flex flex-col overflow-hidden flex-1 min-w-0">
         {/* Header */}
-        <div data-tauri-drag-region className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3">
+          <div data-tauri-drag-region className="flex items-center justify-between">
             <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
             <div className="flex items-center gap-2">
               <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowSettings(false); }} tabIndex={-1}>
@@ -1269,7 +1525,7 @@ export default function TasksPage() {
                   className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}`}
                   title={t('tasks.settings')}
                 >
-                  <Cog6ToothIcon className="w-5 h-5" />
+                  <AdjustmentsHorizontalIcon className="w-3 h-3" />
                 </button>
 
                 {/* Settings popup */}
@@ -1389,7 +1645,7 @@ export default function TasksPage() {
                     className={`p-1.5 rounded transition-colors ${newTaskPriority > 0 ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500'}`}
                     title={t('tasks.priority.label')}
                   >
-                    <FlagIcon className="w-4 h-4" />
+                    <AdjustmentsHorizontalIcon className="w-4 h-4" />
                   </button>
                   {showPriorityPicker && (
                     <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1.5 flex gap-1 z-50">
@@ -1517,26 +1773,83 @@ export default function TasksPage() {
         task={editingTask}
       />
 
-      {/* List Form Dialog */}
-      <ListFormDialog
-        isOpen={showListForm}
-        onClose={() => { setShowListForm(false); setEditingList(null); }}
-        list={editingList}
-      />
-
-      {/* Advanced Group Form Dialog */}
-      <AdvancedGroupFormDialog
-        isOpen={showAdvGroupForm}
-        onClose={() => { setShowAdvGroupForm(false); setEditingAdvGroup(null); }}
-        onSubmit={(group) => {
-          if (editingAdvGroup) {
-            updateAdvancedGroup(group);
-          } else {
-            addAdvancedGroup(group);
-          }
-        }}
-        group={editingAdvGroup}
-      />
+      {/* Context Menu */}
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-50" onClick={() => setContextMenu(null)} />
+          <div
+            className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[160px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            {contextMenu.type === 'list' ? (
+              <>
+                <button
+                  onClick={() => {
+                    const list = allLists.find(l => l.id === contextMenu.id);
+                    if (list) handleEditList({ stopPropagation: () => {} } as React.MouseEvent, list);
+                    setContextMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                  {t('common.edit')}
+                </button>
+                <button
+                  onClick={() => handlePinList(contextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Pin className="w-4 h-4" />
+                  {allLists.find(l => l.id === contextMenu.id)?.isPinned ? t('lists.unpin') : t('lists.pin')}
+                </button>
+                <button
+                  onClick={() => handleArchiveList(contextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <ArchiveBoxIcon className="w-4 h-4" />
+                  {allLists.find(l => l.id === contextMenu.id)?.isArchived ? t('lists.unarchive') : t('lists.archive')}
+                </button>
+                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                <button
+                  onClick={() => handleDeleteList(contextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  {t('common.delete')}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    const group = advancedGroups.find(g => g.id === contextMenu.id);
+                    if (group) handleEditAdvGroup({ stopPropagation: () => {} } as React.MouseEvent, group);
+                    setContextMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                  {t('common.edit')}
+                </button>
+                <button
+                  onClick={() => handlePinAdvGroup(contextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Pin className="w-4 h-4" />
+                  {advancedGroups.find(g => g.id === contextMenu.id)?.isPinned ? t('lists.unpin') : t('lists.pin')}
+                </button>
+                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                <button
+                  onClick={() => handleDeleteAdvGroup(contextMenu.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  {t('common.delete')}
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

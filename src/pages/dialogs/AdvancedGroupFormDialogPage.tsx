@@ -4,6 +4,9 @@ import { useTags, useLists } from '@/queries/useTaskQueries';
 import EmojiPickerButton from '@/components/EmojiPickerButton';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import type { AdvancedGroup, AdvancedGroupFilter } from '@/stores/useAppStore';
+import { useAppStore } from '@/stores/useAppStore';
+import { emit } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   star: '⭐', heart: '❤️', fire: '🔥', book: '📖',
@@ -22,39 +25,37 @@ const COLOR_OPTIONS = [
   '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#64748B',
 ];
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (group: AdvancedGroup) => void;
-  group?: AdvancedGroup | null;
-}
+const params = new URLSearchParams(window.location.search);
+const initialGroupId = params.get('groupId');
 
-export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, group }: Props) {
+export default function AdvancedGroupFormDialogPage() {
   const { t } = useTranslation('common');
-  const isEditing = !!group;
   const { data: allTags = [] } = useTags();
   const { data: allLists = [] } = useLists();
+  const { advancedGroups, deleteAdvancedGroup } = useAppStore();
 
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3B82F6');
   const [icon, setIcon] = useState('📁');
   const [filters, setFilters] = useState<AdvancedGroupFilter>({});
   const [regexError, setRegexError] = useState<string | null>(null);
+  const [group, setGroup] = useState<AdvancedGroup | null>(null);
+  const [loaded, setLoaded] = useState(!initialGroupId);
+  const isEditing = !!group;
 
   useEffect(() => {
-    if (isOpen && group) {
-      setName(group.name);
-      setColor(group.color);
-      setIcon(resolveIcon(group.icon));
-      setFilters({ ...group.filters });
-    } else if (isOpen) {
-      setName('');
-      setColor('#3B82F6');
-      setIcon('📁');
-      setFilters({});
+    if (initialGroupId && advancedGroups.length > 0) {
+      const found = advancedGroups.find(g => g.id === initialGroupId);
+      if (found) {
+        setGroup(found);
+        setName(found.name);
+        setColor(found.color);
+        setIcon(resolveIcon(found.icon));
+        setFilters({ ...found.filters });
+      }
+      setLoaded(true);
     }
-    setRegexError(null);
-  }, [isOpen, group]);
+  }, [advancedGroups]);
 
   const updateFilter = <K extends keyof AdvancedGroupFilter>(key: K, value: AdvancedGroupFilter[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -70,7 +71,7 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
     try { new RegExp(pattern); setRegexError(null); } catch { setRegexError(t('advanced_groups.regex_error')); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     if (regexError) return;
@@ -92,25 +93,51 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
     }
     if (filters.priorities?.length) cleanFilters.priorities = filters.priorities;
 
-    onSubmit({
+    const result: AdvancedGroup = {
       id: group?.id || `adv-${Date.now()}`,
       name: name.trim(),
       color,
       icon,
       filters: cleanFilters,
-    });
-    onClose();
+    };
+
+    try {
+      await emit('dialog:result', { action: 'submit', group: result });
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error submitting:', error);
+    }
   };
 
-  if (!isOpen) return null;
+  const handleClose = async () => {
+    try {
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error closing:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!group) return;
+    try {
+      deleteAdvancedGroup(group.id);
+      await emit('dialog:result', { action: 'delete' });
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error deleting:', error);
+    }
+  };
 
   const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent', 'eisenhower']);
   const userLists = allLists.filter((l) => !seedIds.has(l.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-auto">
+    <div className="min-h-screen bg-white dark:bg-gray-800">
+      {!loaded ? (
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
+        </div>
+      ) : (
         <form onSubmit={handleSubmit} className="p-5 space-y-4 text-sm">
           {/* Icon & Name */}
           <div className="flex items-start gap-2">
@@ -144,7 +171,6 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             </div>
           </div>
 
-          {/* Filter: Lists */}
           {userLists.length > 0 && (
             <div>
               <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t('advanced_groups.filter_lists')}</label>
@@ -159,7 +185,6 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             </div>
           )}
 
-          {/* Filter: Tags */}
           {allTags.length > 0 && (
             <div>
               <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t('advanced_groups.filter_tags')}</label>
@@ -174,7 +199,6 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             </div>
           )}
 
-          {/* Filter: Title Regex */}
           <div>
             <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t('advanced_groups.filter_title')}</label>
             <input
@@ -188,7 +212,6 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('advanced_groups.filter_title_hint')}</p>
           </div>
 
-          {/* Filter: Date */}
           <div>
             <label className="block font-medium text-gray-700 dark:text-gray-300 mb-2">{t('advanced_groups.filter_date')}</label>
             <div className="flex gap-1 mb-3">
@@ -319,7 +342,6 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             )}
           </div>
 
-          {/* Filter: Priority */}
           <div>
             <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t('advanced_groups.filter_priority')}</label>
             <div className="flex gap-1.5">
@@ -337,19 +359,25 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-3">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+            {isEditing && (
+              <button type="button" onClick={handleDelete}
+                className="px-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                {t('advanced_groups.delete')}
+              </button>
+            )}
+            <div className="flex-1" />
+            <button type="button" onClick={handleClose}
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
               {t('common.cancel')}
             </button>
             <button type="submit" disabled={!name.trim() || !!regexError}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50">
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50">
               {isEditing ? t('common.save') : t('common.create')}
             </button>
           </div>
         </form>
-      </div>
+      )}
     </div>
   );
 }

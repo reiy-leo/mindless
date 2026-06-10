@@ -199,6 +199,12 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_time TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN parent_task_id TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN level INTEGER NOT NULL DEFAULT 0;");
+            let _ = conn.execute_batch("ALTER TABLE lists ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
+            let _ = conn.execute_batch("ALTER TABLE lists ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;");
+            
+            // Update existing lists to have default values for new columns
+            let _ = conn.execute_batch("UPDATE lists SET is_pinned = 0 WHERE is_pinned IS NULL;");
+            let _ = conn.execute_batch("UPDATE lists SET is_archived = 0 WHERE is_archived IS NULL;");
 
             // Migrate existing subtasks into tasks table (if subtasks table exists)
             let has_subtasks: bool = conn.query_row(

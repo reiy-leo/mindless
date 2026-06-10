@@ -10,6 +10,8 @@ import HabitsPage from './pages/HabitsPage';
 import CountdownsPage from './pages/CountdownsPage';
 import TagsPage from './pages/TagsPage';
 import SettingsPage from './pages/SettingsPage';
+import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
+import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
 import { useAppStore } from './stores/useAppStore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import * as api from './lib/api';
@@ -199,16 +201,22 @@ function App() {
         <NotificationManager />
         <KeyboardShortcuts />
         <GlobalSearchManager />
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
-            <Route path="/tasks" element={<ErrorBoundary><TasksPage /></ErrorBoundary>} />
-            <Route path="/habits" element={<ErrorBoundary><HabitsPage /></ErrorBoundary>} />
-            <Route path="/countdowns" element={<ErrorBoundary><CountdownsPage /></ErrorBoundary>} />
-            <Route path="/tags" element={<ErrorBoundary><TagsPage /></ErrorBoundary>} />
-            <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
-          </Routes>
-        </AppLayout>
+        <Routes>
+          <Route path="/dialog/list-form" element={<ListFormDialogPage />} />
+          <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
+          <Route path="*" element={
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
+                <Route path="/tasks" element={<ErrorBoundary><TasksPage /></ErrorBoundary>} />
+                <Route path="/habits" element={<ErrorBoundary><HabitsPage /></ErrorBoundary>} />
+                <Route path="/countdowns" element={<ErrorBoundary><CountdownsPage /></ErrorBoundary>} />
+                <Route path="/tags" element={<ErrorBoundary><TagsPage /></ErrorBoundary>} />
+                <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+              </Routes>
+            </AppLayout>
+          } />
+        </Routes>
       </ErrorBoundary>
     </BrowserRouter>
   );

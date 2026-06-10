@@ -6,7 +6,7 @@ type Language = 'zh' | 'en' | 'ja';
 type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 type GroupBy = 'none' | 'priority' | 'list';
-type FontSize = 'small' | 'default' | 'large' | 'xlarge';
+export type FontSize = 'small' | 'default' | 'large' | 'xlarge';
 
 interface SmartGroupVisibility {
   tomorrow: boolean;
@@ -19,8 +19,11 @@ export interface AdvancedGroupFilter {
   tagIds?: string[];
   titleRegex?: string;
   dateType?: 'due' | 'created';
+  dateMode?: 'absolute' | 'relative';
   dateFrom?: string;
   dateTo?: string;
+  datePastDays?: number;
+  dateFutureDays?: number;
   priorities?: number[];
 }
 
@@ -29,6 +32,7 @@ export interface AdvancedGroup {
   name: string;
   color: string;
   icon: string;
+  isPinned?: boolean;
   filters: AdvancedGroupFilter;
 }
 
@@ -45,6 +49,8 @@ interface AppState {
   fontSize: FontSize;
   smartGroupVisibility: SmartGroupVisibility;
   advancedGroups: AdvancedGroup[];
+  groupsPanelWidth: number;
+  detailPanelWidth: number;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (lang: Language) => void;
@@ -60,6 +66,8 @@ interface AppState {
   addAdvancedGroup: (group: AdvancedGroup) => void;
   updateAdvancedGroup: (group: AdvancedGroup) => void;
   deleteAdvancedGroup: (id: string) => void;
+  setGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
+  setDetailPanelWidth: (width: number | ((prev: number) => number)) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -77,6 +85,8 @@ export const useAppStore = create<AppState>()(
       fontSize: 'default',
       smartGroupVisibility: { tomorrow: true, recent7days: true, thisMonth: true },
       advancedGroups: [],
+      groupsPanelWidth: 192,
+      detailPanelWidth: 400,
 
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
@@ -100,6 +110,14 @@ export const useAppStore = create<AppState>()(
         })),
       deleteAdvancedGroup: (id) =>
         set((state) => ({ advancedGroups: state.advancedGroups.filter((g) => g.id !== id) })),
+      setGroupsPanelWidth: (width) =>
+        set((state) => ({
+          groupsPanelWidth: typeof width === 'function' ? width(state.groupsPanelWidth) : width,
+        })),
+      setDetailPanelWidth: (width) =>
+        set((state) => ({
+          detailPanelWidth: typeof width === 'function' ? width(state.detailPanelWidth) : width,
+        })),
     }),
     {
       name: 'mindless-app-settings',
@@ -113,6 +131,8 @@ export const useAppStore = create<AppState>()(
         fontSize: state.fontSize,
         smartGroupVisibility: state.smartGroupVisibility,
         advancedGroups: state.advancedGroups,
+        groupsPanelWidth: state.groupsPanelWidth,
+        detailPanelWidth: state.detailPanelWidth,
       }),
     }
   )

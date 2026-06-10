@@ -91,6 +91,8 @@ export async function updateList(id: string, params: {
   color?: string;
   icon?: string;
   sortOrder?: number;
+  isPinned?: boolean;
+  isArchived?: boolean;
 }): Promise<List> {
   return await invoke<List>('update_list', { id, ...params });
 }

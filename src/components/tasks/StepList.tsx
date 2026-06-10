@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, TrashIcon, CalendarIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
+  type DragEndEvent, type Modifier,
 } from '@dnd-kit/core';
 import {
   SortableContext, useSortable, verticalListSortingStrategy,
@@ -11,6 +11,11 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import DateTimePicker from '@/components/DateTimePicker';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+});
 
 interface Step {
   id: string;
@@ -346,7 +351,7 @@ export default function StepList({
       )}
 
       {onReorder ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
           <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             <div className="relative">
               {steps.map((step) => (

@@ -41,6 +41,8 @@ pub struct List {
     pub sort_order: f64,
     pub created_at: String,
     pub updated_at: String,
+    pub is_pinned: bool,
+    pub is_archived: bool,
 }
 
 // Tag model

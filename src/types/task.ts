@@ -86,6 +86,8 @@ export interface List {
   color: string;
   icon: string;
   sortOrder: number;
+  isPinned: boolean;
+  isArchived: boolean;
   createdAt: string;
   updatedAt: string;
 }

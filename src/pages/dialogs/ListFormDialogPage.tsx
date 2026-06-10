@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useCreateList, useUpdateList, useDeleteList } from '@/queries/useTaskQueries';
+import { useCreateList, useUpdateList, useDeleteList, useLists } from '@/queries/useTaskQueries';
 import EmojiPickerButton from '@/components/EmojiPickerButton';
 import type { List } from '@/types/task';
+import { emit } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+
+const COLOR_OPTIONS = [
+  '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
+  '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1',
+];
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   folder: '📁', inbox: '📥', star: '⭐', heart: '❤️',
@@ -17,22 +24,17 @@ function resolveIcon(icon?: string): string {
   return ICON_KEY_TO_EMOJI[icon] || '📁';
 }
 
-const COLOR_OPTIONS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
-  '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1',
-];
+const params = new URLSearchParams(window.location.search);
+const initialListId = params.get('listId');
 
-interface ListFormDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  list?: List | null;
-}
-
-export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialogProps) {
+export default function ListFormDialogPage() {
   const { t } = useTranslation('common');
+  const { data: allLists = [] } = useLists();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('📁');
   const [color, setColor] = useState('#3B82F6');
+  const [list, setList] = useState<List | null>(null);
+  const [loaded, setLoaded] = useState(!initialListId);
   const isEditing = !!list;
 
   const createList = useCreateList();
@@ -40,60 +42,71 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
   const deleteList = useDeleteList();
 
   useEffect(() => {
-    if (isOpen && list) {
-      setName(list.name);
-      setIcon(resolveIcon(list.icon));
-      setColor(list.color || '#3B82F6');
-    } else if (isOpen) {
-      setName('');
-      setIcon('📁');
-      setColor('#3B82F6');
+    if (initialListId && allLists.length > 0) {
+      const found = allLists.find(l => l.id === initialListId);
+      if (found) {
+        setList(found);
+        setName(found.name);
+        setIcon(resolveIcon(found.icon));
+        setColor(found.color || '#3B82F6');
+      }
+      setLoaded(true);
     }
-  }, [isOpen, list]);
+  }, [allLists]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (isEditing && list) {
-      updateList.mutate({ id: list.id, name: name.trim(), icon, color });
-    } else {
-      createList.mutate({ name: name.trim(), icon, color });
-    }
-    onClose();
-  };
-
-  const handleDelete = () => {
-    if (list && window.confirm(t('lists.delete_confirm'))) {
-      deleteList.mutate(list.id);
-      onClose();
+    try {
+      if (isEditing && list) {
+        await updateList.mutateAsync({ id: list.id, name: name.trim(), icon, color });
+      } else {
+        await createList.mutateAsync({ name: name.trim(), icon, color });
+      }
+      await emit('dialog:result', { action: 'submit' });
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error submitting:', error);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') onClose();
+  const handleDelete = async () => {
+    if (!list) return;
+    try {
+      await deleteList.mutateAsync(list.id);
+      await emit('dialog:result', { action: 'delete' });
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error deleting:', error);
+    }
   };
 
-  if (!isOpen) return null;
+  const handleClose = async () => {
+    try {
+      await getCurrentWindow().close();
+    } catch (error) {
+      console.error('Error closing:', error);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div
-        className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4"
-        onKeyDown={handleKeyDown}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {isEditing ? t('lists.edit_list') : t('lists.create_list')}
-          </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+    <div className="min-h-screen bg-white dark:bg-gray-800">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {isEditing ? t('lists.edit_list') : t('lists.create_list')}
+        </h2>
+        <button onClick={handleClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <XMarkIcon className="w-5 h-5 text-gray-500" />
+        </button>
+      </div>
 
+      {!loaded ? (
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
+        </div>
+      ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('lists.name')}
@@ -109,7 +122,6 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             />
           </div>
 
-          {/* Icon */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('lists.icon')}
@@ -117,7 +129,6 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             <EmojiPickerButton value={icon} onChange={setIcon} />
           </div>
 
-          {/* Color */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('lists.color')}
@@ -137,7 +148,6 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-4">
             {isEditing && (
               <button
@@ -151,7 +161,7 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             <div className="flex-1" />
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               {t('common.cancel')}
@@ -165,7 +175,7 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             </button>
           </div>
         </form>
-      </div>
+      )}
     </div>
   );
 }

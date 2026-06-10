@@ -9,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_positioner::init())
         .setup(|app| {
             let app_handle = app.handle();
             db::migrations::run_migrations(&app_handle)?;

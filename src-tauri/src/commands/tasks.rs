@@ -384,6 +384,8 @@ pub async fn get_lists(app: AppHandle) -> Result<Vec<List>, String> {
             sort_order: row.get(4)?,
             created_at: row.get(5)?,
             updated_at: row.get(6)?,
+            is_pinned: row.get::<_, i32>(7).unwrap_or(0) != 0,
+            is_archived: row.get::<_, i32>(8).unwrap_or(0) != 0,
         })
     }).map_err(|e| format!("Failed to query: {}", e))?;
 

@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, Inter, Avenir, Helvetica, Arial, sans-serif;
+  --font-family-text: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "微软雅黑", "Microsoft YaHei";
+  font-family: var(--font-family-text);
   line-height: 1.5;
   font-weight: 400;
 
@@ -37,40 +38,52 @@ body {
 
 /* ===== Milkdown editor overrides ===== */
 
-/* Remove default padding */
-.milkdown .ProseMirror { padding: 0 !important; }
+/* Match interface font family and inherit font size */
+.milkdown {
+  --crepe-font-default: var(--font-family-text);
+  --crepe-font-title: var(--font-family-text);
+  --crepe-font-code: monospace;
+}
 
-/* Headings */
-.milkdown h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
-.milkdown h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
-.milkdown h3 { font-size: 1.17em; font-weight: bold; margin: 1em 0; }
-.milkdown h4 { font-size: 1em; font-weight: bold; margin: 1.33em 0; }
-.milkdown h5 { font-size: 0.83em; font-weight: bold; margin: 1.67em 0; }
-.milkdown h6 { font-size: 0.67em; font-weight: bold; margin: 2.33em 0; }
+.milkdown .ProseMirror {
+  padding: 0 !important;
+}
+
+/* Use em units for headings so they scale with font size setting */
+/* .milkdown h1 { font-size: 2em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; }
+.milkdown h2 { font-size: 1.8em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; }
+.milkdown h3 { font-size: 1.6em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; }
+.milkdown h4 { font-size: 1.4em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; }
+.milkdown h5 { font-size: 1.2em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; }
+.milkdown h6 { font-size: 1em !important; font-weight: bold; margin: 0 !important; padding: 0; line-height: normal; } */
 
 /* Paragraph spacing */
-.milkdown p { margin: 0.5em 0; }
+/* .milkdown p { margin: 0.5em 0; }
+
+.milkdown :where(th, td) p {
+  padding: 0 !important;
+  margin: 0;
+}
+ */
 
 /* Blockquote */
-.milkdown blockquote {
-  border-left: 3px solid #d1d5db;
-  padding-left: 1em;
+/* .milkdown blockquote {
   margin-left: 0;
+  padding-left: 1.5ch !important;
   color: #6b7280;
 }
 .dark .milkdown blockquote {
-  border-left-color: #4b5563;
   color: #9ca3af;
-}
+} */
 
 /* Inline code */
-.milkdown code {
+/* .milkdown code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875em;
-}
+} */
 
 /* Code blocks */
-.milkdown pre {
+/* .milkdown pre {
   background-color: #f3f4f6;
   border-radius: 6px;
   padding: 0.75em 1em;
@@ -84,16 +97,129 @@ body {
   padding: 0;
 }
 
+.milkdown .milkdown-code-block .cm-gutters {
+  border-right: none;
+  background: var(--crepe-color-surface);
+}
+
+.milkdown .milkdown-code-block .cm-activeLineGutter {
+  background: transparent !important;
+} */
+
+/* Code block font size - inherit from document */
+/* .milkdown .milkdown-code-block .cm-editor {
+  font-size: inherit;
+}
+.milkdown .milkdown-code-block .cm-content {
+  font-size: inherit;
+}
+.milkdown .milkdown-code-block .cm-gutters {
+  font-size: inherit;
+}
+.milkdown .milkdown-code-block .milkdown-code-block-placeholder {
+  font-size: inherit;
+} */
+
+/* Slash menu - compact spacing */
+/* .milkdown .milkdown-slash-menu {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border: 1px solid #e5e7eb;
+}
+.dark .milkdown .milkdown-slash-menu {
+  background: #1f2937;
+  border-color: #374151;
+}
+.milkdown .milkdown-slash-menu .tab-group {
+  display: none;
+}
+.milkdown .milkdown-slash-menu .menu-groups {
+  padding: 4px 8px 8px;
+}
+.milkdown .milkdown-slash-menu .menu-groups .menu-group h6 {
+  display: none;
+}
+.milkdown .milkdown-slash-menu .menu-groups .menu-group li {
+  padding: 6px;
+  gap: 10px;
+}
+.milkdown .milkdown-slash-menu .menu-groups .menu-group + .menu-group::before {
+  margin: 0 6px;
+} */
+
 /* Lists */
-.milkdown ul { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
+/* .milkdown ul { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
 .milkdown ol { list-style-type: decimal; padding-left: 1.5em; margin: 0.5em 0; }
-.milkdown li { margin: 0.25em 0; }
+.milkdown li { margin: 0.25em 0; } */
+
+/* Crepe list items - fix indicator alignment for nesting */
+/* .milkdown .milkdown-list-item-block {
+  padding-left: 0;
+}
+.milkdown .milkdown-list-item-block > .list-item {
+  align-items: flex-start;
+}
+.milkdown .milkdown-list-item-block li {
+  gap: 0;
+}
+.milkdown .milkdown-list-item-block li .label-wrapper {
+  height: auto;
+  width: 24px;
+  min-width: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 0;
+  position: relative;
+  top: -2px;
+}
+.milkdown .milkdown-list-item-block li .label-wrapper svg,
+.milkdown .milkdown-list-item-block li .label-wrapper .checked,
+.milkdown .milkdown-list-item-block li .label-wrapper .unchecked {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.milkdown .milkdown-list-item-block li .label-wrapper .label {
+  height: auto;
+  padding: 0;
+  width: 24px;
+  text-align: right;
+}
+.milkdown .milkdown-list-item-block p {
+  margin: 0;
+  padding: 0;
+  line-height: normal;
+} */
 
 /* Tables */
-.milkdown table { border-collapse: collapse; width: 100%; }
+/* .milkdown table { border-collapse: collapse; width: 100%; }
 .milkdown th,
-.milkdown td { border: 1px solid #d1d5db; padding: 0.5em 0.75em; }
+.milkdown td { padding: 0.5em 0.75em; }
+.milkdown td p,
+.milkdown th p { margin: 0; padding: 0; line-height: normal; }
 .milkdown th { background-color: #f3f4f6; font-weight: 600; }
+
+.milkdown table :where(td, th){
+  border: unset !important;
+}
+
+.milkdown table tr[data-is-header] :where(th, td):first-of-type {
+  border-top-left-radius: 10px !important;
+}
+
+.milkdown table tr[data-is-header] :where(th, td):last-of-type {
+  border-top-right-radius: 10px !important;
+}
+.milkdown table tr {
+  border-bottom: 1px solid #d1d5db;
+}
+.milkdown table tr :where(td, th):not(:last-of-type) {
+  border-right: 1px solid #d1d5db !important;
+} */
+
+/*
 .dark .milkdown th { background-color: #374151; }
 .dark .milkdown th,
-.dark .milkdown td { border-color: #4b5563; }
+.dark .milkdown td { border-color: #4b5563; } */

@@ -5,6 +5,8 @@ import { getMarkdown, replaceAll } from '@milkdown/kit/utils'
 import { editorViewCtx } from '@milkdown/kit/core'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
+// import { useAppStore } from '@/stores/useAppStore'
+// import type {FontSize} from '@/stores/useAppStore'
 
 interface MilkdownEditorInnerProps {
   markdown: string
@@ -23,6 +25,7 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
       features: {
         [Crepe.Feature.Latex]: false,
         [Crepe.Feature.AI]: false,
+        [Crepe.Feature.ImageBlock]: false,
       },
       featureConfigs: {
         [Crepe.Feature.Placeholder]: {
@@ -84,13 +87,22 @@ interface MilkdownEditorProps {
 }
 
 export default function MilkdownEditor({ markdown, onChange, placeholder }: MilkdownEditorProps) {
+  // const { fontSize } = useAppStore()
+  // const fontSizeMap = new Map<FontSize, string>();
+  // fontSizeMap
+  // .set('small', 'text-sm')
+  // .set('default', 'text-sm')
+  // .set('large', 'text-sm')
+  // .set('xlarge', 'text-sm');
   return (
-    <MilkdownProvider>
-      <MilkdownEditorInner
-        markdown={markdown}
-        onChange={onChange}
-        placeholder={typeof placeholder === 'string' ? placeholder : undefined}
-      />
-    </MilkdownProvider>
+    <div className='text-sm'>
+      <MilkdownProvider>
+        <MilkdownEditorInner
+          markdown={markdown}
+          onChange={onChange}
+          placeholder={typeof placeholder === 'string' ? placeholder : undefined}
+        />
+      </MilkdownProvider>
+    </div>
   )
 }

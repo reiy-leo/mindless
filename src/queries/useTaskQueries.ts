@@ -278,7 +278,7 @@ export function useUpdateList() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, ...params }: { id: string; name?: string; color?: string; icon?: string; sortOrder?: number }) =>
+    mutationFn: ({ id, ...params }: { id: string; name?: string; color?: string; icon?: string; sortOrder?: number; isPinned?: boolean; isArchived?: boolean }) =>
       api.updateList(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lists'] });

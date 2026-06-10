@@ -3,11 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { PlusIcon, TrashIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
+  type DragEndEvent, type Modifier,
 } from '@dnd-kit/core';
 import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+});
 import { CSS } from '@dnd-kit/utilities';
 
 interface Subtask {
@@ -292,7 +297,11 @@ export default function SubtaskList({
   const [showAddInput, setShowAddInput] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
   );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -358,7 +367,7 @@ export default function SubtaskList({
       {subtasks.length === 0 && !showAddInput ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('tasks.subtasks.empty')}</p>
       ) : onReorder ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
           <SortableContext items={subtasks.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2 relative">
               {subtasks.map((subtask) => (
