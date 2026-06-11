@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -241,6 +241,46 @@ export async function getTodayCheckins(): Promise<TodayCheckinInfo[]> {
 
 export async function refreshHabitStreaks(): Promise<void> {
   return await invoke<void>('refresh_habit_streaks');
+}
+
+export async function getHabitGroups(): Promise<HabitGroup[]> {
+  return await invoke<HabitGroup[]>('get_habit_groups');
+}
+
+export async function createHabitGroup(params: {
+  name: string;
+  icon?: string;
+  color?: string;
+}): Promise<HabitGroup> {
+  return await invoke<HabitGroup>('create_habit_group', params);
+}
+
+export async function updateHabitGroup(id: string, params: {
+  name?: string;
+  icon?: string;
+  color?: string;
+}): Promise<HabitGroup> {
+  return await invoke<HabitGroup>('update_habit_group', { id, ...params });
+}
+
+export async function deleteHabitGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_habit_group', { id });
+}
+
+export async function getArchivedHabits(): Promise<Habit[]> {
+  return await invoke<Habit[]>('get_archived_habits');
+}
+
+export async function unarchiveHabit(id: string): Promise<Habit> {
+  return await invoke<Habit>('unarchive_habit', { id });
+}
+
+export async function hardDeleteHabit(id: string): Promise<void> {
+  return await invoke<void>('hard_delete_habit', { id });
+}
+
+export async function moveHabitToGroup(habitId: string, groupId: string | null): Promise<void> {
+  return await invoke<void>('move_habit_to_group', { habitId, groupId });
 }
 
 // Countdown APIs

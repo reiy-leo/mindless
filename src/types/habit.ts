@@ -66,3 +66,13 @@ export interface TodayCheckinInfo {
   habitId: string;
   value: number;
 }
+
+export interface HabitGroup {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}

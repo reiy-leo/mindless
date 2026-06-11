@@ -105,3 +105,82 @@ export function useRefreshStreaks() {
     },
   });
 }
+
+export function useHabitGroups() {
+  return useQuery({
+    queryKey: ['habit-groups'],
+    queryFn: () => api.getHabitGroups(),
+  });
+}
+
+export function useCreateHabitGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { name: string; icon?: string; color?: string }) =>
+      api.createHabitGroup(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-groups'] });
+    },
+  });
+}
+
+export function useUpdateHabitGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...params }: { id: string; name?: string; icon?: string; color?: string }) =>
+      api.updateHabitGroup(id, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-groups'] });
+    },
+  });
+}
+
+export function useDeleteHabitGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteHabitGroup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}
+
+export function useArchivedHabits() {
+  return useQuery({
+    queryKey: ['archived-habits'],
+    queryFn: () => api.getArchivedHabits(),
+  });
+}
+
+export function useUnarchiveHabit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.unarchiveHabit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-habits'] });
+    },
+  });
+}
+
+export function useHardDeleteHabit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.hardDeleteHabit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['archived-habits'] });
+    },
+  });
+}
+
+export function useMoveHabitToGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ habitId, groupId }: { habitId: string; groupId: string | null }) =>
+      api.moveHabitToGroup(habitId, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}
