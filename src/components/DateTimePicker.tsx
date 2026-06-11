@@ -10,6 +10,7 @@ interface DateTimePickerProps {
   onChange: (date?: string, time?: string) => void;
   events?: CalendarEvent[];
   showTime?: boolean;   // default true
+  inline?: boolean;     // default false - show calendar directly without popover
 }
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -31,9 +32,10 @@ export default function DateTimePicker({
   onChange,
   events = [],
   showTime = true,
+  inline = false,
 }: DateTimePickerProps) {
   const { t } = useTranslation('common');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(inline);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Current view month (for calendar navigation)
@@ -148,6 +150,155 @@ export default function DateTimePicker({
     }
   };
 
+  const calendarContent = (
+    <>
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-2">
+        <button
+          type="button"
+          onClick={handlePrevMonth}
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {viewYear} / {String(viewMonth).padStart(2, '0')}
+        </span>
+        <button
+          type="button"
+          onClick={handleNextMonth}
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+      </div>
+
+      {/* Weekday header */}
+      <div className="grid grid-cols-7 mb-1">
+        {WEEKDAY_KEYS.map((key) => (
+          <div key={key} className="text-center text-xs text-gray-500 dark:text-gray-400 py-1">
+            {t(`habits.days.${key}`)}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7">
+        {calendarDays.map((cell, idx) => {
+          const isSelected = cell.dateStr === date;
+          const isToday = cell.dateStr === todayStr;
+          const cellEvents = eventsByDate[cell.dateStr] || [];
+
+          // Get lunar day text (only for current month to save perf)
+          const lunarStr = cell.inMonth
+            ? getLunarDayStr(...cell.dateStr.split('-').map(Number) as [number, number, number])
+            : '';
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSelectDate(cell.dateStr)}
+              className={`
+                relative flex flex-col items-center justify-start py-1 text-xs rounded transition-colors
+                ${isSelected ? 'bg-blue-500 text-white' : ''}
+                ${!isSelected && isToday ? 'ring-1 ring-blue-400 dark:ring-blue-500' : ''}
+                ${!isSelected && !isToday && cell.inMonth ? 'text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700' : ''}
+                ${!cell.inMonth ? 'text-gray-300 dark:text-gray-600' : ''}
+              `}
+            >
+              <span className={`text-sm leading-none ${isSelected ? 'text-white' : ''}`}>
+                {cell.day}
+              </span>
+              {lunarStr && (
+                <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
+                  isSelected
+                    ? 'text-blue-100'
+                    : cell.inMonth
+                      ? 'text-gray-400 dark:text-gray-500'
+                      : 'text-gray-200 dark:text-gray-700'
+                }`}>
+                  {lunarStr}
+                </span>
+              )}
+              {/* Event dots */}
+              {cellEvents.length > 0 && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  {cellEvents.slice(0, 2).map((ev, i) => (
+                    <span
+                      key={i}
+                      className="w-1 h-1 rounded-full"
+                      style={{ backgroundColor: ev.color || '#3B82F6' }}
+                    />
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected date lunar info */}
+      {selectedLunarInfo && (
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="font-medium">{selectedLunarInfo.yearStr}</span>
+            {' '}
+            {selectedLunarInfo.monthStr}
+            {selectedLunarInfo.dayStr}
+            {selectedLunarInfo.festivals.length > 0 && (
+              <span className="ml-1 text-blue-500">
+                {selectedLunarInfo.festivals.join(', ')}
+              </span>
+            )}
+            {selectedLunarInfo.solarTerms.length > 0 && (
+              <span className="ml-1 text-green-500">
+                {selectedLunarInfo.solarTerms.join(', ')}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* Time picker */}
+      {showTime && (
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            {t('tasks.due_time')}
+          </label>
+          <input
+            type="time"
+            value={time || ''}
+            onChange={(e) => onChange(date, e.target.value || undefined)}
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
+
+      {/* Clear button */}
+      {!inline && (
+        <button
+          type="button"
+          onClick={() => {
+            onChange(undefined, undefined);
+            setOpen(false);
+          }}
+          className="mt-2 w-full text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors py-1"
+        >
+          {t('common.delete')}
+        </button>
+      )}
+    </>
+  );
+
+  if (inline) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-3">
+        {calendarContent}
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} className="relative inline-block">
       {/* Trigger button */}
@@ -166,140 +317,7 @@ export default function DateTimePicker({
       {/* Popover */}
       {open && (
         <div className="absolute z-50 mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
-          {/* Month navigation */}
-          <div className="flex items-center justify-between mb-2">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {viewYear} / {String(viewMonth).padStart(2, '0')}
-            </span>
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
-
-          {/* Weekday header */}
-          <div className="grid grid-cols-7 mb-1">
-            {WEEKDAY_KEYS.map((key) => (
-              <div key={key} className="text-center text-xs text-gray-500 dark:text-gray-400 py-1">
-                {t(`habits.days.${key}`)}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7">
-            {calendarDays.map((cell, idx) => {
-              const isSelected = cell.dateStr === date;
-              const isToday = cell.dateStr === todayStr;
-              const cellEvents = eventsByDate[cell.dateStr] || [];
-
-              // Get lunar day text (only for current month to save perf)
-              const lunarStr = cell.inMonth
-                ? getLunarDayStr(...cell.dateStr.split('-').map(Number) as [number, number, number])
-                : '';
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectDate(cell.dateStr)}
-                  className={`
-                    relative flex flex-col items-center justify-start py-1 text-xs rounded transition-colors
-                    ${isSelected ? 'bg-blue-500 text-white' : ''}
-                    ${!isSelected && isToday ? 'ring-1 ring-blue-400 dark:ring-blue-500' : ''}
-                    ${!isSelected && !isToday && cell.inMonth ? 'text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700' : ''}
-                    ${!cell.inMonth ? 'text-gray-300 dark:text-gray-600' : ''}
-                  `}
-                >
-                  <span className={`text-sm leading-none ${isSelected ? 'text-white' : ''}`}>
-                    {cell.day}
-                  </span>
-                  {lunarStr && (
-                    <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
-                      isSelected
-                        ? 'text-blue-100'
-                        : cell.inMonth
-                          ? 'text-gray-400 dark:text-gray-500'
-                          : 'text-gray-200 dark:text-gray-700'
-                    }`}>
-                      {lunarStr}
-                    </span>
-                  )}
-                  {/* Event dots */}
-                  {cellEvents.length > 0 && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
-                      {cellEvents.slice(0, 2).map((ev, i) => (
-                        <span
-                          key={i}
-                          className="w-1 h-1 rounded-full"
-                          style={{ backgroundColor: ev.color || '#3B82F6' }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected date lunar info */}
-          {selectedLunarInfo && (
-            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                <span className="font-medium">{selectedLunarInfo.yearStr}</span>
-                {' '}
-                {selectedLunarInfo.monthStr}
-                {selectedLunarInfo.dayStr}
-                {selectedLunarInfo.festivals.length > 0 && (
-                  <span className="ml-1 text-blue-500">
-                    {selectedLunarInfo.festivals.join(', ')}
-                  </span>
-                )}
-                {selectedLunarInfo.solarTerms.length > 0 && (
-                  <span className="ml-1 text-green-500">
-                    {selectedLunarInfo.solarTerms.join(', ')}
-                  </span>
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* Time picker */}
-          {showTime && (
-            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                {t('tasks.due_time')}
-              </label>
-              <input
-                type="time"
-                value={time || ''}
-                onChange={(e) => onChange(date, e.target.value || undefined)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          {/* Clear button */}
-          <button
-            type="button"
-            onClick={() => {
-              onChange(undefined, undefined);
-              setOpen(false);
-            }}
-            className="mt-2 w-full text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors py-1"
-          >
-            {t('common.delete')}
-          </button>
+          {calendarContent}
         </div>
       )}
     </div>

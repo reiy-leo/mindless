@@ -9,8 +9,9 @@ import {
 import {
   useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit,
   useCheckInHabit, useHabitLogs, useTodayCheckinMap, useRefreshStreaks,
-  useHabitGroups, useCreateHabitGroup, useDeleteHabitGroup,
+  useHabitGroups, useCreateHabitGroup, useUpdateHabitGroup,
   useArchivedHabits, useUnarchiveHabit, useHardDeleteHabit,
+  useDissolveHabitGroup, useDeleteHabitGroupWithHabits,
 } from '@/queries/useHabitQueries';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
@@ -18,7 +19,7 @@ import Select from '@/components/Select';
 import { ResizeHandle } from '@/components/ResizeHandle';
 import { getLunarDayStr } from '@/lib/lunar';
 import { useAppStore } from '@/stores/useAppStore';
-import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
+import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
 // ==================== Due Today Helper ====================
 function isHabitDueToday(habit: Habit): boolean {
@@ -1058,6 +1059,11 @@ export default function HabitsPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: HabitGroup } | null>(null);
+  const [editingGroup, setEditingGroup] = useState<HabitGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupIcon, setEditGroupIcon] = useState('📁');
+  const [editGroupColor, setEditGroupColor] = useState('#8B5CF6');
 
   const { selectedHabitGroupId, setSelectedHabitGroupId, habitGroupsPanelWidth, setHabitGroupsPanelWidth } = useAppStore();
 
@@ -1070,7 +1076,9 @@ export default function HabitsPage() {
   const checkIn = useCheckInHabit();
   const refreshStreaks = useRefreshStreaks();
   const createGroup = useCreateHabitGroup();
-  const deleteGroup = useDeleteHabitGroup();
+  const updateGroup = useUpdateHabitGroup();
+  const dissolveGroup = useDissolveHabitGroup();
+  const deleteGroupWithHabits = useDeleteHabitGroupWithHabits();
   const unarchive = useUnarchiveHabit();
   const hardDelete = useHardDeleteHabit();
 
@@ -1112,20 +1120,64 @@ export default function HabitsPage() {
     }
   };
 
-  const handleDeleteGroup = (id: string) => {
-    if (window.confirm(t('habits.groups.delete_confirm'))) {
-      deleteGroup.mutate(id);
-      if (selectedHabitGroupId === id) {
-        setSelectedHabitGroupId('all');
-      }
-    }
-  };
-
   const handleHardDelete = (id: string) => {
     if (window.confirm(t('habits.hard_delete_confirm'))) {
       hardDelete.mutate(id);
     }
   };
+
+  const handleGroupContextMenu = (e: React.MouseEvent, group: HabitGroup) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, group });
+  };
+
+  const handleDissolveGroup = (group: HabitGroup) => {
+    if (window.confirm(t('habits.groups.dissolve_confirm'))) {
+      dissolveGroup.mutate(group.id);
+      if (selectedHabitGroupId === group.id) {
+        setSelectedHabitGroupId('all');
+      }
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteGroupWithHabits = (group: HabitGroup) => {
+    if (window.confirm(t('habits.groups.delete_with_habits_confirm'))) {
+      deleteGroupWithHabits.mutate(group.id);
+      if (selectedHabitGroupId === group.id) {
+        setSelectedHabitGroupId('all');
+      }
+    }
+    setContextMenu(null);
+  };
+
+  const handleOpenEditGroup = (group: HabitGroup) => {
+    setEditingGroup(group);
+    setEditGroupName(group.name);
+    setEditGroupIcon(group.icon || '📁');
+    setEditGroupColor(group.color || '#8B5CF6');
+    setContextMenu(null);
+  };
+
+  const handleSaveEditGroup = () => {
+    if (editingGroup && editGroupName.trim()) {
+      updateGroup.mutate({
+        id: editingGroup.id,
+        name: editGroupName.trim(),
+        icon: editGroupIcon,
+        color: editGroupColor,
+      });
+      setEditingGroup(null);
+    }
+  };
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
 
   // Smart groups config
   const smartGroups = useMemo(() => [
@@ -1251,6 +1303,7 @@ export default function HabitsPage() {
                 <div key={group.id} className="relative group/item">
                   <button
                     onClick={() => setSelectedHabitGroupId(group.id)}
+                    onContextMenu={(e) => handleGroupContextMenu(e, group)}
                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
                       isActive
                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
@@ -1260,12 +1313,6 @@ export default function HabitsPage() {
                     <span className="text-base">{group.icon || '📁'}</span>
                     <span className="flex-1 truncate">{group.name}</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{groupCounts[group.id] || 0}</span>
-                    <span
-                      onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id); }}
-                      className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                    >
-                      <TrashIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                    </span>
                   </button>
                 </div>
               );
@@ -1402,7 +1449,113 @@ export default function HabitsPage() {
           onSubmit={editingHabit ? handleUpdate : handleCreate}
           habit={editingHabit}
         />
+
+        {/* Edit Group Dialog */}
+        {editingGroup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setEditingGroup(null)} />
+            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm mx-4">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('habits.groups.edit_group')}</h2>
+                <button onClick={() => setEditingGroup(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <XMarkIcon className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.habit_name')}</label>
+                  <input
+                    type="text"
+                    value={editGroupName}
+                    onChange={(e) => setEditGroupName(e.target.value)}
+                    autoFocus
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.icon')}</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['📁', '⭐', '❤️', '🔥', '📖', '💪', '🌙', '☀️', '🍃', '🎯', '💼', '🏠'].map((ic) => (
+                      <button
+                        key={ic}
+                        type="button"
+                        onClick={() => setEditGroupIcon(ic)}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
+                          editGroupIcon === ic ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {ic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.color')}</label>
+                  <div className="flex gap-2">
+                    {['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setEditGroupColor(c)}
+                        className={`w-7 h-7 rounded-full transition-all ${editGroupColor === c ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' : ''}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingGroup(null)}
+                    className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEditGroup}
+                    disabled={!editGroupName.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {t('common.save')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[160px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={() => handleOpenEditGroup(contextMenu.group)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <PencilIcon className="w-4 h-4" />
+            {t('habits.groups.edit_group')}
+          </button>
+          <button
+            onClick={() => handleDissolveGroup(contextMenu.group)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <ArrowUturnLeftIcon className="w-4 h-4" />
+            {t('habits.groups.dissolve')}
+          </button>
+          <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+          <button
+            onClick={() => handleDeleteGroupWithHabits(contextMenu.group)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <TrashIcon className="w-4 h-4" />
+            {t('habits.groups.delete_with_habits')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

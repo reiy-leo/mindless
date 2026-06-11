@@ -64,7 +64,7 @@ pub async fn update_list(
     let conn = get_db(&app)?;
 
     // Prevent updating seed lists
-    let seed_ids = ["inbox", "today", "next7days", "eisenhower"];
+    let seed_ids = ["inbox", "today", "next7days"];
     if seed_ids.contains(&id.as_str()) {
         return Err("Cannot modify a built-in list".to_string());
     }

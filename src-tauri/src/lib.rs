@@ -67,6 +67,8 @@ pub fn run() {
             commands::unarchive_habit,
             commands::hard_delete_habit,
             commands::move_habit_to_group,
+            commands::dissolve_habit_group,
+            commands::delete_habit_group_with_habits,
             // Countdowns
             commands::get_countdowns,
             commands::get_countdown_by_id,

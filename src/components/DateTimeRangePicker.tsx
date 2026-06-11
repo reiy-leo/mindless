@@ -11,6 +11,7 @@ interface DateTimeRangePickerProps {
   endTime?: string;
   onChange: (startDate?: string, startTime?: string, endDate?: string, endTime?: string) => void;
   events?: CalendarEvent[];
+  inline?: boolean;     // default false - show calendar directly without popover
 }
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -67,18 +68,16 @@ export default function DateTimeRangePicker({
   endTime,
   onChange,
   events = [],
+  inline = false,
 }: DateTimeRangePickerProps) {
   const { t } = useTranslation('common');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(inline);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // View month for the left calendar
   const initDate = startDate ? new Date(startDate + 'T00:00:00') : new Date();
   const [viewYear, setViewYear] = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth() + 1);
-
-  // Which end is being picked: 'start' or 'end'
-  const [pickingEnd, setPickingEnd] = useState(false);
 
   useEffect(() => {
     if (startDate) {
@@ -133,21 +132,24 @@ export default function DateTimeRangePicker({
   }, [endDate]);
 
   const handleSelectDate = (dateStr: string) => {
-    if (!pickingEnd) {
-      // Picking start
-      onChange(dateStr, startTime, endDate && dateStr <= endDate ? endDate : undefined, endDate && dateStr <= endDate ? endTime : undefined);
-      if (endDate && dateStr <= endDate) {
-        setPickingEnd(true);
-      }
-    } else {
-      // Picking end
-      if (dateStr < (startDate || '')) {
-        // If end < start, swap
+    if (!startDate) {
+      // No start date yet, set as start
+      onChange(dateStr, startTime, endDate, endTime);
+    } else if (!endDate) {
+      // Has start but no end
+      if (dateStr < startDate) {
+        // Clicked before start, swap
         onChange(dateStr, startTime, startDate, endTime);
+      } else if (dateStr === startDate) {
+        // Clicked same date, do nothing
+        return;
       } else {
+        // Clicked after start, set as end
         onChange(startDate, startTime, dateStr, endTime);
       }
-      setPickingEnd(false);
+    } else {
+      // Has both start and end, reset and set new start
+      onChange(dateStr, startTime, undefined, undefined);
     }
   };
 
@@ -236,6 +238,85 @@ export default function DateTimeRangePicker({
     </div>
   );
 
+  const calendarContent = (
+    <>
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={handlePrevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {viewYear} / {String(viewMonth).padStart(2, '0')}
+        </span>
+        <button type="button" onClick={handleNextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+      </div>
+
+      {/* Two calendars side by side */}
+      <div className="grid grid-cols-2 gap-3">
+        {renderCalendar(leftDays, viewYear, viewMonth)}
+        {renderCalendar(rightDays, rightYear, rightMonth)}
+      </div>
+
+      {/* Lunar summary */}
+      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
+        <div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.range_start')}: </span>
+          {startLunar && (
+            <span className="text-xs text-gray-600 dark:text-gray-300">
+              {startLunar.yearStr} {startLunar.monthStr}{startLunar.dayStr}
+              {startLunar.festivals.length > 0 && <span className="ml-1 text-blue-500">{startLunar.festivals[0]}</span>}
+            </span>
+          )}
+        </div>
+        <div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.range_end')}: </span>
+          {endLunar && (
+            <span className="text-xs text-gray-600 dark:text-gray-300">
+              {endLunar.yearStr} {endLunar.monthStr}{endLunar.dayStr}
+              {endLunar.festivals.length > 0 && <span className="ml-1 text-blue-500">{endLunar.festivals[0]}</span>}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Time pickers */}
+      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            {t('tasks.range_start')} {t('tasks.due_time')}
+          </label>
+          <input
+            type="time"
+            value={startTime || ''}
+            onChange={(e) => onChange(startDate, e.target.value || undefined, endDate, endTime)}
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            {t('tasks.range_end')} {t('tasks.due_time')}
+          </label>
+          <input
+            type="time"
+            value={endTime || ''}
+            onChange={(e) => onChange(startDate, startTime, endDate, e.target.value || undefined)}
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-3">
+        {calendarContent}
+      </div>
+    );
+  }
+
   const triggerText = startDate || endDate
     ? `${startDate ? formatDisplayDate(startDate) : '...'}${startTime ? ` ${startTime}` : ''} \u2192 ${endDate ? formatDisplayDate(endDate) : '...'}${endTime ? ` ${endTime}` : ''}`
     : t('tasks.date_placeholder');
@@ -257,86 +338,7 @@ export default function DateTimeRangePicker({
       {/* Popover */}
       {open && (
         <div className="absolute z-50 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3" style={{ minWidth: '560px', maxWidth: '620px' }}>
-          {/* Month navigation + picking indicator */}
-          <div className="flex items-center justify-between mb-2">
-            <button type="button" onClick={handlePrevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPickingEnd(false)}
-                className={`text-xs px-2 py-1 rounded ${!pickingEnd ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                {t('tasks.range_start')}
-              </button>
-              <span className="text-gray-400 dark:text-gray-500">&rarr;</span>
-              <button
-                type="button"
-                onClick={() => setPickingEnd(true)}
-                className={`text-xs px-2 py-1 rounded ${pickingEnd ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                {t('tasks.range_end')}
-              </button>
-            </div>
-            <button type="button" onClick={handleNextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
-
-          {/* Two calendars side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            {renderCalendar(leftDays, viewYear, viewMonth)}
-            {renderCalendar(rightDays, rightYear, rightMonth)}
-          </div>
-
-          {/* Lunar summary */}
-          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.range_start')}: </span>
-              {startLunar && (
-                <span className="text-xs text-gray-600 dark:text-gray-300">
-                  {startLunar.yearStr} {startLunar.monthStr}{startLunar.dayStr}
-                  {startLunar.festivals.length > 0 && <span className="ml-1 text-blue-500">{startLunar.festivals[0]}</span>}
-                </span>
-              )}
-            </div>
-            <div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.range_end')}: </span>
-              {endLunar && (
-                <span className="text-xs text-gray-600 dark:text-gray-300">
-                  {endLunar.yearStr} {endLunar.monthStr}{endLunar.dayStr}
-                  {endLunar.festivals.length > 0 && <span className="ml-1 text-blue-500">{endLunar.festivals[0]}</span>}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Time pickers */}
-          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                {t('tasks.range_start')} {t('tasks.due_time')}
-              </label>
-              <input
-                type="time"
-                value={startTime || ''}
-                onChange={(e) => onChange(startDate, e.target.value || undefined, endDate, endTime)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                {t('tasks.range_end')} {t('tasks.due_time')}
-              </label>
-              <input
-                type="time"
-                value={endTime || ''}
-                onChange={(e) => onChange(startDate, startTime, endDate, e.target.value || undefined)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+          {calendarContent}
         </div>
       )}
     </div>

@@ -954,3 +954,27 @@ pub async fn move_habit_to_group(app: AppHandle, habit_id: String, group_id: Opt
     ).map_err(|e| format!("Failed to move habit to group: {}", e))?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn dissolve_habit_group(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "UPDATE habits SET group_id = NULL, updated_at = datetime('now') WHERE group_id = ?1",
+        [&id],
+    ).map_err(|e| format!("Failed to unassign habits: {}", e))?;
+    conn.execute("DELETE FROM habit_groups WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete habit group: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_habit_group_with_habits(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "DELETE FROM habits WHERE group_id = ?1",
+        [&id],
+    ).map_err(|e| format!("Failed to delete habits: {}", e))?;
+    conn.execute("DELETE FROM habit_groups WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete habit group: {}", e))?;
+    Ok(())
+}

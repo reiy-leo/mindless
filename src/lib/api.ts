@@ -283,6 +283,14 @@ export async function moveHabitToGroup(habitId: string, groupId: string | null):
   return await invoke<void>('move_habit_to_group', { habitId, groupId });
 }
 
+export async function dissolveHabitGroup(id: string): Promise<void> {
+  return await invoke<void>('dissolve_habit_group', { id });
+}
+
+export async function deleteHabitGroupWithHabits(id: string): Promise<void> {
+  return await invoke<void>('delete_habit_group_with_habits', { id });
+}
+
 // Countdown APIs
 export async function getCountdowns(): Promise<Countdown[]> {
   return await invoke<Countdown[]>('get_countdowns');

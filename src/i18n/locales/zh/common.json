@@ -312,9 +312,14 @@
       "archived": "已归档",
       "deleted": "已删除",
       "new_group": "新建习惯组",
+      "edit_group": "编辑习惯组",
       "rename": "重命名",
+      "dissolve": "解散",
+      "dissolve_confirm": "确定解散这个习惯组吗？组内的习惯将变为未分组状态。",
       "delete_group": "删除组",
-      "delete_confirm": "确定删除这个习惯组吗？组内的习惯不会被删除。"
+      "delete_confirm": "确定删除这个习惯组吗？组内的习惯不会被删除。",
+      "delete_with_habits": "删除组及习惯",
+      "delete_with_habits_confirm": "确定删除这个习惯组及组内所有习惯吗？此操作不可撤销。"
     },
     "unarchive": "恢复",
     "hard_delete": "永久删除",

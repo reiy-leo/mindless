@@ -184,3 +184,25 @@ export function useMoveHabitToGroup() {
     },
   });
 }
+
+export function useDissolveHabitGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.dissolveHabitGroup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}
+
+export function useDeleteHabitGroupWithHabits() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteHabitGroupWithHabits(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}

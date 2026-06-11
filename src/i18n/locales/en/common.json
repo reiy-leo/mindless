@@ -311,9 +311,14 @@
       "archived": "Archived",
       "deleted": "Deleted",
       "new_group": "New Group",
+      "edit_group": "Edit Group",
       "rename": "Rename",
+      "dissolve": "Dissolve",
+      "dissolve_confirm": "Dissolve this group? Habits in it will become ungrouped.",
       "delete_group": "Delete Group",
-      "delete_confirm": "Delete this habit group? Habits in it will not be deleted."
+      "delete_confirm": "Delete this habit group? Habits in it will not be deleted.",
+      "delete_with_habits": "Delete Group & Habits",
+      "delete_with_habits_confirm": "Delete this group and all habits in it? This cannot be undone."
     },
     "unarchive": "Restore",
     "hard_delete": "Delete Permanently",
