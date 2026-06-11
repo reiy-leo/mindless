@@ -1,7 +1,7 @@
 use tauri::AppHandle;
 use uuid::Uuid;
 use chrono::Datelike;
-use crate::db::models::{Habit, HabitLog};
+use crate::db::models::{Habit, HabitLog, HabitGroup};
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
@@ -40,6 +40,18 @@ fn row_to_habit_log(row: &rusqlite::Row) -> rusqlite::Result<HabitLog> {
         completed: row.get::<_, i32>(4)? != 0,
         value: row.get(5)?,
         note: row.get(6)?,
+    })
+}
+
+fn row_to_habit_group(row: &rusqlite::Row) -> rusqlite::Result<HabitGroup> {
+    Ok(HabitGroup {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        icon: row.get(2)?,
+        color: row.get(3)?,
+        sort_order: row.get(4)?,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
     })
 }
 
@@ -800,4 +812,145 @@ pub async fn get_today_checkins(app: AppHandle) -> Result<Vec<TodayCheckinInfo>,
 pub struct TodayCheckinInfo {
     pub habit_id: String,
     pub value: i32,
+}
+
+// ==================== Habit Group Commands ====================
+
+#[tauri::command]
+pub async fn get_habit_groups(app: AppHandle) -> Result<Vec<HabitGroup>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare("SELECT * FROM habit_groups ORDER BY sort_order ASC, created_at ASC")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let groups = stmt.query_map([], row_to_habit_group)
+        .map_err(|e| format!("Failed to query: {}", e))?;
+    let result: Result<Vec<_>, _> = groups.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn create_habit_group(
+    app: AppHandle,
+    name: String,
+    icon: Option<String>,
+    color: Option<String>,
+) -> Result<HabitGroup, String> {
+    let conn = get_db(&app)?;
+    let id = Uuid::new_v4().to_string();
+    let icon = icon.unwrap_or_else(|| "📁".to_string());
+    let color = color.unwrap_or_else(|| "#8B5CF6".to_string());
+
+    let max_order: f64 = conn.query_row(
+        "SELECT COALESCE(MAX(sort_order), -1) FROM habit_groups",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(-1.0);
+
+    conn.execute(
+        "INSERT INTO habit_groups (id, name, icon, color, sort_order) VALUES (?1, ?2, ?3, ?4, ?5)",
+        (&id, &name, &icon, &color, max_order + 1.0),
+    ).map_err(|e| format!("Failed to create habit group: {}", e))?;
+
+    let group = conn.query_row(
+        "SELECT * FROM habit_groups WHERE id = ?1",
+        [&id],
+        row_to_habit_group,
+    ).map_err(|e| format!("Failed to fetch created group: {}", e))?;
+
+    Ok(group)
+}
+
+#[tauri::command]
+pub async fn update_habit_group(
+    app: AppHandle,
+    id: String,
+    name: Option<String>,
+    icon: Option<String>,
+    color: Option<String>,
+) -> Result<HabitGroup, String> {
+    let conn = get_db(&app)?;
+
+    if let Some(n) = &name {
+        conn.execute("UPDATE habit_groups SET name = ?1, updated_at = datetime('now') WHERE id = ?2", (n, &id))
+            .map_err(|e| format!("Failed to update name: {}", e))?;
+    }
+    if let Some(i) = &icon {
+        conn.execute("UPDATE habit_groups SET icon = ?1, updated_at = datetime('now') WHERE id = ?2", (i, &id))
+            .map_err(|e| format!("Failed to update icon: {}", e))?;
+    }
+    if let Some(c) = &color {
+        conn.execute("UPDATE habit_groups SET color = ?1, updated_at = datetime('now') WHERE id = ?2", (c, &id))
+            .map_err(|e| format!("Failed to update color: {}", e))?;
+    }
+
+    let group = conn.query_row(
+        "SELECT * FROM habit_groups WHERE id = ?1",
+        [&id],
+        row_to_habit_group,
+    ).map_err(|e| format!("Failed to fetch updated group: {}", e))?;
+
+    Ok(group)
+}
+
+#[tauri::command]
+pub async fn delete_habit_group(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute("DELETE FROM habit_groups WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete habit group: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_archived_habits(app: AppHandle) -> Result<Vec<Habit>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare("SELECT * FROM habits WHERE archived_at IS NOT NULL ORDER BY archived_at DESC")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let habits = stmt.query_map([], row_to_habit)
+        .map_err(|e| format!("Failed to query: {}", e))?;
+    let result: Result<Vec<_>, _> = habits.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn unarchive_habit(app: AppHandle, id: String) -> Result<Habit, String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "UPDATE habits SET archived_at = NULL, updated_at = datetime('now') WHERE id = ?1",
+        [&id],
+    ).map_err(|e| format!("Failed to unarchive habit: {}", e))?;
+
+    let habit = conn.query_row(
+        "SELECT * FROM habits WHERE id = ?1",
+        [&id],
+        row_to_habit,
+    ).map_err(|e| format!("Failed to fetch unarchived habit: {}", e))?;
+
+    let _ = refresh_single_habit_streaks(&conn, &habit);
+
+    let habit = conn.query_row(
+        "SELECT * FROM habits WHERE id = ?1",
+        [&id],
+        row_to_habit,
+    ).map_err(|e| format!("Failed to re-fetch habit: {}", e))?;
+
+    Ok(habit)
+}
+
+#[tauri::command]
+pub async fn hard_delete_habit(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "DELETE FROM habits WHERE id = ?1 AND archived_at IS NOT NULL",
+        [&id],
+    ).map_err(|e| format!("Failed to hard delete habit: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn move_habit_to_group(app: AppHandle, habit_id: String, group_id: Option<String>) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "UPDATE habits SET group_id = ?1, updated_at = datetime('now') WHERE id = ?2",
+        (group_id, &habit_id),
+    ).map_err(|e| format!("Failed to move habit to group: {}", e))?;
+    Ok(())
 }
