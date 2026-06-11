@@ -186,6 +186,17 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_habit_logs_log_date ON habit_logs(log_date);
         CREATE INDEX IF NOT EXISTS idx_countdowns_target_date ON countdowns(target_date);
         CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(event_date);
+
+        CREATE TABLE IF NOT EXISTS habit_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            icon TEXT DEFAULT '📁',
+            color TEXT DEFAULT '#8B5CF6',
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_habit_groups_sort_order ON habit_groups(sort_order);
     "#;
 
     // Use rusqlite directly for migrations
@@ -201,7 +212,9 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN level INTEGER NOT NULL DEFAULT 0;");
             let _ = conn.execute_batch("ALTER TABLE lists ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
             let _ = conn.execute_batch("ALTER TABLE lists ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;");
-            
+            let _ = conn.execute_batch("ALTER TABLE habits ADD COLUMN group_id TEXT REFERENCES habit_groups(id) ON DELETE SET NULL;");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_habits_group_id ON habits(group_id);");
+
             // Update existing lists to have default values for new columns
             let _ = conn.execute_batch("UPDATE lists SET is_pinned = 0 WHERE is_pinned IS NULL;");
             let _ = conn.execute_batch("UPDATE lists SET is_archived = 0 WHERE is_archived IS NULL;");
