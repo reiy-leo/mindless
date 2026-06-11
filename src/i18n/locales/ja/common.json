@@ -291,7 +291,23 @@
     "refresh_streaks": "連続日数を更新",
     "missed": "未達成",
     "not_due": "対象外",
-    "missed_count": "今月 {{count}} 日未達成"
+    "missed_count": "今月 {{count}} 日未達成",
+    "groups": {
+      "title": "習慣グループ",
+      "all": "すべて",
+      "week": "週表示",
+      "archived": "アーカイブ",
+      "deleted": "削除済み",
+      "new_group": "新規グループ",
+      "rename": "名前変更",
+      "delete_group": "グループ削除",
+      "delete_confirm": "この習慣グループを削除しますか？グループ内の習慣は削除されません。"
+    },
+    "unarchive": "復元",
+    "hard_delete": "完全に削除",
+    "hard_delete_confirm": "この習慣を完全に削除しますか？この操作は取り消せません。",
+    "no_archived": "アーカイブされた習慣はありません",
+    "no_deleted": "削除された習慣は復元できません"
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",

@@ -34,7 +34,8 @@
     "loading": "Loading...",
     "empty": "No data",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "clear": "Clear"
   },
   "navigation": {
     "home": "Home",
@@ -148,6 +149,17 @@
     "lunar_date": "Lunar",
     "range_start": "Start",
     "range_end": "End",
+    "date_tab": "Date",
+    "range_tab": "Time Range",
+    "yesterday": "Yesterday",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "next_week": "Next Week",
+    "two_days": "2 Days",
+    "week": "1 Week",
+    "month": "1 Month",
+    "year": "1 Year",
+    "all_day": "All Day",
     "views": {
       "list": "List",
       "calendar": "Calendar",
@@ -291,7 +303,23 @@
     "refresh_streaks": "Refresh streaks",
     "missed": "Missed",
     "not_due": "Not due",
-    "missed_count": "{{count}} missed this month"
+    "missed_count": "{{count}} missed this month",
+    "groups": {
+      "title": "Habit Groups",
+      "all": "All",
+      "week": "Week View",
+      "archived": "Archived",
+      "deleted": "Deleted",
+      "new_group": "New Group",
+      "rename": "Rename",
+      "delete_group": "Delete Group",
+      "delete_confirm": "Delete this habit group? Habits in it will not be deleted."
+    },
+    "unarchive": "Restore",
+    "hard_delete": "Delete Permanently",
+    "hard_delete_confirm": "Permanently delete this habit? This cannot be undone.",
+    "no_archived": "No archived habits",
+    "no_deleted": "Deleted habits cannot be recovered"
   },
   "countdowns": {
     "new_countdown": "New Countdown",

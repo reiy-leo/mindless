@@ -34,7 +34,8 @@
     "loading": "加载中...",
     "empty": "暂无数据",
     "confirm": "确认",
-    "close": "关闭"
+    "close": "关闭",
+    "clear": "清除"
   },
   "navigation": {
     "home": "首页",
@@ -148,6 +149,17 @@
     "lunar_date": "农历",
     "range_start": "开始",
     "range_end": "结束",
+    "date_tab": "日期",
+    "range_tab": "时间段",
+    "yesterday": "昨天",
+    "today": "今天",
+    "tomorrow": "明天",
+    "next_week": "下周",
+    "two_days": "两天",
+    "week": "一周",
+    "month": "一月",
+    "year": "一年",
+    "all_day": "全天",
     "views": {
       "list": "列表",
       "calendar": "日历",
@@ -292,7 +304,23 @@
     "refresh_streaks": "刷新连续天数",
     "missed": "漏打卡",
     "not_due": "无需打卡",
-    "missed_count": "本月漏打 {{count}} 天"
+    "missed_count": "本月漏打 {{count}} 天",
+    "groups": {
+      "title": "习惯组",
+      "all": "所有",
+      "week": "周视图",
+      "archived": "已归档",
+      "deleted": "已删除",
+      "new_group": "新建习惯组",
+      "rename": "重命名",
+      "delete_group": "删除组",
+      "delete_confirm": "确定删除这个习惯组吗？组内的习惯不会被删除。"
+    },
+    "unarchive": "恢复",
+    "hard_delete": "永久删除",
+    "hard_delete_confirm": "确定永久删除这个习惯吗？此操作不可撤销。",
+    "no_archived": "没有已归档的习惯",
+    "no_deleted": "已删除的习惯无法恢复"
   },
   "countdowns": {
     "new_countdown": "新建倒数日",
