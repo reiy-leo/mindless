@@ -112,6 +112,7 @@ pub struct Habit {
     pub created_at: String,
     pub updated_at: String,
     pub archived_at: Option<String>,
+    pub group_id: Option<String>,
 }
 
 // Habit log model
@@ -125,6 +126,19 @@ pub struct HabitLog {
     pub completed: bool,
     pub value: Option<i32>,
     pub note: Option<String>,
+}
+
+// Habit group model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitGroup {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 // Countdown model

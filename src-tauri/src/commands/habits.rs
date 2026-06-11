@@ -27,6 +27,7 @@ fn row_to_habit(row: &rusqlite::Row) -> rusqlite::Result<Habit> {
         created_at: row.get(15)?,
         updated_at: row.get(16)?,
         archived_at: row.get(17)?,
+        group_id: row.get(18)?,
     })
 }
 
