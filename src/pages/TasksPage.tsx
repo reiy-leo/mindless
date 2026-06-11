@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Pin } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ResizeHandle } from "@/components/ResizeHandle";
 import {
     useTasks,
     useCreateTask,
@@ -53,8 +54,7 @@ import StepList from "@/components/tasks/StepList";
 import CalendarView from "@/components/tasks/CalendarView";
 import KanbanView from "@/components/tasks/KanbanView";
 import TagCombobox from "@/components/TagCombobox";
-import DateTimePicker from "@/components/DateTimePicker";
-import DateTimeRangePicker from "@/components/DateTimeRangePicker";
+import TaskDatePicker from "@/components/TaskDatePicker";
 import EisenhowerMatrixView from "@/components/tasks/EisenhowerMatrixView";
 import MilkdownEditor from "@/components/MilkdownEditor";
 import { TaskSortControls } from "@/components/tasks/TaskSortControls";
@@ -256,12 +256,25 @@ function TaskDetailPanel({
     const [showPriorityPicker, setShowPriorityPicker] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [localDesc, setLocalDesc] = useState(activeTask.description || "");
-    const [dateMode, setDateMode] = useState<"single" | "range">(activeTask.endDate ? "range" : "single");
 
     // Sync local description when active task changes
     useEffect(() => {
         setLocalDesc(activeTask.description || "");
     }, [activeTask.id, activeTask.description]);
+
+    // Close date picker on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest("[data-date-picker]")) {
+                setShowDatePicker(false);
+            }
+        };
+        if (showDatePicker) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showDatePicker]);
 
     // Debounced save description
     const descTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -273,173 +286,120 @@ function TaskDetailPanel({
         }, 500);
     };
 
-    // Format date for display
-    const formatShortDate = (dateStr?: string, timeStr?: string): string => {
-        if (!dateStr) return "";
-        const parts = dateStr.split("-").map(Number);
-        if (parts.length !== 3) return dateStr;
-        const [, m, d] = parts;
-        const timePart = timeStr ? ` ${timeStr}` : "";
-        return `${m}月${d}日${timePart}`;
-    };
-
-    const dateDisplayText =
-        dateMode === "single"
-            ? formatShortDate(activeTask.dueDate, activeTask.dueTime)
-            : activeTask.dueDate || activeTask.endDate
-            ? `${formatShortDate(activeTask.dueDate, activeTask.dueTime)} → ${formatShortDate(
-                  activeTask.endDate,
-                  activeTask.endTime,
-              )}`
-            : "";
-
     return (
         <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {/* Above-header: parent task link + date button */}
-            <div className="flex items-center justify-between px-4 pt-2 pb-0">
-                {selectedSubtask && onSubtaskBack ? (
+            {/* Date button above header */}
+            <div className="px-4 pt-4 pb-2">
+                <div className="relative" data-date-picker>
                     <button
-                        onClick={onSubtaskBack}
-                        className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors min-w-0"
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors w-full ${
+                            activeTask.dueDate
+                                ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-blue-50 dark:bg-blue-900/10"
+                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 bg-gray-50 dark:bg-gray-800"
+                        }`}
                     >
-                        <ChevronRightIcon className="w-3 h-3 rotate-180 flex-shrink-0" />
-                        <span className="truncate">{task.title}</span>
+                        <CalendarIcon className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">
+                            {activeTask.dueDate
+                                ? activeTask.endDate
+                                    ? `${activeTask.dueDate}${activeTask.dueTime ? ` ${activeTask.dueTime}` : ""} → ${
+                                          activeTask.endDate
+                                      }${activeTask.endTime ? ` ${activeTask.endTime}` : ""}`
+                                    : `${activeTask.dueDate}${activeTask.dueTime ? ` ${activeTask.dueTime}` : ""}`
+                                : t("tasks.date_placeholder")}
+                        </span>
                     </button>
-                ) : (
-                    <div />
-                )}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    {/* Date icon button with popover */}
-                    <div
-                        className="relative"
-                        onBlur={(e) => {
-                            if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowDatePicker(false);
-                        }}
-                        tabIndex={-1}
-                    >
-                        <button
-                            onClick={() => setShowDatePicker(!showDatePicker)}
-                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
-                                dateDisplayText
-                                    ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                    : "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            }`}
-                            title={t("tasks.due_date")}
-                        >
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            {dateDisplayText && <span className="truncate max-w-[140px]">{dateDisplayText}</span>}
-                        </button>
-                        {showDatePicker && (
-                            <div className="absolute right-0 top-full mt-1 z-50">
-                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 mb-1">
-                                    <div className="flex border border-gray-300 dark:border-gray-600 rounded overflow-hidden mb-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setDateMode("single");
-                                                if (activeTask.endDate)
-                                                    onUpdateTask({ endDate: undefined, endTime: undefined });
-                                            }}
-                                            className={`flex-1 px-2 py-0.5 text-xs transition-colors ${
-                                                dateMode === "single"
-                                                    ? "bg-blue-500 text-white"
-                                                    : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
-                                            }`}
-                                        >
-                                            {t("tasks.date_mode.single")}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setDateMode("range")}
-                                            className={`flex-1 px-2 py-0.5 text-xs transition-colors border-l border-gray-300 dark:border-gray-600 ${
-                                                dateMode === "range"
-                                                    ? "bg-blue-500 text-white"
-                                                    : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600"
-                                            }`}
-                                        >
-                                            {t("tasks.date_mode.range")}
-                                        </button>
-                                    </div>
-                                    {dateMode === "single" ? (
-                                        <DateTimePicker
-                                            date={activeTask.dueDate || undefined}
-                                            time={activeTask.dueTime || undefined}
-                                            onChange={(d, tm) =>
-                                                onUpdateTask({ dueDate: d || undefined, dueTime: tm || undefined })
-                                            }
-                                        />
-                                    ) : (
-                                        <DateTimeRangePicker
-                                            startDate={activeTask.dueDate || undefined}
-                                            startTime={activeTask.dueTime || undefined}
-                                            endDate={activeTask.endDate || undefined}
-                                            endTime={activeTask.endTime || undefined}
-                                            onChange={(sd, st, ed, et) =>
-                                                onUpdateTask({
-                                                    dueDate: sd || undefined,
-                                                    dueTime: st || undefined,
-                                                    endDate: ed || undefined,
-                                                    endTime: et || undefined,
-                                                })
-                                            }
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {showDatePicker && (
+                        <div className="absolute left-0 top-full mt-1 z-50 w-77 border shadow-md rounded-md">
+                            <TaskDatePicker
+                                date={activeTask.dueDate || undefined}
+                                time={activeTask.dueTime || undefined}
+                                startDate={activeTask.dueDate || undefined}
+                                startTime={activeTask.dueTime || undefined}
+                                endDate={activeTask.endDate || undefined}
+                                endTime={activeTask.endTime || undefined}
+                                mode={activeTask.endDate ? "range" : "single"}
+                                onSingleChange={(d, tm) => {
+                                    onUpdateTask({ dueDate: d || undefined, dueTime: tm || undefined });
+                                    setShowDatePicker(false);
+                                }}
+                                onRangeChange={(sd, st, ed, et) => {
+                                    onUpdateTask({
+                                        dueDate: sd || undefined,
+                                        dueTime: st || undefined,
+                                        endDate: ed || undefined,
+                                        endTime: et || undefined,
+                                    });
+                                    setShowDatePicker(false);
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Detail Header */}
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                <input
-                    type="text"
-                    value={activeTask.title}
-                    onChange={(e) => onUpdateTask({ title: e.target.value })}
-                    className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded px-1"
-                />
-                {/* Priority icon button with dropdown */}
-                <div
-                    className="relative flex-shrink-0"
-                    onBlur={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowPriorityPicker(false);
-                    }}
-                    tabIndex={-1}
-                >
-                    <button
-                        onClick={() => setShowPriorityPicker(!showPriorityPicker)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        title={t("tasks.priority.label")}
+            <div className="px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={activeTask.title}
+                        onChange={(e) => onUpdateTask({ title: e.target.value })}
+                        className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded px-1"
+                    />
+                    {/* Priority icon button with dropdown */}
+                    <div
+                        className="relative flex-shrink-0"
+                        onBlur={(e) => {
+                            if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowPriorityPicker(false);
+                        }}
+                        tabIndex={-1}
                     >
-                        <AdjustmentsHorizontalIcon
-                            className="w-4 h-4"
-                            style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }}
-                        />
-                    </button>
-                    {showPriorityPicker && (
-                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1 w-32">
-                            {[0, 1, 2, 3].map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => {
-                                        onUpdateTask({ priority: p });
-                                        setShowPriorityPicker(false);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: PRIORITY_COLORS[p] }}
-                                    />
-                                    <span className="text-gray-700 dark:text-gray-300">
-                                        {t(`tasks.priority.${["none", "low", "medium", "high"][p]}`)}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                        <button
+                            onClick={() => setShowPriorityPicker(!showPriorityPicker)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title={t("tasks.priority.label")}
+                        >
+                            <AdjustmentsHorizontalIcon
+                                className="w-4 h-4"
+                                style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }}
+                            />
+                        </button>
+                        {showPriorityPicker && (
+                            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1 w-32">
+                                {[0, 1, 2, 3].map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => {
+                                            onUpdateTask({ priority: p });
+                                            setShowPriorityPicker(false);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <div
+                                            className="w-3 h-3 rounded-full flex-shrink-0"
+                                            style={{ backgroundColor: PRIORITY_COLORS[p] }}
+                                        />
+                                        <span className="text-gray-700 dark:text-gray-300">
+                                            {t(`tasks.priority.${["none", "low", "medium", "high"][p]}`)}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
+                {/* Parent task link */}
+                {selectedSubtask && onSubtaskBack && (
+                    <button
+                        onClick={onSubtaskBack}
+                        className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mt-1"
+                    >
+                        <ChevronRightIcon className="w-3 h-3 rotate-180 flex-shrink-0" />
+                        <span className="truncate">{task.title}</span>
+                    </button>
+                )}
             </div>
 
             {/* Progress bar - tightly below header */}
@@ -605,38 +565,6 @@ function TaskRow({
 }
 
 // ==================== Resize Handle ====================
-function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
-    const handleMouseDown = (e: React.MouseEvent) => {
-        e.preventDefault();
-        let lastX = e.clientX;
-
-        const handleMouseMove = (e: MouseEvent) => {
-            const delta = e.clientX - lastX;
-            lastX = e.clientX;
-            onResize(delta);
-        };
-
-        const handleMouseUp = () => {
-            document.removeEventListener("mousemove", handleMouseMove);
-            document.removeEventListener("mouseup", handleMouseUp);
-            document.body.style.cursor = "";
-            document.body.style.userSelect = "";
-        };
-
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-    };
-
-    return (
-        <div
-            onMouseDown={handleMouseDown}
-            className="w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
-        />
-    );
-}
-
 // ==================== Main Page ====================
 export default function TasksPage() {
     const { t } = useTranslation("common");
