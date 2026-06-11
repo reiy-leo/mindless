@@ -4,15 +4,20 @@ import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
   ChevronLeftIcon, ChevronRightIcon, TrophyIcon, CheckCircleIcon,
   ChevronDownIcon, ChevronUpIcon, MinusIcon, ArrowPathIcon,
+  ArchiveBoxIcon, ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 import {
   useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit,
   useCheckInHabit, useHabitLogs, useTodayCheckinMap, useRefreshStreaks,
+  useHabitGroups, useCreateHabitGroup, useDeleteHabitGroup,
+  useArchivedHabits, useUnarchiveHabit, useHardDeleteHabit,
 } from '@/queries/useHabitQueries';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
 import Select from '@/components/Select';
+import { ResizeHandle } from '@/components/ResizeHandle';
 import { getLunarDayStr } from '@/lib/lunar';
+import { useAppStore } from '@/stores/useAppStore';
 import type { Habit, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
 // ==================== Due Today Helper ====================
@@ -704,9 +709,95 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
   );
 }
 
+// ==================== Week View Bar ====================
+function WeekView({
+  selectedDate,
+  onSelectDate,
+}: {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+}) {
+  const { t } = useTranslation('common');
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const getWeekStart = (offset: number) => {
+    const d = new Date(today);
+    const dayOfWeek = d.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    d.setDate(d.getDate() + diff + offset * 7);
+    return d;
+  };
+
+  const weekStart = getWeekStart(weekOffset);
+  const days: { date: Date; dateStr: string; dayName: string }[] = [];
+  const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    days.push({
+      date: d,
+      dateStr: d.toISOString().split('T')[0],
+      dayName: t(`habits.days.${dayKeys[i]}`),
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-1 mb-4">
+      <button
+        onClick={() => setWeekOffset(weekOffset - 1)}
+        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <ChevronLeftIcon className="w-4 h-4 text-gray-500" />
+      </button>
+      <div className="flex-1 grid grid-cols-7 gap-1">
+        {days.map((day) => {
+          const parts = day.dateStr.split('-').map(Number);
+          const lunarStr = getLunarDayStr(parts[0], parts[1], parts[2]);
+          const isSelected = day.dateStr === selectedDate;
+          const isToday = day.dateStr === todayStr;
+
+          return (
+            <button
+              key={day.dateStr}
+              onClick={() => onSelectDate(day.dateStr)}
+              className={`flex flex-col items-center py-1.5 px-1 rounded-lg transition-all text-xs ${
+                isSelected
+                  ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400'
+                  : isToday
+                    ? 'bg-gray-100 dark:bg-gray-700 font-bold'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <span className={`text-[10px] ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {day.dayName}
+              </span>
+              <span className={`text-sm font-semibold ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                {day.date.getDate()}
+              </span>
+              <span className={`text-[10px] ${isSelected ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                {lunarStr}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <button
+        onClick={() => setWeekOffset(weekOffset + 1)}
+        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+      >
+        <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+      </button>
+    </div>
+  );
+}
+
 // ==================== Habit Card ====================
 function HabitCard({
-  habit, onEdit, onDelete, onCheckIn, todayValue, dueToday,
+  habit, onEdit, onDelete, onCheckIn, todayValue, dueToday, isArchived, onUnarchive, onHardDelete,
 }: {
   habit: Habit;
   onEdit: () => void;
@@ -714,6 +805,9 @@ function HabitCard({
   onCheckIn: (value?: number) => void;
   todayValue: number;
   dueToday: boolean;
+  isArchived?: boolean;
+  onUnarchive?: () => void;
+  onHardDelete?: () => void;
 }) {
   const { t } = useTranslation('common');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -783,9 +877,24 @@ function HabitCard({
           <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
             <PencilIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
-            <TrashIcon className="w-4 h-4 text-red-400" />
-          </button>
+          {isArchived ? (
+            <>
+              {onUnarchive && (
+                <button onClick={onUnarchive} className="p-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20" title={t('habits.unarchive')}>
+                  <ArrowUturnLeftIcon className="w-4 h-4 text-green-500" />
+                </button>
+              )}
+              {onHardDelete && (
+                <button onClick={onHardDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('habits.hard_delete')}>
+                  <TrashIcon className="w-4 h-4 text-red-500" />
+                </button>
+              )}
+            </>
+          ) : (
+            <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
+              <ArchiveBoxIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -946,20 +1055,28 @@ export default function HabitsPage() {
   const { t } = useTranslation('common');
   const [showForm, setShowForm] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+
+  const { selectedHabitGroupId, setSelectedHabitGroupId, habitGroupsPanelWidth, setHabitGroupsPanelWidth } = useAppStore();
 
   const { data: habits = [], isLoading } = useHabits();
+  const { data: archivedHabits = [] } = useArchivedHabits();
+  const { data: habitGroups = [] } = useHabitGroups();
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
   const checkIn = useCheckInHabit();
   const refreshStreaks = useRefreshStreaks();
+  const createGroup = useCreateHabitGroup();
+  const deleteGroup = useDeleteHabitGroup();
+  const unarchive = useUnarchiveHabit();
+  const hardDelete = useHardDeleteHabit();
 
   const today = new Date().toISOString().split('T')[0];
-
-  // Fetch today's check-in values as a Map<habitId, value>
   const todayCheckinMap = useTodayCheckinMap();
 
-  // Refresh streaks on page mount (catches up on missed days)
   useEffect(() => {
     refreshStreaks.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -976,15 +1093,81 @@ export default function HabitsPage() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleArchive = (id: string) => {
     if (window.confirm(t('habits.delete_confirm'))) {
       deleteHabit.mutate(id);
     }
   };
 
   const handleCheckIn = (habitId: string, value?: number) => {
-    checkIn.mutate({ habitId, date: today, value });
+    const date = selectedHabitGroupId === 'week' ? selectedDate : today;
+    checkIn.mutate({ habitId, date, value });
   };
+
+  const handleCreateGroup = () => {
+    if (newGroupName.trim()) {
+      createGroup.mutate({ name: newGroupName.trim() });
+      setNewGroupName('');
+      setShowNewGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = (id: string) => {
+    if (window.confirm(t('habits.groups.delete_confirm'))) {
+      deleteGroup.mutate(id);
+      if (selectedHabitGroupId === id) {
+        setSelectedHabitGroupId('all');
+      }
+    }
+  };
+
+  const handleHardDelete = (id: string) => {
+    if (window.confirm(t('habits.hard_delete_confirm'))) {
+      hardDelete.mutate(id);
+    }
+  };
+
+  // Smart groups config
+  const smartGroups = useMemo(() => [
+    { id: 'all', icon: '⭐', labelKey: 'habits.groups.all', count: habits.length },
+    { id: 'week', icon: '📅', labelKey: 'habits.groups.week', count: 0 },
+    { id: 'archived', icon: '📦', labelKey: 'habits.groups.archived', count: archivedHabits.length },
+    { id: 'deleted', icon: '🗑️', labelKey: 'habits.groups.deleted', count: 0 },
+  ], [habits.length, archivedHabits.length]);
+
+  // Group counts for custom groups
+  const groupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    habits.forEach((h) => {
+      const gid = (h as any).groupId;
+      if (gid) counts[gid] = (counts[gid] || 0) + 1;
+    });
+    return counts;
+  }, [habits]);
+
+  // Filtered habits based on selected group
+  const filteredHabits = useMemo(() => {
+    switch (selectedHabitGroupId) {
+      case 'all':
+      case 'week':
+        return habits;
+      case 'archived':
+        return [];
+      case 'deleted':
+        return [];
+      default:
+        return habits.filter((h) => (h as any).groupId === selectedHabitGroupId);
+    }
+  }, [habits, selectedHabitGroupId]);
+
+  // For week view, build a checkin map for the selected date
+  const weekViewCheckinMap = useMemo(() => {
+    if (selectedHabitGroupId !== 'week') return new Map<string, number>();
+    // We need to fetch logs for all habits for the selected date
+    // For now, use todayCheckinMap when selectedDate is today
+    if (selectedDate === today) return todayCheckinMap;
+    return new Map<string, number>();
+  }, [selectedHabitGroupId, selectedDate, today, todayCheckinMap]);
 
   if (isLoading) {
     return (
@@ -994,58 +1177,232 @@ export default function HabitsPage() {
     );
   }
 
+  const getCheckinValue = (habitId: string) => {
+    if (selectedHabitGroupId === 'week') {
+      return weekViewCheckinMap.get(habitId) || 0;
+    }
+    return todayCheckinMap.get(habitId) || 0;
+  };
+
   return (
-    <div className="flex-1 overflow-auto px-8 py-4">
-      <div data-tauri-drag-region className="flex items-center justify-between mb-8">
-        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.habits')}</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refreshStreaks.mutate()}
-            disabled={refreshStreaks.isPending}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-            title={t('habits.refresh_streaks')}
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${refreshStreaks.isPending ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={() => { setEditingHabit(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            <span>{t('habits.new_habit')}</span>
-          </button>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Groups Panel */}
+      <div style={{ width: habitGroupsPanelWidth }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-auto">
+        {/* Smart Groups */}
+        <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
+          <div className="space-y-px">
+            {smartGroups.map((sg) => {
+              const isActive = selectedHabitGroupId === sg.id;
+              return (
+                <button
+                  key={sg.id}
+                  onClick={() => setSelectedHabitGroupId(sg.id)}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
+                    isActive
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="text-base">{sg.icon}</span>
+                  <span className="flex-1 truncate">{t(sg.labelKey)}</span>
+                  {sg.count > 0 && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{sg.count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Custom Groups */}
+        <div className="overflow-auto px-2 py-2">
+          <div className="flex items-center justify-between mb-1 px-1.5">
+            <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {t('habits.groups.title')}
+            </span>
+            <button
+              onClick={() => setShowNewGroup(true)}
+              className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <PlusIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+            </button>
+          </div>
+          <div className="space-y-px">
+            {/* New group input */}
+            {showNewGroup && (
+              <div className="flex items-center gap-1 px-1.5 py-1">
+                <input
+                  type="text"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateGroup();
+                    if (e.key === 'Escape') { setShowNewGroup(false); setNewGroupName(''); }
+                  }}
+                  placeholder={t('habits.groups.new_group')}
+                  autoFocus
+                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            {habitGroups.map((group) => {
+              const isActive = selectedHabitGroupId === group.id;
+              return (
+                <div key={group.id} className="relative group/item">
+                  <button
+                    onClick={() => setSelectedHabitGroupId(group.id)}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
+                      isActive
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="text-base">{group.icon || '📁'}</span>
+                    <span className="flex-1 truncate">{group.name}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{groupCounts[group.id] || 0}</span>
+                    <span
+                      onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id); }}
+                      className="hidden group-hover/item:block p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                    >
+                      <TrashIcon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {habits.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-          <p className="text-lg">{t('habits.no_habits')}</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 text-green-500 hover:text-green-600 dark:hover:text-green-400">
-            {t('habits.create_first')}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {habits.map((habit) => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
-              onDelete={() => handleDelete(habit.id)}
-              onCheckIn={(value) => handleCheckIn(habit.id, value)}
-              todayValue={todayCheckinMap.get(habit.id) || 0}
-              dueToday={isHabitDueToday(habit)}
-            />
-          ))}
-        </div>
-      )}
+      <ResizeHandle onResize={(delta) => setHabitGroupsPanelWidth((w) => Math.max(160, Math.min(400, w + delta)))} />
 
-      <HabitFormDialog
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingHabit(null); }}
-        onSubmit={editingHabit ? handleUpdate : handleCreate}
-        habit={editingHabit}
-      />
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto px-8 py-4">
+        <div data-tauri-drag-region className="flex items-center justify-between mb-6">
+          <h1 data-tauri-drag-region className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {selectedHabitGroupId === 'all' && t('habits.groups.all')}
+            {selectedHabitGroupId === 'week' && t('habits.groups.week')}
+            {selectedHabitGroupId === 'archived' && t('habits.groups.archived')}
+            {selectedHabitGroupId === 'deleted' && t('habits.groups.deleted')}
+            {!['all', 'week', 'archived', 'deleted'].includes(selectedHabitGroupId) && (
+              habitGroups.find((g) => g.id === selectedHabitGroupId)?.name || ''
+            )}
+          </h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refreshStreaks.mutate()}
+              disabled={refreshStreaks.isPending}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              title={t('habits.refresh_streaks')}
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${refreshStreaks.isPending ? 'animate-spin' : ''}`} />
+            </button>
+            {selectedHabitGroupId !== 'deleted' && (
+              <button
+                onClick={() => { setEditingHabit(null); setShowForm(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span>{t('habits.new_habit')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Week View */}
+        {selectedHabitGroupId === 'week' && (
+          <WeekView selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        )}
+
+        {/* Deleted - empty state */}
+        {selectedHabitGroupId === 'deleted' && (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <p className="text-lg">{t('habits.no_deleted')}</p>
+          </div>
+        )}
+
+        {/* Archived habits */}
+        {selectedHabitGroupId === 'archived' && (
+          archivedHabits.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <p className="text-lg">{t('habits.no_archived')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {archivedHabits.map((habit) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
+                  onDelete={() => {}}
+                  onCheckIn={() => {}}
+                  todayValue={0}
+                  dueToday={false}
+                  isArchived
+                  onUnarchive={() => unarchive.mutate(habit.id)}
+                  onHardDelete={() => handleHardDelete(habit.id)}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Active habits (all, week, custom group) */}
+        {['all', 'week'].includes(selectedHabitGroupId) && (
+          filteredHabits.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <p className="text-lg">{t('habits.no_habits')}</p>
+              <button onClick={() => setShowForm(true)} className="mt-4 text-green-500 hover:text-green-600 dark:hover:text-green-400">
+                {t('habits.create_first')}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHabits.map((habit) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
+                  onDelete={() => handleArchive(habit.id)}
+                  onCheckIn={(value) => handleCheckIn(habit.id, value)}
+                  todayValue={getCheckinValue(habit.id)}
+                  dueToday={isHabitDueToday(habit)}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        {/* Custom group habits */}
+        {!['all', 'week', 'archived', 'deleted'].includes(selectedHabitGroupId) && (
+          filteredHabits.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <p className="text-lg">{t('habits.no_habits')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHabits.map((habit) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
+                  onDelete={() => handleArchive(habit.id)}
+                  onCheckIn={(value) => handleCheckIn(habit.id, value)}
+                  todayValue={getCheckinValue(habit.id)}
+                  dueToday={isHabitDueToday(habit)}
+                />
+              ))}
+            </div>
+          )
+        )}
+
+        <HabitFormDialog
+          isOpen={showForm}
+          onClose={() => { setShowForm(false); setEditingHabit(null); }}
+          onSubmit={editingHabit ? handleUpdate : handleCreate}
+          habit={editingHabit}
+        />
+      </div>
     </div>
   );
 }
