@@ -51,6 +51,8 @@ interface AppState {
   advancedGroups: AdvancedGroup[];
   groupsPanelWidth: number;
   detailPanelWidth: number;
+  selectedHabitGroupId: string;
+  habitGroupsPanelWidth: number;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (lang: Language) => void;
@@ -68,6 +70,8 @@ interface AppState {
   deleteAdvancedGroup: (id: string) => void;
   setGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
   setDetailPanelWidth: (width: number | ((prev: number) => number)) => void;
+  setSelectedHabitGroupId: (id: string) => void;
+  setHabitGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -87,6 +91,8 @@ export const useAppStore = create<AppState>()(
       advancedGroups: [],
       groupsPanelWidth: 192,
       detailPanelWidth: 400,
+      selectedHabitGroupId: 'all',
+      habitGroupsPanelWidth: 192,
 
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
@@ -118,6 +124,11 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           detailPanelWidth: typeof width === 'function' ? width(state.detailPanelWidth) : width,
         })),
+      setSelectedHabitGroupId: (id) => set({ selectedHabitGroupId: id }),
+      setHabitGroupsPanelWidth: (width) =>
+        set((state) => ({
+          habitGroupsPanelWidth: typeof width === 'function' ? width(state.habitGroupsPanelWidth) : width,
+        })),
     }),
     {
       name: 'mindless-app-settings',
@@ -133,6 +144,8 @@ export const useAppStore = create<AppState>()(
         advancedGroups: state.advancedGroups,
         groupsPanelWidth: state.groupsPanelWidth,
         detailPanelWidth: state.detailPanelWidth,
+        selectedHabitGroupId: state.selectedHabitGroupId,
+        habitGroupsPanelWidth: state.habitGroupsPanelWidth,
       }),
     }
   )
