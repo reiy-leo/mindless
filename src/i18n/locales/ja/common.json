@@ -312,7 +312,9 @@
     "hard_delete": "完全に削除",
     "hard_delete_confirm": "この習慣を完全に削除しますか？この操作は取り消せません。",
     "no_archived": "アーカイブされた習慣はありません",
-    "no_deleted": "削除された習慣は復元できません"
+    "no_deleted": "削除された習慣は復元できません",
+    "next_checkin": "次のチェックインまで {{days}} 日",
+    "next_checkin_today": "今日のチェックインが必要"
   },
   "countdowns": {
     "new_countdown": "新規カウントダウン",

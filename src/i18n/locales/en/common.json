@@ -324,7 +324,9 @@
     "hard_delete": "Delete Permanently",
     "hard_delete_confirm": "Permanently delete this habit? This cannot be undone.",
     "no_archived": "No archived habits",
-    "no_deleted": "Deleted habits cannot be recovered"
+    "no_deleted": "Deleted habits cannot be recovered",
+    "next_checkin": "Next check-in in {{days}} days",
+    "next_checkin_today": "Check-in due today"
   },
   "countdowns": {
     "new_countdown": "New Countdown",

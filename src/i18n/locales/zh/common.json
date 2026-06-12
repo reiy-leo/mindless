@@ -325,7 +325,9 @@
     "hard_delete": "永久删除",
     "hard_delete_confirm": "确定永久删除这个习惯吗？此操作不可撤销。",
     "no_archived": "没有已归档的习惯",
-    "no_deleted": "已删除的习惯无法恢复"
+    "no_deleted": "已删除的习惯无法恢复",
+    "next_checkin": "距离下次打卡还有 {{days}} 天",
+    "next_checkin_today": "今天需要打卡"
   },
   "countdowns": {
     "new_countdown": "新建倒数日",
