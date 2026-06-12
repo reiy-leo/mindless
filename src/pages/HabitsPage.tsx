@@ -91,7 +91,10 @@ function HabitFormDialog({
   const [name, setName] = useState(habit?.name || '');
   const [description, setDescription] = useState(habit?.description || '');
   const [icon, setIcon] = useState(habit?.icon || '⭐');
+  const [groupId, setGroupId] = useState<string>((habit as any)?.groupId || '');
   const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency || 'daily');
+
+  const { data: habitGroups = [] } = useHabitGroups();
 
   // Every X days
   const [everyXDays, setEveryXDays] = useState(() => {
@@ -172,6 +175,7 @@ function HabitFormDialog({
       setName(habit.name);
       setDescription(habit.description || '');
       setIcon(habit.icon || '⭐');
+      setGroupId((habit as any).groupId || '');
       setFrequency(habit.frequency);
       setEveryXDays(habit.frequency === 'every_x_days' && habit.frequencyDays ? parseInt(habit.frequencyDays) || 2 : 2);
       setFrequencyDays(habit.frequency === 'weekly' ? (habit.frequencyDays || '') : '');
@@ -185,6 +189,7 @@ function HabitFormDialog({
       setName('');
       setDescription('');
       setIcon('⭐');
+      setGroupId('');
       setFrequency('daily');
       setEveryXDays(2);
       setFrequencyDays('');
@@ -220,6 +225,7 @@ function HabitFormDialog({
       reminderEnabled,
       reminderTime: reminderEnabled && reminderTimes.length > 0 ? reminderTimes.join(',') : undefined,
       startDate,
+      groupId: groupId || undefined,
     });
     onClose();
   };
@@ -268,6 +274,19 @@ function HabitFormDialog({
                 placeholder={t('habits.description')}
               />
             </div>
+          </div>
+
+          {/* Group */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.groups.title')}</label>
+            <Select
+              value={groupId}
+              onChange={setGroupId}
+              options={[
+                { value: '', label: t('habits.groups.all') },
+                ...habitGroups.map((g) => ({ value: g.id, label: g.name, icon: g.icon || '📁' })),
+              ]}
+            />
           </div>
 
           {/* Frequency (tabs) */}
