@@ -214,6 +214,7 @@ export async function createHabit(params: {
   color?: string;
   targetType?: string;
   targetValue?: number;
+  targetUnit?: string;
   frequency?: string;
   frequencyDays?: string;
   reminderTime?: string;

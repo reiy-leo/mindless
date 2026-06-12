@@ -214,6 +214,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE lists ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;");
             let _ = conn.execute_batch("ALTER TABLE habits ADD COLUMN group_id TEXT REFERENCES habit_groups(id) ON DELETE SET NULL;");
             let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_habits_group_id ON habits(group_id);");
+            let _ = conn.execute_batch("ALTER TABLE habits ADD COLUMN target_unit TEXT DEFAULT '次';");
 
             // Update existing lists to have default values for new columns
             let _ = conn.execute_batch("UPDATE lists SET is_pinned = 0 WHERE is_pinned IS NULL;");

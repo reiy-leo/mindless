@@ -11,6 +11,7 @@ export interface Habit {
   color: string;
   targetType: TargetType;
   targetValue: number;
+  targetUnit: string;
   frequency: HabitFrequency;
   frequencyDays?: string;
   reminderTime?: string;
@@ -31,6 +32,7 @@ export interface CreateHabitParams {
   color?: string;
   targetType?: TargetType;
   targetValue?: number;
+  targetUnit?: string;
   frequency: HabitFrequency;
   frequencyDays?: string;
   reminderTime?: string;

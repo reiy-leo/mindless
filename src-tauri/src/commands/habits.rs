@@ -28,6 +28,7 @@ fn row_to_habit(row: &rusqlite::Row) -> rusqlite::Result<Habit> {
         updated_at: row.get(16)?,
         archived_at: row.get(17)?,
         group_id: row.get(18)?,
+        target_unit: row.get(19)?,
     })
 }
 
@@ -559,6 +560,7 @@ pub async fn create_habit(
     reminder_enabled: Option<bool>,
     start_date: Option<String>,
     group_id: Option<String>,
+    target_unit: Option<String>,
 ) -> Result<Habit, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -568,9 +570,10 @@ pub async fn create_habit(
     let icon = icon.unwrap_or_else(|| "star".to_string());
     let color = color.unwrap_or_else(|| "#8B5CF6".to_string());
     let start_date = start_date.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
+    let target_unit = target_unit.unwrap_or_else(|| "次".to_string());
 
     conn.execute(
-        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions, group_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 0, 0, ?13)",
+        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, target_unit, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions, group_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 0, 0, 0, ?14)",
         rusqlite::params![
             id,
             name,
@@ -579,6 +582,7 @@ pub async fn create_habit(
             color,
             target_type,
             target_value.unwrap_or(1),
+            target_unit,
             frequency,
             frequency_days.as_deref().unwrap_or(""),
             reminder_time.as_deref().unwrap_or(""),
@@ -604,6 +608,7 @@ pub async fn update_habit(
     color: Option<String>,
     target_type: Option<String>,
     target_value: Option<i32>,
+    target_unit: Option<String>,
     frequency: Option<String>,
     frequency_days: Option<String>,
     reminder_time: Option<String>,
@@ -635,6 +640,10 @@ pub async fn update_habit(
     if let Some(target_value) = target_value {
         conn.execute("UPDATE habits SET target_value = ?1, updated_at = datetime('now') WHERE id = ?2", (&target_value, &id))
             .map_err(|e| format!("Failed to update target_value: {}", e))?;
+    }
+    if let Some(ref target_unit) = target_unit {
+        conn.execute("UPDATE habits SET target_unit = ?1, updated_at = datetime('now') WHERE id = ?2", (target_unit, &id))
+            .map_err(|e| format!("Failed to update target_unit: {}", e))?;
     }
     if let Some(ref frequency) = frequency {
         conn.execute("UPDATE habits SET frequency = ?1, updated_at = datetime('now') WHERE id = ?2", (frequency, &id))

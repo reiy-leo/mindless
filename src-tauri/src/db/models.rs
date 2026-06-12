@@ -101,6 +101,7 @@ pub struct Habit {
     pub color: Option<String>,
     pub target_type: String,
     pub target_value: Option<i32>,
+    pub target_unit: Option<String>,
     pub frequency: String,
     pub frequency_days: Option<String>,
     pub reminder_time: Option<String>,
