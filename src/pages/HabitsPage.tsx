@@ -1347,10 +1347,10 @@ export default function HabitsPage() {
             {selectedHabitGroupId !== 'deleted' && (
               <button
                 onClick={() => { setEditingHabit(null); setShowForm(true); }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="flex items-center justify-center w-9 h-9 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                title={t('habits.new_habit')}
               >
                 <PlusIcon className="w-5 h-5" />
-                <span>{t('habits.new_habit')}</span>
               </button>
             )}
           </div>
