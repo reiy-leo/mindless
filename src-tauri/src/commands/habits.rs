@@ -614,6 +614,7 @@ pub async fn update_habit(
     reminder_time: Option<String>,
     reminder_enabled: Option<bool>,
     start_date: Option<String>,
+    group_id: Option<Option<String>>,
 ) -> Result<Habit, String> {
     let conn = get_db(&app)?;
 
@@ -665,6 +666,10 @@ pub async fn update_habit(
     if let Some(ref start_date) = start_date {
         conn.execute("UPDATE habits SET start_date = ?1, updated_at = datetime('now') WHERE id = ?2", (start_date, &id))
             .map_err(|e| format!("Failed to update start_date: {}", e))?;
+    }
+    if let Some(ref group_id) = group_id {
+        conn.execute("UPDATE habits SET group_id = ?1, updated_at = datetime('now') WHERE id = ?2", (group_id, &id))
+            .map_err(|e| format!("Failed to update group_id: {}", e))?;
     }
 
     // Recalculate streaks after update (frequency/start_date may have changed)

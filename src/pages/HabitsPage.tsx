@@ -1132,7 +1132,9 @@ export default function HabitsPage() {
 
   const handleUpdate = (params: CreateHabitParams) => {
     if (editingHabit) {
-      updateHabit.mutate({ id: editingHabit.id, ...params });
+      // Ensure groupId is explicitly sent (null to clear, string to set)
+      const groupId = params.groupId !== undefined ? params.groupId : (editingHabit as any).groupId;
+      updateHabit.mutate({ id: editingHabit.id, ...params, groupId: groupId || null } as any);
       setEditingHabit(null);
     }
   };
