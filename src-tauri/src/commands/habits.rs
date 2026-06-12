@@ -558,6 +558,7 @@ pub async fn create_habit(
     reminder_time: Option<String>,
     reminder_enabled: Option<bool>,
     start_date: Option<String>,
+    group_id: Option<String>,
 ) -> Result<Habit, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -569,7 +570,7 @@ pub async fn create_habit(
     let start_date = start_date.unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
     conn.execute(
-        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 0, 0)",
+        "INSERT INTO habits (id, name, description, icon, color, target_type, target_value, frequency, frequency_days, reminder_time, reminder_enabled, start_date, current_streak, longest_streak, total_completions, group_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, 0, 0, ?13)",
         rusqlite::params![
             id,
             name,
@@ -583,6 +584,7 @@ pub async fn create_habit(
             reminder_time.as_deref().unwrap_or(""),
             reminder,
             start_date,
+            group_id,
         ]
     ).map_err(|e| format!("Failed to create habit: {}", e))?;
 

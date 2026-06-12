@@ -36,6 +36,7 @@ export interface CreateHabitParams {
   reminderTime?: string;
   reminderEnabled?: boolean;
   startDate?: string;
+  groupId?: string;
 }
 
 export interface UpdateHabitParams {

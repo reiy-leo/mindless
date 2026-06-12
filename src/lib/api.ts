@@ -219,6 +219,7 @@ export async function createHabit(params: {
   reminderTime?: string;
   reminderEnabled?: boolean;
   startDate?: string;
+  groupId?: string;
 }): Promise<Habit> {
   return await invoke<Habit>('create_habit', params);
 }

@@ -1091,7 +1091,10 @@ export default function HabitsPage() {
   }, []);
 
   const handleCreate = (params: CreateHabitParams) => {
-    createHabit.mutate(params);
+    const groupId = !['all', 'week', 'archived', 'deleted'].includes(selectedHabitGroupId)
+      ? selectedHabitGroupId
+      : undefined;
+    createHabit.mutate({ ...params, groupId });
   };
 
   const handleUpdate = (params: CreateHabitParams) => {
