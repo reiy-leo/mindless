@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   PlusIcon, FireIcon, PencilIcon, TrashIcon, XMarkIcon,
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon,
-  ChevronDownIcon, ChevronUpIcon, MinusIcon, ArrowPathIcon,
+  MinusIcon, ArrowPathIcon,
   ArchiveBoxIcon, ArrowUturnLeftIcon, CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -13,9 +13,9 @@ import {
   useArchivedHabits, useUnarchiveHabit, useHardDeleteHabit,
   useDissolveHabitGroup, useDeleteHabitGroupWithHabits,
 } from '@/queries/useHabitQueries';
-import { useCalendarEvents } from '@/queries/useTaskQueries';
 import DateTimePicker from '@/components/DateTimePicker';
 import Select from '@/components/Select';
+import MilkdownEditor from '@/components/MilkdownEditor';
 import { ResizeHandle } from '@/components/ResizeHandle';
 import { getLunarDayStr } from '@/lib/lunar';
 import { useAppStore } from '@/stores/useAppStore';
@@ -86,14 +86,11 @@ function HabitFormDialog({
 }) {
   const { t } = useTranslation('common');
   const isEditing = !!habit;
-  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const [name, setName] = useState(habit?.name || '');
   const [description, setDescription] = useState(habit?.description || '');
   const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency || 'daily');
   const [icon, setIcon] = useState(habit?.icon || 'star');
-  const [color, setColor] = useState(habit?.color || '#8B5CF6');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Every X days
   const [everyXDays, setEveryXDays] = useState(() => {
@@ -108,19 +105,29 @@ function HabitFormDialog({
     habit?.frequency === 'weekly' ? (habit?.frequencyDays || '') : ''
   );
 
-  // Start date — main form field
+  // Start date
   const [startDate, setStartDate] = useState(habit?.startDate || new Date().toISOString().split('T')[0]);
 
-  // Advanced fields
+  // Target fields
   const [targetType, setTargetType] = useState<TargetType>(habit?.targetType || 'binary');
   const [targetValue, setTargetValue] = useState(habit?.targetValue || 1);
   const [targetUnit, setTargetUnit] = useState(habit?.targetUnit || '次');
+
+  // Reminder times (array)
   const [reminderEnabled, setReminderEnabled] = useState(habit?.reminderEnabled || false);
-  const [reminderTime, setReminderTime] = useState(habit?.reminderTime || '09:00');
+  const [reminderTimes, setReminderTimes] = useState<string[]>(() => {
+    if (habit?.reminderTime) {
+      return habit.reminderTime.split(',').filter(Boolean);
+    }
+    return ['09:00'];
+  });
 
   const icons = ['star', 'heart', 'fire', 'book', 'dumbbell', 'moon', 'sun', 'leaf'];
-  const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
-  const unitPresets = [
+  const iconMap: Record<string, string> = {
+    star: '⭐', heart: '❤️', fire: '🔥', book: '📖',
+    dumbbell: '💪', moon: '🌙', sun: '☀️', leaf: '🍃',
+  };
+  const unitOptions = [
     { value: '次', label: '次' },
     { value: 'mL', label: 'mL' },
     { value: 'L', label: 'L' },
@@ -149,6 +156,20 @@ function HabitFormDialog({
     setFrequencyDays(current.join(','));
   };
 
+  const addReminderTime = () => {
+    setReminderTimes([...reminderTimes, '12:00']);
+  };
+
+  const removeReminderTime = (index: number) => {
+    setReminderTimes(reminderTimes.filter((_, i) => i !== index));
+  };
+
+  const updateReminderTime = (index: number, value: string) => {
+    const updated = [...reminderTimes];
+    updated[index] = value;
+    setReminderTimes(updated);
+  };
+
   // Reset form when open
   useEffect(() => {
     if (isOpen && habit) {
@@ -156,7 +177,6 @@ function HabitFormDialog({
       setDescription(habit.description || '');
       setFrequency(habit.frequency);
       setIcon(habit.icon || 'star');
-      setColor(habit.color || '#8B5CF6');
       setEveryXDays(habit.frequency === 'every_x_days' && habit.frequencyDays ? parseInt(habit.frequencyDays) || 2 : 2);
       setFrequencyDays(habit.frequency === 'weekly' ? (habit.frequencyDays || '') : '');
       setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
@@ -164,14 +184,12 @@ function HabitFormDialog({
       setTargetValue(habit.targetValue || 1);
       setTargetUnit(habit.targetUnit || '次');
       setReminderEnabled(habit.reminderEnabled || false);
-      setReminderTime(habit.reminderTime || '09:00');
-      setShowAdvanced(false);
+      setReminderTimes(habit.reminderTime ? habit.reminderTime.split(',').filter(Boolean) : ['09:00']);
     } else if (isOpen) {
       setName('');
       setDescription('');
       setFrequency('daily');
       setIcon('star');
-      setColor('#8B5CF6');
       setEveryXDays(2);
       setFrequencyDays('');
       setStartDate(new Date().toISOString().split('T')[0]);
@@ -179,8 +197,7 @@ function HabitFormDialog({
       setTargetValue(1);
       setTargetUnit('次');
       setReminderEnabled(false);
-      setReminderTime('09:00');
-      setShowAdvanced(false);
+      setReminderTimes(['09:00']);
     }
   }, [isOpen, habit]);
 
@@ -197,16 +214,15 @@ function HabitFormDialog({
 
     onSubmit({
       name: name.trim(),
-      description: description.trim() || undefined,
+      description: description || undefined,
       icon,
-      color,
       frequency,
       targetType,
       targetValue: targetType === 'binary' ? 1 : targetValue,
       targetUnit: targetType === 'binary' ? undefined : targetUnit,
       frequencyDays: fDays,
       reminderEnabled,
-      reminderTime: reminderEnabled ? reminderTime : undefined,
+      reminderTime: reminderEnabled && reminderTimes.length > 0 ? reminderTimes.join(',') : undefined,
       startDate,
     });
     onClose();
@@ -214,10 +230,15 @@ function HabitFormDialog({
 
   if (!isOpen) return null;
 
+  const tabBase = 'px-3 py-1.5 text-sm rounded-lg transition-all';
+  const tabActive = 'bg-green-500 text-white';
+  const tabInactive = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {isEditing ? t('habits.edit_habit') : t('habits.new_habit')}
@@ -226,110 +247,117 @@ function HabitFormDialog({
             <XMarkIcon className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.habit_name')} *</label>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-6 space-y-5">
+          {/* Icon + Name */}
+          <div className="flex items-center gap-2">
+            <div className="relative group">
+              <button
+                type="button"
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                {iconMap[icon] || '⭐'}
+              </button>
+              <div className="absolute z-10 top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 hidden group-hover:flex flex-wrap gap-1 w-[140px]">
+                {icons.map((ic) => (
+                  <button
+                    key={ic}
+                    type="button"
+                    onClick={() => setIcon(ic)}
+                    className={`w-8 h-8 rounded flex items-center justify-center text-base transition-all ${
+                      icon === ic ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {iconMap[ic]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
-              type="text" value={name} onChange={(e) => setName(e.target.value)}
-              required autoFocus
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+              placeholder={t('habits.habit_name')}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
-          {/* Description */}
+
+          {/* Description (Milkdown) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.description')}</label>
-            <input
-              type="text" value={description} onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-          {/* Icon */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.icon')}</label>
-            <div className="flex gap-2 flex-wrap">
-              {icons.map((ic) => (
-                <button key={ic} type="button" onClick={() => setIcon(ic)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${icon === ic ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                >{ic === 'star' ? '⭐' : ic === 'heart' ? '❤️' : ic === 'fire' ? '🔥' : ic === 'book' ? '📖' : ic === 'dumbbell' ? '💪' : ic === 'moon' ? '🌙' : ic === 'sun' ? '☀️' : '🍃'}</button>
-              ))}
-            </div>
-          </div>
-          {/* Color */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.color')}</label>
-            <div className="flex gap-2">
-              {colors.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-green-500 dark:ring-offset-gray-800' : ''}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden min-h-[80px]">
+              <MilkdownEditor
+                markdown={description}
+                onChange={setDescription}
+                placeholder={t('habits.description')}
+              />
             </div>
           </div>
 
-          {/* Frequency */}
+          {/* Frequency (tabs) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.frequency')}</label>
-            <Select
-              value={frequency}
-              onChange={(val) => setFrequency(val as HabitFrequency)}
-              options={[
+            <div className="flex gap-1.5 flex-wrap">
+              {([
                 { value: 'daily', label: t('habits.frequency.daily') },
                 { value: 'every_x_days', label: t('habits.frequency.every_x_days') },
                 { value: 'weekly', label: t('habits.frequency.weekly') },
                 { value: 'monthly', label: t('habits.frequency.monthly') },
-              ]}
-            />
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFrequency(opt.value as HabitFrequency)}
+                  className={`${tabBase} ${frequency === opt.value ? tabActive : tabInactive}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Every X Days input */}
           {frequency === 'every_x_days' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('habits.every_x_days_label')}
-              </label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEveryXDays(Math.max(2, everyXDays - 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                >
-                  <MinusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
-                <input
-                  type="number" min={2} max={365} value={everyXDays}
-                  onChange={(e) => setEveryXDays(Math.max(2, parseInt(e.target.value) || 2))}
-                  className="w-20 px-3 py-2 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setEveryXDays(Math.min(365, everyXDays + 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                >
-                  <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('habits.frequency.days_unit')}</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setEveryXDays(Math.max(2, everyXDays - 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                <MinusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </button>
+              <input
+                type="number" min={2} max={365} value={everyXDays}
+                onChange={(e) => setEveryXDays(Math.max(2, parseInt(e.target.value) || 2))}
+                className="w-16 px-2 py-1.5 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setEveryXDays(Math.min(365, everyXDays + 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </button>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('habits.frequency.days_unit')}</span>
             </div>
           )}
 
           {/* Weekly custom days picker */}
           {frequency === 'weekly' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.custom_days')}</label>
-              <div className="flex gap-1.5 flex-wrap">
-                {weekDays.map((day) => (
-                  <button
-                    key={day.key} type="button" onClick={() => toggleDay(day.key)}
-                    className={`px-3 py-1.5 text-sm rounded-full transition-all ${
-                      selectedDays.includes(day.key)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >{day.label}</button>
-                ))}
-              </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {weekDays.map((day) => (
+                <button
+                  key={day.key} type="button" onClick={() => toggleDay(day.key)}
+                  className={`px-3 py-1.5 text-xs rounded-full transition-all ${
+                    selectedDays.includes(day.key)
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >{day.label}</button>
+              ))}
             </div>
           )}
 
@@ -339,126 +367,108 @@ function HabitFormDialog({
             <DateTimePicker
               date={startDate || undefined}
               onChange={(d) => setStartDate(d || new Date().toISOString().split('T')[0])}
-              events={calendarEvents}
               showTime={false}
             />
           </div>
 
-          {/* Advanced Settings Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-          >
-            {showAdvanced ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
-            <span>{t('habits.advanced')}</span>
-          </button>
+          {/* Target Type (tabs) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.target_type')}</label>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setTargetType('binary')}
+                className={`${tabBase} ${targetType === 'binary' ? tabActive : tabInactive}`}
+              >
+                {t('habits.target_type.binary')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetType('count')}
+                className={`${tabBase} ${targetType === 'count' ? tabActive : tabInactive}`}
+              >
+                {t('habits.target_type.quantity')}
+              </button>
+            </div>
+          </div>
 
-          {showAdvanced && (
-            <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-700">
-              {/* Target Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.target_type')}</label>
-                <div className="space-y-2">
-                  {([
-                    { value: 'binary' as TargetType, label: t('habits.target_type.binary'), desc: t('habits.target_type.binary_desc') },
-                    { value: 'count' as TargetType, label: t('habits.target_type.quantity'), desc: t('habits.target_type.quantity_desc') },
-                  ]).map((opt) => (
-                    <label key={opt.value} className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <input
-                        type="radio" name="targetType" value={opt.value}
-                        checked={targetType === opt.value}
-                        onChange={() => setTargetType(opt.value)}
-                        className="w-4 h-4 text-green-500 mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{opt.label}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+          {/* Target Value + Unit (shown for quantity) */}
+          {targetType !== 'binary' && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('habits.target_value')}</label>
+                <input
+                  type="number" min={1} value={targetValue}
+                  onChange={(e) => setTargetValue(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                />
               </div>
-
-              {/* Target Value + Unit (shown for quantity) */}
-              {targetType !== 'binary' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('habits.target_value')}
-                    </label>
-                    <input
-                      type="number" min={1} value={targetValue}
-                      onChange={(e) => setTargetValue(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('habits.target_unit')}
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {unitPresets.map((u) => (
-                        <button
-                          key={u.value}
-                          type="button"
-                          onClick={() => setTargetUnit(u.value)}
-                          className={`px-2.5 py-1 text-xs rounded-full transition-all ${
-                            targetUnit === u.value
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {u.label}
-                        </button>
-                      ))}
-                      <input
-                        type="text"
-                        value={unitPresets.some((u) => u.value === targetUnit) ? '' : targetUnit}
-                        onChange={(e) => setTargetUnit(e.target.value || '次')}
-                        placeholder={t('habits.target_unit_custom')}
-                        className="px-2.5 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500 w-20"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Reminder */}
-              <div>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('habits.reminder_enabled')}</span>
-                  <button
-                    type="button"
-                    onClick={() => setReminderEnabled(!reminderEnabled)}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      reminderEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                      reminderEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </label>
-                {reminderEnabled && (
-                  <div className="mt-2">
-                    <input
-                      type="time" value={reminderTime}
-                      onChange={(e) => setReminderTime(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                )}
+              <div className="w-28">
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('habits.target_unit')}</label>
+                <Select
+                  value={targetUnit}
+                  onChange={setTargetUnit}
+                  options={unitOptions}
+                />
               </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">{t('common.cancel')}</button>
-            <button type="submit" disabled={!name.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50">{isEditing ? t('common.save') : t('common.create')}</button>
+          {/* Reminder */}
+          <div>
+            <label className="flex items-center justify-between cursor-pointer mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('habits.reminder_enabled')}</span>
+              <button
+                type="button"
+                onClick={() => setReminderEnabled(!reminderEnabled)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  reminderEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                  reminderEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </label>
+            {reminderEnabled && (
+              <div className="space-y-2">
+                {reminderTimes.map((time, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => updateReminderTime(index, e.target.value)}
+                      className="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    />
+                    {reminderTimes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeReminderTime(index)}
+                        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <XMarkIcon className="w-4 h-4 text-red-400" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addReminderTime}
+                  className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                >
+                  <PlusIcon className="w-3.5 h-3.5" />
+                  {t('habits.reminder_add')}
+                </button>
+              </div>
+            )}
           </div>
         </form>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+          <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">{t('common.cancel')}</button>
+          <button type="submit" onClick={handleSubmit} disabled={!name.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50">{isEditing ? t('common.save') : t('common.create')}</button>
+        </div>
       </div>
     </div>
   );

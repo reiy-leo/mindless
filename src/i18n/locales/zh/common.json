@@ -303,6 +303,8 @@
     "reminder": "提醒",
     "reminder_time": "提醒时间",
     "reminder_enabled": "开启提醒",
+    "reminder_add": "添加提醒时间",
+    "reminder_count": "第 {{count}} 个提醒",
     "start_date": "开始日期",
     "due_today": "今日需打卡",
     "not_due_today": "今日无需打卡",

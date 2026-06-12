@@ -290,6 +290,8 @@
     "reminder": "リマインダー",
     "reminder_time": "リマインダー時間",
     "reminder_enabled": "リマインダーを有効にする",
+    "reminder_add": "リマインダー時間を追加",
+    "reminder_count": "リマインダー #{{count}}",
     "start_date": "開始日",
     "due_today": "今日が期限",
     "not_due_today": "今日は期限ではない",

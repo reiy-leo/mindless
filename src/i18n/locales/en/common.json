@@ -302,6 +302,8 @@
     "reminder": "Reminder",
     "reminder_time": "Reminder Time",
     "reminder_enabled": "Enable Reminder",
+    "reminder_add": "Add Reminder Time",
+    "reminder_count": "Reminder #{{count}}",
     "start_date": "Start Date",
     "due_today": "Due today",
     "not_due_today": "Not due today",
