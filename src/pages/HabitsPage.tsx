@@ -16,6 +16,7 @@ import {
 import DateTimePicker from '@/components/DateTimePicker';
 import Select from '@/components/Select';
 import MilkdownEditor from '@/components/MilkdownEditor';
+import EmojiPickerButton from '@/components/EmojiPickerButton';
 import { ResizeHandle } from '@/components/ResizeHandle';
 import { getLunarDayStr } from '@/lib/lunar';
 import { useAppStore } from '@/stores/useAppStore';
@@ -1472,47 +1473,52 @@ export default function HabitsPage() {
                 </button>
               </div>
               <div className="p-5 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.habit_name')}</label>
+                {/* Icon + Name */}
+                <div className="flex items-center gap-2">
+                  <EmojiPickerButton
+                    value={editGroupIcon}
+                    onChange={setEditGroupIcon}
+                  />
                   <input
                     type="text"
                     value={editGroupName}
                     onChange={(e) => setEditGroupName(e.target.value)}
                     autoFocus
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t('habits.habit_name')}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.icon')}</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {['📁', '⭐', '❤️', '🔥', '📖', '💪', '🌙', '☀️', '🍃', '🎯', '💼', '🏠'].map((ic) => (
-                      <button
-                        key={ic}
-                        type="button"
-                        onClick={() => setEditGroupIcon(ic)}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
-                          editGroupIcon === ic ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        {ic}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
+                {/* Color */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.color')}</label>
-                  <div className="flex gap-2">
-                    {['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'].map((c) => (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+                      '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9',
+                      '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
+                      '#EC4899', '#F43F5E', '#64748B', '#6B7280', '#71717A',
+                    ].map((c) => (
                       <button
                         key={c}
                         type="button"
                         onClick={() => setEditGroupColor(c)}
-                        className={`w-7 h-7 rounded-full transition-all ${editGroupColor === c ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' : ''}`}
+                        className={`w-6 h-6 rounded-full transition-all flex-shrink-0 ${editGroupColor === c ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' : ''}`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={editGroupColor}
+                        onChange={(e) => setEditGroupColor(e.target.value)}
+                        className="w-6 h-6 rounded-full cursor-pointer border-0 p-0 bg-transparent"
+                        title={t('habits.target_unit_custom')}
+                      />
+                    </div>
                   </div>
                 </div>
+
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
