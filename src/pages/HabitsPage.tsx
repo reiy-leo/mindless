@@ -90,6 +90,7 @@ function HabitFormDialog({
 
   const [name, setName] = useState(habit?.name || '');
   const [description, setDescription] = useState(habit?.description || '');
+  const [icon, setIcon] = useState(habit?.icon || '⭐');
   const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency || 'daily');
 
   // Every X days
@@ -170,6 +171,7 @@ function HabitFormDialog({
     if (isOpen && habit) {
       setName(habit.name);
       setDescription(habit.description || '');
+      setIcon(habit.icon || '⭐');
       setFrequency(habit.frequency);
       setEveryXDays(habit.frequency === 'every_x_days' && habit.frequencyDays ? parseInt(habit.frequencyDays) || 2 : 2);
       setFrequencyDays(habit.frequency === 'weekly' ? (habit.frequencyDays || '') : '');
@@ -182,6 +184,7 @@ function HabitFormDialog({
     } else if (isOpen) {
       setName('');
       setDescription('');
+      setIcon('⭐');
       setFrequency('daily');
       setEveryXDays(2);
       setFrequencyDays('');
@@ -208,6 +211,7 @@ function HabitFormDialog({
     onSubmit({
       name: name.trim(),
       description: description || undefined,
+      icon,
       frequency,
       targetType,
       targetValue: targetType === 'binary' ? 1 : targetValue,
@@ -242,17 +246,20 @@ function HabitFormDialog({
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-6 space-y-5">
-          {/* Name + Description */}
+          {/* Icon + Name + Description */}
           <div className="space-y-3">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoFocus
-              placeholder={t('habits.habit_name')}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <div className="flex items-center gap-2">
+              <EmojiPickerButton value={icon} onChange={setIcon} />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+                placeholder={t('habits.habit_name')}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
             {/* Description (Milkdown) */}
             <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden min-h-[60px]">
               <MilkdownEditor
@@ -879,11 +886,16 @@ function HabitCard({
       className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow"
       onContextMenu={onContextMenu}
     >
-      {/* Row 1: Title + Frequency | Streak + Total */}
+      {/* Row 1: Icon + Title + Frequency | Streak + Total */}
       <div className="flex items-center justify-between mb-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{habit.name}</h3>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500">{getFrequencyLabel(habit.frequency)}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          {habit.icon && (
+            <span className="text-base flex-shrink-0">{habit.icon}</span>
+          )}
+          <div className="min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{habit.name}</h3>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{getFrequencyLabel(habit.frequency)}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {habit.currentStreak > 0 && (
