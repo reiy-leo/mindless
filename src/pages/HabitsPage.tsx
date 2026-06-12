@@ -22,6 +22,43 @@ import { getLunarDayStr } from '@/lib/lunar';
 import { useAppStore } from '@/stores/useAppStore';
 import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams } from '@/types/habit';
 
+// ==================== Check if Habit is Due on Date ====================
+function isHabitDueOnDate(habit: Habit, dateStr: string): boolean {
+  const date = new Date(dateStr + 'T00:00:00');
+  const startDate = habit.startDate || dateStr;
+  if (dateStr < startDate) return false;
+
+  switch (habit.frequency) {
+    case 'daily':
+      return true;
+    case 'every_x_days': {
+      const interval = habit.frequencyDays ? parseInt(habit.frequencyDays) : 1;
+      if (interval <= 1) return true;
+      const start = new Date(startDate + 'T00:00:00');
+      const diffDays = Math.floor((date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays % interval === 0;
+    }
+    case 'weekly': {
+      if (!habit.frequencyDays) return true;
+      const dayKeys = habit.frequencyDays.split(',').filter(Boolean);
+      if (dayKeys.length === 0) return true;
+      const weekDayMap: Record<string, number> = {
+        sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+      };
+      const dayOfWeek = date.getDay();
+      return dayKeys.some((k) => weekDayMap[k] === dayOfWeek);
+    }
+    case 'monthly': {
+      const start = new Date(startDate + 'T00:00:00');
+      const targetDay = start.getDate();
+      const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      return date.getDate() === Math.min(targetDay, lastDayOfMonth);
+    }
+    default:
+      return true;
+  }
+}
+
 // ==================== Days Until Next Check-in ====================
 function daysUntilNextCheckin(habit: Habit): number {
   const today = new Date();
@@ -1205,8 +1242,9 @@ export default function HabitsPage() {
   const filteredHabits = useMemo(() => {
     switch (selectedHabitGroupId) {
       case 'all':
-      case 'week':
         return habits;
+      case 'week':
+        return habits.filter((h) => isHabitDueOnDate(h, selectedDate));
       case 'archived':
         return [];
       case 'deleted':
@@ -1214,7 +1252,7 @@ export default function HabitsPage() {
       default:
         return habits.filter((h) => (h as any).groupId === selectedHabitGroupId);
     }
-  }, [habits, selectedHabitGroupId]);
+  }, [habits, selectedHabitGroupId, selectedDate]);
 
   // For week view, build a checkin map for the selected date
   const weekViewCheckinMap = useMemo(() => {
