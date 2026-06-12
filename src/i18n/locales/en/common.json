@@ -251,7 +251,7 @@
     "description": "Description",
     "icon": "Icon",
     "color": "Color",
-    "frequency": "Frequency",
+    "frequency_label": "Frequency",
     "no_habits": "No habits",
     "create_first": "Create your first habit",
     "check_in": "Check In",

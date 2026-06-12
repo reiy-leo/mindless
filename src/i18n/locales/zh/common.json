@@ -252,7 +252,7 @@
     "description": "描述",
     "icon": "图标",
     "color": "颜色",
-    "frequency": "频率",
+    "frequency_label": "频率",
     "no_habits": "暂无习惯",
     "create_first": "创建第一个习惯",
     "check_in": "打卡",
