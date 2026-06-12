@@ -325,7 +325,7 @@ function HabitFormDialog({
                 <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-6 space-y-5">
                     {/* Icon + Name + Description */}
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                             <EmojiPickerButton value={icon} onChange={setIcon} />
                             <input
                                 type="text"
@@ -520,10 +520,13 @@ function HabitFormDialog({
                                             width: 380,
                                             height: 480,
                                         });
-                                        const unlisten = await listenFromDialog("unit-selector:result", (payload: any) => {
-                                            if (payload?.unit) setTargetUnit(payload.unit);
-                                            unlisten();
-                                        });
+                                        const unlisten = await listenFromDialog(
+                                            "unit-selector:result",
+                                            (payload: any) => {
+                                                if (payload?.unit) setTargetUnit(payload.unit);
+                                                unlisten();
+                                            },
+                                        );
                                     }}
                                     className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                                 >
@@ -1358,6 +1361,138 @@ function HabitCard({
     );
 }
 
+// ==================== Habit Row (List View) ====================
+function HabitRow({
+    habit,
+    onCheckIn,
+    todayValue,
+    isArchived,
+    onUnarchive,
+    onHardDelete,
+    onContextMenu,
+}: {
+    habit: Habit;
+    onCheckIn: (value?: number) => void;
+    todayValue: number;
+    isArchived?: boolean;
+    onUnarchive?: () => void;
+    onHardDelete?: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
+}) {
+    const { t } = useTranslation("common");
+
+    const getFrequencyLabel = (freq: HabitFrequency) => {
+        switch (freq) {
+            case "daily": return t("habits.frequency.daily");
+            case "every_x_days": {
+                const n = habit.frequencyDays ? parseInt(habit.frequencyDays) : 2;
+                return t("habits.frequency.every_x_days_value", { days: n });
+            }
+            case "weekly": {
+                const days = habit.frequencyDays ? habit.frequencyDays.split(",").filter(Boolean) : [];
+                if (days.length > 0 && days.length < 7) {
+                    const dayLabels: Record<string, string> = {
+                        mon: t("habits.days.mon"), tue: t("habits.days.tue"), wed: t("habits.days.wed"),
+                        thu: t("habits.days.thu"), fri: t("habits.days.fri"), sat: t("habits.days.sat"), sun: t("habits.days.sun"),
+                    };
+                    return days.map((d) => dayLabels[d] || d).join(", ");
+                }
+                return t("habits.frequency.weekly");
+            }
+            case "monthly": return t("habits.frequency.monthly");
+            default: return freq;
+        }
+    };
+
+    const hasValueTarget = habit.targetType !== "binary" && habit.targetValue > 1;
+    const targetMet = hasValueTarget && todayValue >= habit.targetValue;
+    const progressPercent = hasValueTarget ? Math.min(100, (todayValue / habit.targetValue) * 100) : 0;
+    const nextDays = daysUntilNextCheckin(habit);
+
+    return (
+        <div
+            className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+            onContextMenu={onContextMenu}
+        >
+            {/* Icon + Name + Frequency */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+                {habit.icon && <span className="text-sm flex-shrink-0">{habit.icon}</span>}
+                <div className="min-w-0">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">{habit.name}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{getFrequencyLabel(habit.frequency)}</span>
+                </div>
+            </div>
+
+            {/* Check-in / Progress */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {isArchived ? (
+                    <div className="flex items-center gap-1">
+                        {onUnarchive && (
+                            <button onClick={onUnarchive} className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20" title={t("habits.unarchive")}>
+                                <ArrowUturnLeftIcon className="w-3.5 h-3.5 text-green-500" />
+                            </button>
+                        )}
+                        {onHardDelete && (
+                            <button onClick={onHardDelete} className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" title={t("habits.hard_delete")}>
+                                <TrashIcon className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                        )}
+                    </div>
+                ) : hasValueTarget ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all duration-300"
+                                style={{ width: `${progressPercent}%`, backgroundColor: targetMet ? "#10B981" : habit.color }}
+                            />
+                        </div>
+                        <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 w-16 text-right">
+                            {todayValue}/{habit.targetValue} {habit.targetUnit || "次"}
+                        </span>
+                        <button
+                            onClick={() => onCheckIn(todayValue + 1)}
+                            disabled={targetMet}
+                            className={`p-1 rounded transition-all ${targetMet ? "text-green-500" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                        >
+                            {targetMet ? (
+                                <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                            ) : (
+                                <PlusIcon className="w-4 h-4 text-gray-400" />
+                            )}
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => onCheckIn(undefined)}
+                        disabled={todayValue > 0}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                            todayValue > 0
+                                ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
+                    >
+                        {todayValue > 0 ? t("habits.checked_in") : t("habits.check_in")}
+                    </button>
+                )}
+            </div>
+
+            {/* Streak + Total + Next */}
+            <div className="flex items-center gap-3 flex-shrink-0 text-[11px] text-gray-400 dark:text-gray-500">
+                {habit.currentStreak > 0 && (
+                    <span className="flex items-center gap-0.5 text-orange-500">
+                        <FireIcon className="w-3 h-3" />
+                        {habit.currentStreak}
+                    </span>
+                )}
+                <span>{t("habits.total")}: {habit.totalCompletions}</span>
+                {!isArchived && (
+                    <span>{nextDays === 0 ? t("habits.next_checkin_today") : t("habits.next_checkin", { days: nextDays })}</span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ==================== Main Page ====================
 export default function HabitsPage() {
     const { t } = useTranslation("common");
@@ -1376,8 +1511,16 @@ export default function HabitsPage() {
     const [editGroupIcon, setEditGroupIcon] = useState("📁");
     const [editGroupColor, setEditGroupColor] = useState("#8B5CF6");
 
-    const { selectedHabitGroupId, setSelectedHabitGroupId, habitGroupsPanelWidth, setHabitGroupsPanelWidth } =
-        useAppStore();
+    const {
+        selectedHabitGroupId,
+        setSelectedHabitGroupId,
+        habitGroupsPanelWidth,
+        setHabitGroupsPanelWidth,
+        habitGroupViewModes,
+        setHabitGroupViewMode,
+    } = useAppStore();
+
+    const currentViewMode = habitGroupViewModes[selectedHabitGroupId] || "card";
 
     const { data: habits = [], isLoading } = useHabits();
     const { data: archivedHabits = [] } = useArchivedHabits();
@@ -1671,6 +1814,35 @@ export default function HabitsPage() {
                             (habitGroups.find((g) => g.id === selectedHabitGroupId)?.name || "")}
                     </h1>
                     <div className="flex items-center gap-2">
+                        {/* View mode toggle */}
+                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+                            <button
+                                onClick={() => setHabitGroupViewMode(selectedHabitGroupId, "list")}
+                                className={`p-1.5 rounded transition-colors ${
+                                    currentViewMode === "list"
+                                        ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
+                                        : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                                }`}
+                                title={t("habits.view_list")}
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={() => setHabitGroupViewMode(selectedHabitGroupId, "card")}
+                                className={`p-1.5 rounded transition-colors ${
+                                    currentViewMode === "card"
+                                        ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
+                                        : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                                }`}
+                                title={t("habits.view_card")}
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                </svg>
+                            </button>
+                        </div>
                         <button
                             onClick={() => refreshStreaks.mutate()}
                             disabled={refreshStreaks.isPending}
@@ -1712,6 +1884,20 @@ export default function HabitsPage() {
                         <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
                             <p className="text-lg">{t("habits.no_archived")}</p>
                         </div>
+                    ) : currentViewMode === "list" ? (
+                        <div className="space-y-1">
+                            {archivedHabits.map((habit) => (
+                                <HabitRow
+                                    key={habit.id}
+                                    habit={habit}
+                                    onCheckIn={() => {}}
+                                    todayValue={0}
+                                    isArchived
+                                    onUnarchive={() => unarchive.mutate(habit.id)}
+                                    onHardDelete={() => handleHardDelete(habit.id)}
+                                />
+                            ))}
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {archivedHabits.map((habit) => (
@@ -1740,6 +1926,18 @@ export default function HabitsPage() {
                                 {t("habits.create_first")}
                             </button>
                         </div>
+                    ) : currentViewMode === "list" ? (
+                        <div className="space-y-1">
+                            {filteredHabits.map((habit) => (
+                                <HabitRow
+                                    key={habit.id}
+                                    habit={habit}
+                                    onCheckIn={(value) => handleCheckIn(habit.id, value)}
+                                    todayValue={getCheckinValue(habit.id)}
+                                    onContextMenu={(e) => handleHabitContextMenu(e, habit)}
+                                />
+                            ))}
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredHabits.map((habit) => (
@@ -1759,6 +1957,18 @@ export default function HabitsPage() {
                     (filteredHabits.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
                             <p className="text-lg">{t("habits.no_habits")}</p>
+                        </div>
+                    ) : currentViewMode === "list" ? (
+                        <div className="space-y-1">
+                            {filteredHabits.map((habit) => (
+                                <HabitRow
+                                    key={habit.id}
+                                    habit={habit}
+                                    onCheckIn={(value) => handleCheckIn(habit.id, value)}
+                                    todayValue={getCheckinValue(habit.id)}
+                                    onContextMenu={(e) => handleHabitContextMenu(e, habit)}
+                                />
+                            ))}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

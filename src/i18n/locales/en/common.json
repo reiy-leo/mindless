@@ -327,6 +327,8 @@
       "delete_with_habits": "Delete Group & Habits",
       "delete_with_habits_confirm": "Delete this group and all habits in it? This cannot be undone."
     },
+    "view_list": "List View",
+    "view_card": "Card View",
     "unarchive": "Restore",
     "hard_delete": "Delete Permanently",
     "hard_delete_confirm": "Permanently delete this habit? This cannot be undone.",

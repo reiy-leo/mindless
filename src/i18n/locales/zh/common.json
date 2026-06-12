@@ -328,6 +328,8 @@
       "delete_with_habits": "删除组及习惯",
       "delete_with_habits_confirm": "确定删除这个习惯组及组内所有习惯吗？此操作不可撤销。"
     },
+    "view_list": "列表视图",
+    "view_card": "卡片视图",
     "unarchive": "恢复",
     "hard_delete": "永久删除",
     "hard_delete_confirm": "确定永久删除这个习惯吗？此操作不可撤销。",

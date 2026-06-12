@@ -315,6 +315,8 @@
       "delete_with_habits": "グループと習慣を削除",
       "delete_with_habits_confirm": "このグループとグループ内のすべての習慣を削除しますか？この操作は取り消せません。"
     },
+    "view_list": "リスト表示",
+    "view_card": "カード表示",
     "unarchive": "復元",
     "hard_delete": "完全に削除",
     "hard_delete_confirm": "この習慣を完全に削除しますか？この操作は取り消せません。",
