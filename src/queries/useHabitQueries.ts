@@ -58,6 +58,7 @@ export function useDeleteHabit() {
     mutationFn: (id: string) => api.deleteHabit(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-habits'] });
     },
   });
 }
