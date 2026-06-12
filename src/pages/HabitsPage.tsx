@@ -91,7 +91,7 @@ function HabitFormDialog({
   const [name, setName] = useState(habit?.name || '');
   const [description, setDescription] = useState(habit?.description || '');
   const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency || 'daily');
-  const [icon, setIcon] = useState(habit?.icon || 'star');
+  const [icon, setIcon] = useState(habit?.icon || '⭐');
 
   // Every X days
   const [everyXDays, setEveryXDays] = useState(() => {
@@ -123,11 +123,6 @@ function HabitFormDialog({
     return ['09:00'];
   });
 
-  const icons = ['star', 'heart', 'fire', 'book', 'dumbbell', 'moon', 'sun', 'leaf'];
-  const iconMap: Record<string, string> = {
-    star: '⭐', heart: '❤️', fire: '🔥', book: '📖',
-    dumbbell: '💪', moon: '🌙', sun: '☀️', leaf: '🍃',
-  };
   const unitOptions = [
     { value: '次', label: '次' },
     { value: 'mL', label: 'mL' },
@@ -177,7 +172,7 @@ function HabitFormDialog({
       setName(habit.name);
       setDescription(habit.description || '');
       setFrequency(habit.frequency);
-      setIcon(habit.icon || 'star');
+      setIcon(habit.icon || '⭐');
       setEveryXDays(habit.frequency === 'every_x_days' && habit.frequencyDays ? parseInt(habit.frequencyDays) || 2 : 2);
       setFrequencyDays(habit.frequency === 'weekly' ? (habit.frequencyDays || '') : '');
       setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
@@ -190,7 +185,7 @@ function HabitFormDialog({
       setName('');
       setDescription('');
       setFrequency('daily');
-      setIcon('star');
+      setIcon('⭐');
       setEveryXDays(2);
       setFrequencyDays('');
       setStartDate(new Date().toISOString().split('T')[0]);
@@ -251,45 +246,25 @@ function HabitFormDialog({
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-6 space-y-5">
-          {/* Icon + Name */}
-          <div className="flex items-center gap-2">
-            <div className="relative group">
-              <button
-                type="button"
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                {iconMap[icon] || '⭐'}
-              </button>
-              <div className="absolute z-10 top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 hidden group-hover:flex flex-wrap gap-1 w-[140px]">
-                {icons.map((ic) => (
-                  <button
-                    key={ic}
-                    type="button"
-                    onClick={() => setIcon(ic)}
-                    className={`w-8 h-8 rounded flex items-center justify-center text-base transition-all ${
-                      icon === ic ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {iconMap[ic]}
-                  </button>
-                ))}
-              </div>
+          {/* Icon + Name + Description */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <EmojiPickerButton
+                value={icon}
+                onChange={setIcon}
+              />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+                placeholder={t('habits.habit_name')}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
             </div>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoFocus
-              placeholder={t('habits.habit_name')}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-
-          {/* Description (Milkdown) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('habits.description')}</label>
-            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden min-h-[80px]">
+            {/* Description (Milkdown) */}
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden min-h-[60px]">
               <MilkdownEditor
                 markdown={description}
                 onChange={setDescription}
