@@ -12,6 +12,8 @@ import TagsPage from './pages/TagsPage';
 import SettingsPage from './pages/SettingsPage';
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
+import DatePickerDialogPage from './pages/dialogs/DatePickerDialogPage';
+import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage';
 import { useAppStore } from './stores/useAppStore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import * as api from './lib/api';
@@ -204,6 +206,8 @@ function App() {
         <Routes>
           <Route path="/dialog/list-form" element={<ListFormDialogPage />} />
           <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
+          <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} />
+          <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route path="*" element={
             <AppLayout>
               <Routes>
