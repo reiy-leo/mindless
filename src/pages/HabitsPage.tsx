@@ -810,16 +810,15 @@ function WeekView({
 
 // ==================== Habit Card ====================
 function HabitCard({
-  habit, onEdit, onDelete, onCheckIn, todayValue, isArchived, onUnarchive, onHardDelete,
+  habit, onCheckIn, todayValue, isArchived, onUnarchive, onHardDelete, onContextMenu,
 }: {
   habit: Habit;
-  onEdit: () => void;
-  onDelete: () => void;
   onCheckIn: (value?: number) => void;
   todayValue: number;
   isArchived?: boolean;
   onUnarchive?: () => void;
   onHardDelete?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation('common');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -863,8 +862,11 @@ function HabitCard({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
-      {/* Row 1: Icon + Title + Frequency | Streak + Actions */}
+    <div
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow"
+      onContextMenu={onContextMenu}
+    >
+      {/* Row 1: Icon + Title + Frequency | Streak + Total */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{ backgroundColor: habit.color + '20' }}>
@@ -875,18 +877,15 @@ function HabitCard({
             <p className="text-[11px] text-gray-400 dark:text-gray-500">{getFrequencyLabel(habit.frequency)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {habit.currentStreak > 0 && (
             <span className="flex items-center gap-0.5 text-orange-500 text-xs font-medium">
               <FireIcon className="w-3.5 h-3.5" />
               {habit.currentStreak}
             </span>
           )}
-          <button onClick={onEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
-            <PencilIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-          </button>
           {isArchived ? (
-            <>
+            <div className="flex items-center gap-1">
               {onUnarchive && (
                 <button onClick={onUnarchive} className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20" title={t('habits.unarchive')}>
                   <ArrowUturnLeftIcon className="w-3.5 h-3.5 text-green-500" />
@@ -897,11 +896,11 @@ function HabitCard({
                   <TrashIcon className="w-3.5 h-3.5 text-red-500" />
                 </button>
               )}
-            </>
+            </div>
           ) : (
-            <button onClick={onDelete} className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
-              <ArchiveBoxIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-            </button>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              {t('habits.total')}: {habit.totalCompletions}
+            </span>
           )}
         </div>
       </div>
@@ -1015,7 +1014,11 @@ export default function HabitsPage() {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: HabitGroup } | null>(null);
+  const [contextMenu, setContextMenu] = useState<
+    | { type: 'group'; x: number; y: number; group: HabitGroup }
+    | { type: 'habit'; x: number; y: number; habit: Habit }
+    | null
+  >(null);
   const [editingGroup, setEditingGroup] = useState<HabitGroup | null>(null);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupIcon, setEditGroupIcon] = useState('📁');
@@ -1087,7 +1090,12 @@ export default function HabitsPage() {
 
   const handleGroupContextMenu = (e: React.MouseEvent, group: HabitGroup) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, group });
+    setContextMenu({ type: 'group', x: e.clientX, y: e.clientY, group });
+  };
+
+  const handleHabitContextMenu = (e: React.MouseEvent, habit: Habit) => {
+    e.preventDefault();
+    setContextMenu({ type: 'habit', x: e.clientX, y: e.clientY, habit });
   };
 
   const handleDissolveGroup = (group: HabitGroup) => {
@@ -1339,8 +1347,6 @@ export default function HabitsPage() {
                 <HabitCard
                   key={habit.id}
                   habit={habit}
-                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
-                  onDelete={() => {}}
                   onCheckIn={() => {}}
                   todayValue={0}
                   isArchived
@@ -1367,10 +1373,9 @@ export default function HabitsPage() {
                 <HabitCard
                   key={habit.id}
                   habit={habit}
-                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
-                  onDelete={() => handleArchive(habit.id)}
                   onCheckIn={(value) => handleCheckIn(habit.id, value)}
                   todayValue={getCheckinValue(habit.id)}
+                  onContextMenu={(e) => handleHabitContextMenu(e, habit)}
                 />
               ))}
             </div>
@@ -1389,10 +1394,9 @@ export default function HabitsPage() {
                 <HabitCard
                   key={habit.id}
                   habit={habit}
-                  onEdit={() => { setEditingHabit(habit); setShowForm(true); }}
-                  onDelete={() => handleArchive(habit.id)}
                   onCheckIn={(value) => handleCheckIn(habit.id, value)}
                   todayValue={getCheckinValue(habit.id)}
+                  onContextMenu={(e) => handleHabitContextMenu(e, habit)}
                 />
               ))}
             </div>
@@ -1488,28 +1492,49 @@ export default function HabitsPage() {
           className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <button
-            onClick={() => handleOpenEditGroup(contextMenu.group)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <PencilIcon className="w-4 h-4" />
-            {t('habits.groups.edit_group')}
-          </button>
-          <button
-            onClick={() => handleDissolveGroup(contextMenu.group)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <ArrowUturnLeftIcon className="w-4 h-4" />
-            {t('habits.groups.dissolve')}
-          </button>
-          <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
-          <button
-            onClick={() => handleDeleteGroupWithHabits(contextMenu.group)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <TrashIcon className="w-4 h-4" />
-            {t('habits.groups.delete_with_habits')}
-          </button>
+          {contextMenu.type === 'group' ? (
+            <>
+              <button
+                onClick={() => handleOpenEditGroup(contextMenu.group)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <PencilIcon className="w-4 h-4" />
+                {t('habits.groups.edit_group')}
+              </button>
+              <button
+                onClick={() => handleDissolveGroup(contextMenu.group)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <ArrowUturnLeftIcon className="w-4 h-4" />
+                {t('habits.groups.dissolve')}
+              </button>
+              <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+              <button
+                onClick={() => handleDeleteGroupWithHabits(contextMenu.group)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <TrashIcon className="w-4 h-4" />
+                {t('habits.groups.delete_with_habits')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => { setEditingHabit(contextMenu.habit); setShowForm(true); setContextMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <PencilIcon className="w-4 h-4" />
+                {t('common.edit')}
+              </button>
+              <button
+                onClick={() => { handleArchive(contextMenu.habit.id); setContextMenu(null); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <ArchiveBoxIcon className="w-4 h-4" />
+                {t('habits.groups.archived')}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
