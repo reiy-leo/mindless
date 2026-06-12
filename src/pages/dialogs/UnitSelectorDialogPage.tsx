@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -40,19 +40,19 @@ export default function UnitSelectorDialogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-800">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('habits.target_unit')}</h2>
-        <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-          <span className="text-gray-500">✕</span>
-        </button>
-      </div>
-
+    <div className="min-h-screen bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
       <div className="p-4 space-y-4">
+        {/* Close button + Title */}
+        <div className="flex items-center gap-2">
+          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <XMarkIcon className="w-4 h-4 text-gray-400" />
+          </button>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('habits.target_unit')}</h2>
+        </div>
+
         {/* Preset units grid */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
             {t('habits.target_unit_presets')}
           </label>
           <div className="grid grid-cols-4 gap-2">
@@ -74,7 +74,7 @@ export default function UnitSelectorDialogPage() {
 
         {/* Custom unit input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
             {t('habits.target_unit_custom')}
           </label>
           <input
@@ -82,24 +82,24 @@ export default function UnitSelectorDialogPage() {
             value={customUnit}
             onChange={(e) => setCustomUnit(e.target.value)}
             placeholder={t('habits.target_unit_custom')}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
         </div>
 
         {/* Preview */}
-        <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <span className="text-sm text-gray-500 dark:text-gray-400">{t('habits.target_unit')}: </span>
+        <div className="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('habits.target_unit')}: </span>
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {customUnit.trim() || selectedUnit}
           </span>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={handleClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+        <div className="flex gap-2">
+          <button onClick={handleClose} className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm">
             {t('common.cancel')}
           </button>
-          <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-1">
+          <button onClick={handleConfirm} className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-1 text-sm">
             <CheckIcon className="w-4 h-4" />
             {t('common.save')}
           </button>

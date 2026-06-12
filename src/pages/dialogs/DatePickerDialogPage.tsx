@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getLunarDayStr } from '@/lib/lunar';
@@ -54,23 +54,18 @@ export default function DatePickerDialogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-800">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('habits.start_date')}</h2>
-        <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-          <span className="text-gray-500">✕</span>
-        </button>
-      </div>
-
+    <div className="min-h-screen bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
       <div className="p-4">
-        {/* Month navigation */}
+        {/* Month navigation + close button */}
         <div className="flex items-center justify-between mb-4">
+          <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <XMarkIcon className="w-4 h-4 text-gray-400" />
+          </button>
           <div className="flex items-center gap-1">
             <button onClick={prevMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
               <ChevronLeftIcon className="w-4 h-4 text-gray-500" />
             </button>
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[130px] text-center">
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[120px] text-center">
               {monthLabel}
             </span>
             <button onClick={nextMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">

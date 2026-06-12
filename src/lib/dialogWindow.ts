@@ -32,7 +32,8 @@ export async function openDialogWindow(options: OpenDialogOptions): Promise<Webv
     width,
     height,
     resizable: false,
-    decorations: true,
+    decorations: false,
+    transparent: true,
     center: true,
     alwaysOnTop: true,
   });
