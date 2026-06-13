@@ -39,8 +39,26 @@ import EmojiPickerButton from "@/components/EmojiPickerButton";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import { getLunarDayStr } from "@/lib/lunar";
 import { openDialogWindow, listenFromDialog } from "@/lib/dialogWindow";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "@/stores/useAppStore";
 import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams } from "@/types/habit";
+
+// Get screen coordinates of an element by adding window position to viewport rect
+async function getScreenRect(el: HTMLElement): Promise<{ x: number; y: number; width: number; height: number }> {
+  const rect = el.getBoundingClientRect();
+  const win = getCurrentWindow();
+  const outerPos = await win.outerPosition();
+  const innerPos = await win.innerPosition();
+  // outerPos includes titlebar, innerPos is content area
+  // The difference gives us the titlebar height
+  const titlebarH = outerPos.y - innerPos.y;
+  return {
+    x: outerPos.x + rect.left,
+    y: outerPos.y + titlebarH + rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
 
 // ==================== Check if Habit is Due on Date ====================
 function isHabitDueOnDate(habit: Habit, dateStr: string): boolean {
@@ -445,19 +463,14 @@ function HabitFormDialog({
                         <button
                             type="button"
                             onClick={async (e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
+                                const screenRect = await getScreenRect(e.currentTarget);
                                 await openDialogWindow({
                                     label: "date-picker",
                                     title: t("habits.start_date"),
                                     url: `/dialog/date-picker?date=${startDate}`,
-                                    width: 380,
-                                    height: 520,
-                                    anchorRect: {
-                                        x: rect.left,
-                                        y: rect.top,
-                                        width: rect.width,
-                                        height: rect.height,
-                                    },
+                                    width: 240,
+                                    height: 420,
+                                    anchorRect: screenRect,
                                 });
                                 const unlisten = await listenFromDialog("date-picker:result", (payload: any) => {
                                     if (payload?.date) setStartDate(payload.date);
@@ -520,19 +533,14 @@ function HabitFormDialog({
                                 <button
                                     type="button"
                                     onClick={async (e) => {
-                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const screenRect = await getScreenRect(e.currentTarget);
                                         await openDialogWindow({
                                             label: "unit-selector",
                                             title: t("habits.target_unit"),
                                             url: `/dialog/unit-selector?unit=${targetUnit}`,
-                                            width: 380,
-                                            height: 480,
-                                            anchorRect: {
-                                                x: rect.left,
-                                                y: rect.top,
-                                                width: rect.width,
-                                                height: rect.height,
-                                            },
+                                            width: 320,
+                                            height: 420,
+                                            anchorRect: screenRect,
                                         });
                                         const unlisten = await listenFromDialog(
                                             "unit-selector:result",
@@ -1397,7 +1405,8 @@ function HabitRow({
 
     const getFrequencyLabel = (freq: HabitFrequency) => {
         switch (freq) {
-            case "daily": return t("habits.frequency.daily");
+            case "daily":
+                return t("habits.frequency.daily");
             case "every_x_days": {
                 const n = habit.frequencyDays ? parseInt(habit.frequencyDays) : 2;
                 return t("habits.frequency.every_x_days_value", { days: n });
@@ -1406,15 +1415,22 @@ function HabitRow({
                 const days = habit.frequencyDays ? habit.frequencyDays.split(",").filter(Boolean) : [];
                 if (days.length > 0 && days.length < 7) {
                     const dayLabels: Record<string, string> = {
-                        mon: t("habits.days.mon"), tue: t("habits.days.tue"), wed: t("habits.days.wed"),
-                        thu: t("habits.days.thu"), fri: t("habits.days.fri"), sat: t("habits.days.sat"), sun: t("habits.days.sun"),
+                        mon: t("habits.days.mon"),
+                        tue: t("habits.days.tue"),
+                        wed: t("habits.days.wed"),
+                        thu: t("habits.days.thu"),
+                        fri: t("habits.days.fri"),
+                        sat: t("habits.days.sat"),
+                        sun: t("habits.days.sun"),
                     };
                     return days.map((d) => dayLabels[d] || d).join(", ");
                 }
                 return t("habits.frequency.weekly");
             }
-            case "monthly": return t("habits.frequency.monthly");
-            default: return freq;
+            case "monthly":
+                return t("habits.frequency.monthly");
+            default:
+                return freq;
         }
     };
 
@@ -1432,8 +1448,12 @@ function HabitRow({
             <div className="flex items-center gap-2 min-w-0 flex-1">
                 {habit.icon && <span className="text-sm flex-shrink-0">{habit.icon}</span>}
                 <div className="min-w-0">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">{habit.name}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{getFrequencyLabel(habit.frequency)}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
+                        {habit.name}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {getFrequencyLabel(habit.frequency)}
+                    </span>
                 </div>
             </div>
 
@@ -1442,12 +1462,20 @@ function HabitRow({
                 {isArchived ? (
                     <div className="flex items-center gap-1">
                         {onUnarchive && (
-                            <button onClick={onUnarchive} className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20" title={t("habits.unarchive")}>
+                            <button
+                                onClick={onUnarchive}
+                                className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
+                                title={t("habits.unarchive")}
+                            >
                                 <ArrowUturnLeftIcon className="w-3.5 h-3.5 text-green-500" />
                             </button>
                         )}
                         {onHardDelete && (
-                            <button onClick={onHardDelete} className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" title={t("habits.hard_delete")}>
+                            <button
+                                onClick={onHardDelete}
+                                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                title={t("habits.hard_delete")}
+                            >
                                 <TrashIcon className="w-3.5 h-3.5 text-red-500" />
                             </button>
                         )}
@@ -1457,7 +1485,10 @@ function HabitRow({
                         <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
                                 className="h-full rounded-full transition-all duration-300"
-                                style={{ width: `${progressPercent}%`, backgroundColor: targetMet ? "#10B981" : habit.color }}
+                                style={{
+                                    width: `${progressPercent}%`,
+                                    backgroundColor: targetMet ? "#10B981" : habit.color,
+                                }}
                             />
                         </div>
                         <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 w-16 text-right">
@@ -1466,7 +1497,9 @@ function HabitRow({
                         <button
                             onClick={() => onCheckIn(todayValue + 1)}
                             disabled={targetMet}
-                            className={`p-1 rounded transition-all ${targetMet ? "text-green-500" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                            className={`p-1 rounded transition-all ${
+                                targetMet ? "text-green-500" : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                            }`}
                         >
                             {targetMet ? (
                                 <CheckCircleIcon className="w-4 h-4 text-green-500" />
@@ -1498,9 +1531,13 @@ function HabitRow({
                         {habit.currentStreak}
                     </span>
                 )}
-                <span>{t("habits.total")}: {habit.totalCompletions}</span>
+                <span>
+                    {t("habits.total")}: {habit.totalCompletions}
+                </span>
                 {!isArchived && (
-                    <span>{nextDays === 0 ? t("habits.next_checkin_today") : t("habits.next_checkin", { days: nextDays })}</span>
+                    <span>
+                        {nextDays === 0 ? t("habits.next_checkin_today") : t("habits.next_checkin", { days: nextDays })}
+                    </span>
                 )}
             </div>
         </div>
@@ -1839,7 +1876,13 @@ export default function HabitsPage() {
                                 }`}
                                 title={t("habits.view_list")}
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
@@ -1852,8 +1895,18 @@ export default function HabitsPage() {
                                 }`}
                                 title={t("habits.view_card")}
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                                    />
                                 </svg>
                             </button>
                         </div>
