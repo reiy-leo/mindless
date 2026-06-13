@@ -132,7 +132,7 @@ export default function AdvancedGroupFormDialogPage() {
   const userLists = allLists.filter((l) => !seedIds.has(l.id));
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-800">
+    <div className="min-h-screen bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
       {!loaded ? (
         <div className="p-6 flex items-center justify-center">
           <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
