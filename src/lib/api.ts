@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -513,4 +513,121 @@ export async function unarchiveNote(id: string): Promise<Note> {
 
 export async function completeNote(id: string): Promise<Note> {
   return await invoke<Note>('complete_note', { id });
+}
+
+// Person Group APIs
+export async function getPersonGroups(): Promise<PersonGroup[]> {
+  return await invoke<PersonGroup[]>('get_person_groups');
+}
+
+export async function createPersonGroup(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<PersonGroup> {
+  return await invoke<PersonGroup>('create_person_group', params);
+}
+
+export async function updatePersonGroup(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+  isPinned?: boolean;
+  isArchived?: boolean;
+}): Promise<PersonGroup> {
+  return await invoke<PersonGroup>('update_person_group', { id, ...params });
+}
+
+export async function deletePersonGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_person_group', { id });
+}
+
+// Person APIs
+export async function getPersons(): Promise<Person[]> {
+  return await invoke<Person[]>('get_persons');
+}
+
+export async function getAllPersons(): Promise<Person[]> {
+  return await invoke<Person[]>('get_all_persons');
+}
+
+export async function getPersonById(id: string): Promise<Person> {
+  return await invoke<Person>('get_person_by_id', { id });
+}
+
+export async function createPerson(params: {
+  name: string;
+  englishName?: string;
+  nickname?: string;
+  remark?: string;
+  groupId?: string;
+  tagIds?: string;
+}): Promise<Person> {
+  return await invoke<Person>('create_person', params);
+}
+
+export async function updatePerson(id: string, params: {
+  name?: string;
+  englishName?: string;
+  nickname?: string;
+  remark?: string;
+  groupId?: string;
+  tagIds?: string;
+  isPinned?: boolean;
+  isArchived?: boolean;
+  sortOrder?: number;
+}): Promise<Person> {
+  return await invoke<Person>('update_person', { id, ...params });
+}
+
+export async function deletePerson(id: string): Promise<void> {
+  return await invoke<void>('delete_person', { id });
+}
+
+// Person Phone APIs
+export async function getPersonPhones(personId: string): Promise<PersonPhone[]> {
+  return await invoke<PersonPhone[]>('get_person_phones', { personId });
+}
+
+export async function createPersonPhone(params: {
+  personId: string;
+  phone: string;
+  label?: string;
+}): Promise<PersonPhone> {
+  return await invoke<PersonPhone>('create_person_phone', params);
+}
+
+export async function updatePersonPhone(id: string, params: {
+  phone?: string;
+  label?: string;
+}): Promise<PersonPhone> {
+  return await invoke<PersonPhone>('update_person_phone', { id, ...params });
+}
+
+export async function deletePersonPhone(id: string): Promise<void> {
+  return await invoke<void>('delete_person_phone', { id });
+}
+
+// Person Email APIs
+export async function getPersonEmails(personId: string): Promise<PersonEmail[]> {
+  return await invoke<PersonEmail[]>('get_person_emails', { personId });
+}
+
+export async function createPersonEmail(params: {
+  personId: string;
+  email: string;
+  label?: string;
+}): Promise<PersonEmail> {
+  return await invoke<PersonEmail>('create_person_email', params);
+}
+
+export async function updatePersonEmail(id: string, params: {
+  email?: string;
+  label?: string;
+}): Promise<PersonEmail> {
+  return await invoke<PersonEmail>('update_person_email', { id, ...params });
+}
+
+export async function deletePersonEmail(id: string): Promise<void> {
+  return await invoke<void>('delete_person_email', { id });
 }

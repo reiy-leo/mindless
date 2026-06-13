@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, SettingsIcon,
-  Tag, StickyNote,
+  Tag, StickyNote, UsersIcon,
 } from 'lucide-react';
 import { useViewStore } from '@/stores/useViewStore';
 
@@ -14,6 +14,7 @@ const navItems = [
   { path: '/habits', icon: RepeatIcon, labelKey: 'navigation.habits' },
   { path: '/countdowns', icon: HourglassIcon, labelKey: 'navigation.countdowns' },
   { path: '/notes', icon: StickyNote, labelKey: 'navigation.notes' },
+  { path: '/people', icon: UsersIcon, labelKey: 'navigation.people' },
   { path: null},
   { path: '/tags', icon: Tag, labelKey: 'navigation.tags' },
   { path: '/settings', icon: SettingsIcon, labelKey: 'navigation.settings' },

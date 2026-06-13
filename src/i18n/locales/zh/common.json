@@ -44,7 +44,8 @@
     "countdowns": "倒数日",
     "tags": "标签",
     "notes": "笔记",
-    "settings": "设置"
+    "settings": "设置",
+    "people": "人员"
   },
   "search": {
     "placeholder": "搜索任务、习惯、倒数日...",
@@ -273,8 +274,13 @@
       "monthly": "每月"
     },
     "calendar": {
-      "sun": "日", "mon": "一", "tue": "二", "wed": "三",
-      "thu": "四", "fri": "五", "sat": "六"
+      "sun": "日",
+      "mon": "一",
+      "tue": "二",
+      "wed": "三",
+      "thu": "四",
+      "fri": "五",
+      "sat": "六"
     },
     "advanced": "高级设置",
     "target_type": "目标类型",
@@ -294,8 +300,13 @@
     "target_unit_custom": "自定义单位",
     "custom_days": "自定义天数",
     "days": {
-      "mon": "周一", "tue": "周二", "wed": "周三",
-      "thu": "周四", "fri": "周五", "sat": "周六", "sun": "周日"
+      "mon": "周一",
+      "tue": "周二",
+      "wed": "周三",
+      "thu": "周四",
+      "fri": "周五",
+      "sat": "周六",
+      "sun": "周日"
     },
     "every_x_days_label": "间隔天数",
     "progress": "今日进度",
@@ -478,6 +489,52 @@
       "clear_events": "清除事件",
       "import_success": "成功导入{{count}}个事件",
       "import_empty": "文件中未找到事件"
+    }
+  },
+  "people": {
+    "title": "人员",
+    "new_person": "新建人员",
+    "edit_person": "编辑人员",
+    "delete_confirm": "确定要删除此人员吗？",
+    "search_placeholder": "搜索人员...",
+    "no_people": "暂无人员",
+    "select_person": "选择一个人员查看详情",
+    "create_first": "创建第一个人员",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏",
+    "pin": "置顶",
+    "unpin": "取消置顶",
+    "copy": "复制",
+    "smart_groups": {
+      "favorites": "收藏夹",
+      "all": "所有人员",
+      "archived": "已归档"
+    },
+    "groups": {
+      "title": "人员组",
+      "new_group": "新建人员组",
+      "edit_group": "编辑人员组",
+      "name": "人员组名称",
+      "name_placeholder": "输入人员组名称",
+      "icon": "图标",
+      "color": "颜色",
+      "archive": "归档",
+      "unarchive": "取消归档",
+      "delete_confirm": "确定要删除此人员组吗？组内人员将变为未分组。",
+      "no_groups": "暂无人员组"
+    },
+    "detail": {
+      "name_placeholder": "输入姓名",
+      "english_name": "英文名",
+      "english_name_placeholder": "输入英文名",
+      "nickname": "昵称",
+      "nickname_placeholder": "输入昵称",
+      "phones": "手机号",
+      "phone_placeholder": "输入手机号",
+      "emails": "邮箱",
+      "email_placeholder": "输入邮箱",
+      "remark": "备注",
+      "remark_placeholder": "输入备注..."
     }
   }
 }

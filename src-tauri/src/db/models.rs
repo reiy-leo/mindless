@@ -206,6 +206,62 @@ pub struct Note {
     pub deleted_at: Option<String>,
 }
 
+// Person group model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonGroup {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub is_pinned: bool,
+    pub is_archived: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// Person model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Person {
+    pub id: String,
+    pub name: String,
+    pub english_name: Option<String>,
+    pub nickname: Option<String>,
+    pub remark: Option<String>,
+    pub group_id: Option<String>,
+    pub tag_ids: Option<String>,
+    pub is_pinned: bool,
+    pub is_archived: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub deleted_at: Option<String>,
+}
+
+// Person phone model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonPhone {
+    pub id: String,
+    pub person_id: String,
+    pub phone: String,
+    pub label: Option<String>,
+    pub sort_order: f64,
+}
+
+// Person email model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonEmail {
+    pub id: String,
+    pub person_id: String,
+    pub email: String,
+    pub label: Option<String>,
+    pub sort_order: f64,
+}
+
 // Calendar event model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

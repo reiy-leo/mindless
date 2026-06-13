@@ -43,7 +43,8 @@
     "countdowns": "カウントダウン",
     "tags": "タグ",
     "notes": "ノート",
-    "settings": "設定"
+    "settings": "設定",
+    "people": "人物"
   },
   "search": {
     "placeholder": "タスク、習慣、カウントダウンを検索...",
@@ -260,8 +261,13 @@
       "monthly": "毎月"
     },
     "calendar": {
-      "sun": "日", "mon": "月", "tue": "火", "wed": "水",
-      "thu": "木", "fri": "金", "sat": "土"
+      "sun": "日",
+      "mon": "月",
+      "tue": "火",
+      "wed": "水",
+      "thu": "木",
+      "fri": "金",
+      "sat": "土"
     },
     "advanced": "詳細設定",
     "target_type": "目標タイプ",
@@ -281,8 +287,13 @@
     "target_unit_custom": "カスタム単位",
     "custom_days": "カスタム曜日",
     "days": {
-      "mon": "月", "tue": "火", "wed": "水",
-      "thu": "木", "fri": "金", "sat": "土", "sun": "日"
+      "mon": "月",
+      "tue": "火",
+      "wed": "水",
+      "thu": "木",
+      "fri": "金",
+      "sat": "土",
+      "sun": "日"
     },
     "every_x_days_label": "間隔日数",
     "progress": "今日の進捗",
@@ -465,6 +476,52 @@
       "clear_events": "イベントを削除",
       "import_success": "{{count}}件のイベントをインポートしました",
       "import_empty": "ファイルにイベントが見つかりません"
+    }
+  },
+  "people": {
+    "title": "人物",
+    "new_person": "新しい人物",
+    "edit_person": "人物を編集",
+    "delete_confirm": "この人物を削除しますか？",
+    "search_placeholder": "人物を検索...",
+    "no_people": "人物はまだありません",
+    "select_person": "人物を選択して詳細を表示",
+    "create_first": "最初の人物を作成",
+    "favorite": "お気に入り",
+    "unfavorite": "お気に入り解除",
+    "pin": "ピン留め",
+    "unpin": "ピン留め解除",
+    "copy": "コピー",
+    "smart_groups": {
+      "favorites": "お気に入り",
+      "all": "すべての人物",
+      "archived": "アーカイブ済み"
+    },
+    "groups": {
+      "title": "人物グループ",
+      "new_group": "新しい人物グループ",
+      "edit_group": "人物グループを編集",
+      "name": "グループ名",
+      "name_placeholder": "グループ名を入力",
+      "icon": "アイコン",
+      "color": "色",
+      "archive": "アーカイブ",
+      "unarchive": "アーカイブ解除",
+      "delete_confirm": "この人物グループを削除しますか？グループ内の人ungrouped になります。",
+      "no_groups": "人物グループはまだありません"
+    },
+    "detail": {
+      "name_placeholder": "名前を入力",
+      "english_name": "英語名",
+      "english_name_placeholder": "英語名を入力",
+      "nickname": "ニックネーム",
+      "nickname_placeholder": "ニックネームを入力",
+      "phones": "電話番号",
+      "phone_placeholder": "電話番号を入力",
+      "emails": "メールアドレス",
+      "email_placeholder": "メールアドレスを入力",
+      "remark": "備考",
+      "remark_placeholder": "備考を入力..."
     }
   }
 }

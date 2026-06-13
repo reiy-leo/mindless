@@ -3,4 +3,5 @@ export * from './habit';
 export * from './countdown';
 export * from './tag';
 export * from './note';
+export * from './person';
 export * from './common';

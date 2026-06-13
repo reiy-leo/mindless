@@ -133,3 +133,51 @@ export const listSettings = sqliteTable('list_settings', {
   filterStatus: text('filter_status').notNull().default('all'),
   viewMode: text('view_mode').notNull().default('list'),
 });
+
+// Person groups table
+export const personGroups = sqliteTable('person_groups', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').default('#3B82F6'),
+  icon: text('icon').default('👥'),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+  isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: real('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+});
+
+// Persons table
+export const persons = sqliteTable('persons', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  englishName: text('english_name'),
+  nickname: text('nickname'),
+  remark: text('remark').default(''),
+  groupId: text('group_id').references(() => personGroups.id),
+  tagIds: text('tag_ids'),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+  isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: real('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+  deletedAt: text('deleted_at'),
+});
+
+// Person phones table
+export const personPhones = sqliteTable('person_phones', {
+  id: text('id').primaryKey(),
+  personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
+  phone: text('phone').notNull(),
+  label: text('label').default('手机'),
+  sortOrder: real('sort_order').notNull().default(0),
+});
+
+// Person emails table
+export const personEmails = sqliteTable('person_emails', {
+  id: text('id').primaryKey(),
+  personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  label: text('label').default('邮箱'),
+  sortOrder: real('sort_order').notNull().default(0),
+});

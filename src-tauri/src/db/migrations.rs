@@ -312,6 +312,60 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
             let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);");
 
+            // People tables
+            conn.execute_batch("
+                CREATE TABLE IF NOT EXISTS person_groups (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    color TEXT DEFAULT '#3B82F6',
+                    icon TEXT DEFAULT '👥',
+                    is_pinned INTEGER NOT NULL DEFAULT 0,
+                    is_archived INTEGER NOT NULL DEFAULT 0,
+                    sort_order REAL NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_person_groups_sort_order ON person_groups(sort_order);
+
+                CREATE TABLE IF NOT EXISTS persons (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    english_name TEXT,
+                    nickname TEXT,
+                    remark TEXT DEFAULT '',
+                    group_id TEXT REFERENCES person_groups(id) ON DELETE SET NULL,
+                    tag_ids TEXT,
+                    is_pinned INTEGER NOT NULL DEFAULT 0,
+                    is_archived INTEGER NOT NULL DEFAULT 0,
+                    sort_order REAL NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    deleted_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_persons_group_id ON persons(group_id);
+                CREATE INDEX IF NOT EXISTS idx_persons_is_archived ON persons(is_archived);
+                CREATE INDEX IF NOT EXISTS idx_persons_is_pinned ON persons(is_pinned);
+                CREATE INDEX IF NOT EXISTS idx_persons_sort_order ON persons(sort_order);
+
+                CREATE TABLE IF NOT EXISTS person_phones (
+                    id TEXT PRIMARY KEY,
+                    person_id TEXT NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+                    phone TEXT NOT NULL,
+                    label TEXT DEFAULT '手机',
+                    sort_order REAL NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS idx_person_phones_person_id ON person_phones(person_id);
+
+                CREATE TABLE IF NOT EXISTS person_emails (
+                    id TEXT PRIMARY KEY,
+                    person_id TEXT NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+                    email TEXT NOT NULL,
+                    label TEXT DEFAULT '邮箱',
+                    sort_order REAL NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS idx_person_emails_person_id ON person_emails(person_id);
+            ").map_err(|e| format!("People migration failed: {}", e))?;
+
             println!("Migrations applied successfully");
         }
         Err(e) => {

@@ -55,6 +55,7 @@ interface AppState {
   habitGroupsPanelWidth: number;
   habitGroupViewModes: Record<string, 'list' | 'card'>;
   noteGroupsPanelWidth: number;
+  personGroupsPanelWidth: number;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (lang: Language) => void;
@@ -76,6 +77,7 @@ interface AppState {
   setHabitGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
   setHabitGroupViewMode: (groupId: string, mode: 'list' | 'card') => void;
   setNoteGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
+  setPersonGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -99,6 +101,7 @@ export const useAppStore = create<AppState>()(
       habitGroupsPanelWidth: 192,
       habitGroupViewModes: {},
       noteGroupsPanelWidth: 192,
+      personGroupsPanelWidth: 192,
 
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
@@ -143,6 +146,10 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           noteGroupsPanelWidth: typeof width === 'function' ? width(state.noteGroupsPanelWidth) : width,
         })),
+      setPersonGroupsPanelWidth: (width) =>
+        set((state) => ({
+          personGroupsPanelWidth: typeof width === 'function' ? width(state.personGroupsPanelWidth) : width,
+        })),
     }),
     {
       name: 'mindless-app-settings',
@@ -162,6 +169,7 @@ export const useAppStore = create<AppState>()(
         habitGroupsPanelWidth: state.habitGroupsPanelWidth,
         habitGroupViewModes: state.habitGroupViewModes,
         noteGroupsPanelWidth: state.noteGroupsPanelWidth,
+        personGroupsPanelWidth: state.personGroupsPanelWidth,
       }),
     }
   )
