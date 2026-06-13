@@ -1215,10 +1215,9 @@ export default function TasksPage() {
         new WebviewWindow("advanced-group-form", {
             url: `/dialog/advanced-group-form?groupId=${encodeURIComponent(group.id)}`,
             title: t("advanced_groups.edit"),
-            width: 520,
-            height: 700,
+            width: 420,
+            height: 600,
             resizable: false,
-            center: true,
             alwaysOnTop: true,
         });
     };

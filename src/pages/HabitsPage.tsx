@@ -444,13 +444,20 @@ function HabitFormDialog({
                         </label>
                         <button
                             type="button"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
                                 await openDialogWindow({
                                     label: "date-picker",
                                     title: t("habits.start_date"),
                                     url: `/dialog/date-picker?date=${startDate}`,
                                     width: 380,
                                     height: 520,
+                                    anchorRect: {
+                                        x: rect.left,
+                                        y: rect.top,
+                                        width: rect.width,
+                                        height: rect.height,
+                                    },
                                 });
                                 const unlisten = await listenFromDialog("date-picker:result", (payload: any) => {
                                     if (payload?.date) setStartDate(payload.date);
@@ -512,13 +519,20 @@ function HabitFormDialog({
                                 </label>
                                 <button
                                     type="button"
-                                    onClick={async () => {
+                                    onClick={async (e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
                                         await openDialogWindow({
                                             label: "unit-selector",
                                             title: t("habits.target_unit"),
                                             url: `/dialog/unit-selector?unit=${targetUnit}`,
                                             width: 380,
                                             height: 480,
+                                            anchorRect: {
+                                                x: rect.left,
+                                                y: rect.top,
+                                                width: rect.width,
+                                                height: rect.height,
+                                            },
                                         });
                                         const unlisten = await listenFromDialog(
                                             "unit-selector:result",

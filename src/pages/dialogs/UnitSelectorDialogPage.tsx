@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useDialogPosition } from '@/hooks/useDialogPosition';
 
 const UNIT_PRESETS = [
   { value: '次', label: '次' },
@@ -21,6 +22,7 @@ const UNIT_PRESETS = [
 
 export default function UnitSelectorDialogPage() {
   const { t } = useTranslation('common');
+  useDialogPosition();
   const params = new URLSearchParams(window.location.search);
   const initialUnit = params.get('unit') || '次';
 

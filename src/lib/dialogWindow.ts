@@ -1,12 +1,20 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emit, listen } from '@tauri-apps/api/event';
 
+export interface AnchorRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface OpenDialogOptions {
   label: string;
   title: string;
   width?: number;
   height?: number;
   url: string;
+  anchorRect?: AnchorRect;
   onClose?: () => void;
 }
 
@@ -17,6 +25,7 @@ export async function openDialogWindow(options: OpenDialogOptions): Promise<Webv
     width = 480,
     height = 600,
     url,
+    anchorRect,
     onClose,
   } = options;
 
@@ -26,15 +35,22 @@ export async function openDialogWindow(options: OpenDialogOptions): Promise<Webv
     return existingWindow;
   }
 
+  // Build URL with anchor position params
+  let finalUrl = url;
+  if (anchorRect) {
+    const separator = url.includes('?') ? '&' : '?';
+    finalUrl = `${url}${separator}anchorX=${anchorRect.x}&anchorY=${anchorRect.y}&anchorW=${anchorRect.width}&anchorH=${anchorRect.height}&winW=${width}&winH=${height}`;
+  }
+
   const webview = new WebviewWindow(label, {
-    url,
+    url: finalUrl,
     title,
     width,
     height,
     resizable: false,
     decorations: false,
     transparent: true,
-    center: true,
+    center: !anchorRect,
     alwaysOnTop: true,
   });
 

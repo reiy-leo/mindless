@@ -4,9 +4,11 @@ import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, XMarkIcon } from '@heroic
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getLunarDayStr } from '@/lib/lunar';
+import { useDialogPosition } from '@/hooks/useDialogPosition';
 
 export default function DatePickerDialogPage() {
   const { t, i18n } = useTranslation('common');
+  useDialogPosition();
   const params = new URLSearchParams(window.location.search);
   const initialDate = params.get('date') || new Date().toISOString().split('T')[0];
 
