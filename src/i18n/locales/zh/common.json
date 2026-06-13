@@ -43,6 +43,7 @@
     "habits": "习惯",
     "countdowns": "倒数日",
     "tags": "标签",
+    "notes": "笔记",
     "settings": "设置"
   },
   "search": {
@@ -393,6 +394,52 @@
     "add_more": "添加更多标签...",
     "create_new": "创建新标签：{{name}}",
     "drag_to_reorder": "拖拽排序"
+  },
+  "notes": {
+    "title": "笔记",
+    "new_note": "新建笔记",
+    "edit_note": "编辑笔记",
+    "create_note": "创建笔记",
+    "note_title": "标题",
+    "title_placeholder": "输入笔记标题",
+    "content_placeholder": "开始写作...",
+    "no_notes": "暂无笔记",
+    "select_note": "选择一个笔记查看详情",
+    "create_first": "创建第一条笔记",
+    "delete_confirm": "确定要删除此笔记吗？",
+    "search_placeholder": "搜索笔记...",
+    "smart_groups": {
+      "favorites": "收藏夹",
+      "all": "所有笔记",
+      "archived": "已归档",
+      "completed": "已完成"
+    },
+    "groups": {
+      "title": "笔记组",
+      "new_group": "新建笔记组",
+      "edit_group": "编辑笔记组",
+      "name": "笔记组名称",
+      "name_placeholder": "输入笔记组名称",
+      "icon": "图标",
+      "color": "颜色",
+      "archive": "归档",
+      "unarchive": "取消归档",
+      "delete_confirm": "确定要删除此笔记组吗？组内笔记将变为未分组。",
+      "no_groups": "暂无笔记组"
+    },
+    "sub_notes": {
+      "title": "子笔记",
+      "add": "添加子笔记",
+      "empty": "暂无子笔记",
+      "title_placeholder": "输入子笔记标题..."
+    },
+    "note_count": "{{count}} 条笔记",
+    "archive_confirm": "确定要归档此笔记吗？",
+    "pin": "置顶",
+    "unpin": "取消置顶",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏",
+    "copy": "复制"
   },
   "settings": {
     "language": "语言",

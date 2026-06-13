@@ -74,28 +74,22 @@ export default function DatePickerDialogPage() {
 
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1">
-                        <button
-                            onClick={handleClose}
-                            className="p-1 rounded-full bg-red-400 hover:bg-red-600 dark:hover:bg-red-700"
-                        >
-                            <XMarkIcon className="w-2 h-2 text-olive-50 hover:text-olive-200" />
-                        </button>
                         <button onClick={prevMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
                             <ChevronLeftIcon className="w-4 h-4 text-gray-500" />
                         </button>
-                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[100px] text-center">
+                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[128px] text-center">
                             {monthLabel}
                         </span>
+                        <button
+                            onClick={goToday}
+                            className="px-2 py-1 text-xs rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+                        >
+                            {t("tasks.views.today")}
+                        </button>
                         <button onClick={nextMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
                             <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                         </button>
                     </div>
-                    <button
-                        onClick={goToday}
-                        className="px-2 py-1 text-xs rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
-                    >
-                        {t("tasks.views.today")}
-                    </button>
                 </div>
 
                 {/* Day labels */}

@@ -60,12 +60,12 @@ export default function UnitSelectorDialogPage() {
                     </h2>
                 </div>
 
-                {/* Preset units grid */}
+                {/* Preset units */}
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                         {t("habits.target_unit_presets")}
                     </label>
-                    <div className="flex-col gap-2">
+                    <div className="flex flex-col gap-2">
                         {UNIT_PRESETS.map((u) => (
                             <button
                                 key={u.value}

@@ -171,6 +171,41 @@ pub struct Setting {
     pub value: String,
 }
 
+// Note group model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteGroup {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub sort_order: f64,
+    pub is_archived: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// Note model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Note {
+    pub id: String,
+    pub title: String,
+    pub content: Option<String>,
+    pub group_id: Option<String>,
+    pub parent_id: Option<String>,
+    pub tag_ids: Option<String>,
+    pub is_completed: bool,
+    pub is_archived: bool,
+    pub is_pinned: bool,
+    pub level: i32,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
+    pub deleted_at: Option<String>,
+}
+
 // Calendar event model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

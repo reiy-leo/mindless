@@ -9,6 +9,7 @@ import TasksPage from './pages/TasksPage';
 import HabitsPage from './pages/HabitsPage';
 import CountdownsPage from './pages/CountdownsPage';
 import TagsPage from './pages/TagsPage';
+import NotesPage from './pages/NotesPage';
 import SettingsPage from './pages/SettingsPage';
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
@@ -216,6 +217,7 @@ function App() {
                 <Route path="/habits" element={<ErrorBoundary><HabitsPage /></ErrorBoundary>} />
                 <Route path="/countdowns" element={<ErrorBoundary><CountdownsPage /></ErrorBoundary>} />
                 <Route path="/tags" element={<ErrorBoundary><TagsPage /></ErrorBoundary>} />
+                <Route path="/notes" element={<ErrorBoundary><NotesPage /></ErrorBoundary>} />
                 <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
               </Routes>
             </AppLayout>

@@ -270,6 +270,48 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON tasks(parent_task_id);")
                 .map_err(|e| format!("Failed to create index: {}", e))?;
 
+            // Notes tables
+            conn.execute_batch("
+                CREATE TABLE IF NOT EXISTS note_groups (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    color TEXT DEFAULT '#3B82F6',
+                    icon TEXT DEFAULT '📁',
+                    sort_order REAL NOT NULL DEFAULT 0,
+                    is_archived INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_note_groups_sort_order ON note_groups(sort_order);
+
+                CREATE TABLE IF NOT EXISTS notes (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL DEFAULT '',
+                    content TEXT DEFAULT '',
+                    group_id TEXT REFERENCES note_groups(id) ON DELETE SET NULL,
+                    parent_id TEXT REFERENCES notes(id) ON DELETE CASCADE,
+                    tag_ids TEXT,
+                    is_completed INTEGER NOT NULL DEFAULT 0,
+                    is_archived INTEGER NOT NULL DEFAULT 0,
+                    is_pinned INTEGER NOT NULL DEFAULT 0,
+                    level INTEGER NOT NULL DEFAULT 0,
+                    sort_order REAL NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    completed_at TEXT,
+                    deleted_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_notes_group_id ON notes(group_id);
+                CREATE INDEX IF NOT EXISTS idx_notes_parent_id ON notes(parent_id);
+                CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON notes(deleted_at);
+                CREATE INDEX IF NOT EXISTS idx_notes_is_archived ON notes(is_archived);
+                CREATE INDEX IF NOT EXISTS idx_notes_is_completed ON notes(is_completed);
+            ").map_err(|e| format!("Notes migration failed: {}", e))?;
+
+            // Add is_pinned column for existing databases
+            let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);");
+
             println!("Migrations applied successfully");
         }
         Err(e) => {

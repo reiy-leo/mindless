@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -425,4 +425,92 @@ export async function exportAllData(): Promise<string> {
 
 export async function importAllData(json: string): Promise<void> {
   return await invoke<void>('import_all_data', { json });
+}
+
+// Note Group APIs
+export async function getNoteGroups(): Promise<NoteGroup[]> {
+  return await invoke<NoteGroup[]>('get_note_groups');
+}
+
+export async function createNoteGroup(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<NoteGroup> {
+  return await invoke<NoteGroup>('create_note_group', params);
+}
+
+export async function updateNoteGroup(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+  isArchived?: boolean;
+}): Promise<NoteGroup> {
+  return await invoke<NoteGroup>('update_note_group', { id, ...params });
+}
+
+export async function deleteNoteGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_note_group', { id });
+}
+
+// Note APIs
+export async function getNotes(): Promise<Note[]> {
+  return await invoke<Note[]>('get_notes');
+}
+
+export async function getAllNotes(): Promise<Note[]> {
+  return await invoke<Note[]>('get_all_notes');
+}
+
+export async function getNoteById(id: string): Promise<Note> {
+  return await invoke<Note>('get_note_by_id', { id });
+}
+
+export async function getSubNotes(parentId: string): Promise<Note[]> {
+  return await invoke<Note[]>('get_sub_notes', { parentId });
+}
+
+export async function getAllSubNotes(noteIds: string[]): Promise<Note[]> {
+  if (noteIds.length === 0) return [];
+  return await invoke<Note[]>('get_all_sub_notes', { noteIds });
+}
+
+export async function createNote(params: {
+  title: string;
+  content?: string;
+  groupId?: string;
+  parentId?: string;
+  tagIds?: string;
+  level?: number;
+}): Promise<Note> {
+  return await invoke<Note>('create_note', params);
+}
+
+export async function updateNote(id: string, params: {
+  title?: string;
+  content?: string;
+  groupId?: string;
+  tagIds?: string;
+  isCompleted?: boolean;
+  isArchived?: boolean;
+  isPinned?: boolean;
+  sortOrder?: number;
+}): Promise<Note> {
+  return await invoke<Note>('update_note', { id, ...params });
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  return await invoke<void>('delete_note', { id });
+}
+
+export async function archiveNote(id: string): Promise<Note> {
+  return await invoke<Note>('archive_note', { id });
+}
+
+export async function unarchiveNote(id: string): Promise<Note> {
+  return await invoke<Note>('unarchive_note', { id });
+}
+
+export async function completeNote(id: string): Promise<Note> {
+  return await invoke<Note>('complete_note', { id });
 }

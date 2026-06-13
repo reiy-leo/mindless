@@ -42,6 +42,7 @@
     "habits": "習慣",
     "countdowns": "カウントダウン",
     "tags": "タグ",
+    "notes": "ノート",
     "settings": "設定"
   },
   "search": {
@@ -380,6 +381,52 @@
     "add_more": "タグを追加...",
     "create_new": "新規タグを作成：{{name}}",
     "drag_to_reorder": "ドラッグして並べ替え"
+  },
+  "notes": {
+    "title": "ノート",
+    "new_note": "新しいノート",
+    "edit_note": "ノートを編集",
+    "create_note": "ノートを作成",
+    "note_title": "タイトル",
+    "title_placeholder": "ノートのタイトルを入力",
+    "content_placeholder": "書き始める...",
+    "no_notes": "ノートはまだありません",
+    "select_note": "ノートを選択して詳細を表示",
+    "create_first": "最初のノートを作成",
+    "delete_confirm": "このノートを削除しますか？",
+    "search_placeholder": "ノートを検索...",
+    "smart_groups": {
+      "favorites": "お気に入り",
+      "all": "すべてのノート",
+      "archived": "アーカイブ済み",
+      "completed": "完了"
+    },
+    "groups": {
+      "title": "ノートグループ",
+      "new_group": "新しいノートグループ",
+      "edit_group": "ノートグループを編集",
+      "name": "グループ名",
+      "name_placeholder": "グループ名を入力",
+      "icon": "アイコン",
+      "color": "色",
+      "archive": "アーカイブ",
+      "unarchive": "アーカイブ解除",
+      "delete_confirm": "このノートグループを削除しますか？グループ内のノートは未分類になります。",
+      "no_groups": "ノートグループはまだありません"
+    },
+    "sub_notes": {
+      "title": "サブノート",
+      "add": "サブノートを追加",
+      "empty": "サブノートはまだありません",
+      "title_placeholder": "サブノートのタイトルを入力..."
+    },
+    "note_count": "{{count}} 件のノート",
+    "archive_confirm": "このノートをアーカイブしますか？",
+    "pin": "ピン留め",
+    "unpin": "ピン留め解除",
+    "favorite": "お気に入り",
+    "unfavorite": "お気に入り解除",
+    "copy": "コピー"
   },
   "settings": {
     "language": "言語",

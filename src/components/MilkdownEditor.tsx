@@ -15,6 +15,7 @@ interface MilkdownEditorInnerProps {
 function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditorInnerProps) {
     const prevMarkdownRef = useRef<string>("");
     const updatingRef = useRef(false);
+    const lastPropRef = useRef<string>("");
 
     const { loading, get } = useEditor((root) => {
         return new Crepe({
@@ -30,11 +31,9 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
                 },
                 [Crepe.Feature.ImageBlock]: {
                     onUpload: async (_) => {
-                        // 可以选择弹窗提示，或者直接拒绝
                         alert("暂不支持上传本地图片，请使用图片链接。");
-                        return ""; // 返回空字符串，防止生成图片节点
+                        return "";
                     },
-                    // 2. 可选：顺便把上传按钮的文案改掉（配合第二步彻底隐藏）
                     inlineUploadButton: "",
                     blockUploadButton: "",
                     blockUploadPlaceholderText: "",
@@ -48,9 +47,12 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
         const instance = get();
         if (!instance) return;
 
+        // Only sync if the markdown prop actually changed (not on every re-render)
+        if (markdown === lastPropRef.current) return;
+        lastPropRef.current = markdown;
+
         const currentMarkdown = instance.action(getMarkdown());
         if (currentMarkdown === markdown) return;
-        if (updatingRef.current) return;
 
         updatingRef.current = true;
         instance.action(replaceAll(markdown, true));

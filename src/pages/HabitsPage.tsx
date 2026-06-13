@@ -45,19 +45,19 @@ import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams }
 
 // Get screen coordinates of an element by adding window position to viewport rect
 async function getScreenRect(el: HTMLElement): Promise<{ x: number; y: number; width: number; height: number }> {
-  const rect = el.getBoundingClientRect();
-  const win = getCurrentWindow();
-  const outerPos = await win.outerPosition();
-  const innerPos = await win.innerPosition();
-  // outerPos includes titlebar, innerPos is content area
-  // The difference gives us the titlebar height
-  const titlebarH = outerPos.y - innerPos.y;
-  return {
-    x: outerPos.x + rect.left,
-    y: outerPos.y + titlebarH + rect.top,
-    width: rect.width,
-    height: rect.height,
-  };
+    const rect = el.getBoundingClientRect();
+    const win = getCurrentWindow();
+    const outerPos = await win.outerPosition();
+    const innerPos = await win.innerPosition();
+    // outerPos includes titlebar, innerPos is content area
+    // The difference gives us the titlebar height
+    const titlebarH = outerPos.y - innerPos.y;
+    return {
+        x: outerPos.x + rect.left,
+        y: outerPos.y + titlebarH + rect.top,
+        width: rect.width,
+        height: rect.height,
+    };
 }
 
 // ==================== Check if Habit is Due on Date ====================
@@ -538,7 +538,7 @@ function HabitFormDialog({
                                             label: "unit-selector",
                                             title: t("habits.target_unit"),
                                             url: `/dialog/unit-selector?unit=${targetUnit}`,
-                                            width: 320,
+                                            width: 160,
                                             height: 420,
                                             anchorRect: screenRect,
                                         });
