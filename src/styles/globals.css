@@ -10,7 +10,7 @@
 
   color-scheme: light dark;
   color: rgba(0, 0, 0, 0.87);
-  background-color: transparent;
+  background-color: transparent !important;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,19 +21,27 @@
 
 .dark {
   color: rgba(255, 255, 255, 0.87);
-  background-color: transparent;
+  background-color: transparent !important;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: transparent;
+  background-color: transparent !important;
+  -webkit-app-region: no-drag;
 }
 
 #root {
   width: 100%;
   height: 100vh;
+  background-color: transparent;
+}
+
+/* Dialog windows - ensure transparent background */
+.dialog-window html,
+.dialog-window body {
+  background-color: transparent !important;
 }
 
 /* ===== Milkdown editor overrides ===== */

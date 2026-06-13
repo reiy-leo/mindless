@@ -5,9 +5,17 @@ import { LogicalPosition } from '@tauri-apps/api/dpi';
 /**
  * Calculates and sets the window position based on anchor element screen coordinates.
  * If there's not enough space below, positions above the anchor.
+ * Also ensures transparent background for dialog windows.
  */
 export function useDialogPosition() {
   useEffect(() => {
+    // Mark as dialog window for CSS targeting
+    document.documentElement.classList.add('dialog-window');
+
+    // Force transparent background
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important');
+    document.body.style.setProperty('background-color', 'transparent', 'important');
+
     const params = new URLSearchParams(window.location.search);
     const anchorX = params.get('anchorX');
     const anchorY = params.get('anchorY');
