@@ -79,109 +79,67 @@ export function useDeletePersonGroup() {
 // ==================== Person mutations ====================
 
 export function useCreatePerson() {
-  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { name: string; englishName?: string; nickname?: string; remark?: string; groupId?: string; tagIds?: string }) =>
-      api.createPerson(params),
-    onSuccess: (_data, _variables, _context) => {
-      queryClient.invalidateQueries({ queryKey: ['persons'] });
-      queryClient.invalidateQueries({ queryKey: ['allPersons'] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to create person:', error);
+    mutationFn: (params: { name: string; englishName?: string; nickname?: string; remark?: string; groupId?: string; tagIds?: string }) => {
+      console.log('[usePersonQueries] createPerson mutationFn with:', params);
+      return api.createPerson(params);
     },
   });
 }
 
 export function useUpdatePerson() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...params }: { id: string; name?: string; englishName?: string; nickname?: string; remark?: string; groupId?: string; tagIds?: string; isPinned?: boolean; isArchived?: boolean; sortOrder?: number }) =>
       api.updatePerson(id, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['persons'] });
-      queryClient.invalidateQueries({ queryKey: ['allPersons'] });
-    },
   });
 }
 
 export function useDeletePerson() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deletePerson(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['persons'] });
-      queryClient.invalidateQueries({ queryKey: ['allPersons'] });
-      queryClient.invalidateQueries({ queryKey: ['personPhones'] });
-      queryClient.invalidateQueries({ queryKey: ['personEmails'] });
-    },
   });
 }
 
 // ==================== Phone mutations ====================
 
 export function useCreatePersonPhone() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (params: { personId: string; phone: string; label?: string }) =>
       api.createPersonPhone(params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personPhones'] });
-    },
   });
 }
 
 export function useUpdatePersonPhone() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...params }: { id: string; phone?: string; label?: string }) =>
       api.updatePersonPhone(id, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personPhones'] });
-    },
   });
 }
 
 export function useDeletePersonPhone() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deletePersonPhone(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personPhones'] });
-    },
   });
 }
 
 // ==================== Email mutations ====================
 
 export function useCreatePersonEmail() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (params: { personId: string; email: string; label?: string }) =>
       api.createPersonEmail(params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personEmails'] });
-    },
   });
 }
 
 export function useUpdatePersonEmail() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...params }: { id: string; email?: string; label?: string }) =>
       api.updatePersonEmail(id, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personEmails'] });
-    },
   });
 }
 
 export function useDeletePersonEmail() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deletePersonEmail(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personEmails'] });
-    },
   });
 }

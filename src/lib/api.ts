@@ -94,7 +94,15 @@ export async function updateList(id: string, params: {
   isPinned?: boolean;
   isArchived?: boolean;
 }): Promise<List> {
-  return await invoke<List>('update_list', { id, ...params });
+  return await invoke<List>('update_list', {
+    id,
+    name: params.name,
+    color: params.color,
+    icon: params.icon,
+    sort_order: params.sortOrder,
+    is_pinned: params.isPinned,
+    is_archived: params.isArchived,
+  });
 }
 
 export async function deleteList(id: string): Promise<void> {
@@ -136,12 +144,12 @@ export async function moveTags(items: {
 
 // Subtask APIs (subtasks are now tasks with parentTaskId)
 export async function getSubtasks(taskId: string): Promise<Task[]> {
-  return await invoke<Task[]>('get_subtasks', { taskId });
+  return await invoke<Task[]>('get_subtasks', { task_id: taskId });
 }
 
 export async function getAllSubtasks(taskIds: string[]): Promise<Task[]> {
   if (taskIds.length === 0) return [];
-  return await invoke<Task[]>('get_all_subtasks', { taskIds });
+  return await invoke<Task[]>('get_all_subtasks', { task_ids: taskIds });
 }
 
 export async function createSubtask(params: {
@@ -150,7 +158,12 @@ export async function createSubtask(params: {
   parentSubtaskId?: string;
   level?: number;
 }): Promise<Task> {
-  return await invoke<Task>('create_subtask', params);
+  return await invoke<Task>('create_subtask', {
+    task_id: params.taskId,
+    title: params.title,
+    parent_subtask_id: params.parentSubtaskId,
+    level: params.level,
+  });
 }
 
 export async function updateSubtask(id: string, params: {
@@ -159,7 +172,13 @@ export async function updateSubtask(id: string, params: {
   sortOrder?: number;
   taskId?: string;
 }): Promise<Task> {
-  return await invoke<Task>('update_subtask', { id, ...params });
+  return await invoke<Task>('update_subtask', {
+    id,
+    title: params.title,
+    is_completed: params.isCompleted,
+    sort_order: params.sortOrder,
+    _task_id: params.taskId,
+  });
 }
 
 export async function deleteSubtask(id: string, taskId?: string): Promise<void> {
@@ -168,7 +187,7 @@ export async function deleteSubtask(id: string, taskId?: string): Promise<void> 
 
 // Step APIs
 export async function getSteps(taskId: string): Promise<Step[]> {
-  return await invoke<Step[]>('get_steps', { taskId });
+  return await invoke<Step[]>('get_steps', { task_id: taskId });
 }
 
 export async function createStep(params: {
@@ -177,7 +196,12 @@ export async function createStep(params: {
   dueDate?: string;
   dueTime?: string;
 }): Promise<Step> {
-  return await invoke<Step>('create_step', params);
+  return await invoke<Step>('create_step', {
+    task_id: params.taskId,
+    description: params.description,
+    due_date: params.dueDate,
+    due_time: params.dueTime,
+  });
 }
 
 export async function updateStep(id: string, params: {
@@ -187,7 +211,14 @@ export async function updateStep(id: string, params: {
   isCompleted?: boolean;
   sortOrder?: number;
 }): Promise<Step> {
-  return await invoke<Step>('update_step', { id, ...params });
+  return await invoke<Step>('update_step', {
+    id,
+    description: params.description,
+    due_date: params.dueDate,
+    due_time: params.dueTime,
+    is_completed: params.isCompleted,
+    sort_order: params.sortOrder,
+  });
 }
 
 export async function deleteStep(id: string): Promise<void> {
@@ -496,7 +527,17 @@ export async function updateNote(id: string, params: {
   isPinned?: boolean;
   sortOrder?: number;
 }): Promise<Note> {
-  return await invoke<Note>('update_note', { id, ...params });
+  return await invoke<Note>('update_note', {
+    id,
+    title: params.title,
+    content: params.content,
+    group_id: params.groupId,
+    tag_ids: params.tagIds,
+    is_completed: params.isCompleted,
+    is_archived: params.isArchived,
+    is_pinned: params.isPinned,
+    sort_order: params.sortOrder,
+  });
 }
 
 export async function deleteNote(id: string): Promise<void> {
@@ -535,7 +576,14 @@ export async function updatePersonGroup(id: string, params: {
   isPinned?: boolean;
   isArchived?: boolean;
 }): Promise<PersonGroup> {
-  return await invoke<PersonGroup>('update_person_group', { id, ...params });
+  return await invoke<PersonGroup>('update_person_group', {
+    id,
+    name: params.name,
+    color: params.color,
+    icon: params.icon,
+    is_pinned: params.isPinned,
+    is_archived: params.isArchived,
+  });
 }
 
 export async function deletePersonGroup(id: string): Promise<void> {
@@ -563,7 +611,10 @@ export async function createPerson(params: {
   groupId?: string;
   tagIds?: string;
 }): Promise<Person> {
-  return await invoke<Person>('create_person', params);
+  console.log('[api] createPerson called with:', params);
+  const result = await invoke<Person>('create_person', params);
+  console.log('[api] createPerson result:', result);
+  return result;
 }
 
 export async function updatePerson(id: string, params: {
@@ -577,7 +628,18 @@ export async function updatePerson(id: string, params: {
   isArchived?: boolean;
   sortOrder?: number;
 }): Promise<Person> {
-  return await invoke<Person>('update_person', { id, ...params });
+  return await invoke<Person>('update_person', {
+    id,
+    name: params.name,
+    english_name: params.englishName,
+    nickname: params.nickname,
+    remark: params.remark,
+    group_id: params.groupId,
+    tag_ids: params.tagIds,
+    is_pinned: params.isPinned,
+    is_archived: params.isArchived,
+    sort_order: params.sortOrder,
+  });
 }
 
 export async function deletePerson(id: string): Promise<void> {
@@ -586,7 +648,7 @@ export async function deletePerson(id: string): Promise<void> {
 
 // Person Phone APIs
 export async function getPersonPhones(personId: string): Promise<PersonPhone[]> {
-  return await invoke<PersonPhone[]>('get_person_phones', { personId });
+  return await invoke<PersonPhone[]>('get_person_phones', { person_id: personId });
 }
 
 export async function createPersonPhone(params: {
@@ -594,7 +656,11 @@ export async function createPersonPhone(params: {
   phone: string;
   label?: string;
 }): Promise<PersonPhone> {
-  return await invoke<PersonPhone>('create_person_phone', params);
+  return await invoke<PersonPhone>('create_person_phone', {
+    person_id: params.personId,
+    phone: params.phone,
+    label: params.label,
+  });
 }
 
 export async function updatePersonPhone(id: string, params: {
@@ -610,7 +676,7 @@ export async function deletePersonPhone(id: string): Promise<void> {
 
 // Person Email APIs
 export async function getPersonEmails(personId: string): Promise<PersonEmail[]> {
-  return await invoke<PersonEmail[]>('get_person_emails', { personId });
+  return await invoke<PersonEmail[]>('get_person_emails', { person_id: personId });
 }
 
 export async function createPersonEmail(params: {
@@ -618,7 +684,11 @@ export async function createPersonEmail(params: {
   email: string;
   label?: string;
 }): Promise<PersonEmail> {
-  return await invoke<PersonEmail>('create_person_email', params);
+  return await invoke<PersonEmail>('create_person_email', {
+    person_id: params.personId,
+    email: params.email,
+    label: params.label,
+  });
 }
 
 export async function updatePersonEmail(id: string, params: {

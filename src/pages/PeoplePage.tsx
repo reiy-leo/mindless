@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     PlusIcon,
     PencilIcon,
@@ -213,6 +214,7 @@ function EmailListEditor({
 export default function PeoplePage() {
     const { t } = useTranslation("common");
     const { personGroupsPanelWidth, detailPanelWidth, setPersonGroupsPanelWidth, setDetailPanelWidth } = useAppStore();
+    const queryClient = useQueryClient();
 
     // State
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
@@ -341,10 +343,13 @@ export default function PeoplePage() {
     }, []);
 
     const handleCreatePerson = useCallback(() => {
+        console.log('[PeoplePage] handleCreatePerson clicked');
         createPerson.mutate(
             { name: t("people.new_person"), groupId: selectedGroupId || undefined },
             {
                 onSuccess: (person) => {
+                    queryClient.invalidateQueries({ queryKey: ['persons'] });
+                    queryClient.invalidateQueries({ queryKey: ['allPersons'] });
                     setSelectedPersonId(person.id);
                 },
                 onError: (err) => {
@@ -352,7 +357,7 @@ export default function PeoplePage() {
                 },
             },
         );
-    }, [selectedGroupId, createPerson, t]);
+    }, [selectedGroupId, createPerson, t, queryClient]);
 
     const handleDeletePerson = useCallback(
         (id: string) => {
@@ -379,16 +384,24 @@ export default function PeoplePage() {
 
     const handleCopyPerson = useCallback(
         (person: Person) => {
-            createPerson.mutate({
-                name: person.name + " (副本)",
-                englishName: person.englishName,
-                nickname: person.nickname,
-                remark: person.remark,
-                groupId: person.groupId,
-                tagIds: person.tagIds,
-            });
+            createPerson.mutate(
+                {
+                    name: person.name + " (副本)",
+                    englishName: person.englishName,
+                    nickname: person.nickname,
+                    remark: person.remark,
+                    groupId: person.groupId,
+                    tagIds: person.tagIds,
+                },
+                {
+                    onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ['persons'] });
+                        queryClient.invalidateQueries({ queryKey: ['allPersons'] });
+                    },
+                },
+            );
         },
-        [createPerson],
+        [createPerson, queryClient],
     );
 
     const handlePersonContextMenu = useCallback((e: React.MouseEvent, person: Person) => {

@@ -205,6 +205,7 @@ pub async fn create_person(
     group_id: Option<String>,
     tag_ids: Option<String>,
 ) -> Result<Person, String> {
+    println!("[Rust] create_person called: name={}, group_id={:?}", name, group_id);
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
 
