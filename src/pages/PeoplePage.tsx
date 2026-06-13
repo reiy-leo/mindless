@@ -347,6 +347,9 @@ export default function PeoplePage() {
                 onSuccess: (person) => {
                     setSelectedPersonId(person.id);
                 },
+                onError: (err) => {
+                    console.error("Failed to create person:", err);
+                },
             },
         );
     }, [selectedGroupId, createPerson, t]);

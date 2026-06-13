@@ -83,9 +83,12 @@ export function useCreatePerson() {
   return useMutation({
     mutationFn: (params: { name: string; englishName?: string; nickname?: string; remark?: string; groupId?: string; tagIds?: string }) =>
       api.createPerson(params),
-    onSuccess: () => {
+    onSuccess: (_data, _variables, _context) => {
       queryClient.invalidateQueries({ queryKey: ['persons'] });
       queryClient.invalidateQueries({ queryKey: ['allPersons'] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create person:', error);
     },
   });
 }
