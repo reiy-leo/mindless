@@ -42,6 +42,13 @@ export default function ListFormDialogPage() {
   const deleteList = useDeleteList();
 
   useEffect(() => {
+    document.documentElement.style.backgroundColor = "transparent";
+    document.body.style.backgroundColor = "transparent";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }, []);
+
+  useEffect(() => {
     if (initialListId && allLists.length > 0) {
       const found = allLists.find(l => l.id === initialListId);
       if (found) {

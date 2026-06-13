@@ -44,6 +44,13 @@ export default function AdvancedGroupFormDialogPage() {
   const isEditing = !!group;
 
   useEffect(() => {
+    document.documentElement.style.backgroundColor = "transparent";
+    document.body.style.backgroundColor = "transparent";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }, []);
+
+  useEffect(() => {
     if (initialGroupId && advancedGroups.length > 0) {
       const found = advancedGroups.find(g => g.id === initialGroupId);
       if (found) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { emit } from "@tauri-apps/api/event";
@@ -23,6 +23,14 @@ const UNIT_PRESETS = [
 export default function UnitSelectorDialogPage() {
     const { t } = useTranslation("common");
     useDialogPosition();
+
+    useEffect(() => {
+        document.documentElement.style.backgroundColor = "transparent";
+        document.body.style.backgroundColor = "transparent";
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+    }, []);
+
     const params = new URLSearchParams(window.location.search);
     const initialUnit = params.get("unit") || "次";
 
