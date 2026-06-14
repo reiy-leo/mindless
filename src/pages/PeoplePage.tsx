@@ -17,6 +17,7 @@ import {
     EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 import { Star, ArchiveRestore } from "lucide-react";
+import NiceAvatar, { genConfig } from "react-nice-avatar";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
     usePersons,
@@ -38,7 +39,8 @@ import {
 import { useTags } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
 import TagCombobox from "@/components/TagCombobox";
-import type { Person, PersonGroup, PersonPhone, PersonEmail } from "@/types/person";
+import PhoneEmailListEditor from "@/components/PhoneEmailListEditor";
+import type { Person, PersonGroup, PersonPhone, PersonEmail, PhoneEntry, EmailEntry } from "@/types/person";
 
 // ==================== Helper ====================
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
@@ -60,6 +62,52 @@ function resolveIcon(icon?: string): string {
     return ICON_KEY_TO_EMOJI[icon] || "👥";
 }
 
+const AVATAR_SEEDS = [
+    "Alice",
+    "Bob",
+    "Charlie",
+    "Diana",
+    "Eve",
+    "Frank",
+    "Grace",
+    "Hank",
+    "Ivy",
+    "Jack",
+    "Kate",
+    "Leo",
+    "Mia",
+    "Nick",
+    "Olivia",
+    "Paul",
+    "Quinn",
+    "Rose",
+    "Sam",
+    "Tina",
+    "Uma",
+    "Vince",
+    "Wendy",
+    "Xander",
+    "Bryan",
+    "Elisa",
+];
+
+function AvatarImage({ 
+    seed, 
+    size = 40, 
+    avatarRef 
+}: { 
+    seed: string; 
+    size?: number; 
+    avatarRef?: React.RefObject<HTMLDivElement> 
+}) {
+    const config = genConfig(seed || "default");
+    return (
+        <div ref={avatarRef} className="w-full h-full">
+            <NiceAvatar style={{ width: size, height: size }} {...config} />
+        </div>
+    );
+}
+
 // ==================== Smart Groups ====================
 type SmartGroupId = "favorites" | "all" | "archived";
 
@@ -71,13 +119,7 @@ const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: 
 
 // ==================== Phone/Email Inline Editor ====================
 
-function PhoneListEditor({
-    personId,
-    phones,
-}: {
-    personId: string;
-    phones: PersonPhone[];
-}) {
+function PhoneListEditor({ personId, phones }: { personId: string; phones: PersonPhone[] }) {
     const { t } = useTranslation("common");
     const createPhone = useCreatePersonPhone();
     const deletePhone = useDeletePersonPhone();
@@ -88,7 +130,11 @@ function PhoneListEditor({
         if (!newPhone.trim()) return;
         createPhone.mutate(
             { personId, phone: newPhone.trim(), label: newPhoneLabel },
-            { onSuccess: () => { setNewPhone(""); } },
+            {
+                onSuccess: () => {
+                    setNewPhone("");
+                },
+            },
         );
     };
 
@@ -124,7 +170,9 @@ function PhoneListEditor({
                     type="tel"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAdd();
+                    }}
                     placeholder={t("people.detail.phone_placeholder")}
                     className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
@@ -140,13 +188,7 @@ function PhoneListEditor({
     );
 }
 
-function EmailListEditor({
-    personId,
-    emails,
-}: {
-    personId: string;
-    emails: PersonEmail[];
-}) {
+function EmailListEditor({ personId, emails }: { personId: string; emails: PersonEmail[] }) {
     const { t } = useTranslation("common");
     const createEmail = useCreatePersonEmail();
     const deleteEmail = useDeletePersonEmail();
@@ -157,7 +199,11 @@ function EmailListEditor({
         if (!newEmail.trim()) return;
         createEmail.mutate(
             { personId, email: newEmail.trim(), label: newEmailLabel },
-            { onSuccess: () => { setNewEmail(""); } },
+            {
+                onSuccess: () => {
+                    setNewEmail("");
+                },
+            },
         );
     };
 
@@ -193,7 +239,9 @@ function EmailListEditor({
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAdd();
+                    }}
                     placeholder={t("people.detail.email_placeholder")}
                     className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
@@ -203,6 +251,270 @@ function EmailListEditor({
                     className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
                 >
                     <PlusIcon className="w-3.5 h-3.5" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ==================== Avatar Picker ====================
+
+function AvatarPicker({ 
+    avatarButtonRef, 
+    onSelect, 
+    onClose 
+}: { 
+    avatarButtonRef: React.RefObject<HTMLDivElement>;
+    onSelect: (seed: string) => void; 
+    onClose: () => void; 
+}) {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const clickedOutsidePicker = ref.current && !ref.current.contains(e.target as Node);
+            const clickedAvatarButton = avatarButtonRef.current && avatarButtonRef.current.contains(e.target as Node);
+            if (clickedOutsidePicker && !clickedAvatarButton) {
+                onClose();
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [onClose, avatarButtonRef]);
+
+    return (
+        <div
+            ref={ref}
+            className="absolute z-50 top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3 w-[350px] h-[300px] overflow-y-auto"
+        >
+            <div className="grid grid-cols-5 gap-2">
+                {AVATAR_SEEDS.map((s) => (
+                    <button
+                        key={s}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onSelect(s); onClose(); }}
+                        className="w-14 h-14 rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all p-0"
+                    >
+                        <AvatarImage seed={s} size={56} />
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ==================== Person Create Form ====================
+
+function PersonCreateForm({
+    onSave,
+    onCancel,
+}: {
+    onSave: (data: {
+        name: string;
+        englishName: string;
+        nickname: string;
+        birthday: string;
+        lunarBirthday: string;
+        foodTaboos: string;
+        preferences: string;
+        remark: string;
+        avatar: string;
+        phones: { phone: string; label: string }[];
+        emails: { email: string; label: string }[];
+    }) => void;
+    onCancel: () => void;
+}) {
+    const { t } = useTranslation("common");
+    const [name, setName] = useState("");
+    const [englishName, setEnglishName] = useState("");
+    const [nickname, setNickname] = useState("");
+    const [birthday, setBirthday] = useState("");
+    const [lunarBirthday, setLunarBirthday] = useState("");
+    const [foodTaboos, setFoodTaboos] = useState("");
+    const [preferences, setPreferences] = useState("");
+    const [remark, setRemark] = useState("");
+    const [avatarSeed, setAvatarSeed] = useState("beam");
+    const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+    const avatarButtonRef = useRef<HTMLDivElement>(null);
+    const [phones, setPhones] = useState<PhoneEntry[]>([]);
+    const [emails, setEmails] = useState<EmailEntry[]>([]);
+
+    const handleSave = () => {
+        onSave({
+            name: name || t("people.new_person"),
+            englishName,
+            nickname,
+            birthday,
+            lunarBirthday,
+            foodTaboos,
+            preferences,
+            remark,
+            avatar: avatarSeed,
+            phones: phones.map(p => ({ phone: p.value, label: p.label })),
+            emails: emails.map(e => ({ email: e.value, label: e.label })),
+        });
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="px-4 pt-4 pb-2 flex-shrink-0">
+                <div className="flex items-center gap-3 mb-3">
+                     <div
+                         className="relative group cursor-pointer"
+                         onClick={() => setShowAvatarPicker((prev) => !prev)}
+                     >
+                         <AvatarImage
+                             avatarRef={avatarButtonRef}
+                             seed={name || avatarSeed || "default"}
+                             size={48}
+                         />
+                         {showAvatarPicker && (
+                             <AvatarPicker
+                                 avatarButtonRef={avatarButtonRef}
+                                 onSelect={(value) => {
+                                     setAvatarSeed(value);
+                                     setShowAvatarPicker(false);
+                                 }}
+                                 onClose={() => setShowAvatarPicker(false)}
+                             />
+                         )}
+                     </div>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={t("people.detail.name_placeholder")}
+                        className="flex-1 text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                        autoFocus
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSave();
+                            }
+                            if (e.key === "Escape") {
+                                onCancel();
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+            <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        {t("people.detail.english_name")}
+                    </label>
+                    <input
+                        type="text"
+                        value={englishName}
+                        onChange={(e) => setEnglishName(e.target.value)}
+                        placeholder={t("people.detail.english_name_placeholder")}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        {t("people.detail.nickname")}
+                    </label>
+                    <input
+                        type="text"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                        placeholder={t("people.detail.nickname_placeholder")}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">生日</label>
+                    <input
+                        type="date"
+                        value={birthday}
+                        onChange={(e) => setBirthday(e.target.value)}
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">农历生日</label>
+                    <input
+                        type="text"
+                        value={lunarBirthday}
+                        onChange={(e) => setLunarBirthday(e.target.value)}
+                        placeholder="例：腊月初八"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">忌口</label>
+                    <input
+                        type="text"
+                        value={foodTaboos}
+                        onChange={(e) => setFoodTaboos(e.target.value)}
+                        placeholder="例：辣,海鲜,花生"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">偏好</label>
+                    <input
+                        type="text"
+                        value={preferences}
+                        onChange={(e) => setPreferences(e.target.value)}
+                        placeholder="例：咖啡,阅读,旅行"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        {t("people.detail.remark")}
+                    </label>
+                    <textarea
+                        value={remark}
+                        onChange={(e) => setRemark(e.target.value)}
+                        placeholder={t("people.detail.remark_placeholder")}
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                    />
+                </div>
+                {/* Phones */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <div className="flex items-center gap-1">
+                            <PhoneIcon className="w-3.5 h-3.5" />
+                            手机号
+                        </div>
+                    </label>
+                    <PhoneEmailListEditor
+                        type="phone"
+                        entries={phones}
+                        onChange={setPhones}
+                    />
+                </div>
+
+                {/* Emails */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <div className="flex items-center gap-1">
+                            <EnvelopeIcon className="w-3.5 h-3.5" />
+                            邮箱
+                        </div>
+                    </label>
+                    <PhoneEmailListEditor
+                        type="email"
+                        entries={emails}
+                        onChange={setEmails}
+                    />
+                </div>
+            </div>
+            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-shrink-0">
+                <button
+                    onClick={handleSave}
+                    className="flex-1 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+                >
+                    {t("common.save")}
+                </button>
+                <button
+                    onClick={onCancel}
+                    className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-sm"
+                >
+                    {t("common.cancel")}
                 </button>
             </div>
         </div>
@@ -227,6 +539,9 @@ export default function PeoplePage() {
     const [newGroupName, setNewGroupName] = useState("");
     const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
     const [newGroupIcon, setNewGroupIcon] = useState("👥");
+    const [showPersonForm, setShowPersonForm] = useState(false);
+    const [showDetailAvatarPicker, setShowDetailAvatarPicker] = useState(false);
+    const detailAvatarButtonRef = useRef<HTMLDivElement>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
     const [personContextMenu, setPersonContextMenu] = useState<{ x: number; y: number; person: Person } | null>(null);
 
@@ -256,11 +571,19 @@ export default function PeoplePage() {
     const [localName, setLocalName] = useState("");
     const [localEnglishName, setLocalEnglishName] = useState("");
     const [localNickname, setLocalNickname] = useState("");
+    const [localBirthday, setLocalBirthday] = useState("");
+    const [localLunarBirthday, setLocalLunarBirthday] = useState("");
+    const [localFoodTaboos, setLocalFoodTaboos] = useState("");
+    const [localPreferences, setLocalPreferences] = useState("");
     const [localRemark, setLocalRemark] = useState("");
     const lastSyncedRef = useRef<string | null>(null);
     const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const englishNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nicknameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const birthdayDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lunarBirthdayDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const foodTaboosDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const preferencesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const remarkDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -269,6 +592,10 @@ export default function PeoplePage() {
             setLocalName(selectedPerson.name || "");
             setLocalEnglishName(selectedPerson.englishName || "");
             setLocalNickname(selectedPerson.nickname || "");
+            setLocalBirthday(selectedPerson.birthday || "");
+            setLocalLunarBirthday(selectedPerson.lunarBirthday || "");
+            setLocalFoodTaboos(selectedPerson.foodTaboos || "");
+            setLocalPreferences(selectedPerson.preferences || "");
             setLocalRemark(selectedPerson.remark || "");
         }
         if (!selectedPerson) {
@@ -276,6 +603,10 @@ export default function PeoplePage() {
             setLocalName("");
             setLocalEnglishName("");
             setLocalNickname("");
+            setLocalBirthday("");
+            setLocalLunarBirthday("");
+            setLocalFoodTaboos("");
+            setLocalPreferences("");
             setLocalRemark("");
         }
     }, [selectedPerson]);
@@ -343,43 +674,96 @@ export default function PeoplePage() {
     }, []);
 
     const handleCreatePerson = useCallback(() => {
-        console.log('[PeoplePage] handleCreatePerson clicked');
-        createPerson.mutate(
-            { name: t("people.new_person"), groupId: selectedGroupId || undefined },
-            {
-                onSuccess: (person) => {
-                    queryClient.invalidateQueries({ queryKey: ['persons'] });
-                    queryClient.invalidateQueries({ queryKey: ['allPersons'] });
-                    setSelectedPersonId(person.id);
+        setShowPersonForm(true);
+        setSelectedPersonId(null);
+    }, []);
+
+    const handleSaveNewPerson = useCallback(
+        (data: {
+            name: string;
+            englishName: string;
+            nickname: string;
+            birthday: string;
+            lunarBirthday: string;
+            foodTaboos: string;
+            preferences: string;
+            remark: string;
+            avatar: string;
+        }) => {
+            createPerson.mutate(
+                {
+                    name: data.name,
+                    englishName: data.englishName,
+                    nickname: data.nickname,
+                    birthday: data.birthday,
+                    lunarBirthday: data.lunarBirthday,
+                    foodTaboos: data.foodTaboos,
+                    preferences: data.preferences,
+                    remark: data.remark,
+                    avatar: data.avatar,
+                    groupId: selectedGroupId || undefined,
                 },
-                onError: (err) => {
-                    console.error("Failed to create person:", err);
+                {
+                    onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ["persons"] });
+                        queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                        setShowPersonForm(false);
+                    },
+                    onError: (err) => {
+                        console.error("Failed to create person:", err);
+                    },
                 },
-            },
-        );
-    }, [selectedGroupId, createPerson, t, queryClient]);
+            );
+        },
+        [selectedGroupId, createPerson, queryClient],
+    );
+
+    const handleCancelNewPerson = useCallback(() => {
+        setShowPersonForm(false);
+    }, []);
 
     const handleDeletePerson = useCallback(
         (id: string) => {
             if (!window.confirm(t("people.delete_confirm"))) return;
-            deletePerson.mutate(id);
+            deletePerson.mutate(id, {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                },
+            });
             if (selectedPersonId === id) setSelectedPersonId(null);
         },
-        [deletePerson, selectedPersonId, t],
+        [deletePerson, selectedPersonId, queryClient, t],
     );
 
     const handleTogglePin = useCallback(
         (person: Person) => {
-            updatePerson.mutate({ id: person.id, isPinned: !person.isPinned });
+            updatePerson.mutate(
+                { id: person.id, isPinned: !person.isPinned },
+                {
+                    onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ["persons"] });
+                        queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                    },
+                },
+            );
         },
-        [updatePerson],
+        [updatePerson, queryClient],
     );
 
     const handleToggleArchive = useCallback(
         (person: Person) => {
-            updatePerson.mutate({ id: person.id, isArchived: !person.isArchived });
+            updatePerson.mutate(
+                { id: person.id, isArchived: !person.isArchived },
+                {
+                    onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ["persons"] });
+                        queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                    },
+                },
+            );
         },
-        [updatePerson],
+        [updatePerson, queryClient],
     );
 
     const handleCopyPerson = useCallback(
@@ -389,14 +773,18 @@ export default function PeoplePage() {
                     name: person.name + " (副本)",
                     englishName: person.englishName,
                     nickname: person.nickname,
+                    birthday: person.birthday,
+                    lunarBirthday: person.lunarBirthday,
+                    foodTaboos: person.foodTaboos,
+                    preferences: person.preferences,
                     remark: person.remark,
                     groupId: person.groupId,
                     tagIds: person.tagIds,
                 },
                 {
                     onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ['persons'] });
-                        queryClient.invalidateQueries({ queryKey: ['allPersons'] });
+                        queryClient.invalidateQueries({ queryKey: ["persons"] });
+                        queryClient.invalidateQueries({ queryKey: ["allPersons"] });
                     },
                 },
             );
@@ -417,6 +805,7 @@ export default function PeoplePage() {
             { name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
             {
                 onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["personGroups"] });
                     setNewGroupName("");
                     setNewGroupColor("#3B82F6");
                     setNewGroupIcon("👥");
@@ -424,7 +813,7 @@ export default function PeoplePage() {
                 },
             },
         );
-    }, [newGroupName, newGroupColor, newGroupIcon, createPersonGroup]);
+    }, [newGroupName, newGroupColor, newGroupIcon, createPersonGroup, queryClient]);
 
     const handleEditGroup = useCallback((e: React.MouseEvent, group: PersonGroup) => {
         e.stopPropagation();
@@ -441,47 +830,68 @@ export default function PeoplePage() {
             { id: editingGroup.id, name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
             {
                 onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["personGroups"] });
                     setEditingGroup(null);
                     setNewGroupName("");
                     setShowGroupForm(false);
                 },
             },
         );
-    }, [editingGroup, newGroupName, newGroupColor, newGroupIcon, updatePersonGroup]);
+    }, [editingGroup, newGroupName, newGroupColor, newGroupIcon, updatePersonGroup, queryClient]);
 
     const handleToggleGroupPin = useCallback(
         (id: string) => {
             const group = personGroups.find((g) => g.id === id);
             if (group) {
-                updatePersonGroup.mutate({ id, isPinned: !group.isPinned });
+                updatePersonGroup.mutate(
+                    { id, isPinned: !group.isPinned },
+                    {
+                        onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ["personGroups"] });
+                        },
+                    },
+                );
             }
             setContextMenu(null);
         },
-        [personGroups, updatePersonGroup],
+        [personGroups, updatePersonGroup, queryClient],
     );
 
     const handleArchiveGroup = useCallback(
         (id: string) => {
             const group = personGroups.find((g) => g.id === id);
             if (group) {
-                updatePersonGroup.mutate({ id, isArchived: !group.isArchived });
+                updatePersonGroup.mutate(
+                    { id, isArchived: !group.isArchived },
+                    {
+                        onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ["personGroups"] });
+                        },
+                    },
+                );
             }
             setContextMenu(null);
         },
-        [personGroups, updatePersonGroup],
+        [personGroups, updatePersonGroup, queryClient],
     );
 
     const handleDeleteGroup = useCallback(
         (id: string) => {
             if (!window.confirm(t("people.groups.delete_confirm"))) return;
-            deletePersonGroup.mutate(id);
+            deletePersonGroup.mutate(id, {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["personGroups"] });
+                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                },
+            });
             if (selectedGroupId === id) {
                 setSelectedGroupId(null);
                 setSelectedSmartGroup("all");
             }
             setContextMenu(null);
         },
-        [deletePersonGroup, selectedGroupId, t],
+        [deletePersonGroup, selectedGroupId, queryClient, t],
     );
 
     // Context menu
@@ -697,16 +1107,26 @@ export default function PeoplePage() {
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
                     <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t("people.search_placeholder")}
-                                className="pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
-                            />
-                        </div>
+                        {(selectedSmartGroup === "all" || selectedGroupId) && (
+                            <>
+                                <button
+                                    onClick={handleCreatePerson}
+                                    className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                >
+                                    <PlusIcon className="w-4 h-4" />
+                                </button>
+                                <div className="relative">
+                                    <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={t("people.search_placeholder")}
+                                        className="pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -738,10 +1158,8 @@ export default function PeoplePage() {
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                                    {person.name.charAt(0)}
-                                                </span>
+                                            <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden">
+                                                <AvatarImage seed={person.avatar || person.id} size={32} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex items-center gap-1">
@@ -768,38 +1186,50 @@ export default function PeoplePage() {
                         </div>
                     )}
                 </div>
-
-                {/* Create button */}
-                {selectedSmartGroup !== "archived" && (
-                    <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-                        <button
-                            onClick={handleCreatePerson}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-                        >
-                            <PlusIcon className="w-4 h-4" />
-                            {t("people.new_person")}
-                        </button>
-                    </div>
-                )}
             </div>
 
             <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w + delta)))} />
 
-            {/* Right Panel: Person Detail */}
+            {/* Right Panel: Person Detail / Create Form */}
             <div
                 className="overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 flex flex-col"
                 style={{ width: detailPanelWidth }}
             >
-                {selectedPerson ? (
+                {showPersonForm ? (
+                    <PersonCreateForm onSave={handleSaveNewPerson} onCancel={handleCancelNewPerson} />
+                ) : selectedPerson ? (
                     <div className="flex flex-col h-full">
                         {/* Avatar & Name */}
                         <div className="px-4 pt-4 pb-2 flex-shrink-0">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                                        {localName.charAt(0) || "?"}
-                                    </span>
-                                </div>
+                                 <div
+                                     className="relative cursor-pointer"
+                                     onClick={() => setShowDetailAvatarPicker((prev) => !prev)}
+                                 >
+                                     <AvatarImage
+                                         avatarRef={detailAvatarButtonRef}
+                                         seed={selectedPerson.avatar || selectedPerson.id}
+                                         size={48}
+                                     />
+                                 </div>
+                                 {showDetailAvatarPicker && (
+                                     <AvatarPicker
+                                         avatarButtonRef={detailAvatarButtonRef}
+                                          onSelect={(style) => {
+                                              updatePerson.mutate(
+                                                  { id: selectedPerson.id, avatar: style },
+                                                  {
+                                                      onSuccess: () => {
+                                                          queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                          queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                      },
+                                                  },
+                                              );
+                                              setShowDetailAvatarPicker(false);
+                                         }}
+                                         onClose={() => setShowDetailAvatarPicker(false)}
+                                     />
+                                )}
                                 <input
                                     type="text"
                                     value={localName}
@@ -823,7 +1253,15 @@ export default function PeoplePage() {
                                     const next = current.includes(tagId)
                                         ? current.filter((id) => id !== tagId)
                                         : [...current, tagId];
-                                    updatePerson.mutate({ id: selectedPerson.id, tagIds: next.join(",") });
+                                    updatePerson.mutate(
+                                        { id: selectedPerson.id, tagIds: next.join(",") },
+                                        {
+                                            onSuccess: () => {
+                                                queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                            },
+                                        },
+                                    );
                                 }}
                                 onCreateTag={() => {}}
                             />
@@ -899,6 +1337,73 @@ export default function PeoplePage() {
                                         debounceSave("nickname", e.target.value, nicknameDebounceRef);
                                     }}
                                     placeholder={t("people.detail.nickname_placeholder")}
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {/* Birthday */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                    生日
+                                </label>
+                                <input
+                                    type="date"
+                                    value={localBirthday}
+                                    onChange={(e) => {
+                                        setLocalBirthday(e.target.value);
+                                        debounceSave("birthday", e.target.value, birthdayDebounceRef);
+                                    }}
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {/* Lunar Birthday */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                    农历生日
+                                </label>
+                                <input
+                                    type="text"
+                                    value={localLunarBirthday}
+                                    onChange={(e) => {
+                                        setLocalLunarBirthday(e.target.value);
+                                        debounceSave("lunarBirthday", e.target.value, lunarBirthdayDebounceRef);
+                                    }}
+                                    placeholder="例：腊月初八"
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {/* Food Taboos */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                    忌口
+                                </label>
+                                <input
+                                    type="text"
+                                    value={localFoodTaboos}
+                                    onChange={(e) => {
+                                        setLocalFoodTaboos(e.target.value);
+                                        debounceSave("foodTaboos", e.target.value, foodTaboosDebounceRef);
+                                    }}
+                                    placeholder="例：辣,海鲜,花生"
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {/* Preferences */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                    偏好
+                                </label>
+                                <input
+                                    type="text"
+                                    value={localPreferences}
+                                    onChange={(e) => {
+                                        setLocalPreferences(e.target.value);
+                                        debounceSave("preferences", e.target.value, preferencesDebounceRef);
+                                    }}
+                                    placeholder="例：咖啡,阅读,旅行"
                                     className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 />
                             </div>
@@ -1037,7 +1542,9 @@ export default function PeoplePage() {
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             <ArchiveBoxIcon className="w-4 h-4" />
-                            {personContextMenu.person.isArchived ? t("people.groups.unarchive") : t("people.groups.archive")}
+                            {personContextMenu.person.isArchived
+                                ? t("people.groups.unarchive")
+                                : t("people.groups.archive")}
                         </button>
                         <button
                             onClick={() => {
