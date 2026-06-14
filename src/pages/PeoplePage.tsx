@@ -15,7 +15,7 @@ import {
     PhoneIcon,
     EnvelopeIcon,
 } from "@heroicons/react/24/outline";
-import { Star, ArchiveRestore } from "lucide-react";
+import { Star } from "lucide-react";
 import NiceAvatar, { genConfig } from "react-nice-avatar";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
@@ -32,8 +32,12 @@ import {
     useDeletePersonGroup,
     useCreatePersonPhones,
     useCreatePersonEmails,
+    useCreatePersonPhone,
+    useDeletePersonPhone,
+    useCreatePersonEmail,
+    useDeletePersonEmail,
 } from "@/queries/usePersonQueries";
-import { useTags } from "@/queries/useTaskQueries";
+import { useTags, useCreateTag } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
 import TagCombobox from "@/components/TagCombobox";
 import PhoneEmailListEditor from "@/components/PhoneEmailListEditor";
@@ -412,6 +416,11 @@ export default function PeoplePage() {
     const deletePersonGroup = useDeletePersonGroup();
     const createPersonPhones = useCreatePersonPhones();
     const createPersonEmails = useCreatePersonEmails();
+    const createPersonPhone = useCreatePersonPhone();
+    const deletePersonPhone = useDeletePersonPhone();
+    const createPersonEmail = useCreatePersonEmail();
+    const deletePersonEmail = useDeletePersonEmail();
+    const createTag = useCreateTag();
 
     // Phones & Emails for selected person
     const selectedPerson = useMemo(
@@ -578,6 +587,7 @@ export default function PeoplePage() {
                         queryClient.invalidateQueries({ queryKey: ["persons"] });
                         queryClient.invalidateQueries({ queryKey: ["allPersons"] });
                         setShowPersonForm(false);
+                        setSelectedPersonId(newPerson.id);
                     },
                     onError: (err) => {
                         console.error("Failed to create person:", err);
@@ -1133,46 +1143,27 @@ export default function PeoplePage() {
                                         },
                                     );
                                 }}
-                                onCreateTag={() => {}}
+                                onCreateTag={(name: string) => {
+                                    createTag.mutate(
+                                        { name },
+                                        {
+                                            onSuccess: (newTag) => {
+                                                const current = parseTagIds(selectedPerson.tagIds);
+                                                const next = [...current, newTag.id];
+                                                updatePerson.mutate(
+                                                    { id: selectedPerson.id, tagIds: next.join(",") },
+                                                    {
+                                                        onSuccess: () => {
+                                                            queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                            queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                        },
+                                                    },
+                                                );
+                                            },
+                                        },
+                                    );
+                                }}
                             />
-                        </div>
-
-                        {/* Actions bar */}
-                        <div className="px-4 pb-2 flex items-center gap-2 flex-shrink-0">
-                            <button
-                                onClick={() => handleTogglePin(selectedPerson)}
-                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
-                                    selectedPerson.isPinned
-                                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                }`}
-                            >
-                                <StarIcon className="w-3.5 h-3.5" />
-                                {selectedPerson.isPinned ? t("people.unfavorite") : t("people.favorite")}
-                            </button>
-                            <button
-                                onClick={() => handleToggleArchive(selectedPerson)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                {selectedPerson.isArchived ? (
-                                    <>
-                                        <ArchiveRestore className="w-3.5 h-3.5" />
-                                        {t("people.groups.unarchive")}
-                                    </>
-                                ) : (
-                                    <>
-                                        <ArchiveBoxIcon className="w-3.5 h-3.5" />
-                                        {t("people.groups.archive")}
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleDeletePerson(selectedPerson.id)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                            >
-                                <TrashIcon className="w-3.5 h-3.5" />
-                                {t("common.delete")}
-                            </button>
                         </div>
 
                         {/* Detail Fields */}
@@ -1291,9 +1282,26 @@ export default function PeoplePage() {
                                             value: p.phone,
                                             note: ''
                                         }))}
-                                        onChange={(_entries) => {
-                                            // 手机号的更新逻辑需要调用 API
-                                            // 这里暂时不处理，因为需要 personId
+                                        onChange={(entries) => {
+                                            // 找出被删除的条目
+                                            const currentIds = phones.map(p => p.id);
+                                            const newIds = entries.map(e => e.id);
+                                            const deletedIds = currentIds.filter(id => !newIds.includes(id));
+                                            
+                                            // 删除被删除的条目
+                                            deletedIds.forEach(id => {
+                                                deletePersonPhone.mutate(id);
+                                            });
+                                            
+                                            // 找出新增的条目
+                                            const addedEntries = entries.filter(e => !currentIds.includes(e.id));
+                                            addedEntries.forEach(entry => {
+                                                createPersonPhone.mutate({
+                                                    personId: selectedPerson.id,
+                                                    phone: entry.value,
+                                                    label: entry.label
+                                                });
+                                            });
                                         }}
                                     />
                                 </div>
@@ -1316,9 +1324,26 @@ export default function PeoplePage() {
                                             value: e.email,
                                             note: ''
                                         }))}
-                                        onChange={(_entries) => {
-                                            // 邮箱的更新逻辑需要调用 API
-                                            // 这里暂时不处理，因为需要 personId
+                                        onChange={(entries) => {
+                                            // 找出被删除的条目
+                                            const currentIds = emails.map(e => e.id);
+                                            const newIds = entries.map(e => e.id);
+                                            const deletedIds = currentIds.filter(id => !newIds.includes(id));
+                                            
+                                            // 删除被删除的条目
+                                            deletedIds.forEach(id => {
+                                                deletePersonEmail.mutate(id);
+                                            });
+                                            
+                                            // 找出新增的条目
+                                            const addedEntries = entries.filter(e => !currentIds.includes(e.id));
+                                            addedEntries.forEach(entry => {
+                                                createPersonEmail.mutate({
+                                                    personId: selectedPerson.id,
+                                                    email: entry.value,
+                                                    label: entry.label
+                                                });
+                                            });
                                         }}
                                     />
                                 </div>
