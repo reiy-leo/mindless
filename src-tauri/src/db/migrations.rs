@@ -380,7 +380,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN deleted_at TEXT;");
 
             // Create person_other_names table
-            let _ = conn.execute_batch("
+            conn.execute_batch("
                 CREATE TABLE IF NOT EXISTS person_other_names (
                     id TEXT PRIMARY KEY,
                     person_id TEXT NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
@@ -389,19 +389,28 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
                     sort_order REAL NOT NULL DEFAULT 0
                 );
                 CREATE INDEX IF NOT EXISTS idx_person_other_names_person_id ON person_other_names(person_id);
-            ");
+            ").map_err(|e| format!("Failed to create person_other_names table: {}", e))?;
 
-            // Migrate existing english_name and nickname data
-            let _ = conn.execute_batch("
+            // Migrate existing english_name and nickname data (idempotent: skip if data already migrated)
+            conn.execute_batch("
                 INSERT INTO person_other_names (id, person_id, name, label, sort_order)
                 SELECT hex(randomblob(16)), id, english_name, '英文名', 0
-                FROM persons WHERE english_name IS NOT NULL AND english_name != '';
-            ");
-            let _ = conn.execute_batch("
+                FROM persons
+                WHERE english_name IS NOT NULL AND english_name != ''
+                  AND id NOT IN (
+                    SELECT person_id FROM person_other_names WHERE label = '英文名'
+                  );
+            ").map_err(|e| format!("Failed to migrate english_name data: {}", e))?;
+
+            conn.execute_batch("
                 INSERT INTO person_other_names (id, person_id, name, label, sort_order)
                 SELECT hex(randomblob(16)), id, nickname, '昵称', 1
-                FROM persons WHERE nickname IS NOT NULL AND nickname != '';
-            ");
+                FROM persons
+                WHERE nickname IS NOT NULL AND nickname != ''
+                  AND id NOT IN (
+                    SELECT person_id FROM person_other_names WHERE label = '昵称'
+                  );
+            ").map_err(|e| format!("Failed to migrate nickname data: {}", e))?;
 
             println!("Migrations applied successfully");
         }
