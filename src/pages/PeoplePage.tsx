@@ -472,17 +472,25 @@ export default function PeoplePage() {
             setLocalPreferences([]);
             setLocalRemark("");
         }
-    }, [selectedPerson]);
+    }, [selectedPerson, selectedPersonId]);
 
     const debounceSave = useCallback(
         (field: string, value: string, ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
             if (!selectedPersonId) return;
             if (ref.current) clearTimeout(ref.current);
             ref.current = setTimeout(() => {
-                updatePerson.mutate({ id: selectedPersonId, [field]: value });
+                updatePerson.mutate(
+                    { id: selectedPersonId, [field]: value },
+                    {
+                        onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ["persons"] });
+                            queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                        },
+                    },
+                );
             }, 500);
         },
-        [selectedPersonId, updatePerson],
+        [selectedPersonId, updatePerson, queryClient],
     );
 
     // Smart group counts
@@ -1244,7 +1252,15 @@ export default function PeoplePage() {
                                     items={localFoodTaboos}
                                     onChange={(items) => {
                                         setLocalFoodTaboos(items);
-                                        updatePerson.mutate({ id: selectedPerson.id, foodTaboos: items.join(',') });
+                                        updatePerson.mutate(
+                                            { id: selectedPerson.id, foodTaboos: items.join(',') },
+                                            {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                },
+                                            },
+                                        );
                                     }}
                                     placeholder="输入忌口，按回车添加"
                                 />
@@ -1259,7 +1275,15 @@ export default function PeoplePage() {
                                     items={localPreferences}
                                     onChange={(items) => {
                                         setLocalPreferences(items);
-                                        updatePerson.mutate({ id: selectedPerson.id, preferences: items.join(',') });
+                                        updatePerson.mutate(
+                                            { id: selectedPerson.id, preferences: items.join(',') },
+                                            {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                },
+                                            },
+                                        );
                                     }}
                                     placeholder="输入偏好，按回车添加"
                                 />
@@ -1290,7 +1314,11 @@ export default function PeoplePage() {
                                             
                                             // 删除被删除的条目
                                             deletedIds.forEach(id => {
-                                                deletePersonPhone.mutate(id);
+                                                deletePersonPhone.mutate(id, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personPhones", selectedPerson.id] });
+                                                    },
+                                                });
                                             });
                                             
                                             // 找出新增的条目
@@ -1300,6 +1328,10 @@ export default function PeoplePage() {
                                                     personId: selectedPerson.id,
                                                     phone: entry.value,
                                                     label: entry.label
+                                                }, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personPhones", selectedPerson.id] });
+                                                    },
                                                 });
                                             });
                                         }}
@@ -1332,7 +1364,11 @@ export default function PeoplePage() {
                                             
                                             // 删除被删除的条目
                                             deletedIds.forEach(id => {
-                                                deletePersonEmail.mutate(id);
+                                                deletePersonEmail.mutate(id, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personEmails", selectedPerson.id] });
+                                                    },
+                                                });
                                             });
                                             
                                             // 找出新增的条目
@@ -1342,6 +1378,10 @@ export default function PeoplePage() {
                                                     personId: selectedPerson.id,
                                                     email: entry.value,
                                                     label: entry.label
+                                                }, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personEmails", selectedPerson.id] });
+                                                    },
                                                 });
                                             });
                                         }}
