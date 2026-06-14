@@ -18,6 +18,11 @@ export interface Person {
   remark?: string;
   groupId?: string;
   tagIds?: string;
+  avatar?: string;
+  birthday?: string;
+  lunarBirthday?: string;
+  foodTaboos?: string;
+  preferences?: string;
   isPinned: boolean;
   isArchived: boolean;
   sortOrder: number;
@@ -40,4 +45,18 @@ export interface PersonEmail {
   email: string;
   label: string;
   sortOrder: number;
+}
+
+export interface PhoneEntry {
+  id: string;
+  label: string;
+  value: string;
+  note: string;
+}
+
+export interface EmailEntry {
+  id: string;
+  label: string;
+  value: string;
+  note: string;
 }
