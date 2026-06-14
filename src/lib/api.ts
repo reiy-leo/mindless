@@ -605,16 +605,30 @@ export async function getPersonById(id: string): Promise<Person> {
 
 export async function createPerson(params: {
   name: string;
-  englishName?: string;
-  nickname?: string;
-  remark?: string;
-  groupId?: string;
-  tagIds?: string;
+    englishName?: string;
+    nickname?: string;
+    remark?: string;
+    groupId?: string;
+    tagIds?: string;
+    avatar?: string;
+    birthday?: string;
+    lunarBirthday?: string;
+    foodTaboos?: string;
+    preferences?: string;
 }): Promise<Person> {
-  console.log('[api] createPerson called with:', params);
-  const result = await invoke<Person>('create_person', params);
-  console.log('[api] createPerson result:', result);
-  return result;
+  return await invoke<Person>('create_person', {
+    name: params.name,
+    english_name: params.englishName,
+    nickname: params.nickname,
+    remark: params.remark,
+    group_id: params.groupId,
+    tag_ids: params.tagIds,
+    avatar: params.avatar,
+    birthday: params.birthday,
+    lunar_birthday: params.lunarBirthday,
+    food_taboos: params.foodTaboos,
+    preferences: params.preferences,
+  });
 }
 
 export async function updatePerson(id: string, params: {
@@ -627,6 +641,11 @@ export async function updatePerson(id: string, params: {
   isPinned?: boolean;
   isArchived?: boolean;
   sortOrder?: number;
+  avatar?: string;
+  birthday?: string;
+  lunarBirthday?: string;
+  foodTaboos?: string;
+  preferences?: string;
 }): Promise<Person> {
   return await invoke<Person>('update_person', {
     id,
@@ -639,6 +658,11 @@ export async function updatePerson(id: string, params: {
     is_pinned: params.isPinned,
     is_archived: params.isArchived,
     sort_order: params.sortOrder,
+    avatar: params.avatar,
+    birthday: params.birthday,
+    lunar_birthday: params.lunarBirthday,
+    food_taboos: params.foodTaboos,
+    preferences: params.preferences,
   });
 }
 
@@ -700,4 +724,22 @@ export async function updatePersonEmail(id: string, params: {
 
 export async function deletePersonEmail(id: string): Promise<void> {
   return await invoke<void>('delete_person_email', { id });
+}
+
+export async function createPersonPhones(personId: string, phones: { phone: string; label: string }[]): Promise<PersonPhone[]> {
+  const results: PersonPhone[] = [];
+  for (const p of phones) {
+    const result = await createPersonPhone({ personId, phone: p.phone, label: p.label });
+    results.push(result);
+  }
+  return results;
+}
+
+export async function createPersonEmails(personId: string, emails: { email: string; label: string }[]): Promise<PersonEmail[]> {
+  const results: PersonEmail[] = [];
+  for (const e of emails) {
+    const result = await createPersonEmail({ personId, email: e.email, label: e.label });
+    results.push(result);
+  }
+  return results;
 }
