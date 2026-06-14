@@ -60,3 +60,18 @@ export interface EmailEntry {
   value: string;
   note: string;
 }
+
+export interface PersonOtherName {
+  id: string;
+  personId: string;
+  name: string;
+  label: string;
+  sortOrder: number;
+}
+
+export interface OtherNameEntry {
+  id: string;
+  label: string;
+  value: string;
+  note: string;
+}

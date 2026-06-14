@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -742,4 +742,32 @@ export async function createPersonEmails(personId: string, emails: { email: stri
     results.push(result);
   }
   return results;
+}
+
+// Person Other Name APIs
+export async function getPersonOtherNames(personId: string): Promise<PersonOtherName[]> {
+  return await invoke<PersonOtherName[]>('get_person_other_names', { person_id: personId });
+}
+
+export async function createPersonOtherName(params: {
+  personId: string;
+  name: string;
+  label?: string;
+}): Promise<PersonOtherName> {
+  return await invoke<PersonOtherName>('create_person_other_name', {
+    person_id: params.personId,
+    name: params.name,
+    label: params.label,
+  });
+}
+
+export async function updatePersonOtherName(id: string, params: {
+  name?: string;
+  label?: string;
+}): Promise<PersonOtherName> {
+  return await invoke<PersonOtherName>('update_person_other_name', { id, ...params });
+}
+
+export async function deletePersonOtherName(id: string): Promise<void> {
+  return await invoke<void>('delete_person_other_name', { id });
 }
