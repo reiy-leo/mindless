@@ -512,10 +512,8 @@
     },
     "detail": {
       "name_placeholder": "名前を入力",
-      "english_name": "英語名",
-      "english_name_placeholder": "英語名を入力",
-      "nickname": "ニックネーム",
-      "nickname_placeholder": "ニックネームを入力",
+      "other_names": "別名・ニックネーム",
+      "other_names_placeholder": "別名を入力",
       "phones": "電話番号",
       "phone_placeholder": "電話番号を入力",
       "emails": "メールアドレス",

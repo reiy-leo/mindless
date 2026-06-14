@@ -524,10 +524,8 @@
     },
     "detail": {
       "name_placeholder": "Enter name",
-      "english_name": "English Name",
-      "english_name_placeholder": "Enter English name",
-      "nickname": "Nickname",
-      "nickname_placeholder": "Enter nickname",
+      "other_names": "Aliases",
+      "other_names_placeholder": "Enter alias or nickname",
       "phones": "Phone Numbers",
       "phone_placeholder": "Enter phone number",
       "emails": "Email Addresses",

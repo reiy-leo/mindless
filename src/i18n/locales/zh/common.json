@@ -525,10 +525,8 @@
     },
     "detail": {
       "name_placeholder": "输入姓名",
-      "english_name": "英文名",
-      "english_name_placeholder": "输入英文名",
-      "nickname": "昵称",
-      "nickname_placeholder": "输入昵称",
+      "other_names": "别名或昵称",
+      "other_names_placeholder": "输入别名或昵称",
       "phones": "手机号",
       "phone_placeholder": "输入手机号",
       "emails": "邮箱",
