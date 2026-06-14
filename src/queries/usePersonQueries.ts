@@ -143,3 +143,35 @@ export function useCreatePersonEmails() {
       api.createPersonEmails(params.personId, params.emails),
   });
 }
+
+// ==================== Other Name queries ====================
+
+export function usePersonOtherNames(personId: string | undefined) {
+  return useQuery({
+    queryKey: ['personOtherNames', personId],
+    queryFn: () => api.getPersonOtherNames(personId!),
+    enabled: !!personId,
+  });
+}
+
+// ==================== Other Name mutations ====================
+
+export function useCreatePersonOtherName() {
+  return useMutation({
+    mutationFn: (params: { personId: string; name: string; label?: string }) =>
+      api.createPersonOtherName(params),
+  });
+}
+
+export function useUpdatePersonOtherName() {
+  return useMutation({
+    mutationFn: ({ id, ...params }: { id: string; name?: string; label?: string }) =>
+      api.updatePersonOtherName(id, params),
+  });
+}
+
+export function useDeletePersonOtherName() {
+  return useMutation({
+    mutationFn: (id: string) => api.deletePersonOtherName(id),
+  });
+}
