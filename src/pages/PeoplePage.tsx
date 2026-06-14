@@ -42,6 +42,7 @@ import { useTags } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
 import TagCombobox from "@/components/TagCombobox";
 import PhoneEmailListEditor from "@/components/PhoneEmailListEditor";
+import SimpleListEditor from "@/components/SimpleListEditor";
 import type { Person, PersonGroup, PersonPhone, PersonEmail, PhoneEntry, EmailEntry } from "@/types/person";
 
 // ==================== Helper ====================
@@ -317,8 +318,8 @@ function PersonCreateForm({
         nickname: string;
         birthday: string;
         lunarBirthday: string;
-        foodTaboos: string;
-        preferences: string;
+        foodTaboos: string[];
+        preferences: string[];
         remark: string;
         avatar: string;
         phones: { phone: string; label: string }[];
@@ -332,8 +333,8 @@ function PersonCreateForm({
     const [nickname, setNickname] = useState("");
     const [birthday, setBirthday] = useState("");
     const [lunarBirthday, setLunarBirthday] = useState("");
-    const [foodTaboos, setFoodTaboos] = useState("");
-    const [preferences, setPreferences] = useState("");
+    const [foodTaboos, setFoodTaboos] = useState<string[]>([]);
+    const [preferences, setPreferences] = useState<string[]>([]);
     const [remark, setRemark] = useState("");
     const [avatarSeed, setAvatarSeed] = useState("beam");
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -474,22 +475,18 @@ function PersonCreateForm({
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">忌口</label>
-                    <input
-                        type="text"
-                        value={foodTaboos}
-                        onChange={(e) => setFoodTaboos(e.target.value)}
-                        placeholder="例：辣,海鲜,花生"
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    <SimpleListEditor
+                        items={foodTaboos}
+                        onChange={setFoodTaboos}
+                        placeholder="输入忌口，按回车添加"
                     />
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">偏好</label>
-                    <input
-                        type="text"
-                        value={preferences}
-                        onChange={(e) => setPreferences(e.target.value)}
-                        placeholder="例：咖啡,阅读,旅行"
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    <SimpleListEditor
+                        items={preferences}
+                        onChange={setPreferences}
+                        placeholder="输入偏好，按回车添加"
                     />
                 </div>
                 <div>
@@ -689,8 +686,8 @@ export default function PeoplePage() {
             nickname: string;
             birthday: string;
             lunarBirthday: string;
-            foodTaboos: string;
-            preferences: string;
+            foodTaboos: string[];
+            preferences: string[];
             remark: string;
             avatar: string;
             phones: { phone: string; label: string }[];
@@ -703,8 +700,8 @@ export default function PeoplePage() {
                     nickname: data.nickname,
                     birthday: data.birthday,
                     lunarBirthday: data.lunarBirthday,
-                    foodTaboos: data.foodTaboos,
-                    preferences: data.preferences,
+                    foodTaboos: data.foodTaboos.join(','),
+                    preferences: data.preferences.join(','),
                     remark: data.remark,
                     avatar: data.avatar,
                     groupId: selectedGroupId || undefined,
