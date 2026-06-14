@@ -35,6 +35,8 @@ import {
     useDeletePersonPhone,
     useCreatePersonEmail,
     useDeletePersonEmail,
+    useCreatePersonPhones,
+    useCreatePersonEmails,
 } from "@/queries/usePersonQueries";
 import { useTags } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
@@ -556,6 +558,8 @@ export default function PeoplePage() {
     const createPersonGroup = useCreatePersonGroup();
     const updatePersonGroup = useUpdatePersonGroup();
     const deletePersonGroup = useDeletePersonGroup();
+    const createPersonPhones = useCreatePersonPhones();
+    const createPersonEmails = useCreatePersonEmails();
 
     // Phones & Emails for selected person
     const selectedPerson = useMemo(
@@ -689,6 +693,8 @@ export default function PeoplePage() {
             preferences: string;
             remark: string;
             avatar: string;
+            phones: { phone: string; label: string }[];
+            emails: { email: string; label: string }[];
         }) => {
             createPerson.mutate(
                 {
@@ -704,7 +710,21 @@ export default function PeoplePage() {
                     groupId: selectedGroupId || undefined,
                 },
                 {
-                    onSuccess: () => {
+                    onSuccess: (newPerson) => {
+                        // 批量创建手机号
+                        if (data.phones.length > 0) {
+                            createPersonPhones.mutate({
+                                personId: newPerson.id,
+                                phones: data.phones,
+                            });
+                        }
+                        // 批量创建邮箱
+                        if (data.emails.length > 0) {
+                            createPersonEmails.mutate({
+                                personId: newPerson.id,
+                                emails: data.emails,
+                            });
+                        }
                         queryClient.invalidateQueries({ queryKey: ["persons"] });
                         queryClient.invalidateQueries({ queryKey: ["allPersons"] });
                         setShowPersonForm(false);
@@ -715,7 +735,7 @@ export default function PeoplePage() {
                 },
             );
         },
-        [selectedGroupId, createPerson, queryClient],
+        [selectedGroupId, createPerson, createPersonPhones, createPersonEmails, queryClient],
     );
 
     const handleCancelNewPerson = useCallback(() => {
