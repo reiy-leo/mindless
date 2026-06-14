@@ -36,6 +36,9 @@ import {
     useDeletePersonPhone,
     useCreatePersonEmail,
     useDeletePersonEmail,
+    usePersonOtherNames,
+    useCreatePersonOtherName,
+    useDeletePersonOtherName,
 } from "@/queries/usePersonQueries";
 import { useTags, useCreateTag } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
@@ -418,22 +421,23 @@ export default function PeoplePage() {
     const phones = phonesData ?? [];
     const { data: emailsData } = usePersonEmails(selectedPersonId || undefined);
     const emails = emailsData ?? [];
+    const { data: otherNamesData } = usePersonOtherNames(selectedPersonId || undefined);
+    const otherNames = otherNamesData ?? [];
+    const createPersonOtherName = useCreatePersonOtherName();
+    const deletePersonOtherName = useDeletePersonOtherName();
 
     // Detail local state
     const [localName, setLocalName] = useState("");
-    const [localEnglishName, setLocalEnglishName] = useState("");
-    const [localNickname, setLocalNickname] = useState("");
     const [localBirthday, setLocalBirthday] = useState("");
     const [localLunarBirthday, setLocalLunarBirthday] = useState("");
     const [localFoodTaboos, setLocalFoodTaboos] = useState<string[]>([]);
     const [localPreferences, setLocalPreferences] = useState<string[]>([]);
     const [localPhones, setLocalPhones] = useState<PhoneEntry[]>([]);
     const [localEmails, setLocalEmails] = useState<EmailEntry[]>([]);
+    const [localOtherNames, setLocalOtherNames] = useState<OtherNameEntry[]>([]);
     const [localRemark, setLocalRemark] = useState("");
     const lastSyncedRef = useRef<string | null>(null);
     const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const englishNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const nicknameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const birthdayDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lunarBirthdayDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const remarkDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -443,27 +447,25 @@ export default function PeoplePage() {
         if (selectedPersonId && selectedPerson && selectedPersonId !== lastSyncedRef.current) {
             lastSyncedRef.current = selectedPersonId;
             setLocalName(selectedPerson.name || "");
-            setLocalEnglishName(selectedPerson.englishName || "");
-            setLocalNickname(selectedPerson.nickname || "");
             setLocalBirthday(selectedPerson.birthday || "");
             setLocalLunarBirthday(selectedPerson.lunarBirthday || "");
             setLocalFoodTaboos(selectedPerson.foodTaboos ? selectedPerson.foodTaboos.split(',') : []);
             setLocalPreferences(selectedPerson.preferences ? selectedPerson.preferences.split(',') : []);
             setLocalPhones(phones.map(p => ({ id: p.id, label: p.label, value: p.phone, note: '' })));
             setLocalEmails(emails.map(e => ({ id: e.id, label: e.label, value: e.email, note: '' })));
+            setLocalOtherNames(otherNames.map(n => ({ id: n.id, label: n.label || '别名', value: n.name, note: '' })));
             setLocalRemark(selectedPerson.remark || "");
         }
         if (!selectedPersonId) {
             lastSyncedRef.current = null;
             setLocalName("");
-            setLocalEnglishName("");
-            setLocalNickname("");
             setLocalBirthday("");
             setLocalLunarBirthday("");
             setLocalFoodTaboos([]);
             setLocalPreferences([]);
             setLocalPhones([]);
             setLocalEmails([]);
+            setLocalOtherNames([]);
             setLocalRemark("");
         }
     }, [selectedPersonId]); // Only re-sync when selectedPersonId changes
@@ -480,6 +482,12 @@ export default function PeoplePage() {
             setLocalEmails(emails.map(e => ({ id: e.id, label: e.label, value: e.email, note: '' })));
         }
     }, [emails, selectedPersonId]);
+
+    useEffect(() => {
+        if (selectedPersonId && lastSyncedRef.current === selectedPersonId) {
+            setLocalOtherNames(otherNames.map(n => ({ id: n.id, label: n.label || '别名', value: n.name, note: '' })));
+        }
+    }, [otherNames, selectedPersonId]);
 
     const debounceSave = useCallback(
         (field: string, value: string, ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
@@ -528,10 +536,7 @@ export default function PeoplePage() {
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             result = result.filter(
-                (p) =>
-                    p.name.toLowerCase().includes(q) ||
-                    (p.englishName && p.englishName.toLowerCase().includes(q)) ||
-                    (p.nickname && p.nickname.toLowerCase().includes(q)),
+                (p) => p.name.toLowerCase().includes(q),
             );
         }
 
@@ -598,6 +603,16 @@ export default function PeoplePage() {
                                 emails: data.emails,
                             });
                         }
+                        // Batch create other names
+                        if (data.otherNames.length > 0) {
+                            data.otherNames.forEach(n => {
+                                createPersonOtherName.mutate({
+                                    personId: newPerson.id,
+                                    name: n.name,
+                                    label: n.label,
+                                });
+                            });
+                        }
                         queryClient.invalidateQueries({ queryKey: ["persons"] });
                         queryClient.invalidateQueries({ queryKey: ["allPersons"] });
                         setShowPersonForm(false);
@@ -609,7 +624,7 @@ export default function PeoplePage() {
                 },
             );
         },
-        [selectedGroupId, createPerson, createPersonPhones, createPersonEmails, queryClient],
+        [selectedGroupId, createPerson, createPersonPhones, createPersonEmails, createPersonOtherName, queryClient],
     );
 
     const handleCancelNewPerson = useCallback(() => {
@@ -665,8 +680,8 @@ export default function PeoplePage() {
             createPerson.mutate(
                 {
                     name: person.name + " (副本)",
-                    englishName: person.englishName,
-                    nickname: person.nickname,
+                    englishName: "",
+                    nickname: "",
                     birthday: person.birthday,
                     lunarBirthday: person.lunarBirthday,
                     foodTaboos: person.foodTaboos,
@@ -1182,38 +1197,49 @@ export default function PeoplePage() {
 
                         {/* Detail Fields */}
                         <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
-                            {/* English Name */}
+                            {/* Other Names */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    {t("people.detail.english_name")}
+                                    <div className="flex items-center gap-1">
+                                        <UserIcon className="w-3.5 h-3.5" />
+                                        {t("people.detail.other_names")}
+                                    </div>
                                 </label>
-                                <input
-                                    type="text"
-                                    value={localEnglishName}
-                                    onChange={(e) => {
-                                        setLocalEnglishName(e.target.value);
-                                        debounceSave("englishName", e.target.value, englishNameDebounceRef);
-                                    }}
-                                    placeholder={t("people.detail.english_name_placeholder")}
-                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                            </div>
+                                <div className="group">
+                                    <PhoneEmailListEditor
+                                        type="other_name"
+                                        entries={localOtherNames}
+                                        onChange={(entries) => {
+                                            const newEntries = entries as OtherNameEntry[];
+                                            setLocalOtherNames(newEntries);
 
-                            {/* Nickname */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    {t("people.detail.nickname")}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={localNickname}
-                                    onChange={(e) => {
-                                        setLocalNickname(e.target.value);
-                                        debounceSave("nickname", e.target.value, nicknameDebounceRef);
-                                    }}
-                                    placeholder={t("people.detail.nickname_placeholder")}
-                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
+                                            const currentIds = otherNames.map(n => n.id);
+                                            const newIds = newEntries.map(e => e.id);
+                                            const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
+                                            deletedIds.forEach(id => {
+                                                deletePersonOtherName.mutate(id, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
+                                                    },
+                                                });
+                                            });
+
+                                            const addedEntries = newEntries.filter(e => !currentIds.includes(e.id));
+                                            addedEntries.forEach(entry => {
+                                                createPersonOtherName.mutate({
+                                                    personId: selectedPerson.id,
+                                                    name: entry.value,
+                                                    label: entry.label
+                                                }, {
+                                                    onSuccess: () => {
+                                                        queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
+                                                    },
+                                                });
+                                            });
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Birthday */}
