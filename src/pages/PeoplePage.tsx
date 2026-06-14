@@ -577,8 +577,6 @@ export default function PeoplePage() {
             createPerson.mutate(
                 {
                     name: data.name,
-                    englishName: "",
-                    nickname: "",
                     birthday: data.birthday,
                     lunarBirthday: data.lunarBirthday,
                     foodTaboos: data.foodTaboos.join(','),
@@ -680,8 +678,6 @@ export default function PeoplePage() {
             createPerson.mutate(
                 {
                     name: person.name + " (副本)",
-                    englishName: "",
-                    nickname: "",
                     birthday: person.birthday,
                     lunarBirthday: person.lunarBirthday,
                     foodTaboos: person.foodTaboos,
@@ -1076,17 +1072,7 @@ export default function PeoplePage() {
                                                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                                                     )}
                                                     {person.name}
-                                                    {person.nickname && (
-                                                        <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">
-                                                            ({person.nickname})
-                                                        </span>
-                                                    )}
                                                 </p>
-                                                {person.englishName && (
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                        {person.englishName}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
