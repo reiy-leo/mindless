@@ -65,7 +65,7 @@ export interface PersonOtherName {
   id: string;
   personId: string;
   name: string;
-  label: string;
+  label?: string;
   sortOrder: number;
 }
 

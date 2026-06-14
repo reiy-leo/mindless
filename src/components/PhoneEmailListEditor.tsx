@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { PlusIcon, TrashIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PhoneIcon, EnvelopeIcon, UserIcon } from '@heroicons/react/24/outline';
 import type { PhoneEntry, EmailEntry } from '@/types/person';
 
 type EntryType = 'phone' | 'email' | 'other_name';
@@ -20,7 +20,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
   const [newNote, setNewNote] = useState('');
   const valueInputRef = useRef<HTMLInputElement>(null);
 
-  const Icon = type === 'phone' ? PhoneIcon : EnvelopeIcon;
+  const Icon = type === 'phone' ? PhoneIcon : type === 'email' ? EnvelopeIcon : UserIcon;
   const placeholder = type === 'phone' ? '输入手机号' : type === 'email' ? '输入邮箱地址' : '输入别名或昵称';
 
   useEffect(() => {
