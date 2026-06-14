@@ -319,6 +319,8 @@ pub async fn delete_person(app: AppHandle, id: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to delete person phones: {}", e))?;
     conn.execute("DELETE FROM person_emails WHERE person_id = ?1", [&id])
         .map_err(|e| format!("Failed to delete person emails: {}", e))?;
+    conn.execute("DELETE FROM person_other_names WHERE person_id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete person other names: {}", e))?;
     conn.execute("DELETE FROM persons WHERE id = ?1", [&id])
         .map_err(|e| format!("Failed to delete person: {}", e))?;
     Ok(())
