@@ -151,8 +151,7 @@ export const personGroups = sqliteTable('person_groups', {
 export const persons = sqliteTable('persons', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  englishName: text('english_name'),
-  nickname: text('nickname'),
+
   remark: text('remark').default(''),
   groupId: text('group_id').references(() => personGroups.id),
   tagIds: text('tag_ids'),
@@ -167,6 +166,15 @@ export const persons = sqliteTable('persons', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
   deletedAt: text('deleted_at'),
+});
+
+// Person other names table
+export const personOtherNames = sqliteTable('person_other_names', {
+  id: text('id').primaryKey(),
+  personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  label: text('label').default('别名'),
+  sortOrder: real('sort_order').notNull().default(0),
 });
 
 // Person phones table
