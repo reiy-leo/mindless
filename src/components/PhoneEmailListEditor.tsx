@@ -10,9 +10,6 @@ interface PhoneEmailListEditorProps {
   onChange: (entries: PhoneEntry[] | EmailEntry[]) => void;
 }
 
-const PHONE_LABELS = ['手机', '工作', '家庭', '其他'];
-const EMAIL_LABELS = ['邮箱', '工作', '个人', '其他'];
-
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
@@ -21,10 +18,8 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
   const [showAddForm, setShowAddForm] = useState(false);
   const [newValue, setNewValue] = useState('');
   const [newNote, setNewNote] = useState('');
-  const [newLabel, setNewLabel] = useState(type === 'phone' ? '手机' : '邮箱');
   const valueInputRef = useRef<HTMLInputElement>(null);
 
-  const labels = type === 'phone' ? PHONE_LABELS : EMAIL_LABELS;
   const Icon = type === 'phone' ? PhoneIcon : EnvelopeIcon;
   const placeholder = type === 'phone' ? '输入手机号' : '输入邮箱地址';
 
@@ -39,7 +34,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
     
     const newEntry = {
       id: generateId(),
-      label: newLabel,
+      label: type === 'phone' ? '手机' : '邮箱',
       value: newValue.trim(),
       note: newNote.trim(),
     };
@@ -71,9 +66,6 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
       {entries.map((entry) => (
         <div key={entry.id} className="flex items-center gap-2 group">
           <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">
-            {entry.label}
-          </span>
           <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">
             {entry.value}
           </span>
@@ -93,54 +85,31 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
 
       {/* 添加表单 */}
       {showAddForm ? (
-        <div className="space-y-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <select
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              {labels.map(label => (
-                <option key={label} value={label}>{label}</option>
-              ))}
-            </select>
-            <input
-              ref={valueInputRef}
-              type={type === 'email' ? 'email' : 'tel'}
-              value={newValue}
-              onChange={(e) => setNewValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="备注（可选）"
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleAdd}
-              disabled={!newValue.trim()}
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
-            >
-              保存
-            </button>
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setNewValue('');
-                setNewNote('');
-              }}
-              className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-            >
-              取消
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <input
+            ref={valueInputRef}
+            type={type === 'email' ? 'email' : 'tel'}
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <input
+            type="text"
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="备注（可选）"
+            className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={!newValue.trim()}
+            className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+          >
+            <PlusIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
       ) : (
         <button

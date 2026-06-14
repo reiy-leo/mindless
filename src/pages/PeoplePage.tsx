@@ -443,6 +443,35 @@ function PersonCreateForm({
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                 </div>
+                {/* Phones */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <div className="flex items-center gap-1">
+                            <PhoneIcon className="w-3.5 h-3.5" />
+                            手机号
+                        </div>
+                    </label>
+                    <PhoneEmailListEditor
+                        type="phone"
+                        entries={phones}
+                        onChange={setPhones}
+                    />
+                </div>
+
+                {/* Emails */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <div className="flex items-center gap-1">
+                            <EnvelopeIcon className="w-3.5 h-3.5" />
+                            邮箱
+                        </div>
+                    </label>
+                    <PhoneEmailListEditor
+                        type="email"
+                        entries={emails}
+                        onChange={setEmails}
+                    />
+                </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">忌口</label>
                     <input
@@ -473,35 +502,6 @@ function PersonCreateForm({
                         placeholder={t("people.detail.remark_placeholder")}
                         rows={3}
                         className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                    />
-                </div>
-                {/* Phones */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        <div className="flex items-center gap-1">
-                            <PhoneIcon className="w-3.5 h-3.5" />
-                            手机号
-                        </div>
-                    </label>
-                    <PhoneEmailListEditor
-                        type="phone"
-                        entries={phones}
-                        onChange={setPhones}
-                    />
-                </div>
-
-                {/* Emails */}
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        <div className="flex items-center gap-1">
-                            <EnvelopeIcon className="w-3.5 h-3.5" />
-                            邮箱
-                        </div>
-                    </label>
-                    <PhoneEmailListEditor
-                        type="email"
-                        entries={emails}
-                        onChange={setEmails}
                     />
                 </div>
             </div>
