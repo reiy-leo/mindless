@@ -267,6 +267,17 @@ pub struct PersonEmail {
     pub sort_order: f64,
 }
 
+// Person other name model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonOtherName {
+    pub id: String,
+    pub person_id: String,
+    pub name: String,
+    pub label: Option<String>,
+    pub sort_order: f64,
+}
+
 // Calendar event model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

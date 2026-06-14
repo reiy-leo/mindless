@@ -379,6 +379,30 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN preferences TEXT;");
             let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN deleted_at TEXT;");
 
+            // Create person_other_names table
+            let _ = conn.execute_batch("
+                CREATE TABLE IF NOT EXISTS person_other_names (
+                    id TEXT PRIMARY KEY,
+                    person_id TEXT NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    label TEXT DEFAULT '别名',
+                    sort_order REAL NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS idx_person_other_names_person_id ON person_other_names(person_id);
+            ");
+
+            // Migrate existing english_name and nickname data
+            let _ = conn.execute_batch("
+                INSERT INTO person_other_names (id, person_id, name, label, sort_order)
+                SELECT hex(randomblob(16)), id, english_name, '英文名', 0
+                FROM persons WHERE english_name IS NOT NULL AND english_name != '';
+            ");
+            let _ = conn.execute_batch("
+                INSERT INTO person_other_names (id, person_id, name, label, sort_order)
+                SELECT hex(randomblob(16)), id, nickname, '昵称', 1
+                FROM persons WHERE nickname IS NOT NULL AND nickname != '';
+            ");
+
             println!("Migrations applied successfully");
         }
         Err(e) => {
