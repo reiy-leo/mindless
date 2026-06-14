@@ -335,6 +335,11 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
                     remark TEXT DEFAULT '',
                     group_id TEXT REFERENCES person_groups(id) ON DELETE SET NULL,
                     tag_ids TEXT,
+                    avatar TEXT,
+                    birthday TEXT,
+                    lunar_birthday TEXT,
+                    food_taboos TEXT,
+                    preferences TEXT,
                     is_pinned INTEGER NOT NULL DEFAULT 0,
                     is_archived INTEGER NOT NULL DEFAULT 0,
                     sort_order REAL NOT NULL DEFAULT 0,
@@ -365,6 +370,14 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
                 );
                 CREATE INDEX IF NOT EXISTS idx_person_emails_person_id ON person_emails(person_id);
             ").map_err(|e| format!("People migration failed: {}", e))?;
+
+            // Add person columns that were added after initial migration
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN avatar TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN birthday TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN lunar_birthday TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN food_taboos TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN preferences TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE persons ADD COLUMN deleted_at TEXT;");
 
             println!("Migrations applied successfully");
         }

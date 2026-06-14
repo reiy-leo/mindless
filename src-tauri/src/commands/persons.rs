@@ -8,53 +8,58 @@ fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
 
 fn row_to_person_group(row: &rusqlite::Row) -> rusqlite::Result<PersonGroup> {
     Ok(PersonGroup {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        color: row.get(2)?,
-        icon: row.get(3)?,
-        is_pinned: row.get::<_, i32>(4)? != 0,
-        is_archived: row.get::<_, i32>(5)? != 0,
-        sort_order: row.get(6)?,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        id: row.get("id")?,
+        name: row.get("name")?,
+        color: row.get("color")?,
+        icon: row.get("icon")?,
+        is_pinned: row.get::<_, i32>("is_pinned")? != 0,
+        is_archived: row.get::<_, i32>("is_archived")? != 0,
+        sort_order: row.get("sort_order")?,
+        created_at: row.get("created_at")?,
+        updated_at: row.get("updated_at")?,
     })
 }
 
 fn row_to_person(row: &rusqlite::Row) -> rusqlite::Result<Person> {
     Ok(Person {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        english_name: row.get(2)?,
-        nickname: row.get(3)?,
-        remark: row.get(4)?,
-        group_id: row.get(5)?,
-        tag_ids: row.get(6)?,
-        is_pinned: row.get::<_, i32>(7)? != 0,
-        is_archived: row.get::<_, i32>(8)? != 0,
-        sort_order: row.get(9)?,
-        created_at: row.get(10)?,
-        updated_at: row.get(11)?,
-        deleted_at: row.get(12)?,
+        id: row.get("id")?,
+        name: row.get("name")?,
+        english_name: row.get("english_name")?,
+        nickname: row.get("nickname")?,
+        remark: row.get("remark")?,
+        group_id: row.get("group_id")?,
+        tag_ids: row.get("tag_ids")?,
+        avatar: row.get("avatar")?,
+        birthday: row.get("birthday")?,
+        lunar_birthday: row.get("lunar_birthday")?,
+        food_taboos: row.get("food_taboos")?,
+        preferences: row.get("preferences")?,
+        is_pinned: row.get::<_, i32>("is_pinned")? != 0,
+        is_archived: row.get::<_, i32>("is_archived")? != 0,
+        sort_order: row.get("sort_order")?,
+        created_at: row.get("created_at")?,
+        updated_at: row.get("updated_at")?,
+        deleted_at: row.get("deleted_at")?,
     })
 }
 
 fn row_to_person_phone(row: &rusqlite::Row) -> rusqlite::Result<PersonPhone> {
     Ok(PersonPhone {
-        id: row.get(0)?,
-        person_id: row.get(1)?,
-        phone: row.get(2)?,
-        label: row.get(3)?,
-        sort_order: row.get(4)?,
+        id: row.get("id")?,
+        person_id: row.get("person_id")?,
+        phone: row.get("phone")?,
+        label: row.get("label")?,
+        sort_order: row.get("sort_order")?,
     })
 }
 
 fn row_to_person_email(row: &rusqlite::Row) -> rusqlite::Result<PersonEmail> {
     Ok(PersonEmail {
-        id: row.get(0)?,
-        person_id: row.get(1)?,
-        email: row.get(2)?,
-        label: row.get(3)?,
-        sort_order: row.get(4)?,
+        id: row.get("id")?,
+        person_id: row.get("person_id")?,
+        email: row.get("email")?,
+        label: row.get("label")?,
+        sort_order: row.get("sort_order")?,
     })
 }
 
@@ -204,6 +209,11 @@ pub async fn create_person(
     remark: Option<String>,
     group_id: Option<String>,
     tag_ids: Option<String>,
+    avatar: Option<String>,
+    birthday: Option<String>,
+    lunar_birthday: Option<String>,
+    food_taboos: Option<String>,
+    preferences: Option<String>,
 ) -> Result<Person, String> {
     println!("[Rust] create_person called: name={}, group_id={:?}", name, group_id);
     let conn = get_db(&app)?;
@@ -216,8 +226,8 @@ pub async fn create_person(
     ).unwrap_or(0.0);
 
     conn.execute(
-        "INSERT INTO persons (id, name, english_name, nickname, remark, group_id, tag_ids, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![&id, &name, english_name, nickname, remark.unwrap_or_default(), group_id, tag_ids, &max_sort],
+        "INSERT INTO persons (id, name, english_name, nickname, remark, group_id, tag_ids, avatar, birthday, lunar_birthday, food_taboos, preferences, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+        rusqlite::params![&id, &name, english_name, nickname, remark.unwrap_or_default(), group_id, tag_ids, avatar, birthday, lunar_birthday, food_taboos, preferences, &max_sort],
     ).map_err(|e| format!("Failed to create person: {}", e))?;
 
     let person = conn.query_row("SELECT * FROM persons WHERE id = ?1", [&id], row_to_person)
@@ -235,6 +245,11 @@ pub async fn update_person(
     remark: Option<String>,
     group_id: Option<String>,
     tag_ids: Option<String>,
+    avatar: Option<String>,
+    birthday: Option<String>,
+    lunar_birthday: Option<String>,
+    food_taboos: Option<String>,
+    preferences: Option<String>,
     is_pinned: Option<bool>,
     is_archived: Option<bool>,
     sort_order: Option<f64>,
@@ -250,6 +265,11 @@ pub async fn update_person(
     if remark.is_some() { sql.push_str(&format!(", remark = ?{}", param_idx)); param_idx += 1; }
     if group_id.is_some() { sql.push_str(&format!(", group_id = ?{}", param_idx)); param_idx += 1; }
     if tag_ids.is_some() { sql.push_str(&format!(", tag_ids = ?{}", param_idx)); param_idx += 1; }
+    if avatar.is_some() { sql.push_str(&format!(", avatar = ?{}", param_idx)); param_idx += 1; }
+    if birthday.is_some() { sql.push_str(&format!(", birthday = ?{}", param_idx)); param_idx += 1; }
+    if lunar_birthday.is_some() { sql.push_str(&format!(", lunar_birthday = ?{}", param_idx)); param_idx += 1; }
+    if food_taboos.is_some() { sql.push_str(&format!(", food_taboos = ?{}", param_idx)); param_idx += 1; }
+    if preferences.is_some() { sql.push_str(&format!(", preferences = ?{}", param_idx)); param_idx += 1; }
     if is_pinned.is_some() { sql.push_str(&format!(", is_pinned = ?{}", param_idx)); param_idx += 1; }
     if is_archived.is_some() { sql.push_str(&format!(", is_archived = ?{}", param_idx)); param_idx += 1; }
     if sort_order.is_some() { sql.push_str(&format!(", sort_order = ?{}", param_idx)); param_idx += 1; }
@@ -263,6 +283,11 @@ pub async fn update_person(
     if let Some(ref v) = remark { params.push(Box::new(v.clone())); }
     if let Some(ref v) = group_id { params.push(Box::new(v.clone())); }
     if let Some(ref v) = tag_ids { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = avatar { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = birthday { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = lunar_birthday { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = food_taboos { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = preferences { params.push(Box::new(v.clone())); }
     if let Some(v) = is_pinned { params.push(Box::new(v as i32)); }
     if let Some(v) = is_archived { params.push(Box::new(v as i32)); }
     if let Some(v) = sort_order { params.push(Box::new(v)); }
