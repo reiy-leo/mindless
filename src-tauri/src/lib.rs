@@ -110,6 +110,10 @@ pub fn run() {
             commands::create_person_email,
             commands::update_person_email,
             commands::delete_person_email,
+            commands::get_person_other_names,
+            commands::create_person_other_name,
+            commands::update_person_other_name,
+            commands::delete_person_other_name,
             // Settings
             commands::get_settings,
             commands::update_setting,

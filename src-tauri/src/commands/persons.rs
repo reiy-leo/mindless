@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 use uuid::Uuid;
-use crate::db::models::{Person, PersonGroup, PersonPhone, PersonEmail};
+use crate::db::models::{Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName};
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
@@ -58,6 +58,16 @@ fn row_to_person_email(row: &rusqlite::Row) -> rusqlite::Result<PersonEmail> {
         id: row.get("id")?,
         person_id: row.get("person_id")?,
         email: row.get("email")?,
+        label: row.get("label")?,
+        sort_order: row.get("sort_order")?,
+    })
+}
+
+fn row_to_person_other_name(row: &rusqlite::Row) -> rusqlite::Result<PersonOtherName> {
+    Ok(PersonOtherName {
+        id: row.get("id")?,
+        person_id: row.get("person_id")?,
+        name: row.get("name")?,
         label: row.get("label")?,
         sort_order: row.get("sort_order")?,
     })
@@ -496,5 +506,97 @@ pub async fn delete_person_email(app: AppHandle, id: String) -> Result<(), Strin
     let conn = get_db(&app)?;
     conn.execute("DELETE FROM person_emails WHERE id = ?1", [&id])
         .map_err(|e| format!("Failed to delete email: {}", e))?;
+    Ok(())
+}
+
+// ==================== Person Other Name Commands ====================
+
+#[tauri::command]
+pub async fn get_person_other_names(app: AppHandle, person_id: String) -> Result<Vec<PersonOtherName>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare("SELECT * FROM person_other_names WHERE person_id = ?1 ORDER BY sort_order ASC")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let names = stmt.query_map([&person_id], row_to_person_other_name)
+        .map_err(|e| format!("Failed to query: {}", e))?;
+    let result: Result<Vec<_>, _> = names.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn create_person_other_name(
+    app: AppHandle,
+    person_id: String,
+    name: String,
+    label: Option<String>,
+) -> Result<PersonOtherName, String> {
+    let conn = get_db(&app)?;
+    let id = Uuid::new_v4().to_string();
+    let label = label.as_deref().unwrap_or("别名");
+
+    let max_sort: f64 = conn.query_row(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM person_other_names WHERE person_id = ?1",
+        [&person_id],
+        |row| row.get(0),
+    ).unwrap_or(0.0);
+
+    conn.execute(
+        "INSERT INTO person_other_names (id, person_id, name, label, sort_order) VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params![&id, &person_id, &name, label, &max_sort],
+    ).map_err(|e| format!("Failed to create other name: {}", e))?;
+
+    let n = conn.query_row("SELECT * FROM person_other_names WHERE id = ?1", [&id], row_to_person_other_name)
+        .map_err(|e| format!("Failed to fetch other name: {}", e))?;
+    Ok(n)
+}
+
+#[tauri::command]
+pub async fn update_person_other_name(
+    app: AppHandle,
+    id: String,
+    name: Option<String>,
+    label: Option<String>,
+) -> Result<PersonOtherName, String> {
+    let conn = get_db(&app)?;
+
+    let mut sql = String::from("UPDATE person_other_names SET 1=1");
+    let mut param_idx = 1;
+
+    if name.is_some() { sql = sql.replace("1=1", &format!("name = ?{}", param_idx)); param_idx += 1; }
+    if label.is_some() {
+        if sql.contains("1=1") {
+            sql = sql.replace("1=1", &format!("label = ?{}", param_idx));
+        } else {
+            sql.push_str(&format!(", label = ?{}", param_idx));
+        }
+        param_idx += 1;
+    }
+
+    if sql.contains("1=1") {
+        let n = conn.query_row("SELECT * FROM person_other_names WHERE id = ?1", [&id], row_to_person_other_name)
+            .map_err(|e| format!("Failed to fetch other name: {}", e))?;
+        return Ok(n);
+    }
+
+    sql.push_str(&format!(" WHERE id = ?{}", param_idx));
+
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    if let Some(ref v) = name { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = label { params.push(Box::new(v.clone())); }
+    params.push(Box::new(id.clone()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    conn.execute(&sql, param_refs.as_slice())
+        .map_err(|e| format!("Failed to update other name: {}", e))?;
+
+    let n = conn.query_row("SELECT * FROM person_other_names WHERE id = ?1", [&id], row_to_person_other_name)
+        .map_err(|e| format!("Failed to fetch other name: {}", e))?;
+    Ok(n)
+}
+
+#[tauri::command]
+pub async fn delete_person_other_name(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute("DELETE FROM person_other_names WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete other name: {}", e))?;
     Ok(())
 }
