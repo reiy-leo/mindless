@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { PlusIcon, TrashIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import type { PhoneEntry, EmailEntry } from '@/types/person';
 
-type EntryType = 'phone' | 'email';
+type EntryType = 'phone' | 'email' | 'other_name';
 
 interface PhoneEmailListEditorProps {
   type: EntryType;
@@ -21,7 +21,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
   const valueInputRef = useRef<HTMLInputElement>(null);
 
   const Icon = type === 'phone' ? PhoneIcon : EnvelopeIcon;
-  const placeholder = type === 'phone' ? '输入手机号' : '输入邮箱地址';
+  const placeholder = type === 'phone' ? '输入手机号' : type === 'email' ? '输入邮箱地址' : '输入别名或昵称';
 
   useEffect(() => {
     if (showAddForm && valueInputRef.current) {
@@ -34,7 +34,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
     
     const newEntry = {
       id: generateId(),
-      label: type === 'phone' ? '手机' : '邮箱',
+      label: type === 'phone' ? '手机' : type === 'email' ? '邮箱' : '别名',
       value: newValue.trim(),
       note: newNote.trim(),
     };
@@ -117,7 +117,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
-          添加{type === 'phone' ? '手机号' : '邮箱'}
+          添加{type === 'phone' ? '手机号' : type === 'email' ? '邮箱' : '别名'}
         </button>
       )}
     </div>
