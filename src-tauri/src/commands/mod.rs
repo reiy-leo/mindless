@@ -11,6 +11,7 @@ pub mod persons;
 pub mod notifications;
 pub mod calendar;
 pub mod data;
+pub mod media;
 
 pub use tasks::*;
 pub use habits::*;

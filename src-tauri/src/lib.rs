@@ -133,6 +133,16 @@ pub fn run() {
             // Data Export/Import
             commands::export_all_data,
             commands::import_all_data,
+            // Media
+            commands::media::get_media_groups,
+            commands::media::create_media_group,
+            commands::media::update_media_group,
+            commands::media::delete_media_group,
+            commands::media::get_media_items,
+            commands::media::create_media_item,
+            commands::media::update_media_item,
+            commands::media::delete_media_item,
+            commands::media::get_media_item_details,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -412,12 +412,81 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
                   );
             ").map_err(|e| format!("Failed to migrate nickname data: {}", e))?;
 
+            // Media tables
+            migrate_media_tables(&conn)?;
+
             println!("Migrations applied successfully");
         }
         Err(e) => {
             return Err(format!("Failed to open database: {}", e));
         }
     }
+
+    Ok(())
+}
+
+pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS media_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color TEXT DEFAULT '#3B82F6',
+            icon TEXT DEFAULT '🎬',
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS media_items (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            year INTEGER,
+            cover TEXT,
+            rating REAL,
+            status TEXT NOT NULL DEFAULT 'normal',
+            group_id TEXT REFERENCES media_groups(id),
+            douban_url TEXT,
+            imdb_url TEXT,
+            rotten_tomatoes_url TEXT,
+            tv_show_title TEXT,
+            season_number INTEGER,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS media_other_names (
+            id TEXT PRIMARY KEY,
+            media_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            label TEXT DEFAULT '别名',
+            sort_order REAL NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS media_watch_links (
+            id TEXT PRIMARY KEY,
+            media_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            url TEXT NOT NULL,
+            platform TEXT,
+            sort_order REAL NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS media_relations (
+            id TEXT PRIMARY KEY,
+            media_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            related_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            relation_type TEXT DEFAULT 'series'
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_media_items_status ON media_items(status);
+        CREATE INDEX IF NOT EXISTS idx_media_items_group_id ON media_items(group_id);
+        CREATE INDEX IF NOT EXISTS idx_media_items_type ON media_items(type);
+        CREATE INDEX IF NOT EXISTS idx_media_other_names_media_item_id ON media_other_names(media_item_id);
+        CREATE INDEX IF NOT EXISTS idx_media_watch_links_media_item_id ON media_watch_links(media_item_id);
+        CREATE INDEX IF NOT EXISTS idx_media_relations_media_item_id ON media_relations(media_item_id);
+        CREATE INDEX IF NOT EXISTS idx_media_relations_related_item_id ON media_relations(related_item_id);"
+    ).map_err(|e| format!("Failed to migrate media tables: {}", e))?;
 
     Ok(())
 }
