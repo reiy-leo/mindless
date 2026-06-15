@@ -291,3 +291,70 @@ pub struct CalendarEvent {
     pub is_lunar: bool,
     pub created_at: String,
 }
+
+// Media group model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaGroup {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// Media item model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaItem {
+    pub id: String,
+    pub r#type: String,
+    pub title: String,
+    pub year: Option<i32>,
+    pub cover: Option<String>,
+    pub rating: Option<f64>,
+    pub status: String,
+    pub group_id: Option<String>,
+    pub douban_url: Option<String>,
+    pub imdb_url: Option<String>,
+    pub rotten_tomatoes_url: Option<String>,
+    pub tv_show_title: Option<String>,
+    pub season_number: Option<i32>,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// Media other name model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaOtherName {
+    pub id: String,
+    pub media_item_id: String,
+    pub name: String,
+    pub label: Option<String>,
+    pub sort_order: f64,
+}
+
+// Media watch link model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaWatchLink {
+    pub id: String,
+    pub media_item_id: String,
+    pub url: String,
+    pub platform: Option<String>,
+    pub sort_order: f64,
+}
+
+// Media relation model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaRelation {
+    pub id: String,
+    pub media_item_id: String,
+    pub related_item_id: String,
+    pub relation_type: Option<String>,
+}

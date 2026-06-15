@@ -194,3 +194,60 @@ export const personEmails = sqliteTable('person_emails', {
   label: text('label').default('邮箱'),
   sortOrder: real('sort_order').notNull().default(0),
 });
+
+// Media groups table
+export const mediaGroups = sqliteTable('media_groups', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').default('#3B82F6'),
+  icon: text('icon').default('🎬'),
+  sortOrder: real('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+});
+
+// Media items table (movies and TV seasons)
+export const mediaItems = sqliteTable('media_items', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(), // 'movie' | 'season'
+  title: text('title').notNull(),
+  year: integer('year'),
+  cover: text('cover'),
+  rating: real('rating'),
+  status: text('status').notNull().default('normal'), // 'normal' | 'favorite' | 'watched' | 'archived'
+  groupId: text('group_id').references(() => mediaGroups.id),
+  doubanUrl: text('douban_url'),
+  imdbUrl: text('imdb_url'),
+  rottenTomatoesUrl: text('rotten_tomatoes_url'),
+  tvShowTitle: text('tv_show_title'),
+  seasonNumber: integer('season_number'),
+  sortOrder: real('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+});
+
+// Media other names table
+export const mediaOtherNames = sqliteTable('media_other_names', {
+  id: text('id').primaryKey(),
+  mediaItemId: text('media_item_id').notNull().references(() => mediaItems.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  label: text('label').default('别名'),
+  sortOrder: real('sort_order').notNull().default(0),
+});
+
+// Media watch links table
+export const mediaWatchLinks = sqliteTable('media_watch_links', {
+  id: text('id').primaryKey(),
+  mediaItemId: text('media_item_id').notNull().references(() => mediaItems.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  platform: text('platform'),
+  sortOrder: real('sort_order').notNull().default(0),
+});
+
+// Media relations table (bidirectional)
+export const mediaRelations = sqliteTable('media_relations', {
+  id: text('id').primaryKey(),
+  mediaItemId: text('media_item_id').notNull().references(() => mediaItems.id, { onDelete: 'cascade' }),
+  relatedItemId: text('related_item_id').notNull().references(() => mediaItems.id, { onDelete: 'cascade' }),
+  relationType: text('relation_type').default('series'),
+});

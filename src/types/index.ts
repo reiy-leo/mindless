@@ -4,4 +4,5 @@ export * from './countdown';
 export * from './tag';
 export * from './note';
 export * from './person';
+export * from './media';
 export * from './common';
