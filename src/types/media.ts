@@ -51,7 +51,7 @@ export interface MediaRelation {
   id: string;
   mediaItemId: string;
   relatedItemId: string;
-  relationType: RelationType;
+  relationType: RelationType | null;
 }
 
 export interface MediaItemWithDetails extends MediaItem {
