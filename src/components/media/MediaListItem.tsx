@@ -20,7 +20,10 @@ export default function MediaListItem({ item, onClick }: MediaListItemProps) {
   return (
     <div
       className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(item)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(item); } }}
     >
       {/* Cover Thumbnail */}
       <div className="w-12 h-16 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">

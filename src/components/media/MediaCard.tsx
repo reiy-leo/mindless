@@ -19,8 +19,11 @@ export default function MediaCard({ item, onClick }: MediaCardProps) {
 
   return (
     <div
-      className="group relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+      className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(item)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(item); } }}
     >
       {/* Cover Image */}
       <div className="aspect-[2/3] bg-gray-200 dark:bg-gray-700 relative">
