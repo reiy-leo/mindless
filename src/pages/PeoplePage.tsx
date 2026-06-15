@@ -475,25 +475,6 @@ export default function PeoplePage() {
         }
     }, [selectedPersonId]); // Only re-sync when selectedPersonId changes
 
-    // Sync phones/emails from query data when they change (but only if not locally editing)
-    useEffect(() => {
-        if (selectedPersonId && lastSyncedRef.current === selectedPersonId) {
-            setLocalPhones(phones.map(p => ({ id: p.id, label: p.label, value: p.phone, note: '' })));
-        }
-    }, [phones, selectedPersonId]);
-
-    useEffect(() => {
-        if (selectedPersonId && lastSyncedRef.current === selectedPersonId) {
-            setLocalEmails(emails.map(e => ({ id: e.id, label: e.label, value: e.email, note: '' })));
-        }
-    }, [emails, selectedPersonId]);
-
-    useEffect(() => {
-        if (selectedPersonId && lastSyncedRef.current === selectedPersonId) {
-            setLocalOtherNames(otherNames.map(n => ({ id: n.id, label: n.label || '别名', value: n.name, note: '' })));
-        }
-    }, [otherNames, selectedPersonId]);
-
     const debounceSave = useCallback(
         (field: string, value: string, ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
             if (!selectedPersonId) return;
