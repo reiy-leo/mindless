@@ -1218,7 +1218,13 @@ export default function PeoplePage() {
                                                     name: entry.value,
                                                     label: entry.label
                                                 }, {
-                                                    onSuccess: () => {
+                                                    onSuccess: (newOtherName) => {
+                                                        // Replace temporary entry with server entry (preserves local display)
+                                                        setLocalOtherNames(prev => prev.map(n =>
+                                                            n.id === entry.id
+                                                                ? { id: newOtherName.id, label: newOtherName.label || '别名', value: newOtherName.name, note: '' }
+                                                                : n
+                                                        ));
                                                         queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
                                                     },
                                                 });
@@ -1344,7 +1350,12 @@ export default function PeoplePage() {
                                                     phone: entry.value,
                                                     label: entry.label
                                                 }, {
-                                                    onSuccess: () => {
+                                                    onSuccess: (newPhone) => {
+                                                        setLocalPhones(prev => prev.map(p =>
+                                                            p.id === entry.id
+                                                                ? { id: newPhone.id, label: newPhone.label || '手机', value: newPhone.phone, note: '' }
+                                                                : p
+                                                        ));
                                                         queryClient.invalidateQueries({ queryKey: ["personPhones", selectedPerson.id] });
                                                     },
                                                 });
@@ -1391,7 +1402,12 @@ export default function PeoplePage() {
                                                     email: entry.value,
                                                     label: entry.label
                                                 }, {
-                                                    onSuccess: () => {
+                                                    onSuccess: (newEmail) => {
+                                                        setLocalEmails(prev => prev.map(e =>
+                                                            e.id === entry.id
+                                                                ? { id: newEmail.id, label: newEmail.label || '邮箱', value: newEmail.email, note: '' }
+                                                                : e
+                                                        ));
                                                         queryClient.invalidateQueries({ queryKey: ["personEmails", selectedPerson.id] });
                                                     },
                                                 });
