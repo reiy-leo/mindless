@@ -11,6 +11,7 @@ import CountdownsPage from './pages/CountdownsPage';
 import TagsPage from './pages/TagsPage';
 import NotesPage from './pages/NotesPage';
 import PeoplePage from './pages/PeoplePage';
+import MediaPage from './pages/MediaPage';
 import SettingsPage from './pages/SettingsPage';
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
@@ -85,6 +86,9 @@ function ThemeColorManager() {
       root.style.setProperty('--theme-bg-20', isDark
         ? `color-mix(in srgb, ${themeColor} 20%, #1f2937)`
         : `color-mix(in srgb, ${themeColor} 20%, white)`);
+      root.style.setProperty('--theme-bg-2', isDark
+        ? `color-mix(in srgb, ${themeColor} 2%, #1f2937)`
+        : `color-mix(in srgb, ${themeColor} 2%, white)`);
       root.style.setProperty('--theme-text-70', isDark
         ? `color-mix(in srgb, ${themeColor} 70%, #f3f4f6)`
         : `color-mix(in srgb, ${themeColor} 70%, #111827)`);
@@ -284,6 +288,7 @@ function App() {
                 <Route path="/tags" element={<ErrorBoundary><TagsPage /></ErrorBoundary>} />
                 <Route path="/notes" element={<ErrorBoundary><NotesPage /></ErrorBoundary>} />
                 <Route path="/people" element={<ErrorBoundary><PeoplePage /></ErrorBoundary>} />
+                <Route path="/media" element={<ErrorBoundary><MediaPage /></ErrorBoundary>} />
                 <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
               </Routes>
             </AppLayout>
