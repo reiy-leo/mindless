@@ -575,6 +575,7 @@
       "imdbUrl": "IMDB URL",
       "rottenTomatoesUrl": "Rotten Tomatoes URL",
       "watchLinks": "Watch Links",
+      "externalLinks": "External Links",
       "relations": "Related Items",
       "status": "Status",
       "group": "Group",

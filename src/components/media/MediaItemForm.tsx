@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import CoverUploader from './CoverUploader';
-import MultiValueInput from './MultiValueInput';
+import PhoneEmailListEditor from '@/components/PhoneEmailListEditor';
 import RelationSelector from './RelationSelector';
-import { useCreateMediaItem, useUpdateMediaItem, useMediaItemDetails } from '@/queries/useMediaQueries';
+import { useCreateMediaItem, useUpdateMediaItem, useMediaItemDetails, useMediaGroups } from '@/queries/useMediaQueries';
 import type { MediaItem, CreateMediaItemInput, UpdateMediaItemInput } from '@/types/media';
 
 interface MediaItemFormProps {
@@ -17,6 +17,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
   const createItem = useCreateMediaItem();
   const updateItem = useUpdateMediaItem();
   const { data: details } = useMediaItemDetails(item?.id || null);
+  const { data: groups = [] } = useMediaGroups();
 
   const [formData, setFormData] = useState({
     type: 'movie' as 'movie' | 'season',
@@ -29,10 +30,9 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
     doubanUrl: '',
     imdbUrl: '',
     rottenTomatoesUrl: '',
-    tvShowTitle: '',
     seasonNumber: '',
-    otherNames: [] as { name: string; label?: string }[],
-    watchLinks: [] as { url: string; platform?: string }[],
+    otherNames: [] as { id: string; label: string; value: string; note: string }[],
+    watchLinks: [] as { id: string; label: string; value: string; note: string }[],
     relatedItemIds: [] as string[],
   });
 
@@ -49,10 +49,19 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
         doubanUrl: item.doubanUrl || '',
         imdbUrl: item.imdbUrl || '',
         rottenTomatoesUrl: item.rottenTomatoesUrl || '',
-        tvShowTitle: item.tvShowTitle || '',
         seasonNumber: item.seasonNumber?.toString() || '',
-        otherNames: details?.otherNames?.map((n) => ({ name: n.name, label: n.label })) || [],
-        watchLinks: details?.watchLinks?.map((l) => ({ url: l.url, platform: l.platform || undefined })) || [],
+        otherNames: details?.otherNames?.map((n) => ({
+          id: n.id,
+          label: n.label || '别名',
+          value: n.name,
+          note: ''
+        })) || [],
+        watchLinks: details?.watchLinks?.map((l) => ({
+          id: l.id,
+          label: l.platform || '在线观看',
+          value: l.url,
+          note: ''
+        })) || [],
         relatedItemIds: details?.relations?.map((r) => r.relatedItemId) || [],
       });
     }
@@ -72,10 +81,9 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
       doubanUrl: formData.doubanUrl || undefined,
       imdbUrl: formData.imdbUrl || undefined,
       rottenTomatoesUrl: formData.rottenTomatoesUrl || undefined,
-      tvShowTitle: formData.tvShowTitle || undefined,
       seasonNumber: formData.seasonNumber ? parseInt(formData.seasonNumber) : undefined,
-      otherNames: formData.otherNames,
-      watchLinks: formData.watchLinks,
+      otherNames: formData.otherNames.map(n => ({ name: n.value, label: n.label })),
+      watchLinks: formData.watchLinks.map(l => ({ url: l.value, platform: l.label })),
       relatedItemIds: formData.relatedItemIds,
     };
 
@@ -93,7 +101,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {item ? t('media.actions.edit') : t('media.actions.new')}
@@ -107,146 +115,139 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('media.fields.type')}
-            </label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as 'movie' | 'season' })}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-            >
-              <option value="movie">{t('media.type.movie')}</option>
-              <option value="season">{t('media.type.season')}</option>
-            </select>
-          </div>
+          {/* Row 1: Cover | Basic Info | Status/Group */}
+          <div className="grid grid-cols-[120px_1fr_1fr] gap-4">
+            {/* Column 1: Cover */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('media.fields.cover')}
+              </label>
+              <CoverUploader
+                value={formData.cover}
+                onChange={(url) => setFormData({ ...formData, cover: url })}
+              />
+            </div>
 
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('media.fields.title')}
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-            />
-          </div>
-
-          {/* TV Show fields */}
-          {formData.type === 'season' && (
-            <div className="grid grid-cols-2 gap-4">
+            {/* Column 2: Name, Type, Year, Season */}
+            <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('media.fields.tvShowTitle')}
+                  {t('media.fields.title')}
                 </label>
                 <input
                   type="text"
-                  value={formData.tvShowTitle}
-                  onChange={(e) => setFormData({ ...formData, tvShowTitle: e.target.value })}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('media.fields.seasonNumber')}
+                  {t('media.fields.type')}
+                </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'movie' | 'season' })}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                >
+                  <option value="movie">{t('media.type.movie')}</option>
+                  <option value="season">{t('media.type.season')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('media.fields.year')}
                 </label>
                 <input
                   type="number"
-                  value={formData.seasonNumber}
-                  onChange={(e) => setFormData({ ...formData, seasonNumber: e.target.value })}
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
                 />
               </div>
+              {formData.type === 'season' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('media.fields.seasonNumber')}
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.seasonNumber}
+                    onChange={(e) => setFormData({ ...formData, seasonNumber: e.target.value })}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                  />
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Year and Rating */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('media.fields.year')}
-              </label>
-              <input
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('media.fields.rating')}
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={formData.rating}
-                onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              />
+            {/* Column 3: Status, Rating, Group */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('media.fields.status')}
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                >
+                  <option value="normal">{t('media.status.normal')}</option>
+                  <option value="favorite">{t('media.status.favorite')}</option>
+                  <option value="watched">{t('media.status.watched')}</option>
+                  <option value="archived">{t('media.status.archived')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('media.fields.rating')}
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  value={formData.rating}
+                  onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('media.fields.group')}
+                </label>
+                <select
+                  value={formData.groupId}
+                  onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                >
+                  <option value="">-</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.icon} {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-
-          {/* Status and Group */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('media.fields.status')}
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              >
-                <option value="normal">{t('media.status.normal')}</option>
-                <option value="favorite">{t('media.status.favorite')}</option>
-                <option value="watched">{t('media.status.watched')}</option>
-                <option value="archived">{t('media.status.archived')}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('media.fields.group')}
-              </label>
-              <select
-                value={formData.groupId}
-                onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              >
-                <option value="">None</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Cover */}
-          <CoverUploader
-            value={formData.cover}
-            onChange={(url) => setFormData({ ...formData, cover: url })}
-          />
 
           {/* Other Names */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('media.fields.otherNames')}
             </label>
-            <MultiValueInput
-              value={formData.otherNames}
-              onChange={(value) => setFormData({ ...formData, otherNames: value })}
-              placeholder={t('media.placeholder.otherName')}
-              showLabel
+            <PhoneEmailListEditor
+              type="other_name"
+              entries={formData.otherNames}
+              onChange={(entries) => setFormData({ ...formData, otherNames: entries as any })}
             />
           </div>
 
-          {/* Links */}
-          <div className="space-y-3">
+          {/* External Links */}
+          <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Links
+              {t('media.fields.externalLinks')}
             </label>
             <input
               type="url"
@@ -276,14 +277,10 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('media.fields.watchLinks')}
             </label>
-            <MultiValueInput
-              value={formData.watchLinks.map((l) => ({ name: l.url, label: l.platform }))}
-              onChange={(value) => setFormData({
-                ...formData,
-                watchLinks: value.map((v) => ({ url: v.name, platform: v.label })),
-              })}
-              placeholder={t('media.placeholder.watchLink')}
-              showLabel
+            <PhoneEmailListEditor
+              type="other_name"
+              entries={formData.watchLinks}
+              onChange={(entries) => setFormData({ ...formData, watchLinks: entries as any })}
             />
           </div>
 

@@ -576,6 +576,7 @@
       "imdbUrl": "IMDB链接",
       "rottenTomatoesUrl": "蓝番茄链接",
       "watchLinks": "在线观看链接",
+      "externalLinks": "外部链接",
       "relations": "关联影片",
       "status": "观看状态",
       "group": "分组",
