@@ -603,7 +603,7 @@ export default function NotesPage() {
             />
 
             {/* Middle Panel: Notes List */}
-            <div className="flex-1 flex flex-col min-w-[250px] bg-white dark:bg-gray-800">
+            <div className="flex-1 flex flex-col min-w-[250px] max-w-[350px] bg-white dark:bg-gray-800">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>

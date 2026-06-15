@@ -1619,7 +1619,7 @@ export default function TasksPage() {
             <ResizeHandle onResize={(delta) => setGroupsPanelWidth((w) => Math.max(160, Math.min(400, w + delta)))} />
 
             {/* Task List Panel */}
-            <div className="flex flex-col overflow-hidden flex-1 min-w-[300px]">
+            <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]">
                 {/* Header */}
                 <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3">
                     <div data-tauri-drag-region className="flex items-center justify-between">
