@@ -8,14 +8,18 @@ interface PhoneEmailListEditorProps {
   type: EntryType;
   entries: PhoneEntry[] | EmailEntry[];
   onChange: (entries: PhoneEntry[] | EmailEntry[]) => void;
+  showAddForm?: boolean;
+  setShowAddForm?: (show: boolean) => void;
 }
 
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneEmailListEditorProps) {
-  const [showAddForm, setShowAddForm] = useState(false);
+export default function PhoneEmailListEditor({ type, entries, onChange, showAddForm: externalShow, setShowAddForm: externalSetShow }: PhoneEmailListEditorProps) {
+  const [internalShow, setInternalShow] = useState(false);
+  const showAddForm = externalShow ?? internalShow;
+  const setShowAddForm = externalSetShow ?? setInternalShow;
   const [newValue, setNewValue] = useState('');
   const [newNote, setNewNote] = useState('');
   const valueInputRef = useRef<HTMLInputElement>(null);
@@ -62,29 +66,8 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
 
   return (
     <div className="space-y-2">
-      {/* 已添加的条目列表 */}
-      {entries.map((entry) => (
-        <div key={entry.id} className="flex items-center gap-2 group">
-          <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-          <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">
-            {entry.value}
-          </span>
-          {entry.note && (
-            <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
-              ({entry.note})
-            </span>
-          )}
-          <button
-            onClick={() => handleDelete(entry.id)}
-            className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <TrashIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
-
       {/* 添加表单 */}
-      {showAddForm ? (
+      {showAddForm && (
         <div className="flex items-center gap-2">
           <input
             ref={valueInputRef}
@@ -111,15 +94,28 @@ export default function PhoneEmailListEditor({ type, entries, onChange }: PhoneE
             <PlusIcon className="w-3.5 h-3.5" />
           </button>
         </div>
-      ) : (
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-        >
-          <PlusIcon className="w-4 h-4" />
-          添加{type === 'phone' ? '手机号' : type === 'email' ? '邮箱' : '别名'}
-        </button>
       )}
+
+      {/* 已添加的条目列表 */}
+      {entries.map((entry) => (
+        <div key={entry.id} className="flex items-center gap-2 group">
+          <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">
+            {entry.value}
+          </span>
+          {entry.note && (
+            <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
+              ({entry.note})
+            </span>
+          )}
+          <button
+            onClick={() => handleDelete(entry.id)}
+            className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

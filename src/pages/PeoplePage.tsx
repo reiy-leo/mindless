@@ -436,6 +436,11 @@ export default function PeoplePage() {
     const [localEmails, setLocalEmails] = useState<EmailEntry[]>([]);
     const [localOtherNames, setLocalOtherNames] = useState<OtherNameEntry[]>([]);
     const [localRemark, setLocalRemark] = useState("");
+    const [showOtherNamesAdd, setShowOtherNamesAdd] = useState(false);
+    const [showPhonesAdd, setShowPhonesAdd] = useState(false);
+    const [showEmailsAdd, setShowEmailsAdd] = useState(false);
+    const [showFoodTaboosAdd, setShowFoodTaboosAdd] = useState(false);
+    const [showPreferencesAdd, setShowPreferencesAdd] = useState(false);
     const lastSyncedRef = useRef<string | null>(null);
     const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const birthdayDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1094,9 +1099,9 @@ export default function PeoplePage() {
                     <PersonCreateForm onSave={handleSaveNewPerson} onCancel={handleCancelNewPerson} />
                 ) : selectedPerson ? (
                     <div className="flex flex-col h-full">
-                        {/* Avatar & Name */}
+                        {/* Avatar, Name & Other Names */}
                         <div className="px-4 pt-4 pb-2 flex-shrink-0">
-                            <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-center gap-3 mb-1">
                                  <div
                                      className="relative cursor-pointer"
                                      onClick={() => setShowDetailAvatarPicker((prev) => !prev)}
@@ -1128,6 +1133,7 @@ export default function PeoplePage() {
                                 <input
                                     type="text"
                                     value={localName}
+                                    maxLength={25}
                                     onChange={(e) => {
                                         setLocalName(e.target.value);
                                         debounceSave("name", e.target.value, nameDebounceRef);
@@ -1136,104 +1142,67 @@ export default function PeoplePage() {
                                     className="flex-1 text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
                                 />
                             </div>
-                        </div>
+                            {/* Other Names - aligned with name */}
+                            <div className="ml-[60px]">
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-1">
+                                            <UserIcon className="w-3.5 h-3.5" />
+                                            {t("people.detail.other_names")}
+                                        </div>
+                                    </label>
+                                    <button
+                                        onClick={() => setShowOtherNamesAdd(!showOtherNamesAdd)}
+                                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <PhoneEmailListEditor
+                                    type="other_name"
+                                    entries={localOtherNames}
+                                    showAddForm={showOtherNamesAdd}
+                                    setShowAddForm={setShowOtherNamesAdd}
+                                    onChange={(entries) => {
+                                        const newEntries = entries as OtherNameEntry[];
+                                        setLocalOtherNames(newEntries);
 
-                        {/* Tags */}
-                        <div className="px-4 pb-2 flex-shrink-0">
-                            <TagCombobox
-                                selectedIds={parseTagIds(selectedPerson.tagIds)}
-                                allTags={allTags}
-                                onToggle={(tagId: string) => {
-                                    const current = parseTagIds(selectedPerson.tagIds);
-                                    const next = current.includes(tagId)
-                                        ? current.filter((id) => id !== tagId)
-                                        : [...current, tagId];
-                                    updatePerson.mutate(
-                                        { id: selectedPerson.id, tagIds: next.join(",") },
-                                        {
-                                            onSuccess: () => {
-                                                queryClient.invalidateQueries({ queryKey: ["persons"] });
-                                                queryClient.invalidateQueries({ queryKey: ["allPersons"] });
-                                            },
-                                        },
-                                    );
-                                }}
-                                onCreateTag={(name: string) => {
-                                    createTag.mutate(
-                                        { name },
-                                        {
-                                            onSuccess: (newTag) => {
-                                                const current = parseTagIds(selectedPerson.tagIds);
-                                                const next = [...current, newTag.id];
-                                                updatePerson.mutate(
-                                                    { id: selectedPerson.id, tagIds: next.join(",") },
-                                                    {
-                                                        onSuccess: () => {
-                                                            queryClient.invalidateQueries({ queryKey: ["persons"] });
-                                                            queryClient.invalidateQueries({ queryKey: ["allPersons"] });
-                                                        },
-                                                    },
-                                                );
-                                            },
-                                        },
-                                    );
-                                }}
-                            />
+                                        const currentIds = otherNames.map(n => n.id);
+                                        const newIds = newEntries.map(e => e.id);
+                                        const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
+                                        deletedIds.forEach(id => {
+                                            deletePersonOtherName.mutate(id, {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
+                                                },
+                                            });
+                                        });
+
+                                        const addedEntries = newEntries.filter(e => !currentIds.includes(e.id));
+                                        addedEntries.forEach(entry => {
+                                            createPersonOtherName.mutate({
+                                                personId: selectedPerson.id,
+                                                name: entry.value,
+                                                label: entry.label
+                                            }, {
+                                                onSuccess: (newOtherName) => {
+                                                    setLocalOtherNames(prev => prev.map(n =>
+                                                        n.id === entry.id
+                                                            ? { id: newOtherName.id, label: newOtherName.label || '别名', value: newOtherName.name, note: '' }
+                                                            : n
+                                                    ));
+                                                    queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
+                                                },
+                                            });
+                                        });
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         {/* Detail Fields */}
                         <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
-                            {/* Other Names */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    <div className="flex items-center gap-1">
-                                        <UserIcon className="w-3.5 h-3.5" />
-                                        {t("people.detail.other_names")}
-                                    </div>
-                                </label>
-                                <div className="group">
-                                    <PhoneEmailListEditor
-                                        type="other_name"
-                                        entries={localOtherNames}
-                                        onChange={(entries) => {
-                                            const newEntries = entries as OtherNameEntry[];
-                                            setLocalOtherNames(newEntries);
-
-                                            const currentIds = otherNames.map(n => n.id);
-                                            const newIds = newEntries.map(e => e.id);
-                                            const deletedIds = currentIds.filter(id => !newIds.includes(id));
-
-                                            deletedIds.forEach(id => {
-                                                deletePersonOtherName.mutate(id, {
-                                                    onSuccess: () => {
-                                                        queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
-                                                    },
-                                                });
-                                            });
-
-                                            const addedEntries = newEntries.filter(e => !currentIds.includes(e.id));
-                                            addedEntries.forEach(entry => {
-                                                createPersonOtherName.mutate({
-                                                    personId: selectedPerson.id,
-                                                    name: entry.value,
-                                                    label: entry.label
-                                                }, {
-                                                    onSuccess: (newOtherName) => {
-                                                        // Replace temporary entry with server entry (preserves local display)
-                                                        setLocalOtherNames(prev => prev.map(n =>
-                                                            n.id === entry.id
-                                                                ? { id: newOtherName.id, label: newOtherName.label || '别名', value: newOtherName.name, note: '' }
-                                                                : n
-                                                        ));
-                                                        queryClient.invalidateQueries({ queryKey: ["personOtherNames", selectedPerson.id] });
-                                                    },
-                                                });
-                                            });
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
                             {/* Birthday */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -1267,69 +1236,32 @@ export default function PeoplePage() {
                                 />
                             </div>
 
-                            {/* Food Taboos */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    忌口
-                                </label>
-                                <SimpleListEditor
-                                    items={localFoodTaboos}
-                                    onChange={(items) => {
-                                        setLocalFoodTaboos(items);
-                                        updatePerson.mutate(
-                                            { id: selectedPerson.id, foodTaboos: items.join(',') },
-                                            {
-                                                onSuccess: () => {
-                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
-                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
-                                                },
-                                            },
-                                        );
-                                    }}
-                                    placeholder="输入忌口，按回车添加"
-                                />
-                            </div>
-
-                            {/* Preferences */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    偏好
-                                </label>
-                                <SimpleListEditor
-                                    items={localPreferences}
-                                    onChange={(items) => {
-                                        setLocalPreferences(items);
-                                        updatePerson.mutate(
-                                            { id: selectedPerson.id, preferences: items.join(',') },
-                                            {
-                                                onSuccess: () => {
-                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
-                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
-                                                },
-                                            },
-                                        );
-                                    }}
-                                    placeholder="输入偏好，按回车添加"
-                                />
-                            </div>
-
                             {/* Phones */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    <div className="flex items-center gap-1">
-                                        <PhoneIcon className="w-3.5 h-3.5" />
-                                        {t("people.detail.phones")}
-                                    </div>
-                                </label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-1">
+                                            <PhoneIcon className="w-3.5 h-3.5" />
+                                            {t("people.detail.phones")}
+                                        </div>
+                                    </label>
+                                    <button
+                                        onClick={() => setShowPhonesAdd(!showPhonesAdd)}
+                                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                                 <div className="group">
                                     <PhoneEmailListEditor
                                         type="phone"
                                         entries={localPhones}
+                                        showAddForm={showPhonesAdd}
+                                        setShowAddForm={setShowPhonesAdd}
                                         onChange={(entries) => {
                                             const newEntries = entries as PhoneEntry[];
                                             setLocalPhones(newEntries);
                                             
-                                            // Find deleted entries
                                             const currentIds = phones.map(p => p.id);
                                             const newIds = newEntries.map(e => e.id);
                                             const deletedIds = currentIds.filter(id => !newIds.includes(id));
@@ -1342,7 +1274,6 @@ export default function PeoplePage() {
                                                 });
                                             });
                                             
-                                            // Find added entries (those with IDs not in server data)
                                             const addedEntries = newEntries.filter(e => !currentIds.includes(e.id));
                                             addedEntries.forEach(entry => {
                                                 createPersonPhone.mutate({
@@ -1367,21 +1298,30 @@ export default function PeoplePage() {
 
                             {/* Emails */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    <div className="flex items-center gap-1">
-                                        <EnvelopeIcon className="w-3.5 h-3.5" />
-                                        {t("people.detail.emails")}
-                                    </div>
-                                </label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-1">
+                                            <EnvelopeIcon className="w-3.5 h-3.5" />
+                                            {t("people.detail.emails")}
+                                        </div>
+                                    </label>
+                                    <button
+                                        onClick={() => setShowEmailsAdd(!showEmailsAdd)}
+                                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                                 <div className="group">
                                     <PhoneEmailListEditor
                                         type="email"
                                         entries={localEmails}
+                                        showAddForm={showEmailsAdd}
+                                        setShowAddForm={setShowEmailsAdd}
                                         onChange={(entries) => {
                                             const newEntries = entries as EmailEntry[];
                                             setLocalEmails(newEntries);
                                             
-                                            // Find deleted entries
                                             const currentIds = emails.map(e => e.id);
                                             const newIds = newEntries.map(e => e.id);
                                             const deletedIds = currentIds.filter(id => !newIds.includes(id));
@@ -1394,7 +1334,6 @@ export default function PeoplePage() {
                                                 });
                                             });
                                             
-                                            // Find added entries (those with IDs not in server data)
                                             const addedEntries = newEntries.filter(e => !currentIds.includes(e.id));
                                             addedEntries.forEach(entry => {
                                                 createPersonEmail.mutate({
@@ -1417,6 +1356,68 @@ export default function PeoplePage() {
                                 </div>
                             </div>
 
+                            {/* Food Taboos */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">忌口</label>
+                                    <button
+                                        onClick={() => setShowFoodTaboosAdd(!showFoodTaboosAdd)}
+                                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <SimpleListEditor
+                                    items={localFoodTaboos}
+                                    showAddForm={showFoodTaboosAdd}
+                                    setShowAddForm={setShowFoodTaboosAdd}
+                                    onChange={(items) => {
+                                        setLocalFoodTaboos(items);
+                                        updatePerson.mutate(
+                                            { id: selectedPerson.id, foodTaboos: items.join(',') },
+                                            {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                },
+                                            },
+                                        );
+                                    }}
+                                    placeholder="输入忌口，按回车添加"
+                                />
+                            </div>
+
+                            {/* Preferences */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">偏好</label>
+                                    <button
+                                        onClick={() => setShowPreferencesAdd(!showPreferencesAdd)}
+                                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <SimpleListEditor
+                                    items={localPreferences}
+                                    showAddForm={showPreferencesAdd}
+                                    setShowAddForm={setShowPreferencesAdd}
+                                    onChange={(items) => {
+                                        setLocalPreferences(items);
+                                        updatePerson.mutate(
+                                            { id: selectedPerson.id, preferences: items.join(',') },
+                                            {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                },
+                                            },
+                                        );
+                                    }}
+                                    placeholder="输入偏好，按回车添加"
+                                />
+                            </div>
+
                             {/* Remark */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -1431,6 +1432,49 @@ export default function PeoplePage() {
                                     placeholder={t("people.detail.remark_placeholder")}
                                     rows={4}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                                />
+                            </div>
+
+                            {/* Tags */}
+                            <div>
+                                <TagCombobox
+                                    selectedIds={parseTagIds(selectedPerson.tagIds)}
+                                    allTags={allTags}
+                                    onToggle={(tagId: string) => {
+                                        const current = parseTagIds(selectedPerson.tagIds);
+                                        const next = current.includes(tagId)
+                                            ? current.filter((id) => id !== tagId)
+                                            : [...current, tagId];
+                                        updatePerson.mutate(
+                                            { id: selectedPerson.id, tagIds: next.join(",") },
+                                            {
+                                                onSuccess: () => {
+                                                    queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                    queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                },
+                                            },
+                                        );
+                                    }}
+                                    onCreateTag={(name: string) => {
+                                        createTag.mutate(
+                                            { name },
+                                            {
+                                                onSuccess: (newTag) => {
+                                                    const current = parseTagIds(selectedPerson.tagIds);
+                                                    const next = [...current, newTag.id];
+                                                    updatePerson.mutate(
+                                                        { id: selectedPerson.id, tagIds: next.join(",") },
+                                                        {
+                                                            onSuccess: () => {
+                                                                queryClient.invalidateQueries({ queryKey: ["persons"] });
+                                                                queryClient.invalidateQueries({ queryKey: ["allPersons"] });
+                                                            },
+                                                        },
+                                                    );
+                                                },
+                                            },
+                                        );
+                                    }}
                                 />
                             </div>
                         </div>
