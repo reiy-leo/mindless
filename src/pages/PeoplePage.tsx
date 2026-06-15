@@ -8,7 +8,6 @@ import {
     ChevronRightIcon,
     ArchiveBoxIcon,
     TrashIcon,
-    MagnifyingGlassIcon,
     BookOpenIcon,
     StarIcon,
     UserIcon,
@@ -405,7 +404,7 @@ export default function PeoplePage() {
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
+
     const [groupsExpanded, setGroupsExpanded] = useState(true);
     const [showGroupForm, setShowGroupForm] = useState(false);
     const [editingGroup, setEditingGroup] = useState<PersonGroup | null>(null);
@@ -544,15 +543,8 @@ export default function PeoplePage() {
             result = persons.filter((p) => !p.isArchived);
         }
 
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
-            result = result.filter(
-                (p) => p.name.toLowerCase().includes(q),
-            );
-        }
-
         return result;
-    }, [persons, allPersons, selectedSmartGroup, selectedGroupId, searchQuery]);
+    }, [persons, allPersons, selectedSmartGroup, selectedGroupId]);
 
     // Handlers
     const handleSelectGroup = useCallback((smartId: SmartGroupId) => {
@@ -1032,16 +1024,6 @@ export default function PeoplePage() {
                                 >
                                     <PlusIcon className="w-4 h-4" />
                                 </button>
-                                <div className="relative">
-                                    <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={t("people.search_placeholder")}
-                                        className="pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
-                                    />
-                                </div>
                             </>
                         )}
                     </div>
@@ -1049,14 +1031,9 @@ export default function PeoplePage() {
 
                 {/* Person List */}
                 <div className="flex-1 overflow-y-auto">
-                    {filteredPersons.length === 0 && !searchQuery ? (
+                    {filteredPersons.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
                             <UserIcon className="w-10 h-10 mb-2 opacity-50" />
-                            <p className="text-sm">{t("people.no_people")}</p>
-                        </div>
-                    ) : filteredPersons.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                            <MagnifyingGlassIcon className="w-10 h-10 mb-2 opacity-50" />
                             <p className="text-sm">{t("people.no_people")}</p>
                         </div>
                     ) : (

@@ -7,7 +7,6 @@ import {
     ChevronRightIcon,
     ArchiveBoxIcon,
     TrashIcon,
-    MagnifyingGlassIcon,
     CheckCircleIcon,
     BookOpenIcon,
     XMarkIcon,
@@ -76,7 +75,7 @@ export default function NotesPage() {
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
+
     const [groupsExpanded, setGroupsExpanded] = useState(true);
     const [showGroupForm, setShowGroupForm] = useState(false);
     const [editingGroup, setEditingGroup] = useState<NoteGroup | null>(null);
@@ -197,16 +196,8 @@ export default function NotesPage() {
             result = notes.filter((n) => !n.isArchived);
         }
 
-        // Search filter
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
-            result = result.filter(
-                (n) => n.title.toLowerCase().includes(q) || (n.content && n.content.toLowerCase().includes(q)),
-            );
-        }
-
         return result;
-    }, [notes, allNotes, selectedSmartGroup, selectedGroupId, searchQuery]);
+    }, [notes, allNotes, selectedSmartGroup, selectedGroupId]);
 
     // Build flat items (note + sub-notes)
     type FlatItem = { type: "note"; note: Note } | { type: "subnote"; subnote: Note; parentNote: Note };
@@ -617,29 +608,14 @@ export default function NotesPage() {
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
                     <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t("notes.search_placeholder")}
-                                className="pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
-                            />
-                        </div>
                     </div>
                 </div>
 
                 {/* Notes List */}
                 <div className="flex-1 overflow-y-auto">
-                    {flatItems.length === 0 && !searchQuery ? (
+                    {flatItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
                             <BookOpenIcon className="w-10 h-10 mb-2 opacity-50" />
-                            <p className="text-sm">{t("notes.no_notes")}</p>
-                        </div>
-                    ) : flatItems.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                            <MagnifyingGlassIcon className="w-10 h-10 mb-2 opacity-50" />
                             <p className="text-sm">{t("notes.no_notes")}</p>
                         </div>
                     ) : (
