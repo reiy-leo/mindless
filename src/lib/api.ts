@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -770,4 +770,54 @@ export async function updatePersonOtherName(id: string, params: {
 
 export async function deletePersonOtherName(id: string): Promise<void> {
   return await invoke<void>('delete_person_other_name', { id });
+}
+
+// Media Group APIs
+export async function getMediaGroups(): Promise<MediaGroup[]> {
+  return await invoke<MediaGroup[]>('get_media_groups');
+}
+
+export async function createMediaGroup(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<MediaGroup> {
+  return await invoke<MediaGroup>('create_media_group', params);
+}
+
+export async function updateMediaGroup(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+}): Promise<MediaGroup> {
+  return await invoke<MediaGroup>('update_media_group', { id, ...params });
+}
+
+export async function deleteMediaGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_media_group', { id });
+}
+
+// Media Item APIs
+export async function getMediaItems(filters?: {
+  status?: string;
+  groupId?: string;
+  search?: string;
+}): Promise<MediaItem[]> {
+  return await invoke<MediaItem[]>('get_media_items', { filters });
+}
+
+export async function createMediaItem(params: CreateMediaItemInput): Promise<MediaItem> {
+  return await invoke<MediaItem>('create_media_item', { ...params });
+}
+
+export async function updateMediaItem(id: string, params: UpdateMediaItemInput): Promise<MediaItem> {
+  return await invoke<MediaItem>('update_media_item', { id, ...params });
+}
+
+export async function deleteMediaItem(id: string): Promise<void> {
+  return await invoke<void>('delete_media_item', { id });
+}
+
+export async function getMediaItemDetails(id: string): Promise<MediaItemWithDetails> {
+  return await invoke<MediaItemWithDetails>('get_media_item_details', { id });
 }
