@@ -769,7 +769,7 @@ export default function NotesPage() {
                 )}
             </div>
 
-            <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w + delta)))} />
+            <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
 
             {/* Right Panel: Note Detail */}
             <div
