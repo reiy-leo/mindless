@@ -173,6 +173,8 @@ function AvatarPicker({
 function PersonCreateForm({
     onSave,
     onCancel,
+    defaultGroupId,
+    personGroups,
 }: {
     onSave: (data: {
         name: string;
@@ -185,8 +187,11 @@ function PersonCreateForm({
         avatar: string;
         phones: { phone: string; label: string }[];
         emails: { email: string; label: string }[];
+        groupId?: string;
     }) => void;
     onCancel: () => void;
+    defaultGroupId?: string | null;
+    personGroups?: PersonGroup[];
 }) {
     const { t } = useTranslation("common");
     const [name, setName] = useState("");
@@ -201,6 +206,7 @@ function PersonCreateForm({
     const avatarButtonRef = useRef<HTMLDivElement>(null);
     const [phones, setPhones] = useState<PhoneEntry[]>([]);
     const [emails, setEmails] = useState<EmailEntry[]>([]);
+    const [groupId, setGroupId] = useState<string>(defaultGroupId || "");
 
     const handleSave = () => {
         onSave({
@@ -214,6 +220,7 @@ function PersonCreateForm({
             avatar: avatarSeed,
             phones: phones.map(p => ({ phone: p.value, label: p.label })),
             emails: emails.map(e => ({ email: e.value, label: e.label })),
+            groupId: groupId || undefined,
         });
     };
 
@@ -274,6 +281,24 @@ function PersonCreateForm({
                         onChange={setOtherNames}
                     />
                 </div>
+                {/* Group */}
+                {personGroups && personGroups.length > 0 && (
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">人员组</label>
+                        <select
+                            value={groupId}
+                            onChange={(e) => setGroupId(e.target.value)}
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="">未分组</option>
+                            {personGroups.filter(g => !g.isArchived).map((group) => (
+                                <option key={group.id} value={group.id}>
+                                    {resolveIcon(group.icon)} {group.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">生日</label>
                     <input
@@ -559,6 +584,7 @@ export default function PeoplePage() {
             avatar: string;
             phones: { phone: string; label: string }[];
             emails: { email: string; label: string }[];
+            groupId?: string;
         }) => {
             createPerson.mutate(
                 {
@@ -569,7 +595,7 @@ export default function PeoplePage() {
                     preferences: data.preferences.join(','),
                     remark: data.remark,
                     avatar: data.avatar,
-                    groupId: selectedGroupId || undefined,
+                    groupId: data.groupId || selectedGroupId || undefined,
                 },
                 {
                     onSuccess: (newPerson) => {
@@ -1077,7 +1103,12 @@ export default function PeoplePage() {
                 style={{ width: detailPanelWidth }}
             >
                 {showPersonForm ? (
-                    <PersonCreateForm onSave={handleSaveNewPerson} onCancel={handleCancelNewPerson} />
+                    <PersonCreateForm
+                        onSave={handleSaveNewPerson}
+                        onCancel={handleCancelNewPerson}
+                        defaultGroupId={selectedGroupId}
+                        personGroups={personGroups}
+                    />
                 ) : selectedPerson ? (
                     <div className="flex flex-col h-full">
                         {/* Avatar, Name & Other Names */}
