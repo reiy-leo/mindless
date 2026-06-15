@@ -446,7 +446,7 @@ export default function NotesPage() {
             {/* Left Panel: Groups */}
             <div
                 className="overflow-hidden border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 flex flex-col"
-                style={{ width: noteGroupsPanelWidth }}
+                style={{ width: noteGroupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0 }}
             >
                 <div className="p-3 flex-1 overflow-y-auto">
                     {/* Smart Groups */}
@@ -599,7 +599,7 @@ export default function NotesPage() {
             </div>
 
             <ResizeHandle
-                onResize={(delta) => setNoteGroupsPanelWidth((w) => Math.max(150, Math.min(300, w + delta)))}
+                onResize={(delta) => setNoteGroupsPanelWidth((w) => Math.max(215, Math.min(315, w + delta)))}
             />
 
             {/* Middle Panel: Notes List */}

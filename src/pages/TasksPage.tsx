@@ -1342,7 +1342,7 @@ export default function TasksPage() {
             {/* Task Groups Panel */}
             <div
                 className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-                style={{ width: groupsPanelWidth, minWidth: 160, flexShrink: 0 }}
+                style={{ width: groupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0 }}
             >
                 {/* Pinned items - icon only */}
                 {(pinnedLists.length > 0 || pinnedAdvGroups.length > 0) && (
@@ -1616,7 +1616,7 @@ export default function TasksPage() {
             </div>
 
             {/* Resize handle: groups <-> list */}
-            <ResizeHandle onResize={(delta) => setGroupsPanelWidth((w) => Math.max(160, Math.min(400, w + delta)))} />
+            <ResizeHandle onResize={(delta) => setGroupsPanelWidth((w) => Math.max(215, Math.min(315, w + delta)))} />
 
             {/* Task List Panel */}
             <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]">
