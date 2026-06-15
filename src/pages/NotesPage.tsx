@@ -445,8 +445,8 @@ export default function NotesPage() {
         <div className="flex h-full bg-gray-50 dark:bg-gray-900">
             {/* Left Panel: Groups */}
             <div
-                className="overflow-hidden border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 flex flex-col"
-                style={{ width: noteGroupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0 }}
+                className="overflow-hidden border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
+                style={{ width: noteGroupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0, backgroundColor: 'var(--theme-bg-20)' }}
             >
                 <div className="p-3 flex-1 overflow-y-auto">
                     {/* Smart Groups */}
@@ -465,9 +465,10 @@ export default function NotesPage() {
                                     onClick={() => handleSelectGroup(sg.id)}
                                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-colors mb-0.5 ${
                                         isActive
-                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            ? 'bg-black/10 dark:bg-white/15'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10'
                                     }`}
+                                    style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                 >
                                     <Icon className="w-4 h-4 flex-shrink-0" />
                                     <span className="flex-1 text-left truncate">{t(sg.labelKey)}</span>
@@ -525,9 +526,10 @@ export default function NotesPage() {
                                                 onContextMenu={(e) => handleGroupContextMenu(e, group.id)}
                                                 className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-colors mb-0.5 ${
                                                     isActive
-                                                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                        ? 'bg-black/10 dark:bg-white/15'
+                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10'
                                                 }`}
+                                                style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                             >
                                                 <span className="text-sm">{resolveIcon(group.icon)}</span>
                                                 <span className="flex-1 text-left truncate">{group.name}</span>
@@ -605,7 +607,7 @@ export default function NotesPage() {
             {/* Middle Panel: Notes List */}
             <div className="flex-1 flex flex-col min-w-[250px] max-w-[350px] bg-white dark:bg-gray-800">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-30)' }}>
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
                     <div className="flex items-center gap-2">
                     </div>

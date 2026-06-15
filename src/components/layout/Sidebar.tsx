@@ -26,7 +26,7 @@ export default function Sidebar() {
   const { selectedListId, setSelectedListId } = useViewStore();
 
   return (
-    <div role="navigation" aria-label="Main navigation" className="w-23 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col pb-2">
+    <div role="navigation" aria-label="Main navigation" className="w-23 border-r border-gray-200 dark:border-gray-700 flex flex-col pb-2" style={{ backgroundColor: 'var(--theme-bg-50)' }}>
       {isMac && <div data-tauri-drag-region className="h-8" />}
       {/* Main navigation - this area is draggable */}
       <nav className="flex flex-col px-2 space-y-2 flex-1">
@@ -52,9 +52,10 @@ export default function Sidebar() {
               aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center gap-1 px-2.5 py-2.5 rounded-lg transition-colors text-sm ${
                 isActive
-                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-black/10 dark:bg-white/15'
+                  : 'hover:bg-black/5 dark:hover:bg-white/10'
               }`}
+              style={isActive ? { color: 'var(--theme-text-70)' } : {}}
             >
               <Icon className="w-5 h-5" />
               <p className="text-xs"> {t(item.labelKey)}</p>

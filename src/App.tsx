@@ -49,6 +49,64 @@ function ThemeManager() {
   return null;
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = hex.replace('#', '').match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return null;
+  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+}
+
+function ThemeColorManager() {
+  const themeColor = useAppStore((s) => s.themeColor);
+  const theme = useAppStore((s) => s.theme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const rgb = hexToRgb(themeColor);
+    if (rgb) {
+      root.style.setProperty('--theme-color', themeColor);
+      root.style.setProperty('--theme-r', String(rgb.r));
+      root.style.setProperty('--theme-g', String(rgb.g));
+      root.style.setProperty('--theme-b', String(rgb.b));
+    }
+  }, [themeColor]);
+
+  useEffect(() => {
+    const applyColors = (isDark: boolean) => {
+      const root = document.documentElement;
+      root.style.setProperty('--theme-bg-70', isDark
+        ? `color-mix(in srgb, ${themeColor} 70%, #1f2937)`
+        : `color-mix(in srgb, ${themeColor} 70%, white)`);
+      root.style.setProperty('--theme-bg-50', isDark
+        ? `color-mix(in srgb, ${themeColor} 50%, #1f2937)`
+        : `color-mix(in srgb, ${themeColor} 50%, white)`);
+      root.style.setProperty('--theme-bg-30', isDark
+        ? `color-mix(in srgb, ${themeColor} 30%, #1f2937)`
+        : `color-mix(in srgb, ${themeColor} 30%, white)`);
+      root.style.setProperty('--theme-bg-20', isDark
+        ? `color-mix(in srgb, ${themeColor} 20%, #1f2937)`
+        : `color-mix(in srgb, ${themeColor} 20%, white)`);
+      root.style.setProperty('--theme-text-70', isDark
+        ? `color-mix(in srgb, ${themeColor} 70%, #f3f4f6)`
+        : `color-mix(in srgb, ${themeColor} 70%, #111827)`);
+      root.style.setProperty('--theme-text-30', isDark
+        ? `color-mix(in srgb, ${themeColor} 30%, #f3f4f6)`
+        : `color-mix(in srgb, ${themeColor} 30%, #111827)`);
+    };
+
+    if (theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      applyColors(mq.matches);
+      const handler = (e: MediaQueryListEvent) => applyColors(e.matches);
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    } else {
+      applyColors(theme === 'dark');
+    }
+  }, [themeColor, theme]);
+
+  return null;
+}
+
 const FONT_SIZE_MAP: Record<string, string> = {
   small: '14px',
   default: '16px',
@@ -72,7 +130,7 @@ function FontSizeManager() {
  */
 function SettingsSync() {
   const { i18n } = useTranslation();
-  const { theme, language, priorityMode, notificationEnabled, weekStartDay, fontSize, taskSortBy, taskSortOrder, taskGroupBy, setTheme, setLanguage, setPriorityMode, setNotificationEnabled, setWeekStartDay } = useAppStore();
+  const { theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, fontSize, taskSortBy, taskSortOrder, taskGroupBy, setTheme, setThemeColor, setLanguage, setPriorityMode, setNotificationEnabled, setWeekStartDay } = useAppStore();
   const isInitialLoad = useRef(true);
 
   // Load settings from SQLite on mount
@@ -88,9 +146,13 @@ function SettingsSync() {
       const dbTaskSortOrder = map.get('task_sort_order') as 'asc' | 'desc' | undefined;
       const dbTaskGroupBy = map.get('task_group_by') as 'none' | 'priority' | 'list' | undefined;
       const dbFontSize = map.get('font_size') as 'small' | 'default' | 'large' | 'xlarge' | undefined;
+      const dbThemeColor = map.get('theme_color');
 
       if (dbTheme && ['light', 'dark', 'system'].includes(dbTheme)) {
         setTheme(dbTheme);
+      }
+      if (dbThemeColor && /^#[0-9a-fA-F]{6}$/.test(dbThemeColor)) {
+        setThemeColor(dbThemeColor);
       }
       if (dbLang && ['zh', 'en', 'ja'].includes(dbLang)) {
         setLanguage(dbLang);
@@ -130,6 +192,7 @@ function SettingsSync() {
     if (isInitialLoad.current) return;
     api.updateSettings([
       ['theme', theme],
+      ['theme_color', themeColor],
       ['language', language],
       ['priority_mode', priorityMode],
       ['notification_enabled', notificationEnabled ? '1' : '0'],
@@ -141,7 +204,7 @@ function SettingsSync() {
     ]).catch((err) => {
       console.warn('Failed to save settings to database:', err);
     });
-  }, [theme, language, priorityMode, notificationEnabled, weekStartDay, taskSortBy, taskSortOrder, taskGroupBy, fontSize]);
+  }, [theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, taskSortBy, taskSortOrder, taskGroupBy, fontSize]);
 
   return null;
 }
@@ -200,6 +263,7 @@ function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <ThemeManager />
+        <ThemeColorManager />
         <FontSizeManager />
         <SettingsSync />
         <NotificationManager />

@@ -1341,8 +1341,8 @@ export default function TasksPage() {
         <div className="flex-1 flex overflow-hidden">
             {/* Task Groups Panel */}
             <div
-                className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-                style={{ width: groupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0 }}
+                className="border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+                style={{ width: groupsPanelWidth, minWidth: 215, maxWidth: 315, flexShrink: 0, backgroundColor: 'var(--theme-bg-20)' }}
             >
                 {/* Pinned items - icon only */}
                 {(pinnedLists.length > 0 || pinnedAdvGroups.length > 0) && (
@@ -1358,9 +1358,10 @@ export default function TasksPage() {
                                             title={list.name}
                                             className={`p-1.5 rounded-lg transition-colors text-base ${
                                                 isActive
-                                                    ? "bg-blue-50 dark:bg-blue-900/30"
-                                                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    ? "bg-black/10 dark:bg-white/15"
+                                                    : "hover:bg-black/5 dark:hover:bg-white/10"
                                             }`}
+                                            style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                         >
                                             {resolveIcon(list.icon)}
                                         </button>
@@ -1377,9 +1378,10 @@ export default function TasksPage() {
                                             title={group.name}
                                             className={`p-1.5 rounded-lg transition-colors text-base ${
                                                 isActive
-                                                    ? "bg-blue-50 dark:bg-blue-900/30"
-                                                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    ? "bg-black/10 dark:bg-white/15"
+                                                    : "hover:bg-black/5 dark:hover:bg-white/10"
                                             }`}
+                                            style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                         >
                                             {resolveIcon(group.icon)}
                                         </button>
@@ -1405,9 +1407,10 @@ export default function TasksPage() {
                                         onClick={() => handleListClick(smartList.id)}
                                         className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
                                             isActive
-                                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                ? 'bg-black/10 dark:bg-white/15'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10'
                                         }`}
+                                        style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                     >
                                         {getGroupIcon(smartList.iconKey)}
                                         <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
@@ -1509,9 +1512,10 @@ export default function TasksPage() {
                                                 onContextMenu={(e) => handleContextMenu(e, "advGroup", group.id)}
                                                 className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
                                                     isActive
-                                                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                        ? "bg-black/10 dark:bg-white/15"
+                                                        : "text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10"
                                                 }`}
+                                                style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                             >
                                                 <span className="text-base flex-shrink-0 text-sm">
                                                     {resolveIcon(group.icon)}
@@ -1587,9 +1591,10 @@ export default function TasksPage() {
                                             onContextMenu={(e) => handleContextMenu(e, "list", list.id)}
                                             className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
                                                 isActive
-                                                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    ? "bg-black/10 dark:bg-white/15"
+                                                    : "text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10"
                                             }`}
+                                            style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                         >
                                             <span className="text-base flex-shrink-0 text-sm">
                                                 {resolveIcon(list.icon)}
@@ -1621,7 +1626,7 @@ export default function TasksPage() {
             {/* Task List Panel */}
             <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]">
                 {/* Header */}
-                <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3">
+                <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-3" style={{ backgroundColor: 'var(--theme-bg-30)' }}>
                     <div data-tauri-drag-region className="flex items-center justify-between">
                         <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
                         <div className="flex items-center gap-2">
