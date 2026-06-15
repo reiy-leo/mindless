@@ -44,7 +44,8 @@
     "tags": "タグ",
     "notes": "ノート",
     "settings": "設定",
-    "people": "人物"
+    "people": "人物",
+    "media": "メディア"
   },
   "search": {
     "placeholder": "タスク、習慣、カウントダウンを検索...",
@@ -440,6 +441,10 @@
     "copy": "コピー"
   },
   "settings": {
+    "tabs": {
+      "general": "一般",
+      "theme": "テーマ"
+    },
     "language": "言語",
     "theme": "テーマ",
     "theme.light": "ライト",
@@ -476,6 +481,13 @@
       "clear_events": "イベントを削除",
       "import_success": "{{count}}件のイベントをインポートしました",
       "import_empty": "ファイルにイベントが見つかりません"
+    },
+    "theme_color": {
+      "title": "テーマカラー",
+      "description": "テーマカラーを選択してアプリの外観をカスタマイズ",
+      "column_first": "最初の列 (70%)",
+      "column_other": "その他の列 (30%)",
+      "preview": "プレビュー"
     }
   },
   "people": {

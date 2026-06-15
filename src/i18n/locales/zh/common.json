@@ -45,7 +45,8 @@
     "tags": "标签",
     "notes": "笔记",
     "settings": "设置",
-    "people": "人员"
+    "people": "人员",
+    "media": "影视"
   },
   "search": {
     "placeholder": "搜索任务、习惯、倒数日...",

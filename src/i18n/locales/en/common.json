@@ -45,7 +45,8 @@
     "tags": "Tags",
     "notes": "Notes",
     "settings": "Settings",
-    "people": "People"
+    "people": "People",
+    "media": "Media"
   },
   "search": {
     "placeholder": "Search tasks, habits, countdowns...",

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, SettingsIcon,
-  Tag, StickyNote, UsersIcon,
+  Tag, StickyNote, UsersIcon, Film,
 } from 'lucide-react';
 import { useViewStore } from '@/stores/useViewStore';
 
@@ -15,6 +15,7 @@ const navItems = [
   { path: '/countdowns', icon: HourglassIcon, labelKey: 'navigation.countdowns' },
   { path: '/notes', icon: StickyNote, labelKey: 'navigation.notes' },
   { path: '/people', icon: UsersIcon, labelKey: 'navigation.people' },
+  { path: '/media', icon: Film, labelKey: 'navigation.media' },
   { path: null},
   { path: '/tags', icon: Tag, labelKey: 'navigation.tags' },
   { path: '/settings', icon: SettingsIcon, labelKey: 'navigation.settings' },
@@ -26,10 +27,9 @@ export default function Sidebar() {
   const { selectedListId, setSelectedListId } = useViewStore();
 
   return (
-    <div role="navigation" aria-label="Main navigation" className="w-23 border-r border-gray-200 dark:border-gray-700 flex flex-col pb-2" style={{ backgroundColor: 'var(--theme-bg-50)' }}>
+    <div role="navigation" aria-label="Main navigation" className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white" style={{ background: 'linear-gradient(to bottom, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))' }}>
       {isMac && <div data-tauri-drag-region className="h-8" />}
-      {/* Main navigation - this area is draggable */}
-      <nav className="flex flex-col px-2 space-y-2 flex-1">
+      <nav className="flex flex-col px-1.5 space-y-2 flex-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path && !selectedListId;
@@ -50,15 +50,14 @@ export default function Sidebar() {
                 if (item.path !== '/tasks') setSelectedListId(null);
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-col items-center gap-1 px-2.5 py-2.5 rounded-lg transition-colors text-sm ${
+              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-colors text-sm text-white ${
                 isActive
-                  ? 'bg-black/10 dark:bg-white/15'
-                  : 'hover:bg-black/5 dark:hover:bg-white/10'
+                  ? 'bg-white/25'
+                  : 'hover:bg-white/15'
               }`}
-              style={isActive ? { color: 'var(--theme-text-70)' } : {}}
             >
               <Icon className="w-5 h-5" />
-              <p className="text-xs"> {t(item.labelKey)}</p>
+              <p className="text-[10px]">{t(item.labelKey)}</p>
             </Link>
           );
         })}
