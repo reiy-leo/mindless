@@ -499,6 +499,35 @@ export default function PeoplePage() {
         }
     }, [selectedPersonId]); // Only re-sync when selectedPersonId changes
 
+    // Sync phones/emails/otherNames when query data arrives (first load per person)
+    const phonesLoadedRef = useRef<string | null>(null);
+    const emailsLoadedRef = useRef<string | null>(null);
+    const otherNamesLoadedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (selectedPersonId && phones.length > 0 && phonesLoadedRef.current !== selectedPersonId) {
+            phonesLoadedRef.current = selectedPersonId;
+            setLocalPhones(phones.map(p => ({ id: p.id, label: p.label, value: p.phone, note: '' })));
+        }
+        if (!selectedPersonId) phonesLoadedRef.current = null;
+    }, [phones, selectedPersonId]);
+
+    useEffect(() => {
+        if (selectedPersonId && emails.length > 0 && emailsLoadedRef.current !== selectedPersonId) {
+            emailsLoadedRef.current = selectedPersonId;
+            setLocalEmails(emails.map(e => ({ id: e.id, label: e.label, value: e.email, note: '' })));
+        }
+        if (!selectedPersonId) emailsLoadedRef.current = null;
+    }, [emails, selectedPersonId]);
+
+    useEffect(() => {
+        if (selectedPersonId && otherNames.length > 0 && otherNamesLoadedRef.current !== selectedPersonId) {
+            otherNamesLoadedRef.current = selectedPersonId;
+            setLocalOtherNames(otherNames.map(n => ({ id: n.id, label: n.label || '别名', value: n.name, note: '' })));
+        }
+        if (!selectedPersonId) otherNamesLoadedRef.current = null;
+    }, [otherNames, selectedPersonId]);
+
     const debounceSave = useCallback(
         (field: string, value: string, ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
             if (!selectedPersonId) return;
