@@ -452,6 +452,10 @@
     "copy": "Copy"
   },
   "settings": {
+    "tabs": {
+      "general": "General",
+      "theme": "Theme"
+    },
     "language": "Language",
     "theme": "Theme",
     "theme.light": "Light",
@@ -488,6 +492,13 @@
       "clear_events": "Clear Events",
       "import_success": "Successfully imported {{count}} events",
       "import_empty": "No events found in the file"
+    },
+    "theme_color": {
+      "title": "Theme Color",
+      "description": "Choose a theme color to customize the app interface",
+      "column_first": "First Column (70%)",
+      "column_other": "Other Columns (30%)",
+      "preview": "Preview"
     }
   },
   "people": {
@@ -532,6 +543,72 @@
       "email_placeholder": "Enter email address",
       "remark": "Remark",
       "remark_placeholder": "Enter remark..."
+    }
+  },
+  "media": {
+    "title": "Media",
+    "smart_groups": {
+      "all": "All",
+      "favorites": "Favorites",
+      "normal": "Normal",
+      "watched": "Watched",
+      "archived": "Archived"
+    },
+    "actions": {
+      "new": "New",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "new_group": "New Group",
+      "edit_group": "Edit Group",
+      "delete_group": "Delete Group"
+    },
+    "fields": {
+      "title": "Title",
+      "otherNames": "Other Names",
+      "year": "Year",
+      "rating": "Rating",
+      "cover": "Cover",
+      "doubanUrl": "Douban URL",
+      "imdbUrl": "IMDB URL",
+      "rottenTomatoesUrl": "Rotten Tomatoes URL",
+      "watchLinks": "Watch Links",
+      "relations": "Related Items",
+      "status": "Status",
+      "group": "Group",
+      "type": "Type",
+      "tvShowTitle": "TV Show Title",
+      "seasonNumber": "Season Number"
+    },
+    "status": {
+      "normal": "Normal",
+      "favorite": "Favorite",
+      "watched": "Watched",
+      "archived": "Archived"
+    },
+    "type": {
+      "movie": "Movie",
+      "season": "TV Season"
+    },
+    "placeholder": {
+      "search": "Search media...",
+      "title": "Enter title",
+      "year": "Enter year",
+      "rating": "Enter rating",
+      "doubanUrl": "Enter Douban URL",
+      "imdbUrl": "Enter IMDB URL",
+      "rottenTomatoesUrl": "Enter Rotten Tomatoes URL",
+      "watchLink": "Enter watch link",
+      "otherName": "Enter other name",
+      "tvShowTitle": "Enter TV show title",
+      "seasonNumber": "Enter season number"
+    },
+    "message": {
+      "confirm_delete": "Are you sure you want to delete this item?",
+      "confirm_delete_group": "Are you sure you want to delete this group?",
+      "no_items": "No media items",
+      "loading": "Loading..."
     }
   }
 }

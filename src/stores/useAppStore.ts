@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 type Theme = 'light' | 'dark' | 'system';
 type Language = 'zh' | 'en' | 'ja';
+export type ThemeColor = string;
 type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 type GroupBy = 'none' | 'priority' | 'list';
@@ -38,6 +39,7 @@ export interface AdvancedGroup {
 
 interface AppState {
   theme: Theme;
+  themeColor: ThemeColor;
   language: Language;
   sidebarCollapsed: boolean;
   priorityMode: 'simple' | 'detailed';
@@ -56,8 +58,12 @@ interface AppState {
   habitGroupViewModes: Record<string, 'list' | 'card'>;
   noteGroupsPanelWidth: number;
   personGroupsPanelWidth: number;
+  mediaSidebarWidth: number;
+  mediaDetailPanelWidth: number;
+  mediaViewMode: 'grid' | 'list';
 
   setTheme: (theme: Theme) => void;
+  setThemeColor: (color: ThemeColor) => void;
   setLanguage: (lang: Language) => void;
   toggleSidebar: () => void;
   setPriorityMode: (mode: 'simple' | 'detailed') => void;
@@ -78,12 +84,16 @@ interface AppState {
   setHabitGroupViewMode: (groupId: string, mode: 'list' | 'card') => void;
   setNoteGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
   setPersonGroupsPanelWidth: (width: number | ((prev: number) => number)) => void;
+  setMediaSidebarWidth: (width: number) => void;
+  setMediaDetailPanelWidth: (width: number) => void;
+  setMediaViewMode: (mode: 'grid' | 'list') => void;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       theme: 'system',
+      themeColor: '#6B8E23',
       language: 'zh',
       sidebarCollapsed: false,
       priorityMode: 'simple',
@@ -102,8 +112,12 @@ export const useAppStore = create<AppState>()(
       habitGroupViewModes: {},
       noteGroupsPanelWidth: 192,
       personGroupsPanelWidth: 192,
+      mediaSidebarWidth: 240,
+      mediaDetailPanelWidth: 320,
+      mediaViewMode: 'grid',
 
       setTheme: (theme) => set({ theme }),
+      setThemeColor: (themeColor) => set({ themeColor }),
       setLanguage: (language) => set({ language }),
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setPriorityMode: (priorityMode) => set({ priorityMode }),
@@ -150,11 +164,15 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           personGroupsPanelWidth: typeof width === 'function' ? width(state.personGroupsPanelWidth) : width,
         })),
+      setMediaSidebarWidth: (width) => set({ mediaSidebarWidth: width }),
+      setMediaDetailPanelWidth: (width) => set({ mediaDetailPanelWidth: width }),
+      setMediaViewMode: (mode) => set({ mediaViewMode: mode }),
     }),
     {
       name: 'mindless-app-settings',
       partialize: (state) => ({
         theme: state.theme,
+        themeColor: state.themeColor,
         language: state.language,
         sidebarCollapsed: state.sidebarCollapsed,
         priorityMode: state.priorityMode,
@@ -170,6 +188,9 @@ export const useAppStore = create<AppState>()(
         habitGroupViewModes: state.habitGroupViewModes,
         noteGroupsPanelWidth: state.noteGroupsPanelWidth,
         personGroupsPanelWidth: state.personGroupsPanelWidth,
+        mediaSidebarWidth: state.mediaSidebarWidth,
+        mediaDetailPanelWidth: state.mediaDetailPanelWidth,
+        mediaViewMode: state.mediaViewMode,
       }),
     }
   )

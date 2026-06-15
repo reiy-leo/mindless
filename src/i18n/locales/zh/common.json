@@ -453,6 +453,10 @@
     "copy": "复制"
   },
   "settings": {
+    "tabs": {
+      "general": "通用",
+      "theme": "主题"
+    },
     "language": "语言",
     "theme": "主题",
     "theme.light": "浅色",
@@ -489,6 +493,13 @@
       "clear_events": "清除事件",
       "import_success": "成功导入{{count}}个事件",
       "import_empty": "文件中未找到事件"
+    },
+    "theme_color": {
+      "title": "主题色",
+      "description": "选择一个主题色，应用界面将随之变化",
+      "column_first": "第一列 (70%)",
+      "column_other": "其他列 (30%)",
+      "preview": "预览"
     }
   },
   "people": {
@@ -533,6 +544,72 @@
       "email_placeholder": "输入邮箱",
       "remark": "备注",
       "remark_placeholder": "输入备注..."
+    }
+  },
+  "media": {
+    "title": "影视",
+    "smart_groups": {
+      "all": "所有",
+      "favorites": "收藏",
+      "normal": "正常",
+      "watched": "已看完",
+      "archived": "已归档"
+    },
+    "actions": {
+      "new": "新建",
+      "edit": "编辑",
+      "delete": "删除",
+      "save": "保存",
+      "cancel": "取消",
+      "new_group": "新建分组",
+      "edit_group": "编辑分组",
+      "delete_group": "删除分组"
+    },
+    "fields": {
+      "title": "名称",
+      "otherNames": "其他名称",
+      "year": "年份",
+      "rating": "评分",
+      "cover": "封面",
+      "doubanUrl": "豆瓣链接",
+      "imdbUrl": "IMDB链接",
+      "rottenTomatoesUrl": "蓝番茄链接",
+      "watchLinks": "在线观看链接",
+      "relations": "关联影片",
+      "status": "观看状态",
+      "group": "分组",
+      "type": "类型",
+      "tvShowTitle": "剧名",
+      "seasonNumber": "季号"
+    },
+    "status": {
+      "normal": "正常",
+      "favorite": "收藏",
+      "watched": "已看完",
+      "archived": "已归档"
+    },
+    "type": {
+      "movie": "电影",
+      "season": "电视剧季"
+    },
+    "placeholder": {
+      "search": "搜索影片...",
+      "title": "请输入名称",
+      "year": "请输入年份",
+      "rating": "请输入评分",
+      "doubanUrl": "请输入豆瓣链接",
+      "imdbUrl": "请输入IMDB链接",
+      "rottenTomatoesUrl": "请输入蓝番茄链接",
+      "watchLink": "请输入观看链接",
+      "otherName": "请输入其他名称",
+      "tvShowTitle": "请输入剧名",
+      "seasonNumber": "请输入季号"
+    },
+    "message": {
+      "confirm_delete": "确定要删除这个影片吗？",
+      "confirm_delete_group": "确定要删除这个分组吗？",
+      "no_items": "暂无影片",
+      "loading": "加载中..."
     }
   }
 }
