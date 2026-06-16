@@ -23,13 +23,6 @@ export function useAllNotes() {
   });
 }
 
-export function useSubNotes(parentId: string | undefined) {
-  return useQuery({
-    queryKey: ['subNotes', parentId],
-    queryFn: () => api.getSubNotes(parentId!),
-    enabled: !!parentId,
-  });
-}
 
 export function useAllSubNotes(noteIds: string[]) {
   return useQuery({
@@ -83,7 +76,7 @@ export function useCreateNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
-      queryClient.invalidateQueries({ queryKey: ['subNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
     },
   });
 }
@@ -96,7 +89,7 @@ export function useUpdateNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
-      queryClient.invalidateQueries({ queryKey: ['subNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
     },
   });
 }
@@ -108,7 +101,7 @@ export function useDeleteNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
-      queryClient.invalidateQueries({ queryKey: ['subNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
     },
   });
 }
@@ -120,6 +113,7 @@ export function useArchiveNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
     },
   });
 }
@@ -131,6 +125,7 @@ export function useUnarchiveNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
     },
   });
 }
@@ -142,6 +137,37 @@ export function useCompleteNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['allNotes'] });
+      queryClient.invalidateQueries({ queryKey: ['allSubNotes'] });
+    },
+  });
+}
+
+// Note linked items
+export function useNoteLinkedItems(noteId: string | undefined) {
+  return useQuery({
+    queryKey: ['noteLinkedItems', noteId],
+    queryFn: () => api.getNoteLinkedItems(noteId!),
+    enabled: !!noteId,
+  });
+}
+
+export function useLinkNoteItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ noteId, linkedType, linkedId }: { noteId: string; linkedType: string; linkedId: string }) =>
+      api.linkNoteItem(noteId, linkedType, linkedId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['noteLinkedItems'] });
+    },
+  });
+}
+
+export function useUnlinkNoteItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.unlinkNoteItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['noteLinkedItems'] });
     },
   });
 }

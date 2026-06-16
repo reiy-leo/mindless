@@ -26,3 +26,10 @@ export interface Note {
   completedAt?: string;
   deletedAt?: string;
 }
+
+export interface NoteLinkedItem {
+  id: string;
+  noteId: string;
+  linkedType: 'task' | 'person' | 'media';
+  linkedId: string;
+}

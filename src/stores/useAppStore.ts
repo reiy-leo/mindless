@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 type Theme = 'light' | 'dark' | 'system';
 type Language = 'zh' | 'en' | 'ja';
 export type ThemeColor = string;
+export type SidebarMode = 'icon' | 'text' | 'both';
 type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 type GroupBy = 'none' | 'priority' | 'list';
@@ -42,6 +43,7 @@ interface AppState {
   themeColor: ThemeColor;
   language: Language;
   sidebarCollapsed: boolean;
+  sidebarMode: SidebarMode;
   priorityMode: 'simple' | 'detailed';
   notificationEnabled: boolean;
   weekStartDay: 0 | 1;
@@ -66,6 +68,7 @@ interface AppState {
   setThemeColor: (color: ThemeColor) => void;
   setLanguage: (lang: Language) => void;
   toggleSidebar: () => void;
+  setSidebarMode: (mode: SidebarMode) => void;
   setPriorityMode: (mode: 'simple' | 'detailed') => void;
   setNotificationEnabled: (enabled: boolean) => void;
   setWeekStartDay: (day: 0 | 1) => void;
@@ -96,6 +99,7 @@ export const useAppStore = create<AppState>()(
       themeColor: '#6B8E23',
       language: 'zh',
       sidebarCollapsed: false,
+      sidebarMode: 'both',
       priorityMode: 'simple',
       notificationEnabled: true,
       weekStartDay: 0,
@@ -120,6 +124,7 @@ export const useAppStore = create<AppState>()(
       setThemeColor: (themeColor) => set({ themeColor }),
       setLanguage: (language) => set({ language }),
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      setSidebarMode: (sidebarMode) => set({ sidebarMode }),
       setPriorityMode: (priorityMode) => set({ priorityMode }),
       setNotificationEnabled: (notificationEnabled) => set({ notificationEnabled }),
       setWeekStartDay: (weekStartDay) => set({ weekStartDay }),
@@ -175,6 +180,7 @@ export const useAppStore = create<AppState>()(
         themeColor: state.themeColor,
         language: state.language,
         sidebarCollapsed: state.sidebarCollapsed,
+        sidebarMode: state.sidebarMode,
         priorityMode: state.priorityMode,
         notificationEnabled: state.notificationEnabled,
         weekStartDay: state.weekStartDay,

@@ -426,12 +426,14 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
 }
 
 pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
+    // Create tables if not exist
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS media_groups (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             color TEXT DEFAULT '#3B82F6',
             icon TEXT DEFAULT '🎬',
+            is_preset INTEGER NOT NULL DEFAULT 0,
             sort_order REAL NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
@@ -454,6 +456,13 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             sort_order REAL NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS media_item_genres (
+            id TEXT PRIMARY KEY,
+            media_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            genre_id TEXT NOT NULL REFERENCES media_groups(id) ON DELETE CASCADE,
+            UNIQUE(media_item_id, genre_id)
         );
 
         CREATE TABLE IF NOT EXISTS media_other_names (
@@ -479,14 +488,83 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             relation_type TEXT DEFAULT 'series'
         );
 
+        CREATE TABLE IF NOT EXISTS media_linked_items (
+            id TEXT PRIMARY KEY,
+            media_item_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+            linked_type TEXT NOT NULL,
+            linked_id TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_media_items_status ON media_items(status);
         CREATE INDEX IF NOT EXISTS idx_media_items_group_id ON media_items(group_id);
         CREATE INDEX IF NOT EXISTS idx_media_items_type ON media_items(type);
         CREATE INDEX IF NOT EXISTS idx_media_other_names_media_item_id ON media_other_names(media_item_id);
         CREATE INDEX IF NOT EXISTS idx_media_watch_links_media_item_id ON media_watch_links(media_item_id);
         CREATE INDEX IF NOT EXISTS idx_media_relations_media_item_id ON media_relations(media_item_id);
-        CREATE INDEX IF NOT EXISTS idx_media_relations_related_item_id ON media_relations(related_item_id);"
-    ).map_err(|e| format!("Failed to migrate media tables: {}", e))?;
+        CREATE INDEX IF NOT EXISTS idx_media_relations_related_item_id ON media_relations(related_item_id);
+        CREATE INDEX IF NOT EXISTS idx_media_linked_items_media_item_id ON media_linked_items(media_item_id);
+    ").map_err(|e| format!("Failed to migrate media tables: {}", e))?;
+
+    // Note linked items (bidirectional relations)
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS note_linked_items (
+            id TEXT PRIMARY KEY,
+            note_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+            linked_type TEXT NOT NULL,
+            linked_id TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_note_linked_items_note_id ON note_linked_items(note_id);
+        CREATE INDEX IF NOT EXISTS idx_note_linked_items_linked_id ON note_linked_items(linked_id);
+    ").map_err(|e| format!("Failed to migrate note linked items table: {}", e))?;
+
+    // Add is_preset column if not exists
+    let has_column: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('media_groups') WHERE name = 'is_preset'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_column {
+        conn.execute("ALTER TABLE media_groups ADD COLUMN is_preset INTEGER NOT NULL DEFAULT 0", [])
+            .map_err(|e| format!("Failed to add is_preset column: {}", e))?;
+    }
+
+    // Insert preset genres
+    conn.execute_batch(
+        "INSERT OR IGNORE INTO media_groups (id, name, color, icon, is_preset, sort_order) VALUES
+            ('genre-drama', '剧情', '#8B5CF6', '🎭', 1, 1),
+            ('genre-comedy', '喜剧', '#FBBF24', '😂', 1, 2),
+            ('genre-action', '动作', '#EF4444', '💥', 1, 3),
+            ('genre-romance', '爱情', '#EC4899', '💕', 1, 4),
+            ('genre-scifi', '科幻', '#3B82F6', '🚀', 1, 5),
+            ('genre-animation', '动画', '#10B981', '🎨', 1, 6),
+            ('genre-mystery', '悬疑', '#6366F1', '🔍', 1, 7),
+            ('genre-thriller', '惊悚', '#DC2626', '😱', 1, 8),
+            ('genre-horror', '恐怖', '#1F2937', '👻', 1, 9),
+            ('genre-documentary', '纪录片', '#059669', '📹', 1, 10),
+            ('genre-short', '短片', '#6B7280', '📎', 1, 11),
+            ('genre-erotic', '情色', '#DB2777', '🔥', 1, 12),
+            ('genre-gay', '同性', '#7C3AED', '🏳️‍🌈', 1, 13),
+            ('genre-music', '音乐', '#2563EB', '🎵', 1, 14),
+            ('genre-musical', '歌舞', '#D97706', '💃', 1, 15),
+            ('genre-family', '家庭', '#16A34A', '👨‍👩‍👧‍👦', 1, 16),
+            ('genre-kids', '儿童', '#F59E0B', '🧸', 1, 17),
+            ('genre-biography', '传记', '#78350F', '📖', 1, 18),
+            ('genre-history', '历史', '#92400E', '🏛️', 1, 19),
+            ('genre-war', '战争', '#4B5563', '⚔️', 1, 20),
+            ('genre-crime', '犯罪', '#111827', '🔫', 1, 21),
+            ('genre-western', '西部', '#B45309', '🤠', 1, 22),
+            ('genre-fantasy', '奇幻', '#A855F7', '🧙', 1, 23),
+            ('genre-adventure', '冒险', '#F97316', '🗺️', 1, 24),
+            ('genre-disaster', '灾难', '#DC2626', '🌪️', 1, 25),
+            ('genre-wuxia', '武侠', '#B91C1C', '🥋', 1, 26),
+            ('genre-costume', '古装', '#9333EA', '👘', 1, 27),
+            ('genre-sports', '运动', '#059669', '⚽', 1, 28),
+            ('genre-noir', '黑色电影', '#374151', '🎬', 1, 29),
+            ('genre-variety', '综艺', '#F472B6', '🎪', 1, 30),
+            ('genre-art', '文艺', '#C084FC', '🖼️', 1, 31),
+            ('genre-youth', '青春', '#38BDF8', '🌱', 1, 32);
+    ").map_err(|e| format!("Failed to insert preset genres: {}", e))?;
 
     Ok(())
 }

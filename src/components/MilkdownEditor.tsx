@@ -22,7 +22,7 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
             root,
             defaultValue: markdown,
             features: {
-                [Crepe.Feature.Latex]: false,
+                [Crepe.Feature.Latex]: true,
                 [Crepe.Feature.AI]: false,
             },
             featureConfigs: {

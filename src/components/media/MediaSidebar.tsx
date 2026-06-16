@@ -9,15 +9,20 @@ import {
   ArchiveBoxIcon,
   CheckCircleIcon,
   FilmIcon,
+  EyeSlashIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
-import { useMediaGroups, useCreateMediaGroup, useUpdateMediaGroup, useDeleteMediaGroup } from '@/queries/useMediaQueries';
-import type { MediaGroup } from '@/types/media';
+import { useMediaGroupsWithCount, useCreateMediaGroup, useUpdateMediaGroup, useDeleteMediaGroup } from '@/queries/useMediaQueries';
+import type { MediaGroupWithCount } from '@/types/media';
 
-type SmartGroupId = 'all' | 'favorites' | 'normal' | 'watched' | 'archived';
+type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
 
-const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: string }>; labelKey: string }[] = [
+const SMART_GROUPS: { id: SmartGroupId | 'divider'; icon?: React.ComponentType<{ className?: string }>; labelKey?: string }[] = [
   { id: 'all', icon: BookOpenIcon, labelKey: 'media.smart_groups.all' },
   { id: 'favorites', icon: StarIcon, labelKey: 'media.smart_groups.favorites' },
+  { id: 'divider' },
+  { id: 'unwatched', icon: EyeSlashIcon, labelKey: 'media.smart_groups.unwatched' },
+  { id: 'planned', icon: ClockIcon, labelKey: 'media.smart_groups.planned' },
   { id: 'normal', icon: FilmIcon, labelKey: 'media.smart_groups.normal' },
   { id: 'watched', icon: CheckCircleIcon, labelKey: 'media.smart_groups.watched' },
   { id: 'archived', icon: ArchiveBoxIcon, labelKey: 'media.smart_groups.archived' },
@@ -39,14 +44,14 @@ export default function MediaSidebar({
   width,
 }: MediaSidebarProps) {
   const { t } = useTranslation('common');
-  const { data: groups = [] } = useMediaGroups();
+  const { data: groups = [] } = useMediaGroupsWithCount();
   const createGroup = useCreateMediaGroup();
   const updateGroup = useUpdateMediaGroup();
   const deleteGroup = useDeleteMediaGroup();
 
   const [groupsExpanded, setGroupsExpanded] = useState(true);
   const [showGroupForm, setShowGroupForm] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<MediaGroup | null>(null);
+  const [editingGroup, setEditingGroup] = useState<MediaGroupWithCount | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#3B82F6');
   const [newGroupIcon, setNewGroupIcon] = useState('🎬');
@@ -81,7 +86,7 @@ export default function MediaSidebar({
     }
   };
 
-  const startEditGroup = (group: MediaGroup) => {
+  const startEditGroup = (group: MediaGroupWithCount) => {
     setEditingGroup(group);
     setNewGroupName(group.name);
     setNewGroupColor(group.color || '#3B82F6');
@@ -98,12 +103,15 @@ export default function MediaSidebar({
         </h3>
         <div className="space-y-1">
           {SMART_GROUPS.map((group) => {
-            const Icon = group.icon;
+            if (group.id === 'divider') {
+              return <div key="divider" className="my-1 border-t border-gray-200 dark:border-gray-700" />;
+            }
+            const Icon = group.icon!;
             const isSelected = selectedSmartGroup === group.id;
             return (
               <button
                 key={group.id}
-                onClick={() => onSelectSmartGroup(group.id)}
+                onClick={() => onSelectSmartGroup(group.id as SmartGroupId)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
                   isSelected
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
@@ -111,14 +119,14 @@ export default function MediaSidebar({
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                <span>{t(group.labelKey)}</span>
+                <span>{t(group.labelKey!)}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Media Groups */}
+      {/* Media Genres */}
       <div className="flex-1 overflow-auto p-3">
         <div className="flex items-center justify-between mb-2">
           <button
@@ -158,6 +166,9 @@ export default function MediaSidebar({
                 <div className="flex items-center gap-2">
                   <span>{group.icon || '🎬'}</span>
                   <span>{group.name}</span>
+                  {group.usageCount > 0 && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">({group.usageCount})</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                   <button
@@ -170,16 +181,18 @@ export default function MediaSidebar({
                   >
                     <PencilIcon className="w-3 h-3" />
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteGroup(group.id);
-                    }}
-                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                    title={t('media.actions.delete_group')}
-                  >
-                    <TrashIcon className="w-3 h-3" />
-                  </button>
+                  {!group.isPreset && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteGroup(group.id);
+                      }}
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                      title={t('media.actions.delete_group')}
+                    >
+                      <TrashIcon className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

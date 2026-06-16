@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, ChevronRightIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getLunarDayStr } from "@/lib/lunar";

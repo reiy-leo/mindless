@@ -451,7 +451,10 @@
     "unpin": "取消置顶",
     "favorite": "收藏",
     "unfavorite": "取消收藏",
-    "copy": "复制"
+    "copy": "复制",
+    "linked_tasks": "关联任务",
+    "linked_persons": "关联人员",
+    "linked_media": "关联影视"
   },
   "settings": {
     "tabs": {
@@ -487,6 +490,10 @@
     "font_size.default": "默认",
     "font_size.large": "大",
     "font_size.xlarge": "超大",
+    "sidebar_mode": "侧边栏显示方式",
+    "sidebar_mode.icon": "仅图标",
+    "sidebar_mode.text": "仅文本",
+    "sidebar_mode.both": "图标和文本",
     "calendar": {
       "title": "日历",
       "ics_desc": "导入ICS文件以显示农历节假日",
@@ -552,7 +559,9 @@
     "smart_groups": {
       "all": "所有",
       "favorites": "收藏",
-      "normal": "正常",
+      "unwatched": "尚未观看",
+      "planned": "计划观看",
+      "normal": "正在观看",
       "watched": "已看完",
       "archived": "已归档"
     },
@@ -562,9 +571,10 @@
       "delete": "删除",
       "save": "保存",
       "cancel": "取消",
-      "new_group": "新建分组",
-      "edit_group": "编辑分组",
-      "delete_group": "删除分组"
+      "new_group": "新建类型",
+      "edit_group": "编辑类型",
+      "delete_group": "删除类型",
+      "rewatch": "重新观看"
     },
     "fields": {
       "title": "名称",
@@ -577,22 +587,27 @@
       "rottenTomatoesUrl": "蓝番茄链接",
       "watchLinks": "在线观看链接",
       "externalLinks": "外部链接",
+      "rottenTomatoesLabel": "烂番茄",
       "relations": "关联影片",
+      "linkedTasks": "关联任务",
+      "linkedNotes": "关联笔记",
       "status": "观看状态",
-      "group": "分组",
-      "type": "类型",
+      "group": "类型",
+      "type": "形式",
       "tvShowTitle": "剧名",
       "seasonNumber": "季号"
     },
     "status": {
-      "normal": "正常",
+      "unwatched": "尚未观看",
+      "planned": "计划观看",
+      "normal": "正在观看",
       "favorite": "收藏",
       "watched": "已看完",
       "archived": "已归档"
     },
     "type": {
       "movie": "电影",
-      "season": "电视剧季"
+      "season": "电视剧"
     },
     "placeholder": {
       "search": "搜索影片...",
@@ -605,13 +620,38 @@
       "watchLink": "请输入观看链接",
       "otherName": "请输入其他名称",
       "tvShowTitle": "请输入剧名",
-      "seasonNumber": "请输入季号"
+      "seasonNumber": "请输入季号",
+      "otherNameLabel": "选择标签",
+      "otherNameLabelEn": "英文",
+      "otherNameLabelJa": "日文",
+      "otherNameLabelOriginal": "原名"
     },
     "message": {
       "confirm_delete": "确定要删除这个影片吗？",
-      "confirm_delete_group": "确定要删除这个分组吗？",
+      "confirm_delete_group": "确定要删除这个类型吗？",
+      "confirm_delete_history": "确定要删除这条观看记录吗？",
       "no_items": "暂无影片",
       "loading": "加载中..."
+    },
+    "watchHistory": {
+      "title": "观看历史",
+      "add": "添加观看记录",
+      "edit": "编辑观看记录",
+      "empty": "暂无观看记录",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "note": "备注",
+      "notePlaceholder": "添加备注（可选）",
+      "linkedItems": "关联项目",
+      "task": "任务",
+      "noteType": "笔记",
+      "searchPlaceholder": "搜索...",
+      "noLinkedItems": "暂无关联项目"
+    },
+    "genre": {
+      "placeholder": "选择类型...",
+      "search": "搜索类型...",
+      "noResults": "未找到匹配的类型"
     }
   }
 }

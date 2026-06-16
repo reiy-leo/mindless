@@ -42,6 +42,7 @@ export default function EmojiPickerButton({ value, onChange, className = '' }: E
               onChange(emoji.native);
               setIsOpen(false);
             }}
+            navPosition='bottom'
             theme="auto"
             previewPosition="none"
             skinTonePosition="none"

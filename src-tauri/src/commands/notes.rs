@@ -377,3 +377,68 @@ pub async fn complete_note(app: AppHandle, id: String) -> Result<Note, String> {
         .map_err(|e| format!("Failed to fetch note: {}", e))?;
     Ok(note)
 }
+
+#[tauri::command]
+pub async fn get_note_linked_items(app: AppHandle, note_id: String) -> Result<Vec<crate::db::models::NoteLinkedItem>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare(
+        "SELECT id, note_id, linked_type, linked_id FROM note_linked_items WHERE note_id = ?1"
+    ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    let items = stmt.query_map([&note_id], |row| {
+        Ok(crate::db::models::NoteLinkedItem {
+            id: row.get(0)?,
+            note_id: row.get(1)?,
+            linked_type: row.get(2)?,
+            linked_id: row.get(3)?,
+        })
+    }).map_err(|e| format!("Failed to query note linked items: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect note linked items: {}", e))?;
+    Ok(items)
+}
+
+#[tauri::command]
+pub async fn get_notes_linked_to(app: AppHandle, linked_type: String, linked_id: String) -> Result<Vec<crate::db::models::NoteLinkedItem>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare(
+        "SELECT id, note_id, linked_type, linked_id FROM note_linked_items WHERE linked_type = ?1 AND linked_id = ?2"
+    ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    let items = stmt.query_map(rusqlite::params![linked_type, linked_id], |row| {
+        Ok(crate::db::models::NoteLinkedItem {
+            id: row.get(0)?,
+            note_id: row.get(1)?,
+            linked_type: row.get(2)?,
+            linked_id: row.get(3)?,
+        })
+    }).map_err(|e| format!("Failed to query notes linked to: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect notes linked to: {}", e))?;
+    Ok(items)
+}
+
+#[tauri::command]
+pub async fn link_note_item(app: AppHandle, note_id: String, linked_type: String, linked_id: String) -> Result<crate::db::models::NoteLinkedItem, String> {
+    let conn = get_db(&app)?;
+    let existing: Option<String> = conn.query_row(
+        "SELECT id FROM note_linked_items WHERE note_id = ?1 AND linked_type = ?2 AND linked_id = ?3",
+        rusqlite::params![note_id, linked_type, linked_id],
+        |row| row.get(0),
+    ).ok();
+    if let Some(id) = existing {
+        return Ok(crate::db::models::NoteLinkedItem { id, note_id, linked_type, linked_id });
+    }
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO note_linked_items (id, note_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+        rusqlite::params![&id, &note_id, &linked_type, &linked_id],
+    ).map_err(|e| format!("Failed to link note item: {}", e))?;
+    Ok(crate::db::models::NoteLinkedItem { id, note_id, linked_type, linked_id })
+}
+
+#[tauri::command]
+pub async fn unlink_note_item(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute("DELETE FROM note_linked_items WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to unlink note item: {}", e))?;
+    Ok(())
+}

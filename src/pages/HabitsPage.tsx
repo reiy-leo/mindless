@@ -1760,7 +1760,7 @@ export default function HabitsPage() {
         <div className="flex-1 flex overflow-hidden">
             {/* Groups Panel */}
             <div
-                style={{ width: habitGroupsPanelWidth }}
+                style={{ width: habitGroupsPanelWidth, backgroundColor: 'var(--theme-bg-20)' }}
                 className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-auto"
             >
                 {/* Smart Groups */}
@@ -1774,9 +1774,10 @@ export default function HabitsPage() {
                                     onClick={() => setSelectedHabitGroupId(sg.id)}
                                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
                                         isActive
-                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            ? "bg-black/10 dark:bg-white/15"
+                                            : "text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10"
                                     }`}
+                                    style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                 >
                                     <span className="text-base">{sg.icon}</span>
                                     <span className="flex-1 truncate">{t(sg.labelKey)}</span>
@@ -1832,9 +1833,10 @@ export default function HabitsPage() {
                                         onContextMenu={(e) => handleGroupContextMenu(e, group)}
                                         className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
                                             isActive
-                                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                ? "bg-black/10 dark:bg-white/15"
+                                                : "text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10"
                                         }`}
+                                        style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                     >
                                         <span className="text-base">{group.icon || "📁"}</span>
                                         <span className="flex-1 truncate">{group.name}</span>
@@ -1854,7 +1856,7 @@ export default function HabitsPage() {
             />
 
             {/* Main Content */}
-            <div className="flex-1 overflow-auto px-8 py-4">
+            <div className="flex-1 overflow-auto px-8 py-4" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                 <div data-tauri-drag-region className="flex items-center justify-between mb-6">
                     <h1 data-tauri-drag-region className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {selectedHabitGroupId === "all" && t("habits.groups.all")}

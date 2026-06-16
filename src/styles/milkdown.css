@@ -3,6 +3,7 @@
 }
 
 .milkdown {
+    --crepe-color-background: var(--theme-bg-2);
     .ProseMirror {
         a {
             cursor: pointer;

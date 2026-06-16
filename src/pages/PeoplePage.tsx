@@ -15,7 +15,7 @@ import {
     EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 import { Star } from "lucide-react";
-import NiceAvatar, { genConfig } from "react-nice-avatar";
+import { AvatarImage } from "@/components/people/AvatarImage";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
     usePersons,
@@ -94,23 +94,6 @@ const AVATAR_SEEDS = [
     "Bryan",
     "Elisa",
 ];
-
-function AvatarImage({ 
-    seed, 
-    size = 40, 
-    avatarRef 
-}: { 
-    seed: string; 
-    size?: number; 
-    avatarRef?: React.RefObject<HTMLDivElement> 
-}) {
-    const config = genConfig(seed || "default");
-    return (
-        <div ref={avatarRef} className="w-full h-full">
-            <NiceAvatar style={{ width: size, height: size }} {...config} />
-        </div>
-    );
-}
 
 // ==================== Smart Groups ====================
 type SmartGroupId = "favorites" | "all" | "archived";
@@ -1042,9 +1025,9 @@ export default function PeoplePage() {
             />
 
             {/* Middle Panel: Person List */}
-            <div className="flex-1 flex flex-col min-w-[200px] max-w-[300px] bg-white dark:bg-gray-800">
+            <div className="flex-1 flex flex-col min-w-[200px] max-w-[300px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-30)' }}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
                     <div className="flex items-center gap-2">
                         {(selectedSmartGroup === "all" || selectedGroupId) && (
@@ -1107,8 +1090,8 @@ export default function PeoplePage() {
 
             {/* Right Panel: Person Detail / Create Form */}
             <div
-                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 flex flex-col"
-                style={{ width: detailPanelWidth }}
+                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
+                style={{ width: detailPanelWidth, backgroundColor: 'var(--theme-bg-2)' }}
             >
                 {showPersonForm ? (
                     <PersonCreateForm

@@ -5,14 +5,16 @@ import type { MediaItem } from '@/types/media';
 interface MediaCardProps {
   item: MediaItem;
   onClick: (item: MediaItem) => void;
+  onContextMenu?: (e: React.MouseEvent, item: MediaItem) => void;
 }
 
-export default function MediaCard({ item, onClick }: MediaCardProps) {
+export default function MediaCard({ item, onClick, onContextMenu }: MediaCardProps) {
   const { t } = useTranslation('common');
 
   const statusColors = {
-    normal: 'bg-gray-100 dark:bg-gray-700',
-    favorite: 'bg-yellow-100 dark:bg-yellow-900',
+    unwatched: 'bg-gray-100 dark:bg-gray-700',
+    planned: 'bg-blue-100 dark:bg-blue-900',
+    normal: 'bg-yellow-100 dark:bg-yellow-900',
     watched: 'bg-green-100 dark:bg-green-900',
     archived: 'bg-gray-200 dark:bg-gray-600',
   };
@@ -23,6 +25,7 @@ export default function MediaCard({ item, onClick }: MediaCardProps) {
       role="button"
       tabIndex={0}
       onClick={() => onClick(item)}
+      onContextMenu={(e) => onContextMenu?.(e, item)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(item); } }}
     >
       {/* Cover Image */}

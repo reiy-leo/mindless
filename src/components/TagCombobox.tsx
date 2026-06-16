@@ -81,7 +81,7 @@ export default function TagCombobox({
             <button
               type="button"
               onClick={() => onToggle(tag.id)}
-              className="hover:opacity-70 transition-opacity p-0.5"
+              className="opacity-0 hover:opacity-70 transition-opacity p-0.5"
             >
               <XMarkIcon className="w-2.5 h-2.5" />
             </button>
@@ -112,7 +112,7 @@ export default function TagCombobox({
               <button
                 key={tag.id}
                 type="button"
-                onClick={() => { onToggle(tag.id); setQuery(''); }}
+                onMouseDown={(e) => { e.preventDefault(); onToggle(tag.id); setQuery(''); setOpen(false); }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
                   isSelected
                     ? 'bg-purple-50 dark:bg-purple-900/20'

@@ -4,7 +4,7 @@ import { ResizeHandle } from '@/components/ResizeHandle';
 import MediaSidebar from '@/components/media/MediaSidebar';
 import MediaContent from '@/components/media/MediaContent';
 
-type SmartGroupId = 'all' | 'favorites' | 'normal' | 'watched' | 'archived';
+type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
 
 export default function MediaPage() {
   const { mediaSidebarWidth, mediaViewMode, setMediaSidebarWidth, setMediaViewMode } = useAppStore();

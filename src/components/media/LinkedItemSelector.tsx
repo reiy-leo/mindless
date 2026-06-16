@@ -1,26 +1,37 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMediaItems } from '@/queries/useMediaQueries';
-import type { MediaItem } from '@/types/media';
 
-interface RelationSelectorProps {
-  value: string[];
-  onChange: (value: string[]) => void;
-  currentItemId?: string;
+interface LinkedItem {
+  id: string;
+  title: string;
+  date?: string;
+  time?: string;
 }
 
-export default function RelationSelector({ value, onChange, currentItemId }: RelationSelectorProps) {
+interface LinkedItemSelectorProps {
+  value: string[];
+  onChange: (value: string[]) => void;
+  items: LinkedItem[];
+  placeholder?: string;
+}
+
+export default function LinkedItemSelector({ value, onChange, items, placeholder }: LinkedItemSelectorProps) {
   const { t } = useTranslation('common');
   const [search, setSearch] = useState('');
-  const { data: items = [] } = useMediaItems({ search: search || undefined });
 
   const filteredItems = items.filter(
-    (item) => item.id !== currentItemId && !value.includes(item.id)
+    (item) => !value.includes(item.id) && item.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = (item: MediaItem) => {
+  const handleAdd = (item: LinkedItem) => {
     onChange([...value, item.id]);
     setSearch('');
+  };
+
+  const formatDate = (date?: string, time?: string) => {
+    if (!date) return null;
+    const d = date.slice(5);
+    return time ? `${d} ${time}` : d;
   };
 
   return (
@@ -29,7 +40,7 @@ export default function RelationSelector({ value, onChange, currentItemId }: Rel
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('media.placeholder.search')}
+        placeholder={placeholder || t('media.placeholder.search')}
         className="w-full px-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
       />
 
@@ -38,15 +49,15 @@ export default function RelationSelector({ value, onChange, currentItemId }: Rel
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               onClick={() => handleAdd(item)}
             >
-              <span className="text-sm text-gray-700 dark:text-gray-300">
+              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                 {item.title}
               </span>
-              {item.year && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  ({item.year})
+              {item.date && (
+                <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
+                  {formatDate(item.date, item.time)}
                 </span>
               )}
             </div>

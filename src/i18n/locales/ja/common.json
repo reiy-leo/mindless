@@ -438,7 +438,10 @@
     "unpin": "ピン留め解除",
     "favorite": "お気に入り",
     "unfavorite": "お気に入り解除",
-    "copy": "コピー"
+    "copy": "コピー",
+    "linked_tasks": "関連タスク",
+    "linked_persons": "関連人物",
+    "linked_media": "関連メディア"
   },
   "settings": {
     "tabs": {
@@ -474,6 +477,10 @@
     "font_size.default": "デフォルト",
     "font_size.large": "大",
     "font_size.xlarge": "特大",
+    "sidebar_mode": "サイドバー表示",
+    "sidebar_mode.icon": "アイコンのみ",
+    "sidebar_mode.text": "テキストのみ",
+    "sidebar_mode.both": "アイコンとテキスト",
     "calendar": {
       "title": "カレンダー",
       "ics_desc": "ICSファイルをインポートして旧暦祝日を表示",
@@ -532,6 +539,106 @@
       "email_placeholder": "メールアドレスを入力",
       "remark": "備考",
       "remark_placeholder": "備考を入力..."
+    }
+  },
+  "media": {
+    "title": "メディア",
+    "smart_groups": {
+      "all": "すべて",
+      "favorites": "お気に入り",
+      "unwatched": "未視聴",
+      "planned": "視聴予定",
+      "normal": "視聴中",
+      "watched": "視聴済み",
+      "archived": "アーカイブ済み"
+    },
+    "actions": {
+      "new": "新規",
+      "edit": "編集",
+      "delete": "削除",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "new_group": "新しいジャンル",
+      "edit_group": "ジャンルを編集",
+      "delete_group": "ジャンルを削除",
+      "rewatch": "再視聴"
+    },
+    "fields": {
+      "title": "タイトル",
+      "otherNames": "別名",
+      "year": "年",
+      "rating": "評価",
+      "cover": "カバー",
+      "doubanUrl": "Douban URL",
+      "imdbUrl": "IMDB URL",
+      "rottenTomatoesUrl": "Rotten Tomatoes URL",
+      "watchLinks": "視聴リンク",
+      "externalLinks": "外部リンク",
+      "rottenTomatoesLabel": "Rotten Tomatoes",
+      "relations": "関連作品",
+      "linkedTasks": "リンクされたタスク",
+      "linkedNotes": "リンクされたノート",
+      "status": "視聴状態",
+      "group": "ジャンル",
+      "type": "タイプ",
+      "tvShowTitle": "ドラマタイトル",
+      "seasonNumber": "シーズン番号"
+    },
+    "status": {
+      "unwatched": "未視聴",
+      "planned": "視聴予定",
+      "normal": "視聴中",
+      "favorite": "お気に入り",
+      "watched": "視聴済み",
+      "archived": "アーカイブ済み"
+    },
+    "type": {
+      "movie": "映画",
+      "season": "ドラマ"
+    },
+    "placeholder": {
+      "search": "メディアを検索...",
+      "title": "タイトルを入力",
+      "year": "年を入力",
+      "rating": "評価を入力",
+      "doubanUrl": "Douban URLを入力",
+      "imdbUrl": "IMDB URLを入力",
+      "rottenTomatoesUrl": "Rotten Tomatoes URLを入力",
+      "watchLink": "視聴リンクを入力",
+      "otherName": "別名を入力",
+      "tvShowTitle": "ドラマタイトルを入力",
+      "seasonNumber": "シーズン番号を入力",
+      "otherNameLabel": "ラベルを選択",
+      "otherNameLabelEn": "英語",
+      "otherNameLabelJa": "日本語",
+      "otherNameLabelOriginal": "原名"
+    },
+    "message": {
+      "confirm_delete": "このメディアを削除しますか？",
+      "confirm_delete_group": "このジャンルを削除しますか？",
+      "confirm_delete_history": "この視聴履歴を削除しますか？",
+      "no_items": "メディアがありません",
+      "loading": "読み込み中..."
+    },
+    "watchHistory": {
+      "title": "視聴履歴",
+      "add": "視聴履歴を追加",
+      "edit": "視聴履歴を編集",
+      "empty": "視聴履歴がありません",
+      "startDate": "開始日",
+      "endDate": "終了日",
+      "note": "メモ",
+      "notePlaceholder": "メモを追加（任意）",
+      "linkedItems": "関連アイテム",
+      "task": "タスク",
+      "noteType": "ノート",
+      "searchPlaceholder": "検索...",
+      "noLinkedItems": "関連アイテムがありません"
+    },
+    "genre": {
+      "placeholder": "ジャンルを選択...",
+      "search": "ジャンルを検索...",
+      "noResults": "ジャンルが見つかりません"
     }
   }
 }

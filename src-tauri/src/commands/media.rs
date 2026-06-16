@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 use uuid::Uuid;
-use crate::db::models::{MediaGroup, MediaItem, MediaOtherName, MediaWatchLink, MediaRelation};
+use crate::db::models::{MediaGroup, MediaItem, MediaOtherName, MediaWatchLink, MediaRelation, MediaLinkedItem, MediaWatchHistory, MediaWatchHistoryWithLinks, MediaWatchHistoryLinkDetail, MediaGroupWithCount};
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     crate::db::connection::open_connection(app)
@@ -12,6 +12,7 @@ fn row_to_media_group(row: &rusqlite::Row) -> rusqlite::Result<MediaGroup> {
         name: row.get("name")?,
         color: row.get("color")?,
         icon: row.get("icon")?,
+        is_preset: row.get::<_, i32>("is_preset")? != 0,
         sort_order: row.get("sort_order")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
@@ -65,6 +66,15 @@ fn row_to_media_relation(row: &rusqlite::Row) -> rusqlite::Result<MediaRelation>
         media_item_id: row.get("media_item_id")?,
         related_item_id: row.get("related_item_id")?,
         relation_type: row.get("relation_type")?,
+    })
+}
+
+fn row_to_media_linked_item(row: &rusqlite::Row) -> rusqlite::Result<MediaLinkedItem> {
+    Ok(MediaLinkedItem {
+        id: row.get("id")?,
+        media_item_id: row.get("media_item_id")?,
+        linked_type: row.get("linked_type")?,
+        linked_id: row.get("linked_id")?,
     })
 }
 
@@ -217,6 +227,8 @@ pub async fn create_media_item(
     other_names: Option<Vec<serde_json::Value>>,
     watch_links: Option<Vec<serde_json::Value>>,
     related_item_ids: Option<Vec<String>>,
+    linked_task_ids: Option<Vec<String>>,
+    linked_note_ids: Option<Vec<String>>,
 ) -> Result<MediaItem, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -273,6 +285,26 @@ pub async fn create_media_item(
         }
     }
 
+    if let Some(task_ids) = linked_task_ids {
+        for task_id in task_ids {
+            let link_id = Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO media_linked_items (id, media_item_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![&link_id, &id, "task", task_id],
+            ).map_err(|e| format!("Failed to create linked task: {}", e))?;
+        }
+    }
+
+    if let Some(note_ids) = linked_note_ids {
+        for note_id in note_ids {
+            let link_id = Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO media_linked_items (id, media_item_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![&link_id, &id, "note", note_id],
+            ).map_err(|e| format!("Failed to create linked note: {}", e))?;
+        }
+    }
+
     let item = conn.query_row("SELECT * FROM media_items WHERE id = ?1", [&id], row_to_media_item)
         .map_err(|e| format!("Failed to fetch media item: {}", e))?;
     Ok(item)
@@ -296,6 +328,8 @@ pub async fn update_media_item(
     other_names: Option<Vec<serde_json::Value>>,
     watch_links: Option<Vec<serde_json::Value>>,
     related_item_ids: Option<Vec<String>>,
+    linked_task_ids: Option<Vec<String>>,
+    linked_note_ids: Option<Vec<String>>,
 ) -> Result<MediaItem, String> {
     let conn = get_db(&app)?;
 
@@ -367,6 +401,29 @@ pub async fn update_media_item(
         }
     }
 
+    if linked_task_ids.is_some() || linked_note_ids.is_some() {
+        conn.execute("DELETE FROM media_linked_items WHERE media_item_id = ?1", [&id])
+            .map_err(|e| format!("Failed to delete linked items: {}", e))?;
+        if let Some(task_ids) = linked_task_ids {
+            for task_id in task_ids {
+                let link_id = Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO media_linked_items (id, media_item_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                    rusqlite::params![&link_id, &id, "task", task_id],
+                ).map_err(|e| format!("Failed to create linked task: {}", e))?;
+            }
+        }
+        if let Some(note_ids) = linked_note_ids {
+            for note_id in note_ids {
+                let link_id = Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO media_linked_items (id, media_item_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                    rusqlite::params![&link_id, &id, "note", note_id],
+                ).map_err(|e| format!("Failed to create linked note: {}", e))?;
+            }
+        }
+    }
+
     let item = conn.query_row("SELECT * FROM media_items WHERE id = ?1", [&id], row_to_media_item)
         .map_err(|e| format!("Failed to fetch media item: {}", e))?;
     Ok(item)
@@ -408,12 +465,292 @@ pub async fn get_media_item_details(app: AppHandle, id: String) -> Result<serde_
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect: {}", e))?;
 
+    let mut stmt = conn.prepare("SELECT * FROM media_linked_items WHERE media_item_id = ?1")
+        .map_err(|e| format!("Failed to prepare: {}", e))?;
+    let linked_items: Vec<MediaLinkedItem> = stmt.query_map([&id], row_to_media_linked_item)
+        .map_err(|e| format!("Failed to query: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect: {}", e))?;
+
+    let linked_task_ids: Vec<String> = linked_items.iter()
+        .filter(|li| li.linked_type == "task")
+        .map(|li| li.linked_id.clone())
+        .collect();
+    let linked_note_ids: Vec<String> = linked_items.iter()
+        .filter(|li| li.linked_type == "note")
+        .map(|li| li.linked_id.clone())
+        .collect();
+
     let result = serde_json::json!({
         "item": item,
         "otherNames": other_names,
         "watchLinks": watch_links,
         "relations": relations,
+        "linkedTaskIds": linked_task_ids,
+        "linkedNoteIds": linked_note_ids,
     });
 
     Ok(result)
+}
+
+// ==================== Media Watch History Commands ====================
+
+#[tauri::command]
+pub async fn get_media_watch_history(app: AppHandle, media_item_id: String) -> Result<Vec<MediaWatchHistoryWithLinks>, String> {
+    let conn = get_db(&app)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT * FROM media_watch_history WHERE media_item_id = ?1 ORDER BY created_at DESC"
+    ).map_err(|e| format!("Failed to prepare: {}", e))?;
+
+    let histories: Vec<MediaWatchHistory> = stmt.query_map([&media_item_id], |row| {
+        Ok(MediaWatchHistory {
+            id: row.get("id")?,
+            media_item_id: row.get("media_item_id")?,
+            start_date: row.get("start_date")?,
+            end_date: row.get("end_date")?,
+            note: row.get("note")?,
+            created_at: row.get("created_at")?,
+        })
+    }).map_err(|e| format!("Failed to query: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect: {}", e))?;
+
+    let mut result = Vec::new();
+    for history in histories {
+        let mut link_stmt = conn.prepare(
+            "SELECT l.id, l.linked_type, l.linked_id, 
+             CASE 
+                WHEN l.linked_type = 'task' THEN (SELECT title FROM tasks WHERE id = l.linked_id)
+                WHEN l.linked_type = 'note' THEN (SELECT title FROM notes WHERE id = l.linked_id)
+             END as title
+             FROM media_watch_history_links l WHERE l.watch_history_id = ?1"
+        ).map_err(|e| format!("Failed to prepare: {}", e))?;
+
+        let links: Vec<MediaWatchHistoryLinkDetail> = link_stmt.query_map([&history.id], |row| {
+            Ok(MediaWatchHistoryLinkDetail {
+                id: row.get("id")?,
+                linked_type: row.get("linked_type")?,
+                linked_id: row.get("linked_id")?,
+                title: row.get("title")?,
+            })
+        }).map_err(|e| format!("Failed to query: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect: {}", e))?;
+
+        result.push(MediaWatchHistoryWithLinks {
+            id: history.id,
+            media_item_id: history.media_item_id,
+            start_date: history.start_date,
+            end_date: history.end_date,
+            note: history.note,
+            created_at: history.created_at,
+            links,
+        });
+    }
+
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn create_media_watch_history(
+    app: AppHandle,
+    media_item_id: String,
+    start_date: Option<String>,
+    end_date: Option<String>,
+    note: Option<String>,
+    linked_items: Option<Vec<serde_json::Value>>,
+) -> Result<MediaWatchHistory, String> {
+    let conn = get_db(&app)?;
+    let id = Uuid::new_v4().to_string();
+
+    conn.execute(
+        "INSERT INTO media_watch_history (id, media_item_id, start_date, end_date, note) VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params![&id, &media_item_id, start_date, end_date, note],
+    ).map_err(|e| format!("Failed to create watch history: {}", e))?;
+
+    if let Some(items) = linked_items {
+        for item in items {
+            let linked_type = item["linkedType"].as_str().unwrap_or("task");
+            let linked_id = item["linkedId"].as_str().unwrap_or("");
+            let link_id = Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO media_watch_history_links (id, watch_history_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![&link_id, &id, linked_type, linked_id],
+            ).map_err(|e| format!("Failed to create watch history link: {}", e))?;
+        }
+    }
+
+    let history = conn.query_row(
+        "SELECT * FROM media_watch_history WHERE id = ?1",
+        [&id],
+        |row| Ok(MediaWatchHistory {
+            id: row.get("id")?,
+            media_item_id: row.get("media_item_id")?,
+            start_date: row.get("start_date")?,
+            end_date: row.get("end_date")?,
+            note: row.get("note")?,
+            created_at: row.get("created_at")?,
+        }),
+    ).map_err(|e| format!("Failed to fetch watch history: {}", e))?;
+
+    Ok(history)
+}
+
+#[tauri::command]
+pub async fn update_media_watch_history(
+    app: AppHandle,
+    id: String,
+    start_date: Option<String>,
+    end_date: Option<String>,
+    note: Option<String>,
+    linked_items: Option<Vec<serde_json::Value>>,
+) -> Result<MediaWatchHistory, String> {
+    let conn = get_db(&app)?;
+
+    let mut sql = String::from("UPDATE media_watch_history SET");
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut first = true;
+
+    if start_date.is_some() {
+        if !first { sql.push(','); }
+        sql.push_str(&format!(" start_date = ?{}", params.len() + 1));
+        params.push(Box::new(start_date.unwrap()));
+        first = false;
+    }
+    if end_date.is_some() {
+        if !first { sql.push(','); }
+        sql.push_str(&format!(" end_date = ?{}", params.len() + 1));
+        params.push(Box::new(end_date.unwrap()));
+        first = false;
+    }
+    if note.is_some() {
+        if !first { sql.push(','); }
+        sql.push_str(&format!(" note = ?{}", params.len() + 1));
+        params.push(Box::new(note.unwrap()));
+        first = false;
+    }
+
+    if first {
+        return Err("No fields to update".to_string());
+    }
+
+    sql.push_str(&format!(" WHERE id = ?{}", params.len() + 1));
+    params.push(Box::new(id.clone()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    conn.execute(&sql, param_refs.as_slice())
+        .map_err(|e| format!("Failed to update watch history: {}", e))?;
+
+    if let Some(items) = linked_items {
+        conn.execute("DELETE FROM media_watch_history_links WHERE watch_history_id = ?1", [&id])
+            .map_err(|e| format!("Failed to delete links: {}", e))?;
+        for item in items {
+            let linked_type = item["linkedType"].as_str().unwrap_or("task");
+            let linked_id = item["linkedId"].as_str().unwrap_or("");
+            let link_id = Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO media_watch_history_links (id, watch_history_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![&link_id, &id, linked_type, linked_id],
+            ).map_err(|e| format!("Failed to create watch history link: {}", e))?;
+        }
+    }
+
+    let history = conn.query_row(
+        "SELECT * FROM media_watch_history WHERE id = ?1",
+        [&id],
+        |row| Ok(MediaWatchHistory {
+            id: row.get("id")?,
+            media_item_id: row.get("media_item_id")?,
+            start_date: row.get("start_date")?,
+            end_date: row.get("end_date")?,
+            note: row.get("note")?,
+            created_at: row.get("created_at")?,
+        }),
+    ).map_err(|e| format!("Failed to fetch watch history: {}", e))?;
+
+    Ok(history)
+}
+
+#[tauri::command]
+pub async fn delete_media_watch_history(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute("DELETE FROM media_watch_history WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to delete watch history: {}", e))?;
+    Ok(())
+}
+
+// ==================== Media Genre Commands ====================
+
+#[tauri::command]
+pub async fn get_media_groups_with_count(app: AppHandle) -> Result<Vec<MediaGroupWithCount>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare(
+        "SELECT g.*, COALESCE(c.cnt, 0) as usage_count 
+         FROM media_groups g 
+         LEFT JOIN (
+            SELECT genre_id, COUNT(*) as cnt 
+            FROM media_item_genres 
+            GROUP BY genre_id
+         ) c ON g.id = c.genre_id 
+         ORDER BY usage_count DESC, g.sort_order ASC"
+    ).map_err(|e| format!("Failed to prepare: {}", e))?;
+
+    let groups = stmt.query_map([], |row| {
+        Ok(MediaGroupWithCount {
+            id: row.get("id")?,
+            name: row.get("name")?,
+            color: row.get("color")?,
+            icon: row.get("icon")?,
+            is_preset: row.get::<_, i32>("is_preset")? != 0,
+            sort_order: row.get("sort_order")?,
+            created_at: row.get("created_at")?,
+            updated_at: row.get("updated_at")?,
+            usage_count: row.get("usage_count")?,
+        })
+    }).map_err(|e| format!("Failed to query: {}", e))?;
+
+    let result: Result<Vec<_>, _> = groups.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn get_media_item_genres(app: AppHandle, media_item_id: String) -> Result<Vec<String>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare(
+        "SELECT genre_id FROM media_item_genres WHERE media_item_id = ?1"
+    ).map_err(|e| format!("Failed to prepare: {}", e))?;
+
+    let genres = stmt.query_map([&media_item_id], |row| {
+        row.get::<_, String>("genre_id")
+    }).map_err(|e| format!("Failed to query: {}", e))?;
+
+    let result: Result<Vec<_>, _> = genres.collect();
+    result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_media_item_genres(
+    app: AppHandle,
+    media_item_id: String,
+    genre_ids: Vec<String>,
+) -> Result<(), String> {
+    let conn = get_db(&app)?;
+
+    // Delete existing genres
+    conn.execute(
+        "DELETE FROM media_item_genres WHERE media_item_id = ?1",
+        [&media_item_id],
+    ).map_err(|e| format!("Failed to delete genres: {}", e))?;
+
+    // Insert new genres
+    for genre_id in genre_ids {
+        let id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO media_item_genres (id, media_item_id, genre_id) VALUES (?1, ?2, ?3)",
+            rusqlite::params![&id, &media_item_id, &genre_id],
+        ).map_err(|e| format!("Failed to insert genre: {}", e))?;
+    }
+
+    Ok(())
 }

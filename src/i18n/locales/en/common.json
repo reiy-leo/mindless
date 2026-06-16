@@ -450,7 +450,10 @@
     "unpin": "Unpin",
     "favorite": "Favorite",
     "unfavorite": "Unfavorite",
-    "copy": "Copy"
+    "copy": "Copy",
+    "linked_tasks": "Linked Tasks",
+    "linked_persons": "Linked Persons",
+    "linked_media": "Linked Media"
   },
   "settings": {
     "tabs": {
@@ -486,6 +489,10 @@
     "font_size.default": "Default",
     "font_size.large": "Large",
     "font_size.xlarge": "Extra Large",
+    "sidebar_mode": "Sidebar Display",
+    "sidebar_mode.icon": "Icon Only",
+    "sidebar_mode.text": "Text Only",
+    "sidebar_mode.both": "Icon and Text",
     "calendar": {
       "title": "Calendar",
       "ics_desc": "Import ICS file for lunar calendar holidays and events display",
@@ -551,7 +558,9 @@
     "smart_groups": {
       "all": "All",
       "favorites": "Favorites",
-      "normal": "Normal",
+      "unwatched": "Unwatched",
+      "planned": "Planned",
+      "normal": "Watching",
       "watched": "Watched",
       "archived": "Archived"
     },
@@ -561,9 +570,10 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "new_group": "New Group",
-      "edit_group": "Edit Group",
-      "delete_group": "Delete Group"
+      "new_group": "New Genre",
+      "edit_group": "Edit Genre",
+      "delete_group": "Delete Genre",
+      "rewatch": "Rewatch"
     },
     "fields": {
       "title": "Title",
@@ -576,22 +586,27 @@
       "rottenTomatoesUrl": "Rotten Tomatoes URL",
       "watchLinks": "Watch Links",
       "externalLinks": "External Links",
+      "rottenTomatoesLabel": "Rotten Tomatoes",
       "relations": "Related Items",
+      "linkedTasks": "Linked Tasks",
+      "linkedNotes": "Linked Notes",
       "status": "Status",
-      "group": "Group",
+      "group": "Genre",
       "type": "Type",
       "tvShowTitle": "TV Show Title",
       "seasonNumber": "Season Number"
     },
     "status": {
-      "normal": "Normal",
+      "unwatched": "Unwatched",
+      "planned": "Planned",
+      "normal": "Watching",
       "favorite": "Favorite",
       "watched": "Watched",
       "archived": "Archived"
     },
     "type": {
       "movie": "Movie",
-      "season": "TV Season"
+      "season": "TV Series"
     },
     "placeholder": {
       "search": "Search media...",
@@ -604,13 +619,38 @@
       "watchLink": "Enter watch link",
       "otherName": "Enter other name",
       "tvShowTitle": "Enter TV show title",
-      "seasonNumber": "Enter season number"
+      "seasonNumber": "Enter season number",
+      "otherNameLabel": "Select label",
+      "otherNameLabelEn": "English",
+      "otherNameLabelJa": "Japanese",
+      "otherNameLabelOriginal": "Original"
     },
     "message": {
       "confirm_delete": "Are you sure you want to delete this item?",
-      "confirm_delete_group": "Are you sure you want to delete this group?",
+      "confirm_delete_group": "Are you sure you want to delete this genre?",
+      "confirm_delete_history": "Are you sure you want to delete this watch history?",
       "no_items": "No media items",
       "loading": "Loading..."
+    },
+    "watchHistory": {
+      "title": "Watch History",
+      "add": "Add Watch History",
+      "edit": "Edit Watch History",
+      "empty": "No watch history",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "note": "Note",
+      "notePlaceholder": "Add note (optional)",
+      "linkedItems": "Linked Items",
+      "task": "Task",
+      "noteType": "Note",
+      "searchPlaceholder": "Search...",
+      "noLinkedItems": "No linked items"
+    },
+    "genre": {
+      "placeholder": "Select genres...",
+      "search": "Search genres...",
+      "noResults": "No genres found"
     }
   }
 }

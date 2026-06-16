@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -531,12 +531,12 @@ export async function updateNote(id: string, params: {
     id,
     title: params.title,
     content: params.content,
-    group_id: params.groupId,
-    tag_ids: params.tagIds,
-    is_completed: params.isCompleted,
-    is_archived: params.isArchived,
-    is_pinned: params.isPinned,
-    sort_order: params.sortOrder,
+    groupId: params.groupId,
+    tagIds: params.tagIds,
+    isCompleted: params.isCompleted,
+    isArchived: params.isArchived,
+    isPinned: params.isPinned,
+    sortOrder: params.sortOrder,
   });
 }
 
@@ -554,6 +554,22 @@ export async function unarchiveNote(id: string): Promise<Note> {
 
 export async function completeNote(id: string): Promise<Note> {
   return await invoke<Note>('complete_note', { id });
+}
+
+export async function getNoteLinkedItems(noteId: string): Promise<NoteLinkedItem[]> {
+  return await invoke<NoteLinkedItem[]>('get_note_linked_items', { noteId });
+}
+
+export async function getNotesLinkedTo(linkedType: string, linkedId: string): Promise<NoteLinkedItem[]> {
+  return await invoke<NoteLinkedItem[]>('get_notes_linked_to', { linkedType, linkedId });
+}
+
+export async function linkNoteItem(noteId: string, linkedType: string, linkedId: string): Promise<NoteLinkedItem> {
+  return await invoke<NoteLinkedItem>('link_note_item', { noteId, linkedType, linkedId });
+}
+
+export async function unlinkNoteItem(id: string): Promise<void> {
+  return await invoke<void>('unlink_note_item', { id });
 }
 
 // Person Group APIs
@@ -777,6 +793,10 @@ export async function getMediaGroups(): Promise<MediaGroup[]> {
   return await invoke<MediaGroup[]>('get_media_groups');
 }
 
+export async function getMediaGroupsWithCount(): Promise<MediaGroupWithCount[]> {
+  return await invoke<MediaGroupWithCount[]>('get_media_groups_with_count');
+}
+
 export async function createMediaGroup(params: {
   name: string;
   color?: string;
@@ -797,13 +817,26 @@ export async function deleteMediaGroup(id: string): Promise<void> {
   return await invoke<void>('delete_media_group', { id });
 }
 
+// Media Item Genre APIs
+export async function getMediaItemGenres(mediaItemId: string): Promise<string[]> {
+  return await invoke<string[]>('get_media_item_genres', { mediaItemId });
+}
+
+export async function updateMediaItemGenres(mediaItemId: string, genreIds: string[]): Promise<void> {
+  return await invoke<void>('update_media_item_genres', { mediaItemId, genreIds });
+}
+
 // Media Item APIs
 export async function getMediaItems(filters?: {
   status?: string;
   groupId?: string;
   search?: string;
 }): Promise<MediaItem[]> {
-  return await invoke<MediaItem[]>('get_media_items', { filters });
+  return await invoke<MediaItem[]>('get_media_items', {
+    status: filters?.status,
+    groupId: filters?.groupId,
+    search: filters?.search,
+  });
 }
 
 export async function createMediaItem(params: CreateMediaItemInput): Promise<MediaItem> {
@@ -820,4 +853,33 @@ export async function deleteMediaItem(id: string): Promise<void> {
 
 export async function getMediaItemDetails(id: string): Promise<MediaItemWithDetails> {
   return await invoke<MediaItemWithDetails>('get_media_item_details', { id });
+}
+
+// Media Watch History APIs
+export async function getMediaWatchHistory(mediaItemId: string): Promise<MediaWatchHistoryWithLinks[]> {
+  return await invoke<MediaWatchHistoryWithLinks[]>('get_media_watch_history', { mediaItemId });
+}
+
+export async function createMediaWatchHistory(params: CreateMediaWatchHistoryInput): Promise<MediaWatchHistoryWithLinks> {
+  return await invoke<MediaWatchHistoryWithLinks>('create_media_watch_history', {
+    mediaItemId: params.mediaItemId,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    note: params.note,
+    linkedItems: params.linkedItems,
+  });
+}
+
+export async function updateMediaWatchHistory(id: string, params: Partial<CreateMediaWatchHistoryInput>): Promise<MediaWatchHistoryWithLinks> {
+  return await invoke<MediaWatchHistoryWithLinks>('update_media_watch_history', {
+    id,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    note: params.note,
+    linkedItems: params.linkedItems,
+  });
+}
+
+export async function deleteMediaWatchHistory(id: string): Promise<void> {
+  return await invoke<void>('delete_media_watch_history', { id });
 }

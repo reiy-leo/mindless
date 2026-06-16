@@ -5,6 +5,7 @@ import {
   Tag, StickyNote, UsersIcon, Film,
 } from 'lucide-react';
 import { useViewStore } from '@/stores/useViewStore';
+import { useAppStore } from '@/stores/useAppStore';
 
 const isMac = navigator.userAgent.includes('Mac');
 
@@ -25,9 +26,10 @@ export default function Sidebar() {
   const { t } = useTranslation('common');
   const location = useLocation();
   const { selectedListId, setSelectedListId } = useViewStore();
+  const sidebarMode = useAppStore((s) => s.sidebarMode);
 
   return (
-    <div role="navigation" aria-label="Main navigation" className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white" style={{ background: 'linear-gradient(to bottom, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))' }}>
+    <div role="navigation" aria-label="Main navigation" className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white" style={{ background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))' }}>
       {isMac && <div data-tauri-drag-region className="h-8" />}
       <nav className="flex flex-col px-1.5 space-y-2 flex-1">
         {navItems.map((item) => {
@@ -42,6 +44,11 @@ export default function Sidebar() {
             return null;
           }
 
+          const showIcon = sidebarMode === 'icon' || sidebarMode === 'both';
+          const showText = sidebarMode === 'text' || sidebarMode === 'both';
+
+          const isSquare = sidebarMode === 'icon' || sidebarMode === 'text';
+
           return (
             <Link
               key={item.path}
@@ -50,14 +57,16 @@ export default function Sidebar() {
                 if (item.path !== '/tasks') setSelectedListId(null);
               }}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-colors text-sm text-white ${
+              className={`flex items-center justify-center gap-1 rounded-lg transition-colors text-sm text-white ${
+                isSquare ? 'aspect-square' : 'flex-col px-2 py-2'
+              } ${
                 isActive
                   ? 'bg-white/25'
                   : 'hover:bg-white/15'
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <p className="text-[10px]">{t(item.labelKey)}</p>
+              {showIcon && <Icon className="w-5 h-5" />}
+              {showText && <p className={sidebarMode === 'both' ? 'text-[10px]' : sidebarMode === 'text' ? 'text-lg' : 'text-xs'}>{t(item.labelKey)}</p>}
             </Link>
           );
         })}

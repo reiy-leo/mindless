@@ -300,9 +300,34 @@ pub struct MediaGroup {
     pub name: String,
     pub color: Option<String>,
     pub icon: Option<String>,
+    pub is_preset: bool,
     pub sort_order: f64,
     pub created_at: String,
     pub updated_at: String,
+}
+
+// Media item genre model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaItemGenre {
+    pub id: String,
+    pub media_item_id: String,
+    pub genre_id: String,
+}
+
+// Media group with usage count
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaGroupWithCount {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub is_preset: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub usage_count: i64,
 }
 
 // Media item model
@@ -357,4 +382,67 @@ pub struct MediaRelation {
     pub media_item_id: String,
     pub related_item_id: String,
     pub relation_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaLinkedItem {
+    pub id: String,
+    pub media_item_id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteLinkedItem {
+    pub id: String,
+    pub note_id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+}
+
+// Media watch history model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaWatchHistory {
+    pub id: String,
+    pub media_item_id: String,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub note: Option<String>,
+    pub created_at: String,
+}
+
+// Media watch history link model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaWatchHistoryLink {
+    pub id: String,
+    pub watch_history_id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+}
+
+// Media watch history with links
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaWatchHistoryWithLinks {
+    pub id: String,
+    pub media_item_id: String,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub links: Vec<MediaWatchHistoryLinkDetail>,
+}
+
+// Media watch history link detail (with title)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaWatchHistoryLinkDetail {
+    pub id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+    pub title: String,
 }

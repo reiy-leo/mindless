@@ -787,7 +787,7 @@ export default function CountdownsPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
       {/* Page header */}
       <div data-tauri-drag-region className="flex items-center justify-between px-8 pt-4 pb-4">
         <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.countdowns')}</h1>

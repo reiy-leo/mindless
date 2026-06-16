@@ -287,7 +287,7 @@ function TaskDetailPanel({
     };
 
     return (
-        <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
             {/* Date button above header */}
             <div className="px-4 pt-4 pb-2">
                 <div className="relative" data-date-picker>
@@ -1624,9 +1624,9 @@ export default function TasksPage() {
             <ResizeHandle onResize={(delta) => setGroupsPanelWidth((w) => Math.max(215, Math.min(315, w + delta)))} />
 
             {/* Task List Panel */}
-            <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]">
+            <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                 {/* Header */}
-                <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-3" style={{ backgroundColor: 'var(--theme-bg-30)' }}>
+                <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-3">
                     <div data-tauri-drag-region className="flex items-center justify-between">
                         <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
                         <div className="flex items-center gap-2">
@@ -1902,8 +1902,8 @@ export default function TasksPage() {
 
             {/* Task Detail Panel */}
             <div
-                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0"
-                style={{ width: detailPanelWidth }}
+                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 flex-shrink-0"
+                style={{ width: detailPanelWidth, backgroundColor: 'var(--theme-bg-2)' }}
             >
                 {selectedTask ? (
                     <TaskDetailPanel

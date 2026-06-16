@@ -1,5 +1,5 @@
 export type MediaType = 'movie' | 'season';
-export type MediaStatus = 'normal' | 'favorite' | 'watched' | 'archived';
+export type MediaStatus = 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
 export type RelationType = 'series' | 'sequel' | 'prequel' | 'spin-off';
 
 export interface MediaGroup {
@@ -7,9 +7,14 @@ export interface MediaGroup {
   name: string;
   color: string;
   icon: string;
+  isPreset: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MediaGroupWithCount extends MediaGroup {
+  usageCount: number;
 }
 
 export interface MediaItem {
@@ -58,6 +63,36 @@ export interface MediaItemWithDetails extends MediaItem {
   otherNames: MediaOtherName[];
   watchLinks: MediaWatchLink[];
   relations: MediaRelation[];
+  linkedTaskIds: string[];
+  linkedNoteIds: string[];
+}
+
+export interface MediaWatchHistory {
+  id: string;
+  mediaItemId: string;
+  startDate: string | null;
+  endDate: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface MediaWatchHistoryLinkDetail {
+  id: string;
+  linkedType: 'task' | 'note';
+  linkedId: string;
+  title: string;
+}
+
+export interface MediaWatchHistoryWithLinks extends MediaWatchHistory {
+  links: MediaWatchHistoryLinkDetail[];
+}
+
+export interface CreateMediaWatchHistoryInput {
+  mediaItemId: string;
+  startDate?: string;
+  endDate?: string;
+  note?: string;
+  linkedItems?: { linkedType: 'task' | 'note'; linkedId: string }[];
 }
 
 export interface CreateMediaItemInput {
@@ -76,6 +111,8 @@ export interface CreateMediaItemInput {
   otherNames?: { name: string; label?: string }[];
   watchLinks?: { url: string; platform?: string }[];
   relatedItemIds?: string[];
+  linkedTaskIds?: string[];
+  linkedNoteIds?: string[];
 }
 
 export interface UpdateMediaItemInput {
@@ -93,4 +130,6 @@ export interface UpdateMediaItemInput {
   otherNames?: { name: string; label?: string }[];
   watchLinks?: { url: string; platform?: string }[];
   relatedItemIds?: string[];
+  linkedTaskIds?: string[];
+  linkedNoteIds?: string[];
 }

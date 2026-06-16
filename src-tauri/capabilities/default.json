@@ -17,6 +17,7 @@
     "core:window:allow-center",
     "core:window:allow-inner-size",
     "core:webview:allow-create-webview-window",
-    "positioner:default"
+    "positioner:default",
+    "opener:default"
   ]
 }

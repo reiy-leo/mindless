@@ -13,7 +13,8 @@ import {
     StarIcon,
     ClipboardIcon,
 } from "@heroicons/react/24/outline";
-import { Star, ArchiveRestore } from "lucide-react";
+import { AvatarImage } from "@/components/people/AvatarImage";
+import { Star } from "lucide-react";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
     useNotes,
@@ -29,11 +30,17 @@ import {
     useUpdateNoteGroup,
     useDeleteNoteGroup,
     useAllSubNotes,
+    useNoteLinkedItems,
+    useLinkNoteItem,
+    useUnlinkNoteItem,
 } from "@/queries/useNoteQueries";
-import { useTags } from "@/queries/useTaskQueries";
+import { useTags, useTasks } from "@/queries/useTaskQueries";
+import { useAllPersons } from "@/queries/usePersonQueries";
+import { useMediaItems } from "@/queries/useMediaQueries";
 import { useAppStore } from "@/stores/useAppStore";
 import TagCombobox from "@/components/TagCombobox";
 import MilkdownEditor from "@/components/MilkdownEditor";
+import LinkedItemSelector from "@/components/media/LinkedItemSelector";
 import type { Note, NoteGroup } from "@/types/note";
 import type { Tag } from "@/types/tag";
 
@@ -84,8 +91,8 @@ export default function NotesPage() {
     const [newGroupIcon, setNewGroupIcon] = useState("📁");
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
     const [noteContextMenu, setNoteContextMenu] = useState<{ x: number; y: number; note: Note } | null>(null);
-    const [newNoteTitle, setNewNoteTitle] = useState("");
     const [newSubNoteTitle, setNewSubNoteTitle] = useState("");
+    const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
     // Data
     const { data: notes = [] } = useNotes();
@@ -102,11 +109,45 @@ export default function NotesPage() {
     const updateNoteGroup = useUpdateNoteGroup();
     const deleteNoteGroup = useDeleteNoteGroup();
 
+    // Linked items
+    const { data: linkedItemsData = [] } = useNoteLinkedItems(selectedNoteId || undefined);
+    const linkNoteItem = useLinkNoteItem();
+    const unlinkNoteItem = useUnlinkNoteItem();
+    const { data: allTasks = [] } = useTasks();
+    const { data: allPersons = [] } = useAllPersons();
+    const { data: mediaItemsData = [] } = useMediaItems();
+    const allMediaItems = mediaItemsData;
+
+    const linkedTaskIds = useMemo(() => linkedItemsData.filter((li) => li.linkedType === "task").map((li) => li.linkedId), [linkedItemsData]);
+    const linkedPersonIds = useMemo(() => linkedItemsData.filter((li) => li.linkedType === "person").map((li) => li.linkedId), [linkedItemsData]);
+    const linkedMediaIds = useMemo(() => linkedItemsData.filter((li) => li.linkedType === "media").map((li) => li.linkedId), [linkedItemsData]);
+
+    const linkedTasks = useMemo(() => allTasks.filter((t) => linkedTaskIds.includes(t.id)), [allTasks, linkedTaskIds]);
+    const linkedPersons = useMemo(() => allPersons.filter((p) => linkedPersonIds.includes(p.id)), [allPersons, linkedPersonIds]);
+    const linkedMediaItems = useMemo(() => allMediaItems.filter((m) => linkedMediaIds.includes(m.id)), [allMediaItems, linkedMediaIds]);
+
+    const handleLinkItem = useCallback((linkedType: string, linkedId: string) => {
+        if (!selectedNoteId) return;
+        linkNoteItem.mutate({ noteId: selectedNoteId, linkedType, linkedId });
+    }, [selectedNoteId, linkNoteItem]);
+
+    const handleUnlinkItem = useCallback((linkId: string) => {
+        unlinkNoteItem.mutate(linkId);
+    }, [unlinkNoteItem]);
+
     // Sub-notes for selected note
     const selectedNote = useMemo(
         () => allNotes.find((n) => n.id === selectedNoteId) || null,
         [allNotes, selectedNoteId],
     );
+
+    // Cancel new note (empty title, no content)
+    const isNewNote = selectedNote && !selectedNote.title && !selectedNote.content;
+    const handleCancelNewNote = useCallback(() => {
+        if (!selectedNoteId) return;
+        deleteNote.mutate(selectedNoteId);
+        setSelectedNoteId(null);
+    }, [selectedNoteId, deleteNote]);
     const { data: subNotesData } = useAllSubNotes(selectedNoteId ? [selectedNoteId] : []);
     const subNotes = subNotesData ?? [];
 
@@ -196,8 +237,12 @@ export default function NotesPage() {
             result = notes.filter((n) => !n.isArchived);
         }
 
+        if (selectedTagId) {
+            result = result.filter((n) => parseTagIds(n.tagIds).includes(selectedTagId));
+        }
+
         return result;
-    }, [notes, allNotes, selectedSmartGroup, selectedGroupId]);
+    }, [notes, allNotes, selectedSmartGroup, selectedGroupId, selectedTagId]);
 
     // Build flat items (note + sub-notes)
     type FlatItem = { type: "note"; note: Note } | { type: "subnote"; subnote: Note; parentNote: Note };
@@ -227,29 +272,22 @@ export default function NotesPage() {
         setSelectedSmartGroup(smartId);
         setSelectedGroupId(null);
         setSelectedNoteId(null);
+        setSelectedTagId(null);
     }, []);
 
     const handleSelectNoteGroup = useCallback((groupId: string) => {
         setSelectedSmartGroup(null);
         setSelectedGroupId(groupId);
         setSelectedNoteId(null);
+        setSelectedTagId(null);
     }, []);
 
-    const handleCreateNote = useCallback(() => {
-        if (!newNoteTitle.trim()) return;
+    const handleNewNote = useCallback(() => {
         createNote.mutate(
-            {
-                title: newNoteTitle.trim(),
-                groupId: selectedGroupId || undefined,
-            },
-            {
-                onSuccess: (note) => {
-                    setNewNoteTitle("");
-                    setSelectedNoteId(note.id);
-                },
-            },
+            { title: "", groupId: selectedGroupId || undefined },
+            { onSuccess: (note) => setSelectedNoteId(note.id) },
         );
-    }, [newNoteTitle, selectedGroupId, createNote]);
+    }, [selectedGroupId, createNote]);
 
     const handleCreateSubNote = useCallback(() => {
         if (!newSubNoteTitle.trim() || !selectedNoteId) return;
@@ -261,8 +299,9 @@ export default function NotesPage() {
                 level: (selectedNote?.level || 0) + 1,
             },
             {
-                onSuccess: () => {
+                onSuccess: (subNote) => {
                     setNewSubNoteTitle("");
+                    setSelectedNoteId(subNote.id);
                 },
             },
         );
@@ -605,11 +644,17 @@ export default function NotesPage() {
             />
 
             {/* Middle Panel: Notes List */}
-            <div className="flex-1 flex flex-col min-w-[250px] max-w-[350px] bg-white dark:bg-gray-800">
+            <div className="flex-1 flex flex-col min-w-[250px] max-w-[350px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-30)' }}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleNewNote}
+                            className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
 
@@ -693,9 +738,15 @@ export default function NotesPage() {
                                                             const tag = tagMap.get(tagId);
                                                             if (!tag) return null;
                                                             return (
-                                                                <span
+                                                                <button
                                                                     key={tagId}
-                                                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedTagId(selectedTagId === tagId ? null : tagId);
+                                                                    }}
+                                                                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-opacity ${
+                                                                        selectedTagId && selectedTagId !== tagId ? "opacity-40" : ""
+                                                                    }`}
                                                                     style={{
                                                                         backgroundColor: `${tag.color}20`,
                                                                         color: tag.color,
@@ -703,7 +754,7 @@ export default function NotesPage() {
                                                                 >
                                                                     {tag.emoji && <span>{tag.emoji}</span>}
                                                                     {tag.name}
-                                                                </span>
+                                                                </button>
                                                             );
                                                         })}
                                                     </div>
@@ -719,56 +770,55 @@ export default function NotesPage() {
                         </div>
                     )}
                 </div>
-
-                {/* Inline creation */}
-                {selectedSmartGroup !== "archived" && (
-                    <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={newNoteTitle}
-                                onChange={(e) => setNewNoteTitle(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleCreateNote();
-                                    if (e.key === "Escape") setNewNoteTitle("");
-                                }}
-                                placeholder={t("notes.title_placeholder")}
-                                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <button
-                                onClick={handleCreateNote}
-                                disabled={!newNoteTitle.trim()}
-                                className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                            >
-                                <PlusIcon className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
             <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
 
             {/* Right Panel: Note Detail */}
             <div
-                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 flex flex-col"
-                style={{ width: detailPanelWidth }}
+                className="border-l border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
+                style={{ width: detailPanelWidth, backgroundColor: 'var(--theme-bg-2)' }}
             >
                 {selectedNote ? (
                     <div className="flex flex-col h-full">
-                        {/* Title */}
+                        {/* Title (fixed) */}
                         <div className="px-4 pt-4 pb-2 flex-shrink-0">
-                            <input
-                                type="text"
-                                value={localTitle}
-                                onChange={(e) => handleTitleChange(e.target.value)}
-                                placeholder={t("notes.title_placeholder")}
-                                className="w-full text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                            />
+                            {selectedNote.parentId && (() => {
+                                const parentNote = allNotes.find((n) => n.id === selectedNote.parentId);
+                                if (!parentNote) return null;
+                                return (
+                                    <button
+                                        onClick={() => setSelectedNoteId(parentNote.id)}
+                                        className="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 mb-1 block"
+                                    >
+                                        ← {parentNote.title || t("notes.title_placeholder")}
+                                    </button>
+                                );
+                            })()}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={localTitle}
+                                    onChange={(e) => handleTitleChange(e.target.value)}
+                                    placeholder={t("notes.title_placeholder")}
+                                    className="flex-1 text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                                />
+                                {isNewNote && (
+                                    <button
+                                        onClick={handleCancelNewNote}
+                                        className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                                    >
+                                        {t("common.cancel")}
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
+                        {/* Scrollable content */}
+                        <div className="flex-1 overflow-auto min-h-0">
+
                         {/* Tags */}
-                        <div className="px-4 pb-2 flex-shrink-0">
+                        <div className="px-4 pb-2">
                             <TagCombobox
                                 selectedIds={parseTagIds(selectedNote.tagIds)}
                                 allTags={allTags}
@@ -783,48 +833,136 @@ export default function NotesPage() {
                             />
                         </div>
 
-                        {/* Actions bar */}
-                        <div className="px-4 pb-2 flex items-center gap-2 flex-shrink-0">
-                            <button
-                                onClick={() => handleToggleComplete(selectedNote.id)}
-                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
-                                    selectedNote.isCompleted
-                                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                }`}
-                            >
-                                <CheckCircleIcon className="w-3.5 h-3.5" />
-                                {selectedNote.isCompleted
-                                    ? t("notes.smart_groups.completed")
-                                    : t("notes.smart_groups.completed")}
-                            </button>
-                            <button
-                                onClick={() => handleToggleArchive(selectedNote)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                {selectedNote.isArchived ? (
-                                    <>
-                                        <ArchiveRestore className="w-3.5 h-3.5" />
-                                        {t("notes.groups.unarchive")}
-                                    </>
-                                ) : (
-                                    <>
-                                        <ArchiveBoxIcon className="w-3.5 h-3.5" />
-                                        {t("notes.groups.archive")}
-                                    </>
+                        {/* Linked Items */}
+                        <div className="px-4 pb-3 space-y-3">
+                            {/* Linked Tasks */}
+                            <div>
+                                <div className="relative flex">
+                                    <h3 className="flex-1 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                        {t("notes.linked_tasks")}
+                                    </h3>
+                                    <LinkedItemSelector
+                                        value={linkedTaskIds}
+                                        onChange={(ids) => {
+                                            const added = ids.find((id) => !linkedTaskIds.includes(id));
+                                            if (added) handleLinkItem("task", added);
+                                        }}
+                                        items={allTasks.map((task) => ({ id: task.id, title: task.title, date: task.dueDate, time: task.dueTime }))}
+                                        placeholder={t("tasks.search_placeholder")}
+                                    />
+                                </div>
+                                {linkedTasks.length > 0 && (
+                                    <div className="mt-1 space-y-1">
+                                        {linkedTasks.map((task) => {
+                                            const linkItem = linkedItemsData.find((li) => li.linkedType === "task" && li.linkedId === task.id);
+                                            return (
+                                                <div key={task.id} className="flex items-center gap-2 group text-sm">
+                                                    <span className="text-gray-400 dark:text-gray-500 flex-shrink-0 w-30">
+                                                        {task.dueDate ? `${task.dueDate.slice(5)}${task.dueTime ? ` ${task.dueTime}` : ""}` : ""}
+                                                    </span>
+                                                    <span className="flex-1 text-gray-700 dark:text-gray-300 truncate">{task.title}</span>
+                                                    {linkItem && (
+                                                        <button onClick={() => handleUnlinkItem(linkItem.id)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-gray-400 flex-shrink-0">
+                                                            <XMarkIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 )}
-                            </button>
-                            <button
-                                onClick={() => handleDeleteNote(selectedNote.id)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                            >
-                                <TrashIcon className="w-3.5 h-3.5" />
-                                {t("common.delete")}
-                            </button>
+                            </div>
+
+                            {/* Linked Persons */}
+                            <div>
+                                <div className="flex">
+                                    <h3 className="flex-1 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                        {t("notes.linked_persons")}
+                                    </h3>
+                                    <LinkedItemSelector
+                                        value={linkedPersonIds}
+                                        onChange={(ids) => {
+                                            const added = ids.find((id) => !linkedPersonIds.includes(id));
+                                            if (added) handleLinkItem("person", added);
+                                        }}
+                                        items={allPersons.map((p) => ({ id: p.id, title: p.name }))}
+                                        placeholder={t("people.search_placeholder")}
+                                    />
+                                </div>
+                                {linkedPersons.length > 0 && (
+                                    <div className="mt-1 flex flex-row gap-2">
+                                        {linkedPersons.map((person) => {
+                                            const linkItem = linkedItemsData.find((li) => li.linkedType === "person" && li.linkedId === person.id);
+                                            return (
+                                                <div key={person.id} className="relative group flex flex-col items-center gap-1 p-2">
+                                                    {linkItem && (
+                                                        <button onClick={() => handleUnlinkItem(linkItem.id)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 hover:text-red-500 text-gray-400">
+                                                            <XMarkIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                    {person.avatar ? (
+                                                        <AvatarImage seed={person.avatar} size={32} />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+                                                            {person.name[0]}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-full text-center">{person.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Linked Media */}
+                            <div>
+                                <div className="flex">
+                                    <h3 className="flex-1 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                        {t("notes.linked_media")}
+                                    </h3>
+                                    <LinkedItemSelector
+                                        value={linkedMediaIds}
+                                        onChange={(ids) => {
+                                            const added = ids.find((id) => !linkedMediaIds.includes(id));
+                                            if (added) handleLinkItem("media", added);
+                                        }}
+                                        items={allMediaItems.map((m) => ({ id: m.id, title: m.title }))}
+                                        placeholder={t("media.placeholder.search")}
+                                    />
+                                </div>
+                                {linkedMediaItems.length > 0 && (
+                                    <div className="mt-1 flex flex-row gap-2">
+                                        {linkedMediaItems.map((media) => {
+                                            const linkItem = linkedItemsData.find((li) => li.linkedType === "media" && li.linkedId === media.id);
+                                            return (
+                                                <div key={media.id} className="relative group flex flex-col overflow-hidden">
+                                                    {linkItem && (
+                                                        <button onClick={() => handleUnlinkItem(linkItem.id)} className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 hover:text-red-500 text-white drop-shadow">
+                                                            <XMarkIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                    {media.cover ? (
+                                                        <img src={media.cover} alt={media.title} className="w-14 aspect-[2/3] object-cover" />
+                                                    ) : (
+                                                        <div className="w-14 aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                                            <BookOpenIcon className="w-5 h-5" />
+                                                        </div>
+                                                    )}
+                                                    <div className="p-1.5">
+                                                        <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{media.title}</p>
+                                                        {media.year && <p className="text-[10px] text-gray-400 dark:text-gray-500">{media.year}</p>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Content Editor */}
-                        <div className="flex-1 px-4 pb-4 overflow-auto min-h-0">
+                        <div className="px-4 pb-4">
                             <MilkdownEditor
                                 markdown={localContent}
                                 onChange={handleContentChange}
@@ -833,7 +971,7 @@ export default function NotesPage() {
                         </div>
 
                         {/* Sub-notes */}
-                        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-3 flex-shrink-0">
+                        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-3">
                             <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                                 {t("notes.sub_notes.title")}
                             </h3>
@@ -865,14 +1003,18 @@ export default function NotesPage() {
                                                     </svg>
                                                 )}
                                             </button>
-                                            <span
-                                                className={`flex-1 text-sm ${
+                                            <button
+                                                onClick={() => setSelectedNoteId(sub.id)}
+                                                className={`flex-1 text-sm text-left truncate ${
                                                     sub.isCompleted
                                                         ? "line-through text-gray-400"
-                                                        : "text-gray-700 dark:text-gray-300"
+                                                        : "text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
                                                 }`}
                                             >
-                                                {sub.title}
+                                                {sub.title || t("notes.title_placeholder")}
+                                            </button>
+                                            <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                                {new Date(sub.updatedAt).toLocaleDateString()}
                                             </span>
                                             <button
                                                 onClick={() => handleDeleteNote(sub.id)}
@@ -907,10 +1049,11 @@ export default function NotesPage() {
                         </div>
 
                         {/* Metadata */}
-                        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500">
                             <p>
                                 {t("common.edit")}: {new Date(selectedNote.updatedAt).toLocaleString()}
                             </p>
+                        </div>
                         </div>
                     </div>
                 ) : (

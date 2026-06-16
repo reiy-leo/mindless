@@ -10,6 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let app_handle = app.handle();
             db::migrations::run_migrations(&app_handle)?;
@@ -91,6 +92,10 @@ pub fn run() {
             commands::archive_note,
             commands::unarchive_note,
             commands::complete_note,
+            commands::get_note_linked_items,
+            commands::get_notes_linked_to,
+            commands::link_note_item,
+            commands::unlink_note_item,
             // Persons
             commands::get_person_groups,
             commands::create_person_group,
@@ -143,6 +148,13 @@ pub fn run() {
             commands::media::update_media_item,
             commands::media::delete_media_item,
             commands::media::get_media_item_details,
+            commands::media::get_media_watch_history,
+            commands::media::create_media_watch_history,
+            commands::media::update_media_watch_history,
+            commands::media::delete_media_watch_history,
+            commands::media::get_media_groups_with_count,
+            commands::media::get_media_item_genres,
+            commands::media::update_media_item_genres,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

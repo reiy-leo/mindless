@@ -5,14 +5,16 @@ import type { MediaItem } from '@/types/media';
 interface MediaListItemProps {
   item: MediaItem;
   onClick: (item: MediaItem) => void;
+  onContextMenu?: (e: React.MouseEvent, item: MediaItem) => void;
 }
 
-export default function MediaListItem({ item, onClick }: MediaListItemProps) {
+export default function MediaListItem({ item, onClick, onContextMenu }: MediaListItemProps) {
   const { t } = useTranslation('common');
 
   const statusColors = {
-    normal: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-    favorite: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
+    unwatched: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+    planned: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+    normal: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
     watched: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
     archived: 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300',
   };
@@ -23,6 +25,7 @@ export default function MediaListItem({ item, onClick }: MediaListItemProps) {
       role="button"
       tabIndex={0}
       onClick={() => onClick(item)}
+      onContextMenu={(e) => onContextMenu?.(e, item)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(item); } }}
     >
       {/* Cover Thumbnail */}
