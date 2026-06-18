@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use tauri::AppHandle;
 use uuid::Uuid;
 use serde::Deserialize;
@@ -528,4 +529,56 @@ pub async fn complete_recurring_task(
         .map_err(|e| format!("Failed to fetch new task: {}", e))?;
 
     Ok(Some(new_task))
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HeatmapData {
+    pub tasks: HashMap<String, i32>,
+    pub habits: HashMap<String, i32>,
+}
+
+#[tauri::command]
+pub async fn get_heatmap_data(app: AppHandle) -> Result<HeatmapData, String> {
+    let conn = get_db(&app)?;
+
+    let one_year_ago = {
+        let now = chrono::Utc::now().date_naive();
+        (now - chrono::Duration::days(364)).format("%Y-%m-%d").to_string()
+    };
+
+    let mut task_map: HashMap<String, i32> = HashMap::new();
+    {
+        let mut stmt = conn
+            .prepare("SELECT DATE(completed_at) as d, COUNT(*) FROM tasks WHERE completed_at IS NOT NULL AND completed_at >= ?1 GROUP BY d")
+            .map_err(|e| format!("Failed to prepare task heatmap query: {}", e))?;
+        let rows = stmt.query_map([&one_year_ago], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })
+            .map_err(|e| format!("Failed to query task heatmap: {}", e))?;
+        for row in rows {
+            let (date, count) = row.map_err(|e| format!("Row error: {}", e))?;
+            task_map.insert(date, count);
+        }
+    }
+
+    let mut habit_map: HashMap<String, i32> = HashMap::new();
+    {
+        let mut stmt = conn
+            .prepare("SELECT log_date, COUNT(*) FROM habit_logs WHERE completed = 1 AND log_date >= ?1 GROUP BY log_date")
+            .map_err(|e| format!("Failed to prepare habit heatmap query: {}", e))?;
+        let rows = stmt.query_map([&one_year_ago], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i32>(1)?))
+            })
+            .map_err(|e| format!("Failed to query habit heatmap: {}", e))?;
+        for row in rows {
+            let (date, count) = row.map_err(|e| format!("Row error: {}", e))?;
+            habit_map.insert(date, count);
+        }
+    }
+
+    Ok(HeatmapData {
+        tasks: task_map,
+        habits: habit_map,
+    })
 }

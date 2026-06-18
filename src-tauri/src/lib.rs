@@ -12,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            window_shadows_v2::set_shadows(app, true);
             let app_handle = app.handle();
             db::migrations::run_migrations(&app_handle)?;
             Ok(())
@@ -27,6 +28,7 @@ pub fn run() {
             commands::reorder_tasks,
             commands::reorder_subtasks,
             commands::reorder_steps,
+            commands::get_heatmap_data,
             commands::get_lists,
             commands::complete_recurring_task,
             // Lists
