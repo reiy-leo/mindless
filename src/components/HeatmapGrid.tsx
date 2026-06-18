@@ -6,7 +6,7 @@ interface HeatmapGridProps {
   weeks?: number;
 }
 
-const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
 function getMonthLabels(weeks: number): { label: string; col: number }[] {
   const today = new Date();
