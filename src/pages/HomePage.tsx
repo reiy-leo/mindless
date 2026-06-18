@@ -85,27 +85,34 @@ export default function HomePage() {
                   {t('dashboard.no_watching')}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {watchingMedia.slice(0, 5).map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
-                      {item.cover ? (
-                        <img
-                          src={item.cover}
-                          alt={item.title}
-                          className="w-8 h-11 rounded object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-8 h-11 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {item.type === 'movie' ? '🎬' : '📺'}
-                          {item.rating ? ` ⭐ ${item.rating}` : ''}
-                        </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
+                  {watchingMedia.slice(0, 10).map((item) => (
+                    <div key={item.id} className="group">
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2">
+                        {item.cover ? (
+                          <img
+                            src={item.cover}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-2xl">
+                            {item.type === 'movie' ? '🎬' : '📺'}
+                          </div>
+                        )}
+                        {item.rating && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 text-xs font-medium rounded bg-black/60 text-white">
+                            ⭐ {item.rating}
+                          </span>
+                        )}
                       </div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {item.type === 'movie' ? '🎬 电影' : '📺 剧集'}
+                        {item.year ? ` · ${item.year}` : ''}
+                      </p>
                     </div>
                   ))}
                 </div>

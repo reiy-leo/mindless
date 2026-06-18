@@ -843,8 +843,8 @@ export default function CountdownsPage() {
           onDelete={handleDelete}
         />
       ) : (
-        <div className="flex-1 overflow-auto px-8 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex-1 overflow-auto px-8 pb-8">
+            <div className="space-y-4">
             {countdowns.map((countdown) => (
               <CountdownCard
                 key={countdown.id}
