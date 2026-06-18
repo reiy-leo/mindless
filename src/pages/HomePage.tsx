@@ -64,9 +64,9 @@ export default function HomePage() {
         </div>
 
         {/* Bottom sections */}
-        <div className="space-y-6">
+        <div className="w-full space-y-6">
           {/* Currently Watching */}
-          <section>
+          <section className="w-full">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.watching')}
@@ -121,7 +121,7 @@ export default function HomePage() {
           </section>
 
           {/* This Month's Countdowns */}
-          <section>
+          <section className="w-full">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.this_month_countdowns')}
@@ -167,7 +167,7 @@ export default function HomePage() {
           </section>
 
           {/* Pinned Notes */}
-          <section>
+          <section className="w-full">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.pinned_notes')}
