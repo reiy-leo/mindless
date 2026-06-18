@@ -21,7 +21,20 @@
       "completed": "已完成",
       "habits": "习惯打卡",
       "countdowns": "倒数日"
-    }
+    },
+    "heatmap": {
+      "tasks": "任务完成",
+      "habits": "习惯打卡",
+      "mon": "一",
+      "wed": "三",
+      "fri": "五"
+    },
+    "watching": "正在观看",
+    "no_watching": "暂无在看影视",
+    "pinned_notes": "收藏笔记",
+    "no_pinned_notes": "暂无收藏笔记",
+    "this_month_countdowns": "本月倒数日",
+    "no_month_countdowns": "本月暂无倒数日"
   },
   "common": {
     "save": "保存",
@@ -405,7 +418,13 @@
     "search_or_create": "搜索或创建标签...",
     "add_more": "添加更多标签...",
     "create_new": "创建新标签：{{name}}",
-    "drag_to_reorder": "拖拽排序"
+    "drag_to_reorder": "拖拽排序",
+    "dissolve": "解散",
+    "move_forward": "前移",
+    "move_backward": "后移",
+    "select_to_edit": "选择标签进行编辑",
+    "dissolve_confirm": "确定要解散标签「{{name}}」吗？其子标签将提升到上一层级。",
+    "promote": "移上一级"
   },
   "notes": {
     "title": "笔记",

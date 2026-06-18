@@ -21,7 +21,20 @@
       "completed": "完了",
       "habits": "習慣",
       "countdowns": "カウントダウン"
-    }
+    },
+    "heatmap": {
+      "tasks": "タスク完了",
+      "habits": "習慣チェックイン",
+      "mon": "月",
+      "wed": "水",
+      "fri": "金"
+    },
+    "watching": "視聴中",
+    "no_watching": "視聴中の作品はありません",
+    "pinned_notes": "ピン留めノート",
+    "no_pinned_notes": "ピン留めノートはありません",
+    "this_month_countdowns": "今月のカウントダウン",
+    "no_month_countdowns": "今月のカウントダウンはありません"
   },
   "common": {
     "save": "保存",
@@ -392,7 +405,13 @@
     "search_or_create": "タグを検索または作成...",
     "add_more": "タグを追加...",
     "create_new": "新規タグを作成：{{name}}",
-    "drag_to_reorder": "ドラッグして並べ替え"
+    "drag_to_reorder": "ドラッグして並べ替え",
+    "dissolve": "解散",
+    "move_forward": "上へ移動",
+    "move_backward": "下へ移動",
+    "select_to_edit": "タグを選択して編集",
+    "dissolve_confirm": "タグ「{{name}}」を解散しますか？サブタグは上位レベルに昇格します。",
+    "promote": "上の階層へ移動"
   },
   "notes": {
     "title": "ノート",

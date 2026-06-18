@@ -21,7 +21,20 @@
       "completed": "Completed",
       "habits": "Habits",
       "countdowns": "Countdowns"
-    }
+    },
+    "heatmap": {
+      "tasks": "Tasks Completed",
+      "habits": "Habits Checked In",
+      "mon": "Mon",
+      "wed": "Wed",
+      "fri": "Fri"
+    },
+    "watching": "Currently Watching",
+    "no_watching": "Nothing watching",
+    "pinned_notes": "Pinned Notes",
+    "no_pinned_notes": "No pinned notes",
+    "this_month_countdowns": "This Month",
+    "no_month_countdowns": "No countdowns this month"
   },
   "common": {
     "save": "Save",
@@ -404,7 +417,13 @@
     "search_or_create": "Search or create tags...",
     "add_more": "Add more tags...",
     "create_new": "Create new tag: {{name}}",
-    "drag_to_reorder": "Drag to reorder"
+    "drag_to_reorder": "Drag to reorder",
+    "dissolve": "Dissolve",
+    "move_forward": "Move Up",
+    "move_backward": "Move Down",
+    "select_to_edit": "Select a tag to edit",
+    "dissolve_confirm": "Are you sure you want to dissolve tag \"{{name}}\"? Its sub-tags will be promoted.",
+    "promote": "Move Up a Level"
   },
   "notes": {
     "title": "Notes",
