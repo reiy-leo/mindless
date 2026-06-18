@@ -42,7 +42,7 @@ export default function HeatmapGrid({ data, color = '#3B82F6', weeks = 52 }: Hea
         cellDate.setDate(cellDate.getDate() + w * 7 + d);
         if (cellDate > today) continue;
 
-        const key = cellDate.toISOString().slice(0, 10);
+        const key = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`;
         cells.push({
           date: key,
           count: data[key] || 0,

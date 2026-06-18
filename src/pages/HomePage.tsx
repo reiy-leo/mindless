@@ -46,35 +46,25 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 overflow-auto px-8 py-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          {t('navigation.home')}
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Tasks Heatmap */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            {t('dashboard.heatmap.tasks')}
+          </h2>
+          <HeatmapGrid data={heatmapData?.tasks ?? {}} color="#3B82F6" />
+        </div>
 
-        {/* Heatmaps */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Tasks Heatmap */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              {t('dashboard.heatmap.tasks')}
-            </h2>
-            <HeatmapGrid data={heatmapData?.tasks ?? {}} color="#3B82F6" />
-          </div>
-
-          {/* Habits Heatmap */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              {t('dashboard.heatmap.habits')}
-            </h2>
-            <HeatmapGrid data={heatmapData?.habits ?? {}} color="#3B82F6" />
-          </div>
+        {/* Habits Heatmap */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            {t('dashboard.heatmap.habits')}
+          </h2>
+          <HeatmapGrid data={heatmapData?.habits ?? {}} color="#3B82F6" />
         </div>
 
         {/* Bottom sections */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-6">
           {/* Currently Watching */}
           <section>
             <div className="flex items-center justify-between mb-3">
