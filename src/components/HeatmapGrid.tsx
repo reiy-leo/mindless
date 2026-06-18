@@ -6,6 +6,9 @@ interface HeatmapGridProps {
   weeks?: number;
 }
 
+const CELL_SIZE = 14;
+const GAP = 3;
+
 function getIntensity(count: number, max: number): number {
   if (count === 0 || max === 0) return 0;
   const ratio = count / max;
@@ -24,25 +27,34 @@ function getColorForLevel(level: number, baseColor: string): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
+function formatDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function HeatmapGrid({ data, color = '#3B82F6', weeks = 52 }: HeatmapGridProps) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const { grid, maxCount } = useMemo(() => {
     const today = new Date();
-    const start = new Date(today);
-    start.setDate(start.getDate() - (weeks * 7) - ((start.getDay() + 6) % 7));
+    const todayDay = today.getDay();
+    const daysToMonday = (todayDay + 6) % 7;
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - daysToMonday);
 
     const max = Math.max(1, ...Object.values(data));
 
     const cells: { date: string; count: number; row: number; col: number }[] = [];
 
     for (let w = 0; w < weeks; w++) {
+      const weekStart = new Date(thisMonday);
+      weekStart.setDate(thisMonday.getDate() - w * 7);
+
       for (let d = 0; d < 7; d++) {
-        const cellDate = new Date(start);
-        cellDate.setDate(cellDate.getDate() + w * 7 + d);
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(weekStart.getDate() + d);
         if (cellDate > today) continue;
 
-        const key = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`;
+        const key = formatDate(cellDate);
         cells.push({
           date: key,
           count: data[key] || 0,
@@ -55,13 +67,17 @@ export default function HeatmapGrid({ data, color = '#3B82F6', weeks = 52 }: Hea
     return { grid: cells, maxCount: max };
   }, [data, weeks]);
 
+  const gridWidth = weeks * CELL_SIZE + (weeks - 1) * GAP;
+
   return (
     <div className="relative">
       <div
-        className="grid gap-[3px]"
+        className="grid"
         style={{
-          gridTemplateColumns: `repeat(${weeks}, 1fr)`,
-          gridTemplateRows: 'repeat(7, 1fr)',
+          gridTemplateColumns: `repeat(${weeks}, ${CELL_SIZE}px)`,
+          gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
+          gap: `${GAP}px`,
+          width: `${gridWidth}px`,
         }}
       >
         {grid.map((cell) => {
@@ -70,7 +86,7 @@ export default function HeatmapGrid({ data, color = '#3B82F6', weeks = 52 }: Hea
           return (
             <div
               key={`${cell.col}-${cell.row}`}
-              className="w-3 h-3 rounded-[2px] cursor-pointer transition-transform hover:scale-125"
+              className="rounded-[2px] cursor-pointer transition-transform hover:scale-125"
               style={{
                 backgroundColor: bg || '#f3f4f6',
                 border: level === 0 ? '1px solid #e5e7eb' : 'none',
