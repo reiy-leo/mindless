@@ -883,3 +883,13 @@ export async function updateMediaWatchHistory(id: string, params: Partial<Create
 export async function deleteMediaWatchHistory(id: string): Promise<void> {
   return await invoke<void>('delete_media_watch_history', { id });
 }
+
+// Heatmap APIs
+export interface HeatmapData {
+  tasks: Record<string, number>;
+  habits: Record<string, number>;
+}
+
+export async function getHeatmapData(): Promise<HeatmapData> {
+  return await invoke<HeatmapData>('get_heatmap_data');
+}
