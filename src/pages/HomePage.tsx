@@ -184,7 +184,7 @@ export default function HomePage() {
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {pinnedNotes.slice(0, 5).map((note) => (
-                    <div key={note.id} className="px-3 py-2.5">
+                    <Link key={note.id} to={`/notes?noteId=${note.id}`} className="block px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {note.title}
                       </p>
@@ -193,7 +193,7 @@ export default function HomePage() {
                           {stripMarkdown(note.content).slice(0, 60)}
                         </p>
                       )}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
