@@ -1,20 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import {
-  CheckCircleIcon, ClockIcon, ArrowRightIcon,
-} from '@heroicons/react/24/outline';
-import { Flame } from 'lucide-react';
-import { useTasks, useToggleTaskCompletion } from '@/queries/useTaskQueries';
-import { useHabits, useCheckInHabit, useTodayCheckins } from '@/queries/useHabitQueries';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import HeatmapGrid from '@/components/HeatmapGrid';
+import { useHeatmapData } from '@/queries/useHeatmapQueries';
 import { useCountdowns } from '@/queries/useCountdownQueries';
-import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
-import { getLocalToday } from '@/lib/taskHelpers';
-
-const HABIT_ICONS: Record<string, string> = {
-  star: '⭐', heart: '❤️', fire: '🔥', book: '📖',
-  dumbbell: '💪', moon: '🌙', sun: '☀️', leaf: '🍃',
-};
+import { useNotes } from '@/queries/useNoteQueries';
+import { useMediaItems } from '@/queries/useMediaQueries';
 
 const COUNTDOWN_ICONS: Record<string, string> = {
   flag: '🚩', heart: '❤️', star: '⭐', gift: '🎁', cake: '🎂',
@@ -24,210 +16,106 @@ const COUNTDOWN_ICONS: Record<string, string> = {
 export default function HomePage() {
   const { t } = useTranslation('common');
 
-  const { data: tasks = [] } = useTasks();
-  const { data: habits = [] } = useHabits();
-  const { data: todayCheckins = [] } = useTodayCheckins();
+  const { data: heatmapData } = useHeatmapData();
   const { data: countdowns = [] } = useCountdowns();
-  const toggleTask = useToggleTaskCompletion();
-  const checkInHabit = useCheckInHabit();
+  const { data: notes = [] } = useNotes();
+  const { data: watchingMedia = [] } = useMediaItems({ status: 'normal' });
 
-  const today = getLocalToday();
+  const today = new Date();
+  const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-  // Today's tasks: due today or overdue (not completed)
-  const { todayTasks, overdueTasks, completedToday } = useMemo(() => {
-    const overdue: typeof tasks = [];
-    const todayList: typeof tasks = [];
-    let completed = 0;
-
-    tasks.forEach((task) => {
-      if (task.dueDate === today) {
-        todayList.push(task);
-        if (task.isCompleted) completed++;
-      } else if (task.dueDate && task.dueDate < today && !task.isCompleted) {
-        overdue.push(task);
-      }
-    });
-
-    // Sort: incomplete first, by priority desc
-    const sortFn = (a: typeof tasks[0], b: typeof tasks[0]) => {
-      if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
-      return b.priority - a.priority;
-    };
-    todayList.sort(sortFn);
-    overdue.sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
-
-    return { todayTasks: todayList, overdueTasks: overdue, completedToday: completed };
-  }, [tasks, today]);
-
-  // Habits: show active habits with check-in status
-  const habitStatus = useMemo(() => {
-    const checkinIds = new Set(todayCheckins.map((c) => c.habitId));
-    return habits.map((habit) => ({
-      ...habit,
-      checkedIn: checkinIds.has(habit.id),
-    }));
-  }, [habits, todayCheckins]);
-
-  const habitsCheckedIn = habitStatus.filter((h) => h.checkedIn).length;
-
-  // Countdowns: sort by absolute days distance, show nearest 5
-  const nearbyCountdowns = useMemo(() => {
-    const now = new Date();
+  const thisMonthCountdowns = useMemo(() => {
     return countdowns
-      .map((cd) => {
-        const [y, m, d] = cd.targetDate.split('-').map(Number);
-        const target = new Date(y, m - 1, d);
-        const diffMs = target.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-        return { ...cd, daysDiff: diffDays };
-      })
-      .sort((a, b) => Math.abs(a.daysDiff) - Math.abs(b.daysDiff))
-      .slice(0, 5);
-  }, [countdowns]);
+      .filter((cd) => cd.targetDate.startsWith(monthStr))
+      .sort((a, b) => a.targetDate.localeCompare(b.targetDate));
+  }, [countdowns, monthStr]);
 
-  const handleToggleTask = (id: string, isCompleted: boolean) => {
-    toggleTask.mutate({ id, isCompleted: !isCompleted });
+  const pinnedNotes = useMemo(() => {
+    return notes.filter((n) => n.isPinned && !n.isArchived && !n.deletedAt);
+  }, [notes]);
+
+  const getDaysRemaining = (targetDate: string) => {
+    const [y, m, d] = targetDate.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const handleCheckIn = (habitId: string) => {
-    checkInHabit.mutate({ habitId, date: today });
+  const stripMarkdown = (text: string) => {
+    return text.replace(/[#*_`~\[\]()]/g, '').replace(/\n+/g, ' ').trim();
   };
 
   return (
     <div className="flex-1 overflow-auto px-8 py-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           {t('navigation.home')}
         </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-          {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          {today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            label={t('dashboard.stats.tasks_today')}
-            value={todayTasks.length}
-            color="#3B82F6"
-          />
-          <StatCard
-            label={t('dashboard.stats.completed')}
-            value={completedToday}
-            color="#10B981"
-          />
-          <StatCard
-            label={t('dashboard.stats.habits')}
-            value={`${habitsCheckedIn}/${habits.length}`}
-            color="#8B5CF6"
-          />
-          <StatCard
-            label={t('dashboard.stats.countdowns')}
-            value={nearbyCountdowns.length}
-            color="#F59E0B"
-          />
+        {/* Heatmaps */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Tasks Heatmap */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              {t('dashboard.heatmap.tasks')}
+            </h2>
+            <HeatmapGrid data={heatmapData?.tasks ?? {}} color="#3B82F6" />
+          </div>
+
+          {/* Habits Heatmap */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              {t('dashboard.heatmap.habits')}
+            </h2>
+            <HeatmapGrid data={heatmapData?.habits ?? {}} color="#3B82F6" />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Today's Tasks */}
-          <section className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                {t('dashboard.today_tasks')}
-              </h2>
-              <Link
-                to="/tasks"
-                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
-              >
-                {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Overdue tasks */}
-            {overdueTasks.length > 0 && (
-              <div className="mb-3">
-                <h3 className="text-xs font-medium text-red-500 uppercase tracking-wider mb-2">
-                  {t('dashboard.overdue')} ({overdueTasks.length})
-                </h3>
-                <div className="space-y-1">
-                  {overdueTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} onToggle={handleToggleTask} showDate />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Today's tasks */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-              {todayTasks.length === 0 ? (
-                <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
-                  {t('dashboard.no_tasks')}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {todayTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} onToggle={handleToggleTask} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Today's Habits */}
+        {/* Bottom sections */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Currently Watching */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                {t('dashboard.habits')}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dashboard.watching')}
               </h2>
               <Link
-                to="/habits"
-                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
+                to="/media"
+                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
               >
                 {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3.5 h-3.5" />
+                <ArrowRightIcon className="w-3 h-3" />
               </Link>
             </div>
-
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-              {habitStatus.length === 0 ? (
-                <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
-                  {t('dashboard.no_habits')}
+              {watchingMedia.length === 0 ? (
+                <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs">
+                  {t('dashboard.no_watching')}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {habitStatus.map((habit) => (
-                    <div
-                      key={habit.id}
-                      className="flex items-center gap-3 px-4 py-3"
-                    >
-                      <span className="text-lg">{HABIT_ICONS[habit.icon] || '⭐'}</span>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm font-medium truncate ${
-                          habit.checkedIn
-                            ? 'line-through text-gray-400 dark:text-gray-500'
-                            : 'text-gray-900 dark:text-gray-100'
-                        }`}>
-                          {habit.name}
-                        </h4>
-                        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          <Flame className="w-3 h-3" />
-                          <span>{habit.currentStreak}</span>
-                        </div>
-                      </div>
-                      {habit.checkedIn ? (
-                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400">
-                          {t('dashboard.checked_in')}
-                        </span>
+                  {watchingMedia.slice(0, 5).map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
+                      {item.cover ? (
+                        <img
+                          src={item.cover}
+                          alt={item.title}
+                          className="w-8 h-11 rounded object-cover flex-shrink-0"
+                        />
                       ) : (
-                        <button
-                          onClick={() => handleCheckIn(habit.id)}
-                          className="px-3 py-1.5 text-xs font-medium rounded-full text-white transition-colors hover:opacity-90"
-                          style={{ backgroundColor: habit.color || '#8B5CF6' }}
-                        >
-                          {t('dashboard.check_in')}
-                        </button>
+                        <div className="w-8 h-11 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
                       )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {item.type === 'movie' ? '🎬' : '📺'}
+                          {item.rating ? ` ⭐ ${item.rating}` : ''}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -235,64 +123,83 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Upcoming Countdowns */}
+          {/* This Month's Countdowns */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                {t('dashboard.countdowns')}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dashboard.this_month_countdowns')}
               </h2>
               <Link
                 to="/countdowns"
-                className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
+                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
               >
                 {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3.5 h-3.5" />
+                <ArrowRightIcon className="w-3 h-3" />
               </Link>
             </div>
-
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-              {nearbyCountdowns.length === 0 ? (
-                <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">
-                  {t('dashboard.no_countdowns')}
+              {thisMonthCountdowns.length === 0 ? (
+                <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs">
+                  {t('dashboard.no_month_countdowns')}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {nearbyCountdowns.map((cd) => (
-                    <div key={cd.id} className="flex items-center gap-3 px-4 py-3">
-                      <span className="text-lg">{COUNTDOWN_ICONS[cd.icon] || '🚩'}</span>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {cd.title}
-                        </h4>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          {cd.targetDate}
+                  {thisMonthCountdowns.map((cd) => {
+                    const days = getDaysRemaining(cd.targetDate);
+                    return (
+                      <div key={cd.id} className="flex items-center gap-3 px-3 py-2.5">
+                        <span className="text-base">{COUNTDOWN_ICONS[cd.icon] || '🚩'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {cd.title}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{cd.targetDate}</p>
+                        </div>
+                        <span
+                          className="text-sm font-bold"
+                          style={{ color: days < 0 ? '#9CA3AF' : cd.color || '#F59E0B' }}
+                        >
+                          {days === 0 ? '🎉' : days > 0 ? `${days}${t('dashboard.days_left')}` : `${Math.abs(days)}${t('dashboard.days_ago')}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Pinned Notes */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dashboard.pinned_notes')}
+              </h2>
+              <Link
+                to="/notes"
+                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
+              >
+                {t('dashboard.view_all')}
+                <ArrowRightIcon className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              {pinnedNotes.length === 0 ? (
+                <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs">
+                  {t('dashboard.no_pinned_notes')}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {pinnedNotes.slice(0, 5).map((note) => (
+                    <div key={note.id} className="px-3 py-2.5">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {note.title}
+                      </p>
+                      {note.content && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                          {stripMarkdown(note.content).slice(0, 60)}
                         </p>
-                      </div>
-                      <div className="text-right">
-                        {cd.daysDiff === 0 ? (
-                          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                            {t('dashboard.today_tasks').replace(/任务|タスク|Tasks|s$/, '').trim() === '' ? 'Today' : '🎉'}
-                          </span>
-                        ) : cd.daysDiff > 0 ? (
-                          <div>
-                            <span className="text-lg font-bold" style={{ color: cd.color || '#F59E0B' }}>
-                              {cd.daysDiff}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
-                              {t('dashboard.days_left')}
-                            </span>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="text-lg font-bold text-gray-400 dark:text-gray-500">
-                              {Math.abs(cd.daysDiff)}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
-                              {t('dashboard.days_ago')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -301,68 +208,6 @@ export default function HomePage() {
           </section>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ==================== Stat Card ====================
-function StatCard({ label, value, color }: { label: string; value: number | string; color: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-        {label}
-      </p>
-      <p className="text-2xl font-bold" style={{ color }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-// ==================== Task Row ====================
-function TaskRow({
-  task,
-  onToggle,
-  showDate,
-}: {
-  task: { id: string; title: string; isCompleted: boolean; priority: number; dueDate?: string; dueTime?: string };
-  onToggle: (id: string, isCompleted: boolean) => void;
-  showDate?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-      <button
-        onClick={() => onToggle(task.id, task.isCompleted)}
-        className="flex-shrink-0"
-      >
-        {task.isCompleted ? (
-          <CheckCircleIcon className="w-5 h-5 text-green-500" />
-        ) : (
-          <span className="block w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-blue-400 transition-colors" />
-        )}
-      </button>
-      <div
-        className="w-2 h-2 rounded-full flex-shrink-0"
-        style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
-      />
-      <span className={`text-sm flex-1 truncate ${
-        task.isCompleted
-          ? 'line-through text-gray-400 dark:text-gray-500'
-          : 'text-gray-800 dark:text-gray-200'
-      }`}>
-        {task.title}
-      </span>
-      {showDate && task.dueDate && (
-        <span className="text-xs text-red-400 dark:text-red-500 flex-shrink-0 flex items-center gap-1">
-          <ClockIcon className="w-3 h-3" />
-          {task.dueDate}
-        </span>
-      )}
-      {task.dueTime && !showDate && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-          {task.dueTime.slice(0, 5)}
-        </span>
-      )}
     </div>
   );
 }
