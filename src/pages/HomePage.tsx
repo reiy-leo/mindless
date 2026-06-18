@@ -85,10 +85,10 @@ export default function HomePage() {
                   {t('dashboard.no_watching')}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
-                  {watchingMedia.slice(0, 10).map((item) => (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 p-3">
+                  {watchingMedia.slice(0, 20).map((item) => (
                     <div key={item.id} className="group">
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2">
+                      <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mb-1">
                         {item.cover ? (
                           <img
                             src={item.cover}
@@ -96,22 +96,18 @@ export default function HomePage() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-2xl">
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
                             {item.type === 'movie' ? '🎬' : '📺'}
                           </div>
                         )}
                         {item.rating && (
-                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 text-xs font-medium rounded bg-black/60 text-white">
+                          <span className="absolute top-1 right-1 px-1 py-0.5 text-[10px] font-medium rounded bg-black/60 text-white">
                             ⭐ {item.rating}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                         {item.title}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
-                        {item.type === 'movie' ? '🎬 电影' : '📺 剧集'}
-                        {item.year ? ` · ${item.year}` : ''}
                       </p>
                     </div>
                   ))}
@@ -140,20 +136,20 @@ export default function HomePage() {
                   {t('dashboard.no_month_countdowns')}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-3">
                   {thisMonthCountdowns.map((cd) => {
                     const days = getDaysRemaining(cd.targetDate);
                     return (
-                      <div key={cd.id} className="flex items-center gap-3 px-3 py-2.5">
-                        <span className="text-base">{COUNTDOWN_ICONS[cd.icon] || '🚩'}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div key={cd.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{COUNTDOWN_ICONS[cd.icon] || '🚩'}</span>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
                             {cd.title}
                           </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{cd.targetDate}</p>
                         </div>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{cd.targetDate}</p>
                         <span
-                          className="text-sm font-bold"
+                          className="text-lg font-bold"
                           style={{ color: days < 0 ? '#9CA3AF' : cd.color || '#F59E0B' }}
                         >
                           {days === 0 ? '🎉' : days > 0 ? `${days}${t('dashboard.days_left')}` : `${Math.abs(days)}${t('dashboard.days_ago')}`}

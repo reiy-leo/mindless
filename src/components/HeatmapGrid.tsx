@@ -30,7 +30,7 @@ export default function HeatmapGrid({ data, color = '#3B82F6', weeks = 52 }: Hea
   const { grid, maxCount } = useMemo(() => {
     const today = new Date();
     const start = new Date(today);
-    start.setDate(start.getDate() - (weeks * 7 - 1) - ((start.getDay() + 6) % 7));
+    start.setDate(start.getDate() - (weeks * 7) - ((start.getDay() + 6) % 7));
 
     const max = Math.max(1, ...Object.values(data));
 
