@@ -87,7 +87,7 @@ export default function HomePage() {
               ) : (
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 p-3">
                   {watchingMedia.slice(0, 20).map((item) => (
-                    <div key={item.id} className="group">
+                    <Link key={item.id} to={`/media?itemId=${item.id}`} className="group block">
                       <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mb-1">
                         {item.cover ? (
                           <img
@@ -109,7 +109,7 @@ export default function HomePage() {
                       <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                         {item.title}
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

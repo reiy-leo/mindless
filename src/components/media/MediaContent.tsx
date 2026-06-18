@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, Squares2X2Icon, ListBulletIcon, MagnifyingGlassIcon, StarIcon, PencilIcon, TrashIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useMediaItems, useUpdateMediaItem, useDeleteMediaItem } from '@/queries/useMediaQueries';
@@ -46,6 +47,19 @@ export default function MediaContent({
   }
 
   const { data: items = [], isLoading } = useMediaItems(filters);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const itemId = searchParams.get('itemId');
+    if (itemId && items.length > 0 && !previewItem) {
+      const target = items.find((i) => i.id === itemId);
+      if (target) {
+        setPreviewItem(target);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, items, previewItem, setSearchParams]);
 
   const handleItemClick = (item: MediaItem) => {
     setPreviewItem(item);
