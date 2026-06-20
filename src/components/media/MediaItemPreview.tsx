@@ -6,6 +6,8 @@ import { useMediaItemDetails, useMediaWatchHistory, useDeleteMediaWatchHistory }
 import { useMediaGroups } from '@/queries/useMediaQueries';
 import { useTasks } from '@/queries/useTaskQueries';
 import { useNotes } from '@/queries/useNoteQueries';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate } from '@/lib/formatUtils';
 import type { MediaItem, MediaStatus } from '@/types/media';
 import WatchHistoryForm from './WatchHistoryForm';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +21,7 @@ interface MediaItemPreviewProps {
 export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPreviewProps) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const dateFormat = useAppStore((s) => s.dateFormat);
   const { data: details } = useMediaItemDetails(item.id);
   const { data: watchHistory = [] } = useMediaWatchHistory(item.id);
   const { data: groups = [] } = useMediaGroups();
@@ -66,7 +69,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
 
   const formatDate = (date: string | null) => {
     if (!date) return '';
-    return new Date(date).toLocaleDateString();
+    return formatDisplayDate(date.slice(0, 10), dateFormat, t);
   };
 
   return (

@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
-import { getTaskTags, parseLocalDate } from '@/lib/taskHelpers';
+import { getTaskTags } from '@/lib/taskHelpers';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate, formatTime } from '@/lib/formatUtils';
 import type { Task, Priority, UpdateTaskParams } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -22,6 +24,8 @@ export default function KanbanView({
 }: KanbanViewProps) {
   const { t } = useTranslation('common');
   const [dragOverColumn, setDragOverColumn] = useState<Priority | null>(null);
+  const dateFormat = useAppStore((s) => s.dateFormat);
+  const timeFormat = useAppStore((s) => s.timeFormat);
 
   // Group tasks by priority
   const columns = useMemo(() => {
@@ -170,8 +174,8 @@ export default function KanbanView({
                           )}
                           {task.dueDate && (
                             <div className="flex items-center gap-1 mt-2 text-xs text-gray-400 dark:text-gray-500">
-                              <span>{parseLocalDate(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                              {task.dueTime && <span>{task.dueTime.slice(0, 5)}</span>}
+                              <span>{formatDisplayDate(task.dueDate, dateFormat, t)}</span>
+                              {task.dueTime && <span>{formatTime(task.dueTime, timeFormat)}</span>}
                             </div>
                           )}
                           {taskTags.length > 0 && (

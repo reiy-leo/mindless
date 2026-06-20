@@ -217,6 +217,7 @@ pub struct Note {
     pub completed_at: Option<String>,
     pub deleted_at: Option<String>,
     pub target_date: Option<String>,
+    pub target_end_date: Option<String>,
 }
 
 // Person group model

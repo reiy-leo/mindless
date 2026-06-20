@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { getLunarInfo, getLunarDayStr } from '@/lib/lunar';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate } from '@/lib/formatUtils';
 import type { CalendarEvent } from '@/types';
 
 interface DateTimePickerProps {
@@ -14,13 +16,6 @@ interface DateTimePickerProps {
 }
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-
-function formatDisplayDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  return `${parts[0]}/${parts[1]}/${parts[2]}`;
-}
 
 function toDateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -37,6 +32,8 @@ export default function DateTimePicker({
   const { t } = useTranslation('common');
   const [open, setOpen] = useState(inline);
   const containerRef = useRef<HTMLDivElement>(null);
+  const showLunar = useAppStore((s) => s.showLunar);
+  const dateFormat = useAppStore((s) => s.dateFormat);
 
   // Current view month (for calendar navigation)
   const initialDate = date ? new Date(date + 'T00:00:00') : new Date();
@@ -210,7 +207,7 @@ export default function DateTimePicker({
               <span className={`text-sm leading-none ${isSelected ? 'text-white' : ''}`}>
                 {cell.day}
               </span>
-              {lunarStr && (
+              {showLunar && lunarStr && (
                 <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
                   isSelected
                     ? 'text-blue-100'
@@ -309,7 +306,7 @@ export default function DateTimePicker({
       >
         <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
         <span className={date ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-          {date ? formatDisplayDate(date) : t('tasks.date_placeholder')}
+          {date ? formatDisplayDate(date, dateFormat, t) : t('tasks.date_placeholder')}
           {showTime && time ? ` ${time}` : ''}
         </span>
       </button>

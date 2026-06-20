@@ -54,7 +54,7 @@ import StepList from "@/components/tasks/StepList";
 import CalendarView from "@/components/tasks/CalendarView";
 import KanbanView from "@/components/tasks/KanbanView";
 import TagCombobox from "@/components/TagCombobox";
-import TaskDatePicker from "@/components/TaskDatePicker";
+import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
 import EisenhowerMatrixView from "@/components/tasks/EisenhowerMatrixView";
 import MilkdownEditor from "@/components/MilkdownEditor";
 import { TaskSortControls } from "@/components/tasks/TaskSortControls";
@@ -311,8 +311,8 @@ function TaskDetailPanel({
                         </span>
                     </button>
                     {showDatePicker && (
-                        <div className="absolute left-0 top-full mt-1 z-50 w-77 border shadow-md rounded-md">
-                            <TaskDatePicker
+                        <div className="absolute left-0 top-full mt-1 z-50 w-77 border shadow-2xl rounded-md">
+                            <DateTimeCalenderWithRangePicker
                                 date={activeTask.dueDate || undefined}
                                 time={activeTask.dueTime || undefined}
                                 startDate={activeTask.dueDate || undefined}
@@ -570,6 +570,7 @@ export default function TasksPage() {
     const { t } = useTranslation("common");
     const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus, setSelectedListId } = useViewStore();
     const {
+        themeColor,
         taskSortBy,
         taskSortOrder,
         taskGroupBy,
@@ -1355,7 +1356,7 @@ export default function TasksPage() {
             >
                 {/* Pinned items - icon only */}
                 {(pinnedLists.length > 0 || pinnedAdvGroups.length > 0) && (
-                    <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
+                    <div className="px-2 pt-2 pb-1">
                         <div className="flex flex-wrap gap-1">
                             {pinnedLists.map((list) => {
                                 const isActive = selectedListId === list.id;
@@ -1365,7 +1366,7 @@ export default function TasksPage() {
                                             onClick={() => handleListClick(list.id)}
                                             onContextMenu={(e) => handleContextMenu(e, "list", list.id)}
                                             title={list.name}
-                                            className={`p-1.5 rounded-lg transition-colors text-base ${
+                                            className={`p-1.5 rounded-lg transition-colors text-sm ${
                                                 isActive
                                                     ? "bg-black/10 dark:bg-white/15"
                                                     : "hover:bg-black/5 dark:hover:bg-white/10"
@@ -1385,7 +1386,7 @@ export default function TasksPage() {
                                             onClick={() => handleAdvGroupClick(group.id)}
                                             onContextMenu={(e) => handleContextMenu(e, "advGroup", group.id)}
                                             title={group.name}
-                                            className={`p-1.5 rounded-lg transition-colors text-base ${
+                                            className={`p-1.5 rounded-lg transition-colors text-sm ${
                                                 isActive
                                                     ? "bg-black/10 dark:bg-white/15"
                                                     : "hover:bg-black/5 dark:hover:bg-white/10"
@@ -1398,11 +1399,16 @@ export default function TasksPage() {
                                 );
                             })}
                         </div>
+
+                        {/* Separator line */}
+                        <hr className="mt-2" style={{
+                            borderColor: `color-mix(in srgb, ${themeColor} 30%, white)`
+                        }}/>
                     </div>
                 )}
 
                 {/* Smart lists - fixed at top */}
-                <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-700">
+                <div className="px-2 pt-2 pb-1">
                     <div className="space-y-px">
                         {visibleSmartLists.map((smartList) => {
                             const isActive = selectedListId === smartList.id;
@@ -1445,6 +1451,11 @@ export default function TasksPage() {
                             );
                         })}
                     </div>
+
+                    {/* Separator line */}
+                    <hr className="mt-2" style={{
+                        borderColor: `color-mix(in srgb, ${themeColor} 30%, white)`
+                    }}/>
                 </div>
 
                 {/* Advanced groups */}

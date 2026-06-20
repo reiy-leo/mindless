@@ -164,6 +164,17 @@
     "lunar_date": "旧暦",
     "range_start": "開始",
     "range_end": "終了",
+    "date_tab": "日付",
+    "range_tab": "期間",
+    "yesterday": "昨日",
+    "today": "今日",
+    "tomorrow": "明日",
+    "next_week": "来週",
+    "two_days": "2日間",
+    "week": "1週間",
+    "month": "1ヶ月",
+    "year": "1年",
+    "all_day": "終日",
     "views": {
       "list": "リスト",
       "calendar": "カレンダー",
@@ -514,7 +525,8 @@
   "settings": {
     "tabs": {
       "general": "一般",
-      "theme": "テーマ"
+      "theme": "テーマ",
+      "datetime": "日付と時刻"
     },
     "language": "言語",
     "theme": "テーマ",
@@ -563,6 +575,55 @@
       "column_first": "最初の列 (70%)",
       "column_other": "その他の列 (30%)",
       "preview": "プレビュー"
+    },
+    "datetime": {
+      "title": "日付と時刻",
+      "week_start_day": "週の始まり",
+      "week_start_day_desc": "カレンダーの週の最初の曜日を設定",
+      "show_lunar": "旧暦を表示",
+      "show_lunar_desc": "日付の下に旧暦情報を表示",
+      "show_timezone": "タイムゾーンを表示",
+      "show_timezone_desc": "カレンダーにタイムゾーン情報を表示",
+      "timezone_picker": "タイムゾーンを選択",
+      "timezone_search_placeholder": "タイムゾーンを検索...",
+      "time_format": "時刻形式",
+      "time_format_desc": "時刻の表示形式を選択",
+      "date_format": "日付形式",
+      "date_format_desc": "日付の表示形式を選択",
+      "timezone_format": "タイムゾーン形式",
+      "timezone_format_desc": "タイムゾーンの表示形式を選択",
+      "days": {
+        "sunday": "日曜日",
+        "monday": "月曜日",
+        "tuesday": "火曜日",
+        "wednesday": "水曜日",
+        "thursday": "木曜日",
+        "friday": "金曜日",
+        "saturday": "土曜日"
+      },
+      "time_formats": {
+        "cn_natural": "午後三時十二分",
+        "cn_24h": "午後 13:23",
+        "cn_12h": "午後 01:23",
+        "en_12h": "01:23 PM",
+        "24h": "13:23"
+      },
+      "date_formats": {
+        "relative": "相対日付（今日、昨日）",
+        "yyyy_slash_mm_dd": "2025/03/24",
+        "yyyy_dash_mm_dd": "2025-03-24",
+        "mm_dd_yyyy": "03/24 2025",
+        "mm_dd": "03/24"
+      },
+      "timezone_formats": {
+        "short_offset": "+8 / -8",
+        "iana": "Asia/Shanghai",
+        "compact": "+0800",
+        "gmt": "GMT+8",
+        "utc_colon": "UTC+5:30",
+        "iso_colon": "+08:00",
+        "cn_zone": "東八区"
+      }
     }
   },
   "people": {

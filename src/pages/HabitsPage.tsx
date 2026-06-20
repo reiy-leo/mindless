@@ -42,6 +42,7 @@ import { getLunarDayStr } from "@/lib/lunar";
 import { openDialogWindow, listenFromDialog } from "@/lib/dialogWindow";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "@/stores/useAppStore";
+import { formatTime } from "@/lib/formatUtils";
 import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams } from "@/types/habit";
 
 // Get screen coordinates of an element by adding window position to viewport rect
@@ -640,6 +641,7 @@ function HabitFormDialog({
 function CheckInCalendar({ habit }: { habit: Habit }) {
     const { t, i18n } = useTranslation("common");
     const color = habit.color;
+    const timeFormat = useAppStore((s) => s.timeFormat);
     const [viewMonth, setViewMonth] = useState(() => {
         const now = new Date();
         return { year: now.getFullYear(), month: now.getMonth() };
@@ -1016,7 +1018,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                                 )}
                                 <span className="flex items-center gap-0.5 text-xs text-green-600 dark:text-green-400">
                                     <CheckCircleIcon className="w-3 h-3" />
-                                    {selectedLog.logTime ? selectedLog.logTime.slice(0, 5) : t("habits.checked_in")}
+                                    {selectedLog.logTime ? formatTime(selectedLog.logTime, timeFormat) : t("habits.checked_in")}
                                 </span>
                             </div>
                         ) : (

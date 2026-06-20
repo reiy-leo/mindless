@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, SettingsIcon,
-  Tag, StickyNote, UsersIcon, Film,
+  HomeIcon, CheckSquareIcon, RepeatIcon, HourglassIcon, CogIcon,
+  BookmarkIcon, StickyNote, UsersIcon, Film,
 } from 'lucide-react';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -20,8 +20,8 @@ const navItems = [
   { path: '/people', icon: UsersIcon, labelKey: 'navigation.people' },
   { path: '/media', icon: Film, labelKey: 'navigation.media' },
   { path: null},
-  { path: '/tags', icon: Tag, labelKey: 'navigation.tags' },
-  { path: '/settings', icon: SettingsIcon, labelKey: 'navigation.settings' },
+  { path: '/tags', icon: BookmarkIcon, labelKey: 'navigation.tags' },
+  { path: '/settings', icon: CogIcon, labelKey: 'navigation.settings' },
 ];
 
 export default function Sidebar() {

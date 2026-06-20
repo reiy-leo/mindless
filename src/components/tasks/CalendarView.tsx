@@ -63,13 +63,12 @@ export default function CalendarView({
   });
 
   const dayLabels = useMemo(() => {
-    const sun = [
+    const all = [
       t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
       t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
       t('habits.calendar.sat'),
     ];
-    if (weekStartDay === 1) return [...sun.slice(1), sun[0]];
-    return sun;
+    return [...all.slice(weekStartDay), ...all.slice(0, weekStartDay)];
   }, [t, weekStartDay]);
 
   // Group tasks by due date

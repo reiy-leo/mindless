@@ -17,6 +17,7 @@ import {
 import { getLunarDayStr, getLunarInfo, getLunarFullDateStr } from '@/lib/lunar';
 import { getLocalToday } from '@/lib/taskHelpers';
 import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate, formatTime } from '@/lib/formatUtils';
 import CountdownSidebar, { type SmartGroupId } from '@/components/countdown/CountdownSidebar';
 import type { Countdown, DisplayMode, RecurrenceRule } from '@/types/countdown';
 
@@ -158,6 +159,7 @@ function CountdownListItem({
   onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation('common');
+  const dateFormat = useAppStore((s) => s.dateFormat);
 
   const getDaysRemaining = () => {
     const [year, month, day] = countdown.targetDate.split('-').map(Number);
@@ -260,9 +262,7 @@ function CountdownListItem({
               const [y, m, d] = countdown.targetDate.split('-').map(Number);
               return getLunarFullDateStr(y, m, d);
             })()
-          : new Date(countdown.targetDate).toLocaleDateString(undefined, {
-              year: 'numeric', month: 'short', day: 'numeric',
-            })
+          : formatDisplayDate(countdown.targetDate, dateFormat, t)
         }
       </span>
 
@@ -288,6 +288,8 @@ function CountdownCard({
   onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation('common');
+  const dateFormat = useAppStore((s) => s.dateFormat);
+  const timeFormat = useAppStore((s) => s.timeFormat);
 
   const getDaysRemaining = () => {
     const [year, month, day] = countdown.targetDate.split('-').map(Number);
@@ -396,11 +398,9 @@ function CountdownCard({
                 const [y, m, d] = countdown.targetDate.split('-').map(Number);
                 return getLunarFullDateStr(y, m, d);
               })()
-            : new Date(countdown.targetDate).toLocaleDateString(undefined, {
-                year: 'numeric', month: 'long', day: 'numeric',
-              })
+            : formatDisplayDate(countdown.targetDate, dateFormat, t)
           }
-          {countdown.targetTime && ` ${countdown.targetTime.slice(0, 5)}`}
+          {countdown.targetTime && ` ${formatTime(countdown.targetTime, timeFormat)}`}
         </span>
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium`}
         style={{
@@ -465,13 +465,12 @@ function CountdownCalendarView({
   const [selectedCountdown, setSelectedCountdown] = useState<Countdown | null>(null);
 
   const dayLabels = useMemo(() => {
-    const sun = [
+    const all = [
       t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
       t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
       t('habits.calendar.sat'),
     ];
-    if (weekStartDay === 1) return [...sun.slice(1), sun[0]];
-    return sun;
+    return [...all.slice(weekStartDay), ...all.slice(0, weekStartDay)];
   }, [t, weekStartDay]);
 
   // Group countdowns by target date
@@ -680,6 +679,7 @@ function SelectedCountdownDetail({
   onClose: () => void;
 }) {
   const { t } = useTranslation('common');
+  const timeFormat = useAppStore((s) => s.timeFormat);
   const diff = getDaysDiff(countdown.targetDate);
   const isCountup = countdown.eventType === 'countup';
   const displayDays = isCountup ? Math.abs(diff) : Math.abs(diff);
@@ -737,7 +737,7 @@ function SelectedCountdownDetail({
         {countdown.targetTime && (
           <div className="flex justify-between">
             <span>{t('countdowns.target_time')}</span>
-            <span className="text-gray-900 dark:text-gray-100">{countdown.targetTime.slice(0, 5)}</span>
+            <span className="text-gray-900 dark:text-gray-100">{formatTime(countdown.targetTime, timeFormat)}</span>
           </div>
         )}
         {countdown.description && (

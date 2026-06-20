@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { getLunarInfo, getLunarDayStr } from '@/lib/lunar';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate } from '@/lib/formatUtils';
 import type { CalendarEvent } from '@/types';
 
 interface DateTimeRangePickerProps {
@@ -15,13 +17,6 @@ interface DateTimeRangePickerProps {
 }
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-
-function formatDisplayDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  return `${parts[0]}/${parts[1]}/${parts[2]}`;
-}
 
 function toDateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -73,6 +68,8 @@ export default function DateTimeRangePicker({
   const { t } = useTranslation('common');
   const [open, setOpen] = useState(inline);
   const containerRef = useRef<HTMLDivElement>(null);
+  const showLunar = useAppStore((s) => s.showLunar);
+  const dateFormat = useAppStore((s) => s.dateFormat);
 
   // View month for the left calendar
   const initDate = startDate ? new Date(startDate + 'T00:00:00') : new Date();
@@ -213,7 +210,7 @@ export default function DateTimeRangePicker({
               <span className={`text-sm leading-none ${isSelectedStart || isSelectedEnd ? 'text-white' : ''}`}>
                 {cell.day}
               </span>
-              {lunarStr && (
+              {showLunar && lunarStr && (
                 <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
                   isSelectedStart || isSelectedEnd
                     ? 'text-blue-100'
@@ -318,7 +315,7 @@ export default function DateTimeRangePicker({
   }
 
   const triggerText = startDate || endDate
-    ? `${startDate ? formatDisplayDate(startDate) : '...'}${startTime ? ` ${startTime}` : ''} \u2192 ${endDate ? formatDisplayDate(endDate) : '...'}${endTime ? ` ${endTime}` : ''}`
+    ? `${startDate ? formatDisplayDate(startDate, dateFormat, t) : '...'}${startTime ? ` ${startTime}` : ''} \u2192 ${endDate ? formatDisplayDate(endDate, dateFormat, t) : '...'}${endTime ? ` ${endTime}` : ''}`
     : t('tasks.date_placeholder');
 
   return (

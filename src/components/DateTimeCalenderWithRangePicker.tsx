@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { Moon, Sun, Sunrise, Rainbow, Calendar1, CalendarArrowDown, CalendarFold, CalendarDays } from "lucide-react";
 import { getLunarDayStr } from "@/lib/lunar";
+import { useAppStore } from "@/stores/useAppStore";
+import { formatTimezoneOffset } from "@/lib/formatUtils";
 import type { CalendarEvent } from "@/types";
 
-interface TaskDatePickerProps {
+interface DateTimeCalenderWithRangePickerProps {
     // Single date mode
     date?: string;
     time?: string;
@@ -27,6 +29,8 @@ interface TaskDatePickerProps {
     // Options
     mode?: "single" | "range";
     events?: CalendarEvent[];
+    color?: string;
+    hideTime?: boolean;
 }
 
 const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
@@ -41,7 +45,38 @@ function getDateStr(offset: number = 0): string {
     return toDateStr(d.getFullYear(), d.getMonth() + 1, d.getDate());
 }
 
-export default function TaskDatePicker({
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+        ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+          }
+        : null;
+}
+
+function getColorStyles(color: string) {
+    const rgb = hexToRgb(color);
+    if (!rgb) return {};
+    return {
+        selectedBg: color,
+        selectedText: "#ffffff",
+        hoverBg: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`,
+        todayRing: color,
+        rangeBg: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`,
+        quickButtonBg: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`,
+        quickButtonText: color,
+        quickButtonHover: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+        lunarText: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`,
+        confirmBg: color,
+        confirmHover: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`,
+        activeTab: color,
+        toggleBg: color,
+    };
+}
+
+export default function DateTimeCalenderWithRangePicker({
     date,
     time,
     startDate,
@@ -53,10 +88,19 @@ export default function TaskDatePicker({
     onRangeChange,
     mode = "single",
     events = [],
-}: TaskDatePickerProps) {
+    color,
+    hideTime = false,
+}: DateTimeCalenderWithRangePickerProps) {
     const { t } = useTranslation("common");
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState<"date" | "range">(mode === "single" ? "date" : "range");
+    const themeColor = useAppStore((s) => s.themeColor);
+    const resolvedColor = color || themeColor;
+    const colorStyles = useMemo(() => getColorStyles(resolvedColor), [resolvedColor]);
+    const showLunar = useAppStore((s) => s.showLunar);
+    const showTimezone = useAppStore((s) => s.showTimezone);
+    const selectedTimezone = useAppStore((s) => s.selectedTimezone);
+    const timezoneFormat = useAppStore((s) => s.timezoneFormat);
 
     // Local state for single date
     const [localDate, setLocalDate] = useState(date || "");
@@ -180,9 +224,17 @@ export default function TaskDatePicker({
         const d = getDateStr(offset);
         if (activeTab === "date") {
             setLocalDate(d);
+            onSingleChange?.(d || undefined, localTime || undefined);
         } else {
             setLocalStartDate(d);
             setLocalEndDate("");
+            onRangeChange?.(
+                d || undefined,
+                localAllDay ? undefined : localStartTime || undefined,
+                undefined,
+                undefined,
+                localAllDay,
+            );
         }
         const parts = d.split("-").map(Number);
         setViewYear(parts[0]);
@@ -190,8 +242,17 @@ export default function TaskDatePicker({
     };
 
     const handleQuickRange = (startOffset: number, endOffset: number) => {
-        setLocalStartDate(getDateStr(startOffset));
-        setLocalEndDate(getDateStr(endOffset));
+        const sd = getDateStr(startOffset);
+        const ed = getDateStr(endOffset);
+        setLocalStartDate(sd);
+        setLocalEndDate(ed);
+        onRangeChange?.(
+            sd || undefined,
+            localAllDay ? undefined : localStartTime || undefined,
+            ed || undefined,
+            localAllDay ? undefined : localEndTime || undefined,
+            localAllDay,
+        );
     };
 
     const handleClear = () => {
@@ -238,11 +299,11 @@ export default function TaskDatePicker({
                 <button
                     type="button"
                     onClick={() => setActiveTab("date")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                        activeTab === "date"
-                            ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors"
+                    style={{
+                        color: activeTab === "date" ? colorStyles.activeTab : undefined,
+                        borderBottom: activeTab === "date" ? `2px solid ${colorStyles.activeTab}` : undefined,
+                    }}
                 >
                     <CalendarIcon className="w-3.5 h-3.5" />
                     {t("tasks.date_tab")}
@@ -250,11 +311,11 @@ export default function TaskDatePicker({
                 <button
                     type="button"
                     onClick={() => setActiveTab("range")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                        activeTab === "range"
-                            ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors"
+                    style={{
+                        color: activeTab === "range" ? colorStyles.activeTab : undefined,
+                        borderBottom: activeTab === "range" ? `2px solid ${colorStyles.activeTab}` : undefined,
+                    }}
                 >
                     <ClockIcon className="w-3.5 h-3.5" />
                     {t("tasks.range_tab")}
@@ -269,9 +330,15 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickDate(-1)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <Moon className="w-3.5 h-3.5" />
+                            <Moon className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.yesterday")}
                             </span>
@@ -279,9 +346,15 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickDate(0)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.quickButtonBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonBg!)}
                         >
-                            <Sun className="w-3.5 h-3.5" />
+                            <Sun className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.today")}
                             </span>
@@ -289,9 +362,15 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickDate(1)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <Sunrise className="w-3.5 h-3.5" />
+                            <Sunrise className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.tomorrow")}
                             </span>
@@ -299,9 +378,15 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickDate(7)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <Rainbow className="w-3.5 h-3.5" />
+                            <Rainbow className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.next_week")}
                             </span>
@@ -315,9 +400,9 @@ export default function TaskDatePicker({
                             onClick={handlePrevMonth}
                             className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronLeftIcon className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                            <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
-                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {viewYear} / {String(viewMonth).padStart(2, "0")}
                         </span>
                         <button
@@ -325,15 +410,15 @@ export default function TaskDatePicker({
                             onClick={handleNextMonth}
                             className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronRightIcon className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                            <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
                     </div>
 
                     {/* Weekday header */}
                     <div className="grid grid-cols-7 mb-0.5">
                         {WEEKDAY_KEYS.map((key) => (
-                            <div key={key} className="text-center text-[10px] text-gray-500 dark:text-gray-400 py-0.5">
-                                {t(`habits.days.${key}`)}
+                            <div key={key} className="aspect-square flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 py-0.5">
+                                {t(`habits.calendar.${key}`)}
                             </div>
                         ))}
                     </div>
@@ -353,29 +438,20 @@ export default function TaskDatePicker({
                                     key={idx}
                                     type="button"
                                     onClick={() => handleSelectDate(cell.dateStr)}
-                                    className={`
-                    relative flex flex-col items-center justify-start py-0.5 text-[11px] rounded transition-colors
-                    ${isSelected ? "bg-blue-500 text-white" : ""}
-                    ${!isSelected && isToday ? "ring-1 ring-blue-400 dark:ring-blue-500" : ""}
-                    ${
-                        !isSelected && !isToday && cell.inMonth
-                            ? "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            : ""
-                    }
-                    ${!cell.inMonth ? "text-gray-300 dark:text-gray-600" : ""}
-                  `}
+                                    className="relative aspect-square flex flex-col items-center justify-center py-0.5 text-sm rounded transition-colors"
+                                    style={{
+                                        backgroundColor: isSelected
+                                            ? colorStyles.selectedBg
+                                            : isToday
+                                            ? colorStyles.hoverBg
+                                            : undefined,
+                                        color: isSelected ? colorStyles.selectedText : undefined,
+                                        boxShadow: !isSelected && isToday ? `inset 0 0 0 1px ${colorStyles.todayRing}` : undefined,
+                                    }}
                                 >
-                                    <span className={`leading-none ${isSelected ? "text-white" : ""}`}>{cell.day}</span>
-                                    {lunarStr && (
-                                        <span
-                                            className={`text-[9px] leading-tight mt-0.5 truncate max-w-full px-0.5 ${
-                                                isSelected
-                                                    ? "text-blue-100"
-                                                    : cell.inMonth
-                                                    ? "text-gray-400 dark:text-gray-500"
-                                                    : "text-gray-200 dark:text-gray-700"
-                                            }`}
-                                        >
+                                    <span className="leading-none">{cell.day}</span>
+                                    {showLunar && lunarStr && (
+                                        <span className="text-[9px] leading-tight mt-0.5 truncate max-w-full px-0.5">
                                             {lunarStr}
                                         </span>
                                     )}
@@ -385,7 +461,7 @@ export default function TaskDatePicker({
                                                 <span
                                                     key={i}
                                                     className="w-0.5 h-0.5 rounded-full"
-                                                    style={{ backgroundColor: ev.color || "#3B82F6" }}
+                                                    style={{ backgroundColor: ev.color || color }}
                                                 />
                                             ))}
                                         </div>
@@ -395,32 +471,46 @@ export default function TaskDatePicker({
                         })}
                     </div>
 
+                    {/* Timezone */}
+                    {showTimezone && (
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                            {formatTimezoneOffset(selectedTimezone, timezoneFormat)}
+                        </div>
+                    )}
+
                     {/* Time picker */}
-                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">
-                            {t("tasks.due_time")}
-                        </label>
-                        <input
-                            type="time"
-                            value={localTime}
-                            onChange={(e) => setLocalTime(e.target.value)}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
+                    {!hideTime && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">
+                                {t("tasks.due_time")}
+                            </label>
+                            <input
+                                type="time"
+                                value={localTime}
+                                onChange={(e) => setLocalTime(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none"
+                            />
+                        </div>
+                    )}
 
                     {/* Action buttons */}
                     <div className="flex gap-1.5 mt-2">
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="flex-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="flex-1 px-2 py-1 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         >
                             {t("common.clear")}
                         </button>
                         <button
                             type="button"
                             onClick={handleConfirm}
-                            className="flex-1 px-2 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
+                            className="flex-1 px-2 py-1 text-sm text-white rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.confirmBg,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.confirmHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.confirmBg!)}
                         >
                             {t("common.confirm")}
                         </button>
@@ -436,7 +526,13 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 1)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-2 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
                             <Calendar1 className="w-3.5 h-3.5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
@@ -446,7 +542,13 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 6)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-2 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
                             <CalendarArrowDown className="w-3.5 h-3.5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
@@ -456,7 +558,13 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 29)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-1.5 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
                             <CalendarFold className="w-3.5 h-3.5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
@@ -466,7 +574,13 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 364)}
-                            className="group relative flex items-center justify-center p-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="group relative flex items-center justify-center p-1.5 rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.hoverBg,
+                                color: colorStyles.quickButtonText,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
                             <CalendarDays className="w-3.5 h-3.5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
@@ -484,14 +598,14 @@ export default function TaskDatePicker({
                             type="date"
                             value={localStartDate}
                             onChange={(e) => setLocalStartDate(e.target.value)}
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none"
                         />
-                        {!localAllDay && (
+                        {!localAllDay && !hideTime && (
                             <input
                                 type="time"
                                 value={localStartTime}
                                 onChange={(e) => setLocalStartTime(e.target.value)}
-                                className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none"
                             />
                         )}
                     </div>
@@ -505,35 +619,38 @@ export default function TaskDatePicker({
                             type="date"
                             value={localEndDate}
                             onChange={(e) => setLocalEndDate(e.target.value)}
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none"
                         />
-                        {!localAllDay && (
+                        {!localAllDay && !hideTime && (
                             <input
                                 type="time"
                                 value={localEndTime}
                                 onChange={(e) => setLocalEndTime(e.target.value)}
-                                className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none"
                             />
                         )}
                     </div>
 
                     {/* All day toggle */}
-                    <div className="flex items-center justify-between mb-2 py-0.5 px-0.5">
-                        <span className="text-[11px] text-gray-700 dark:text-gray-300">{t("tasks.all_day")}</span>
-                        <button
-                            type="button"
-                            onClick={() => setLocalAllDay(!localAllDay)}
-                            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                                localAllDay ? "bg-blue-500" : "bg-gray-300 dark:bg-gray-600"
-                            }`}
-                        >
-                            <span
-                                className={`inline-block h-3 w-3 rounded-full bg-white shadow transition-transform ${
-                                    localAllDay ? "translate-x-3.5" : "translate-x-0.5"
-                                }`}
-                            />
-                        </button>
-                    </div>
+                    {!hideTime && (
+                        <div className="flex items-center justify-between mb-2 py-0.5 px-0.5">
+                            <span className="text-[11px] text-gray-700 dark:text-gray-300">{t("tasks.all_day")}</span>
+                            <button
+                                type="button"
+                                onClick={() => setLocalAllDay(!localAllDay)}
+                                className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
+                                style={{
+                                    backgroundColor: localAllDay ? colorStyles.toggleBg : undefined,
+                                }}
+                            >
+                                <span
+                                    className={`inline-block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                                        localAllDay ? "translate-x-3.5" : "translate-x-0.5"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    )}
 
                     {/* Mini calendar for quick selection */}
                     <div className="p-1.5">
@@ -560,9 +677,9 @@ export default function TaskDatePicker({
                             {WEEKDAY_KEYS.map((key) => (
                                 <div
                                     key={key}
-                                    className="text-center text-[9px] text-gray-500 dark:text-gray-400 py-0.5"
+                                    className="aspect-square flex items-center justify-center text-[10px] text-gray-500 dark:text-gray-400 py-0.5"
                                 >
-                                    {t(`habits.days.${key}`)[0]}
+                                    {t(`habits.calendar.${key}`)[0]}
                                 </div>
                             ))}
                             {calendarDays.map((cell, idx) => {
@@ -581,30 +698,22 @@ export default function TaskDatePicker({
                                         key={idx}
                                         type="button"
                                         onClick={() => handleSelectDate(cell.dateStr)}
-                                        className={`
-                      relative flex flex-col items-center justify-start text-center py-0.5 rounded transition-colors
-                      ${isStart || isEnd ? "bg-blue-500 text-white" : ""}
-                      ${inRange ? "bg-blue-100 dark:bg-blue-900/20" : ""}
-                      ${!isStart && !isEnd && !inRange && isToday ? "ring-1 ring-blue-400" : ""}
-                      ${
-                          !isStart && !isEnd && !inRange && cell.inMonth
-                              ? "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                              : ""
-                      }
-                      ${!cell.inMonth ? "text-gray-300 dark:text-gray-600" : ""}
-                    `}
+                                        className="aspect-square relative flex flex-col items-center justify-center py-0.5 rounded transition-colors text-[10px]"
+                                        style={{
+                                            backgroundColor: isStart || isEnd
+                                                ? colorStyles.selectedBg
+                                                : inRange
+                                                ? colorStyles.rangeBg
+                                                : undefined,
+                                            color: isStart || isEnd ? colorStyles.selectedText : undefined,
+                                            boxShadow: !isStart && !isEnd && !inRange && isToday
+                                                ? `inset 0 0 0 1px ${colorStyles.todayRing}`
+                                                : undefined,
+                                        }}
                                     >
-                                        <span className="text-[9px] leading-none">{cell.day}</span>
-                                        {lunarStr && (
-                                            <span
-                                                className={`text-[7px] leading-tight truncate max-w-full px-0.5 ${
-                                                    isStart || isEnd
-                                                        ? "text-blue-100"
-                                                        : cell.inMonth
-                                                        ? "text-gray-400 dark:text-gray-500"
-                                                        : "text-gray-200 dark:text-gray-700"
-                                                }`}
-                                            >
+                                        <span className="text-[11px] leading-none">{cell.day}</span>
+                                        {showLunar && lunarStr && (
+                                            <span className="text-[9px] leading-tight truncate max-w-full px-0.5">
                                                 {lunarStr}
                                             </span>
                                         )}
@@ -613,6 +722,13 @@ export default function TaskDatePicker({
                             })}
                         </div>
                     </div>
+
+                    {/* Timezone */}
+                    {showTimezone && (
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                            {formatTimezoneOffset(selectedTimezone, timezoneFormat)}
+                        </div>
+                    )}
 
                     {/* Action buttons */}
                     <div className="flex gap-1.5">
@@ -626,7 +742,12 @@ export default function TaskDatePicker({
                         <button
                             type="button"
                             onClick={handleConfirm}
-                            className="flex-1 px-2 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
+                            className="flex-1 px-2 py-1 text-xs text-white rounded transition-colors"
+                            style={{
+                                backgroundColor: colorStyles.confirmBg,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.confirmHover!)}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.confirmBg!)}
                         >
                             {t("common.confirm")}
                         </button>

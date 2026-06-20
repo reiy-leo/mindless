@@ -41,6 +41,7 @@ import {
 } from "@/queries/usePersonQueries";
 import { useTags, useCreateTag } from "@/queries/useTaskQueries";
 import { useAppStore } from "@/stores/useAppStore";
+import { formatDisplayDate, formatTime } from "@/lib/formatUtils";
 import TagCombobox from "@/components/TagCombobox";
 import PhoneEmailListEditor from "@/components/PhoneEmailListEditor";
 import SimpleListEditor from "@/components/SimpleListEditor";
@@ -381,7 +382,7 @@ function PersonCreateForm({
 
 export default function PeoplePage() {
     const { t } = useTranslation("common");
-    const { personGroupsPanelWidth, detailPanelWidth, setPersonGroupsPanelWidth, setDetailPanelWidth } = useAppStore();
+    const { personGroupsPanelWidth, detailPanelWidth, setPersonGroupsPanelWidth, setDetailPanelWidth, dateFormat, timeFormat } = useAppStore();
     const queryClient = useQueryClient();
 
     // State
@@ -1453,7 +1454,7 @@ export default function PeoplePage() {
                         {/* Metadata */}
                         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
                             <p>
-                                {t("common.edit")}: {new Date(selectedPerson.updatedAt).toLocaleString()}
+                                {t("common.edit")}: {formatDisplayDate(selectedPerson.updatedAt.slice(0, 10), dateFormat, t)} {formatTime(selectedPerson.updatedAt.slice(11, 16), timeFormat)}
                             </p>
                         </div>
                     </div>

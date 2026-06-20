@@ -13,6 +13,7 @@ import {
     XMarkIcon,
     StarIcon,
     ClipboardIcon,
+    CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { AvatarImage } from "@/components/people/AvatarImage";
 import { Star } from "lucide-react";
@@ -39,11 +40,12 @@ import { useTags, useTasks } from "@/queries/useTaskQueries";
 import { useAllPersons } from "@/queries/usePersonQueries";
 import { useMediaItems } from "@/queries/useMediaQueries";
 import { useAppStore } from "@/stores/useAppStore";
+import { formatDisplayDate, formatTime } from "@/lib/formatUtils";
 import TagCombobox from "@/components/TagCombobox";
 import MilkdownEditor from "@/components/MilkdownEditor";
+import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
 import LinkedItemSelector from "@/components/media/LinkedItemSelector";
 import type { Note, NoteGroup } from "@/types/note";
-import type { Tag } from "@/types/tag";
 import GroupFormPopup from "@/components/ui/GroupFormPopup";
 
 // ==================== Helper: Resolve icon ====================
@@ -78,7 +80,7 @@ const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: 
 
 export default function NotesPage() {
     const { t } = useTranslation("common");
-    const { noteGroupsPanelWidth, detailPanelWidth, setNoteGroupsPanelWidth, setDetailPanelWidth } = useAppStore();
+    const { noteGroupsPanelWidth, detailPanelWidth, setNoteGroupsPanelWidth, setDetailPanelWidth, dateFormat, timeFormat } = useAppStore();
 
     // State
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
@@ -100,6 +102,8 @@ export default function NotesPage() {
 
     const [groupsExpanded, setGroupsExpanded] = useState(true);
     const [showGroupForm, setShowGroupForm] = useState(false);
+    const [showTargetDatePicker, setShowTargetDatePicker] = useState(false);
+    const targetDateRef = useRef<HTMLDivElement>(null);
     const [editingGroup, setEditingGroup] = useState<NoteGroup | null>(null);
     const [newGroupName, setNewGroupName] = useState("");
     const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
@@ -193,6 +197,18 @@ export default function NotesPage() {
             setLocalTitle("");
         }
     }, [selectedNote]);
+
+    // Close target date picker on outside click
+    useEffect(() => {
+        if (!showTargetDatePicker) return;
+        const handler = (e: MouseEvent) => {
+            if (targetDateRef.current && !targetDateRef.current.contains(e.target as Node)) {
+                setShowTargetDatePicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [showTargetDatePicker]);
 
     // Debounced content save - updates ref immediately, state only for initial sync
     const handleContentChange = useCallback(
@@ -483,13 +499,6 @@ export default function NotesPage() {
         return t("notes.smart_groups.all");
     }, [selectedSmartGroup, selectedGroupId, noteGroups, t]);
 
-    // Tag map for display
-    const tagMap = useMemo(() => {
-        const map = new Map<string, Tag>();
-        allTags.forEach((tag) => map.set(tag.id, tag));
-        return map;
-    }, [allTags]);
-
     // Parse tag IDs
     const parseTagIds = useCallback((tagIds?: string): string[] => {
         if (!tagIds) return [];
@@ -651,7 +660,6 @@ export default function NotesPage() {
                         <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
                             {flatItems.map((item) => {
                                 const note = item.type === "note" ? item.note : item.subnote;
-                                const isSubNote = item.type === "subnote";
                                 const isSelected = selectedNoteId === note.id;
 
                                 return (
@@ -660,11 +668,9 @@ export default function NotesPage() {
                                         onClick={() => setSelectedNoteId(note.id)}
                                         onContextMenu={(e) => handleNoteContextMenu(e, note)}
                                         className={`px-4 py-2.5 cursor-pointer transition-colors ${
-                                            isSubNote ? "pl-10" : ""
-                                        } ${
                                             isSelected
-                                                ? "bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500"
-                                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-2 border-transparent"
+                                                ? "bg-blue-50 dark:bg-blue-900/20"
+                                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                         }`}
                                     >
                                         <div className="flex items-start gap-2">
@@ -713,37 +719,13 @@ export default function NotesPage() {
                                                         {note.content.replace(/[#*`\n]/g, " ").slice(0, 80)}
                                                     </p>
                                                 )}
-                                                {/* Tags */}
-                                                {parseTagIds(note.tagIds).length > 0 && (
-                                                    <div className="flex gap-1 mt-1 flex-wrap">
-                                                        {parseTagIds(note.tagIds).map((tagId) => {
-                                                            const tag = tagMap.get(tagId);
-                                                            if (!tag) return null;
-                                                            return (
-                                                                <button
-                                                                    key={tagId}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedTagId(selectedTagId === tagId ? null : tagId);
-                                                                    }}
-                                                                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-opacity ${
-                                                                        selectedTagId && selectedTagId !== tagId ? "opacity-40" : ""
-                                                                    }`}
-                                                                    style={{
-                                                                        backgroundColor: `${tag.color}20`,
-                                                                        color: tag.color,
-                                                                    }}
-                                                                >
-                                                                    {tag.emoji && <span>{tag.emoji}</span>}
-                                                                    {tag.name}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
                                             </div>
                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5">
-                                                {note.targetDate ? new Date(note.targetDate).toLocaleDateString() : new Date(note.updatedAt).toLocaleDateString()}
+                                                {note.targetDate
+                                                    ? note.targetEndDate
+                                                        ? `${formatDisplayDate(note.targetDate, dateFormat, t)} → ${formatDisplayDate(note.targetEndDate, dateFormat, t)}`
+                                                        : formatDisplayDate(note.targetDate, dateFormat, t)
+                                                    : formatDisplayDate(note.updatedAt.slice(0, 10), dateFormat, t)}
                                             </span>
                                         </div>
                                     </div>
@@ -763,8 +745,53 @@ export default function NotesPage() {
             >
                 {selectedNote ? (
                     <div className="flex flex-col h-full">
+                        {/* Target Date */}
+                        <div className="px-4 pt-3 pb-1 flex-shrink-0">
+                            <div className="relative" ref={targetDateRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTargetDatePicker(!showTargetDatePicker)}
+                                    className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                >
+                                    <CalendarIcon className="w-4 h-4" />
+                                    <span>
+                                        {selectedNote.targetDate
+                                            ? selectedNote.targetEndDate
+                                                ? `${formatDisplayDate(selectedNote.targetDate, dateFormat, t)} → ${formatDisplayDate(selectedNote.targetEndDate, dateFormat, t)}`
+                                                : formatDisplayDate(selectedNote.targetDate, dateFormat, t)
+                                            : t("notes.target_date")}
+                                    </span>
+                                </button>
+                                {showTargetDatePicker && (
+                                    <div className="absolute z-50 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                                        <DateTimeCalenderWithRangePicker
+                                            date={selectedNote.targetDate}
+                                            startDate={selectedNote.targetDate}
+                                            endDate={selectedNote.targetEndDate}
+                                            mode={selectedNote.targetEndDate ? "range" : "single"}
+                                            hideTime
+                                            onSingleChange={(date) => {
+                                                handleUpdateNoteField({ 
+                                                    targetDate: date || undefined, 
+                                                    targetEndDate: ""
+                                                });
+                                                setShowTargetDatePicker(false);
+                                            }}
+                                            onRangeChange={(startDate, _startTime, endDate, _endTime) => {
+                                                handleUpdateNoteField({
+                                                    targetDate: startDate || undefined,
+                                                    targetEndDate: endDate || undefined,
+                                                });
+                                                setShowTargetDatePicker(false);
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Title (fixed) */}
-                        <div className="px-4 pt-4 pb-2 flex-shrink-0">
+                        <div className="px-4 pt-2 pb-2 flex-shrink-0">
                             {selectedNote.parentId && (() => {
                                 const parentNote = allNotes.find((n) => n.id === selectedNote.parentId);
                                 if (!parentNote) return null;
@@ -798,29 +825,6 @@ export default function NotesPage() {
 
                         {/* Scrollable content */}
                         <div className="flex-1 overflow-auto min-h-0">
-
-                        {/* Target Date */}
-                        <div className="px-4 pb-2">
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                    {t("notes.target_date")}
-                                </label>
-                                <input
-                                    type="date"
-                                    value={selectedNote.targetDate || ""}
-                                    onChange={(e) => handleUpdateNoteField({ targetDate: e.target.value || undefined })}
-                                    className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                                {selectedNote.targetDate && (
-                                    <button
-                                        onClick={() => handleUpdateNoteField({ targetDate: undefined })}
-                                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                    >
-                                        <XMarkIcon className="w-3.5 h-3.5" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
 
                         {/* Tags */}
                         <div className="px-4 pb-2">
@@ -1019,7 +1023,7 @@ export default function NotesPage() {
                                                 {sub.title || t("notes.title_placeholder")}
                                             </button>
                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
-                                                {new Date(sub.updatedAt).toLocaleDateString()}
+                                                {formatDisplayDate(sub.updatedAt.slice(0, 10), dateFormat, t)}
                                             </span>
                                             <button
                                                 onClick={() => handleDeleteNote(sub.id)}
@@ -1056,7 +1060,7 @@ export default function NotesPage() {
                         {/* Metadata */}
                         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500">
                             <p>
-                                {t("common.edit")}: {new Date(selectedNote.updatedAt).toLocaleString()}
+                                {t("common.edit")}: {formatDisplayDate(selectedNote.updatedAt.slice(0, 10), dateFormat, t)} {formatTime(selectedNote.updatedAt.slice(11, 16), timeFormat)}
                             </p>
                         </div>
                         </div>

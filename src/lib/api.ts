@@ -557,6 +557,7 @@ export async function createNote(params: {
   tagIds?: string;
   level?: number;
   targetDate?: string;
+  targetEndDate?: string;
 }): Promise<Note> {
   return await invoke<Note>('create_note', params);
 }
@@ -571,6 +572,7 @@ export async function updateNote(id: string, params: {
   isPinned?: boolean;
   sortOrder?: number;
   targetDate?: string;
+  targetEndDate?: string;
 }): Promise<Note> {
   return await invoke<Note>('update_note', {
     id,
@@ -583,6 +585,7 @@ export async function updateNote(id: string, params: {
     isPinned: params.isPinned,
     sortOrder: params.sortOrder,
     targetDate: params.targetDate,
+    targetEndDate: params.targetEndDate,
   });
 }
 

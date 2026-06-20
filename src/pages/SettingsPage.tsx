@@ -4,9 +4,12 @@ import { useAppStore } from '@/stores/useAppStore';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { checkAndNotify } from '@/services/notificationService';
 import { useCalendarEvents, useImportCalendarEvents, useClearAllCalendarEvents } from '@/queries/useTaskQueries';
-import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers } from 'lucide-react';
+import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers, Clock } from 'lucide-react';
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import TimezonePicker from '@/components/TimezonePicker';
+import { formatTime, formatDisplayDate, formatTimezoneOffset } from '@/lib/formatUtils';
+import type { TimeFormat, DateFormat, TimezoneFormat } from '@/stores/useAppStore';
 
 const THEME_COLORS = [
   { name: 'Slate', hex: '#64748B' },
@@ -38,7 +41,9 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation('common');
   const {
     theme, themeColor, language, priorityMode, notificationEnabled, fontSize, sidebarMode,
+    weekStartDay, showLunar, showTimezone, selectedTimezone, timeFormat, dateFormat, timezoneFormat,
     setTheme, setThemeColor, setLanguage, setPriorityMode, setNotificationEnabled, setFontSize, setSidebarMode,
+    setWeekStartDay, setShowLunar, setShowTimezone, setSelectedTimezone, setTimeFormat, setDateFormat, setTimezoneFormat,
   } = useAppStore();
 
   useEffect(() => {
@@ -53,8 +58,29 @@ export default function SettingsPage() {
   useEffect(() => {
     emit('settings:changed', { key: 'language', value: language });
   }, [language]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'weekStartDay', value: weekStartDay });
+  }, [weekStartDay]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'showLunar', value: showLunar });
+  }, [showLunar]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'showTimezone', value: showTimezone });
+  }, [showTimezone]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'selectedTimezone', value: selectedTimezone });
+  }, [selectedTimezone]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'timeFormat', value: timeFormat });
+  }, [timeFormat]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'dateFormat', value: dateFormat });
+  }, [dateFormat]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'timezoneFormat', value: timezoneFormat });
+  }, [timezoneFormat]);
 
-  const [activeTab, setActiveTab] = useState<'general' | 'theme'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime'>('general');
   const [permStatus, setPermStatus] = useState<string | null>(null);
 
   const { data: calendarEvents = [] } = useCalendarEvents();
@@ -152,6 +178,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: t('settings.tabs.general'), icon: Settings },
+    { id: 'datetime' as const, label: t('settings.tabs.datetime'), icon: Clock },
     { id: 'theme' as const, label: t('settings.tabs.theme'), icon: Palette },
   ];
 
@@ -480,6 +507,207 @@ export default function SettingsPage() {
               </p>
               <p className="text-sm">{t('settings.version')}: 1.0.0</p>
             </div>
+          </section>
+        </div>
+      )}
+
+      {/* Date & Time Tab */}
+      {activeTab === 'datetime' && (
+        <div className="space-y-6 max-w-2xl">
+          {/* Week Start Day */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {t('settings.datetime.week_start_day')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {t('settings.datetime.week_start_day_desc')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 0, key: 'sunday' },
+                { value: 1, key: 'monday' },
+                { value: 2, key: 'tuesday' },
+                { value: 3, key: 'wednesday' },
+                { value: 4, key: 'thursday' },
+                { value: 5, key: 'friday' },
+                { value: 6, key: 'saturday' },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+                    weekStartDay === option.value
+                      ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="weekStartDay"
+                    value={option.value}
+                    checked={weekStartDay === option.value}
+                    onChange={() => setWeekStartDay(option.value)}
+                    className="sr-only"
+                  />
+                  {t(`settings.datetime.days.${option.key}`)}
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Time Format */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {t('settings.datetime.time_format')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {t('settings.datetime.time_format_desc')}
+            </p>
+            <div className="space-y-2">
+              {(['cn_natural', 'cn_24h', 'cn_12h', 'en_12h', '24h'] as TimeFormat[]).map((fmt) => (
+                <label
+                  key={fmt}
+                  className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <input
+                    type="radio"
+                    name="timeFormat"
+                    checked={timeFormat === fmt}
+                    onChange={() => setTimeFormat(fmt)}
+                    className="w-4 h-4 text-blue-500"
+                  />
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {t(`settings.datetime.time_formats.${fmt}`)}
+                  </span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500 ml-auto">
+                    {formatTime('15:12', fmt)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Date Format */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {t('settings.datetime.date_format')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {t('settings.datetime.date_format_desc')}
+            </p>
+            <div className="space-y-2">
+              {(['relative', 'yyyy_slash_mm_dd', 'yyyy_dash_mm_dd', 'mm_dd_yyyy', 'mm_dd'] as DateFormat[]).map((fmt) => (
+                <label
+                  key={fmt}
+                  className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <input
+                    type="radio"
+                    name="dateFormat"
+                    checked={dateFormat === fmt}
+                    onChange={() => setDateFormat(fmt)}
+                    className="w-4 h-4 text-blue-500"
+                  />
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {t(`settings.datetime.date_formats.${fmt}`)}
+                  </span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500 ml-auto">
+                    {formatDisplayDate('2025-03-24', fmt, t)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Timezone Format */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {t('settings.datetime.timezone_format')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {t('settings.datetime.timezone_format_desc')}
+            </p>
+            <div className="space-y-2">
+              {(['short_offset', 'iana', 'compact', 'gmt', 'utc_colon', 'iso_colon', 'cn_zone'] as TimezoneFormat[]).map((fmt) => (
+                <label
+                  key={fmt}
+                  className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <input
+                    type="radio"
+                    name="timezoneFormat"
+                    checked={timezoneFormat === fmt}
+                    onChange={() => setTimezoneFormat(fmt)}
+                    className="w-4 h-4 text-blue-500"
+                  />
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {t(`settings.datetime.timezone_formats.${fmt}`)}
+                  </span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500 ml-auto">
+                    {formatTimezoneOffset(selectedTimezone, fmt)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Show Lunar */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <div className="text-gray-900 dark:text-gray-100 font-medium">
+                  {t('settings.datetime.show_lunar')}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {t('settings.datetime.show_lunar_desc')}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLunar(!showLunar)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  showLunar ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    showLunar ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
+          </section>
+
+          {/* Show Timezone */}
+          <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <label className="flex items-center justify-between cursor-pointer mb-4">
+              <div>
+                <div className="text-gray-900 dark:text-gray-100 font-medium">
+                  {t('settings.datetime.show_timezone')}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {t('settings.datetime.show_timezone_desc')}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTimezone(!showTimezone)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  showTimezone ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    showTimezone ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
+            {showTimezone && (
+              <div>
+                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings.datetime.timezone_picker')}
+                </label>
+                <TimezonePicker value={selectedTimezone} onChange={setSelectedTimezone} />
+              </div>
+            )}
           </section>
         </div>
       )}

@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTaskTags, parseLocalDate, getLocalToday } from '@/lib/taskHelpers';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate, formatTime } from '@/lib/formatUtils';
 import type { Task, Priority, UpdateTaskParams } from '@/types/task';
 import type { Tag } from '@/types/tag';
 
@@ -100,6 +102,8 @@ export default function EisenhowerMatrixView({
 }: EisenhowerMatrixViewProps) {
   const { t } = useTranslation('common');
   const [dragOverQuadrant, setDragOverQuadrant] = useState<Quadrant | null>(null);
+  const dateFormat = useAppStore((s) => s.dateFormat);
+  const timeFormat = useAppStore((s) => s.timeFormat);
 
   const todayStr = getLocalToday();
 
@@ -290,8 +294,8 @@ export default function EisenhowerMatrixView({
                                   ? 'text-red-500 dark:text-red-400 font-medium'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>
-                                {parseLocalDate(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                {task.dueTime && <span>{task.dueTime.slice(0, 5)}</span>}
+                                {formatDisplayDate(task.dueDate, dateFormat, t)}
+                                {task.dueTime && <span>{formatTime(task.dueTime, timeFormat)}</span>}
                               </span>
                             )}
                             {task.priority > 0 && (

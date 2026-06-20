@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { CSSProperties, useEffect, useState } from 'react';
+import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
 import { emit, listen } from '@tauri-apps/api/event';
@@ -54,7 +54,7 @@ export default function EmojiPickerDialogPage() {
   };
 
   return (
-    <OverlayWebviewWindow>
+    <OverlayWebviewWindow closable={false}>
       <div
         className="w-full h-full flex items-center justify-center"
         onClick={async (e) => {
@@ -65,12 +65,19 @@ export default function EmojiPickerDialogPage() {
       >
         <EmojiPicker
           onEmojiClick={handleEmojiClick}
-          width={350}
-          height={400}
+          width={`100%`}
+          height={`100%`}
           theme={theme === 'dark' ? Theme.DARK : Theme.LIGHT}
           skinTonesDisabled
+          emojiStyle={EmojiStyle.NATIVE}
           searchDisabled={false}
           previewConfig={{ showPreview: false }}
+          style={{
+            '--epr-header-padding': '0.25rem',
+            '--epr-category-navigation-button-size': '24px',
+            '--epr-emoji-size': '24px',
+            '--epr-search-input-height': '24px'
+          } as CSSProperties}
         />
       </div>
     </OverlayWebviewWindow>

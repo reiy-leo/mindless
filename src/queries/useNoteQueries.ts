@@ -71,7 +71,7 @@ export function useDeleteNoteGroup() {
 export function useCreateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { title: string; content?: string; groupId?: string; parentId?: string; tagIds?: string; level?: number; targetDate?: string }) =>
+    mutationFn: (params: { title: string; content?: string; groupId?: string; parentId?: string; tagIds?: string; level?: number; targetDate?: string; targetEndDate?: string }) =>
       api.createNote(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -84,7 +84,7 @@ export function useCreateNote() {
 export function useUpdateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...params }: { id: string; title?: string; content?: string; groupId?: string; tagIds?: string; isCompleted?: boolean; isArchived?: boolean; isPinned?: boolean; sortOrder?: number; targetDate?: string }) =>
+    mutationFn: ({ id, ...params }: { id: string; title?: string; content?: string; groupId?: string; tagIds?: string; isCompleted?: boolean; isArchived?: boolean; isPinned?: boolean; sortOrder?: number; targetDate?: string; targetEndDate?: string }) =>
       api.updateNote(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });

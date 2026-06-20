@@ -7,7 +7,8 @@ import { useHabits } from '@/queries/useHabitQueries';
 import { useCountdowns } from '@/queries/useCountdownQueries';
 import { useViewStore } from '@/stores/useViewStore';
 import { PRIORITY_COLORS } from '@/lib/constants';
-import { parseLocalDate } from '@/lib/taskHelpers';
+import { useAppStore } from '@/stores/useAppStore';
+import { formatDisplayDate } from '@/lib/formatUtils';
 import type { Task } from '@/types/task';
 import type { Habit } from '@/types/habit';
 import type { Countdown } from '@/types/countdown';
@@ -28,6 +29,7 @@ export default function GlobalSearchDialog({
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
+  const dateFormat = useAppStore((s) => s.dateFormat);
 
   const { data: tasks = [] } = useTasks();
   const { data: habits = [] } = useHabits();
@@ -168,7 +170,7 @@ export default function GlobalSearchDialog({
                       {result.type === 'task' && result.item.dueDate && (
                         <span className="flex items-center gap-0.5">
                           <CalendarIcon className="w-3 h-3" />
-                          {parseLocalDate(result.item.dueDate).toLocaleDateString()}
+                          {formatDisplayDate(result.item.dueDate, dateFormat, t)}
                         </span>
                       )}
                       {result.type === 'task' && result.item.isCompleted && (

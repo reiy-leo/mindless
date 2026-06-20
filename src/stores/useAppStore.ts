@@ -9,6 +9,9 @@ type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 type GroupBy = 'none' | 'priority' | 'list';
 export type FontSize = 'small' | 'default' | 'large' | 'xlarge';
+export type TimeFormat = 'cn_natural' | 'cn_24h' | 'cn_12h' | 'en_12h' | '24h';
+export type DateFormat = 'relative' | 'yyyy_slash_mm_dd' | 'yyyy_dash_mm_dd' | 'mm_dd_yyyy' | 'mm_dd';
+export type TimezoneFormat = 'short_offset' | 'iana' | 'compact' | 'gmt' | 'utc_colon' | 'iso_colon' | 'cn_zone';
 
 interface SmartGroupVisibility {
   tomorrow: boolean;
@@ -46,7 +49,13 @@ interface AppState {
   sidebarMode: SidebarMode;
   priorityMode: 'simple' | 'detailed';
   notificationEnabled: boolean;
-  weekStartDay: 0 | 1;
+  weekStartDay: number;
+  showLunar: boolean;
+  showTimezone: boolean;
+  selectedTimezone: string;
+  timeFormat: TimeFormat;
+  dateFormat: DateFormat;
+  timezoneFormat: TimezoneFormat;
   taskSortBy: SortBy;
   taskSortOrder: SortOrder;
   taskGroupBy: GroupBy;
@@ -71,7 +80,13 @@ interface AppState {
   setSidebarMode: (mode: SidebarMode) => void;
   setPriorityMode: (mode: 'simple' | 'detailed') => void;
   setNotificationEnabled: (enabled: boolean) => void;
-  setWeekStartDay: (day: 0 | 1) => void;
+  setWeekStartDay: (day: number) => void;
+  setShowLunar: (show: boolean) => void;
+  setShowTimezone: (show: boolean) => void;
+  setSelectedTimezone: (tz: string) => void;
+  setTimeFormat: (fmt: TimeFormat) => void;
+  setDateFormat: (fmt: DateFormat) => void;
+  setTimezoneFormat: (fmt: TimezoneFormat) => void;
   setTaskSortBy: (by: SortBy) => void;
   setTaskSortOrder: (order: SortOrder) => void;
   setTaskGroupBy: (by: GroupBy) => void;
@@ -102,7 +117,13 @@ export const useAppStore = create<AppState>()(
       sidebarMode: 'both',
       priorityMode: 'simple',
       notificationEnabled: true,
-      weekStartDay: 0,
+      weekStartDay: 1,
+      showLunar: true,
+      showTimezone: true,
+      selectedTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timeFormat: '24h',
+      dateFormat: 'relative',
+      timezoneFormat: 'short_offset',
       taskSortBy: 'dueDate',
       taskSortOrder: 'asc',
       taskGroupBy: 'none',
@@ -128,6 +149,12 @@ export const useAppStore = create<AppState>()(
       setPriorityMode: (priorityMode) => set({ priorityMode }),
       setNotificationEnabled: (notificationEnabled) => set({ notificationEnabled }),
       setWeekStartDay: (weekStartDay) => set({ weekStartDay }),
+      setShowLunar: (showLunar) => set({ showLunar }),
+      setShowTimezone: (showTimezone) => set({ showTimezone }),
+      setSelectedTimezone: (selectedTimezone) => set({ selectedTimezone }),
+      setTimeFormat: (timeFormat) => set({ timeFormat }),
+      setDateFormat: (dateFormat) => set({ dateFormat }),
+      setTimezoneFormat: (timezoneFormat) => set({ timezoneFormat }),
       setTaskSortBy: (taskSortBy) => set({ taskSortBy }),
       setTaskSortOrder: (taskSortOrder) => set({ taskSortOrder }),
       setTaskGroupBy: (taskGroupBy) => set({ taskGroupBy }),
@@ -184,6 +211,12 @@ export const useAppStore = create<AppState>()(
         priorityMode: state.priorityMode,
         notificationEnabled: state.notificationEnabled,
         weekStartDay: state.weekStartDay,
+        showLunar: state.showLunar,
+        showTimezone: state.showTimezone,
+        selectedTimezone: state.selectedTimezone,
+        timeFormat: state.timeFormat,
+        dateFormat: state.dateFormat,
+        timezoneFormat: state.timezoneFormat,
         fontSize: state.fontSize,
         smartGroupVisibility: state.smartGroupVisibility,
         advancedGroups: state.advancedGroups,

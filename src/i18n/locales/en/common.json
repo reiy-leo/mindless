@@ -526,7 +526,8 @@
   "settings": {
     "tabs": {
       "general": "General",
-      "theme": "Theme"
+      "theme": "Theme",
+      "datetime": "Date & Time"
     },
     "language": "Language",
     "theme": "Theme",
@@ -575,6 +576,55 @@
       "column_first": "First Column (70%)",
       "column_other": "Other Columns (30%)",
       "preview": "Preview"
+    },
+    "datetime": {
+      "title": "Date & Time",
+      "week_start_day": "First day of week",
+      "week_start_day_desc": "Set the first day of the week in calendars",
+      "show_lunar": "Show Lunar Calendar",
+      "show_lunar_desc": "Display lunar calendar info under each date",
+      "show_timezone": "Show Timezone",
+      "show_timezone_desc": "Display timezone information in calendars",
+      "timezone_picker": "Select Timezone",
+      "timezone_search_placeholder": "Search timezones...",
+      "time_format": "Time Format",
+      "time_format_desc": "Choose how time is displayed",
+      "date_format": "Date Format",
+      "date_format_desc": "Choose how dates are displayed",
+      "timezone_format": "Timezone Format",
+      "timezone_format_desc": "Choose how timezone offsets are displayed",
+      "days": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "time_formats": {
+        "cn_natural": "下午三点十二分",
+        "cn_24h": "PM 13:23",
+        "cn_12h": "PM 01:23",
+        "en_12h": "01:23 PM",
+        "24h": "13:23"
+      },
+      "date_formats": {
+        "relative": "Relative (Today, Yesterday)",
+        "yyyy_slash_mm_dd": "2025/03/24",
+        "yyyy_dash_mm_dd": "2025-03-24",
+        "mm_dd_yyyy": "03/24 2025",
+        "mm_dd": "03/24"
+      },
+      "timezone_formats": {
+        "short_offset": "+8 / -8",
+        "iana": "Asia/Shanghai",
+        "compact": "+0800",
+        "gmt": "GMT+8",
+        "utc_colon": "UTC+5:30",
+        "iso_colon": "+08:00",
+        "cn_zone": "东八区"
+      }
     }
   },
   "people": {

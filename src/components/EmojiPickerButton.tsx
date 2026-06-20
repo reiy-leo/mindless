@@ -40,8 +40,8 @@ export default function EmojiPickerButton({ value, onChange, className = '' }: E
       const anchorY = logicalWinY + rect.top;
       const anchorH = rect.height;
 
-      const pickerWidth = 370;
-      const pickerHeight = 440;
+      const pickerWidth = 270;
+      const pickerHeight = 380;
 
       const screenWidth = window.screen.width;
       const screenHeight = window.screen.height;

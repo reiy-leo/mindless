@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+
 import HeatmapGrid from '@/components/HeatmapGrid';
 import { useHeatmapData } from '@/queries/useHeatmapQueries';
 import { useCountdowns } from '@/queries/useCountdownQueries';
@@ -45,10 +45,15 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto px-8 py-4">
+    <div 
+      className="flex-1 overflow-auto px-8 py-4"
+      style={{
+        backgroundColor: `color-mix(in srgb, var(--theme-bg-20) 20%, white)`
+      }}
+    >
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Tasks Heatmap */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+        <div>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             {t('dashboard.heatmap.tasks')}
           </h2>
@@ -56,7 +61,7 @@ export default function HomePage() {
         </div>
 
         {/* Habits Heatmap */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+        <div>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             {t('dashboard.heatmap.habits')}
           </h2>
@@ -71,15 +76,8 @@ export default function HomePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.watching')}
               </h2>
-              <Link
-                to="/media"
-                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
-              >
-                {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3 h-3" />
-              </Link>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div>
               {watchingMedia.length === 0 ? (
                 <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs">
                   {t('dashboard.no_watching')}
@@ -122,15 +120,8 @@ export default function HomePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.this_month_countdowns')}
               </h2>
-              <Link
-                to="/countdowns"
-                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
-              >
-                {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3 h-3" />
-              </Link>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div>
               {thisMonthCountdowns.length === 0 ? (
                 <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-xs">
                   {t('dashboard.no_month_countdowns')}
@@ -168,13 +159,6 @@ export default function HomePage() {
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('dashboard.pinned_notes')}
               </h2>
-              <Link
-                to="/notes"
-                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1"
-              >
-                {t('dashboard.view_all')}
-                <ArrowRightIcon className="w-3 h-3" />
-              </Link>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
               {pinnedNotes.length === 0 ? (

@@ -631,5 +631,18 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             .map_err(|e| format!("Failed to add display_mode column to countdowns: {}", e))?;
     }
 
+    // Add target_end_date column to notes table if not exists
+    let has_target_end_date: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('notes') WHERE name = 'target_end_date'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_target_end_date {
+        conn.execute("ALTER TABLE notes ADD COLUMN target_end_date TEXT", [])
+            .map_err(|e| format!("Failed to add target_end_date column to notes: {}", e))?;
+        let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_target_end_date ON notes(target_end_date);");
+    }
+
     Ok(())
 }

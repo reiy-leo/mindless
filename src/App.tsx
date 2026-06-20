@@ -139,7 +139,10 @@ function FontSizeManager() {
  */
 function SettingsSync() {
   const { i18n } = useTranslation();
-  const { theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, fontSize, taskSortBy, taskSortOrder, taskGroupBy, setTheme, setThemeColor, setLanguage, setPriorityMode, setNotificationEnabled, setWeekStartDay } = useAppStore();
+  const { theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, fontSize, taskSortBy, taskSortOrder, taskGroupBy,
+    showLunar, showTimezone, selectedTimezone, timeFormat, dateFormat, timezoneFormat,
+    setTheme, setThemeColor, setLanguage, setPriorityMode, setNotificationEnabled, setWeekStartDay,
+    setShowLunar, setShowTimezone, setSelectedTimezone, setTimeFormat, setDateFormat, setTimezoneFormat } = useAppStore();
   const isInitialLoad = useRef(true);
 
   // Load settings from SQLite on mount
@@ -175,8 +178,20 @@ function SettingsSync() {
       }
       if (dbWeekStart !== undefined) {
         const val = parseInt(dbWeekStart, 10);
-        if (val === 0 || val === 1) setWeekStartDay(val);
+        if (val >= 0 && val <= 6) setWeekStartDay(val);
       }
+      const dbShowLunar = map.get('show_lunar');
+      const dbShowTimezone = map.get('show_timezone');
+      const dbSelectedTimezone = map.get('selected_timezone');
+      const dbTimeFormat = map.get('time_format');
+      const dbDateFormat = map.get('date_format');
+      const dbTimezoneFormat = map.get('timezone_format');
+      if (dbShowLunar !== undefined) setShowLunar(dbShowLunar === '1');
+      if (dbShowTimezone !== undefined) setShowTimezone(dbShowTimezone === '1');
+      if (dbSelectedTimezone && typeof dbSelectedTimezone === 'string') setSelectedTimezone(dbSelectedTimezone);
+      if (dbTimeFormat && ['cn_natural', 'cn_24h', 'cn_12h', 'en_12h', '24h'].includes(dbTimeFormat)) setTimeFormat(dbTimeFormat as any);
+      if (dbDateFormat && ['relative', 'yyyy_slash_mm_dd', 'yyyy_dash_mm_dd', 'mm_dd_yyyy', 'mm_dd'].includes(dbDateFormat)) setDateFormat(dbDateFormat as any);
+      if (dbTimezoneFormat && ['short_offset', 'iana', 'compact', 'gmt', 'utc_colon', 'iso_colon', 'cn_zone'].includes(dbTimezoneFormat)) setTimezoneFormat(dbTimezoneFormat as any);
       if (dbTaskSortBy && ['sortOrder', 'dueDate', 'startDate', 'priority', 'createdAt'].includes(dbTaskSortBy)) {
         useAppStore.getState().setTaskSortBy(dbTaskSortBy);
       }
@@ -206,6 +221,12 @@ function SettingsSync() {
       ['priority_mode', priorityMode],
       ['notification_enabled', notificationEnabled ? '1' : '0'],
       ['week_start_day', String(weekStartDay)],
+      ['show_lunar', showLunar ? '1' : '0'],
+      ['show_timezone', showTimezone ? '1' : '0'],
+      ['selected_timezone', selectedTimezone],
+      ['time_format', timeFormat],
+      ['date_format', dateFormat],
+      ['timezone_format', timezoneFormat],
       ['task_sort_by', taskSortBy],
       ['task_sort_order', taskSortOrder],
       ['task_group_by', taskGroupBy],
@@ -213,7 +234,7 @@ function SettingsSync() {
     ]).catch((err) => {
       console.warn('Failed to save settings to database:', err);
     });
-  }, [theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, taskSortBy, taskSortOrder, taskGroupBy, fontSize]);
+  }, [theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, showLunar, showTimezone, selectedTimezone, timeFormat, dateFormat, timezoneFormat, taskSortBy, taskSortOrder, taskGroupBy, fontSize]);
 
   // Listen for settings changes from other windows (e.g. settings dialog)
   useEffect(() => {
@@ -230,6 +251,13 @@ function SettingsSync() {
         case 'fontSize': store.setFontSize(value as any); break;
         case 'priorityMode': store.setPriorityMode(value as any); break;
         case 'notificationEnabled': store.setNotificationEnabled(value as boolean); break;
+        case 'weekStartDay': store.setWeekStartDay(value as number); break;
+        case 'showLunar': store.setShowLunar(value as boolean); break;
+        case 'showTimezone': store.setShowTimezone(value as boolean); break;
+        case 'selectedTimezone': store.setSelectedTimezone(value as string); break;
+        case 'timeFormat': store.setTimeFormat(value as any); break;
+        case 'dateFormat': store.setDateFormat(value as any); break;
+        case 'timezoneFormat': store.setTimezoneFormat(value as any); break;
       }
     });
     return () => { unlisten.then((fn) => fn()); };

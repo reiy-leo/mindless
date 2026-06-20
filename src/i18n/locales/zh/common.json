@@ -527,7 +527,8 @@
   "settings": {
     "tabs": {
       "general": "通用",
-      "theme": "主题"
+      "theme": "主题",
+      "datetime": "日期时间"
     },
     "language": "语言",
     "theme": "主题",
@@ -576,6 +577,55 @@
       "column_first": "第一列 (70%)",
       "column_other": "其他列 (30%)",
       "preview": "预览"
+    },
+    "datetime": {
+      "title": "日期与时间",
+      "week_start_day": "一周开始于",
+      "week_start_day_desc": "设置日历中一周的第一天",
+      "show_lunar": "显示农历",
+      "show_lunar_desc": "在日历日期下方显示农历信息",
+      "show_timezone": "显示时区",
+      "show_timezone_desc": "在日历中显示当前时区信息",
+      "timezone_picker": "选择时区",
+      "timezone_search_placeholder": "搜索时区...",
+      "time_format": "时间格式",
+      "time_format_desc": "选择时间的显示格式",
+      "date_format": "日期格式",
+      "date_format_desc": "选择日期的显示格式",
+      "timezone_format": "时区格式",
+      "timezone_format_desc": "选择时区的显示格式",
+      "days": {
+        "sunday": "星期日",
+        "monday": "星期一",
+        "tuesday": "星期二",
+        "wednesday": "星期三",
+        "thursday": "星期四",
+        "friday": "星期五",
+        "saturday": "星期六"
+      },
+      "time_formats": {
+        "cn_natural": "下午三点十二分",
+        "cn_24h": "下午 13:23",
+        "cn_12h": "下午 01:23",
+        "en_12h": "01:23 PM",
+        "24h": "13:23"
+      },
+      "date_formats": {
+        "relative": "相对日期（今天、昨天）",
+        "yyyy_slash_mm_dd": "2025/03/24",
+        "yyyy_dash_mm_dd": "2025-03-24",
+        "mm_dd_yyyy": "03/24 2025",
+        "mm_dd": "03/24"
+      },
+      "timezone_formats": {
+        "short_offset": "+8 / -8",
+        "iana": "Asia/Shanghai",
+        "compact": "+0800",
+        "gmt": "GMT+8",
+        "utc_colon": "UTC+5:30",
+        "iso_colon": "+08:00",
+        "cn_zone": "东八区"
+      }
     }
   },
   "people": {
