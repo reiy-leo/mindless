@@ -60,21 +60,6 @@ pub struct Tag {
     pub updated_at: String,
 }
 
-// Subtask model
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Subtask {
-    pub id: String,
-    pub task_id: String,
-    pub parent_subtask_id: Option<String>,
-    pub title: String,
-    pub is_completed: bool,
-    pub sort_order: f64,
-    pub level: i32,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
 // Step model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -159,16 +144,43 @@ pub struct Countdown {
     pub reminder_time: Option<String>,
     pub is_recurring: bool,
     pub recurrence_rule: Option<String>,
+    pub group_id: Option<String>,
+    pub is_favorite: bool,
+    pub is_completed: bool,
+    pub is_lunar: bool,
+    pub display_mode: Option<String>,
+    pub deleted_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
-// Setting model
+// Countdown group model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Setting {
-    pub key: String,
-    pub value: String,
+pub struct CountdownGroup {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub is_preset: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// Countdown group with count
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountdownGroupWithCount {
+    pub id: String,
+    pub name: String,
+    pub color: Option<String>,
+    pub icon: Option<String>,
+    pub is_preset: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub count: i64,
 }
 
 // Note group model
@@ -204,6 +216,7 @@ pub struct Note {
     pub updated_at: String,
     pub completed_at: Option<String>,
     pub deleted_at: Option<String>,
+    pub target_date: Option<String>,
 }
 
 // Person group model
@@ -306,15 +319,6 @@ pub struct MediaGroup {
     pub updated_at: String,
 }
 
-// Media item genre model
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MediaItemGenre {
-    pub id: String,
-    pub media_item_id: String,
-    pub genre_id: String,
-}
-
 // Media group with usage count
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -412,16 +416,6 @@ pub struct MediaWatchHistory {
     pub end_date: Option<String>,
     pub note: Option<String>,
     pub created_at: String,
-}
-
-// Media watch history link model
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MediaWatchHistoryLink {
-    pub id: String,
-    pub watch_history_id: String,
-    pub linked_type: String,
-    pub linked_id: String,
 }
 
 // Media watch history with links
