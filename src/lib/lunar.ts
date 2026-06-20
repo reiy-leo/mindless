@@ -49,6 +49,16 @@ export function getLunarDayStr(year: number, month: number, day: number): string
   return lunar.getDayInChinese();
 }
 
+export function getLunarFullDateStr(year: number, month: number, day: number): string {
+  const solar = Solar.fromYmd(year, month, day);
+  const lunar = solar.getLunar();
+  const lunarYear = lunar.getYear();
+  const monthChinese = lunar.getMonthInChinese();
+  const monthStr = monthChinese.endsWith('月') ? monthChinese : monthChinese + '月';
+  const dayStr = lunar.getDayInChinese();
+  return `${lunarYear}年${lunar.getMonth() < 0 ? '闰' : ''}${monthStr}${dayStr}`;
+}
+
 export function solarTermsForMonth(year: number, month: number): { name: string; day: number }[] {
   const terms: { name: string; day: number }[] = [];
   // Check each day of the month for solar terms

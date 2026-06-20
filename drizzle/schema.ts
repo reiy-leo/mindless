@@ -114,6 +114,8 @@ export const countdowns = sqliteTable('countdowns', {
   reminderTime: text('reminder_time'),
   isRecurring: integer('is_recurring', { mode: 'boolean' }).notNull().default(false),
   recurrenceRule: text('recurrence_rule'),
+  isLunar: integer('is_lunar', { mode: 'boolean' }).notNull().default(false),
+  displayMode: text('display_mode').default('day'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });

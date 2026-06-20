@@ -1,10 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/useAppStore';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { checkAndNotify } from '@/services/notificationService';
 import { useCalendarEvents, useImportCalendarEvents, useClearAllCalendarEvents } from '@/queries/useTaskQueries';
-import Select from '@/components/Select';
+import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers } from 'lucide-react';
+import { emit } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const THEME_COLORS = [
   { name: 'Slate', hex: '#64748B' },
@@ -38,6 +40,20 @@ export default function SettingsPage() {
     theme, themeColor, language, priorityMode, notificationEnabled, fontSize, sidebarMode,
     setTheme, setThemeColor, setLanguage, setPriorityMode, setNotificationEnabled, setFontSize, setSidebarMode,
   } = useAppStore();
+
+  useEffect(() => {
+    emit('settings:changed', { key: 'theme', value: theme });
+  }, [theme]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'themeColor', value: themeColor });
+  }, [themeColor]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'fontSize', value: fontSize });
+  }, [fontSize]);
+  useEffect(() => {
+    emit('settings:changed', { key: 'language', value: language });
+  }, [language]);
+
   const [activeTab, setActiveTab] = useState<'general' | 'theme'>('general');
   const [permStatus, setPermStatus] = useState<string | null>(null);
 
@@ -134,35 +150,51 @@ export default function SettingsPage() {
     });
   };
 
-  const tabBase = 'px-4 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer';
+  const tabs = [
+    { id: 'general' as const, label: t('settings.tabs.general'), icon: Settings },
+    { id: 'theme' as const, label: t('settings.tabs.theme'), icon: Palette },
+  ];
 
   return (
-    <div className="flex-1 overflow-auto px-8 py-4">
-      <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('navigation.settings')}</h1>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
+    <div className="flex h-full">
+      {/* Sidebar */}
+      <div data-tauri-drag-region className="w-[150px] shrink-0 border-r border-white/10 flex flex-col gap-1" style={{ background: 'linear-gradient(to bottom, color-mix(in srgb, var(--theme-color) 30%, white), color-mix(in srgb, var(--theme-color) 20%, white)' }}>
+      <div data-tauri-drag-region className='p-3 flex items-center gap-1.5 h-8' aria-label='window-controls'>
         <button
-          onClick={() => setActiveTab('general')}
-          className={`${tabBase} ${
-            activeTab === 'general'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
+          onClick={async () => { await getCurrentWindow().close() }}
+          className="w-3 h-3 rounded-full bg-[#898989] hover:bg-[#FF3B30] transition-colors group relative"
+          title="Close"
         >
-          {t('settings.tabs.general')}
-        </button>
-        <button
-          onClick={() => setActiveTab('theme')}
-          className={`${tabBase} ${
-            activeTab === 'theme'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          {t('settings.tabs.theme')}
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              style={{
+                color: `hsl(from var(--theme-color) h s calc(l - 20))`
+              }}
+              onClick={() => setActiveTab(tab.id)}
+              className={`text-slate-500 text-sm flex flex-row items-center gap-1.5 px-2.5 py-3 transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-white/25'
+                  : 'hover:bg-white/15'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-xs font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto px-8 py-6">
 
       {/* General Tab */}
       {activeTab === 'general' && (
@@ -172,19 +204,36 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('settings.language')}
             </h2>
-            <Select
-              value={language}
-              onChange={(val) => {
-                const lang = val as 'zh' | 'en' | 'ja';
-                setLanguage(lang);
-                i18n.changeLanguage(lang);
-              }}
-              options={[
-                { value: 'zh', label: '中文' },
-                { value: 'en', label: 'English' },
-                { value: 'ja', label: '日本語' },
-              ]}
-            />
+            <div className="flex gap-2">
+              {[
+                { value: 'zh', label: '中' },
+                { value: 'en', label: 'En' },
+                { value: 'ja', label: '日' },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-center justify-center w-14 h-10 rounded-lg text-sm font-semibold cursor-pointer transition-all ${
+                    language === option.value
+                      ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="language"
+                    value={option.value}
+                    checked={language === option.value}
+                    onChange={() => {
+                      const lang = option.value as 'zh' | 'en' | 'ja';
+                      setLanguage(lang);
+                      i18n.changeLanguage(lang);
+                    }}
+                    className="sr-only"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
           </section>
 
           {/* Appearance (light/dark/system) */}
@@ -192,24 +241,35 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('settings.theme')}
             </h2>
-            <div className="space-y-2">
+            <div className="flex gap-2">
               {[
-                { value: 'light', label: t('settings.theme.light') },
-                { value: 'dark', label: t('settings.theme.dark') },
-                { value: 'system', label: t('settings.theme.system') },
-              ].map((option) => (
-                <label key={option.value} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value={option.value}
-                    checked={theme === option.value}
-                    onChange={() => setTheme(option.value as any)}
-                    className="w-4 h-4 text-blue-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
-                </label>
-              ))}
+                { value: 'light', label: t('settings.theme.light'), icon: Sun },
+                { value: 'dark', label: t('settings.theme.dark'), icon: Moon },
+                { value: 'system', label: t('settings.theme.system'), icon: Laptop },
+              ].map((option) => {
+                const Icon = option.icon;
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex flex-col items-center justify-center gap-1.5 w-20 h-16 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                      theme === option.value
+                        ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={option.value}
+                      checked={theme === option.value}
+                      onChange={() => setTheme(option.value as any)}
+                      className="sr-only"
+                    />
+                    <Icon className="w-5 h-5" />
+                    {option.label}
+                  </label>
+                );
+              })}
             </div>
           </section>
 
@@ -218,16 +278,20 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('settings.font_size')}
             </h2>
-            <div className="space-y-2">
+            <div className="flex gap-2">
               {[
-                { value: 'small', label: t('settings.font_size.small'), description: '14px' },
-                { value: 'default', label: t('settings.font_size.default'), description: '16px' },
-                { value: 'large', label: t('settings.font_size.large'), description: '18px' },
-                { value: 'xlarge', label: t('settings.font_size.xlarge'), description: '20px' },
+                { value: 'small', iconSize: 'w-4 h-4', label: '14px' },
+                { value: 'default', iconSize: 'w-5 h-5', label: '16px' },
+                { value: 'large', iconSize: 'w-6 h-6', label: '18px' },
+                { value: 'xlarge', iconSize: 'w-7 h-7', label: '20px' },
               ].map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className={`flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                    fontSize === option.value
+                      ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -235,12 +299,10 @@ export default function SettingsPage() {
                     value={option.value}
                     checked={fontSize === option.value}
                     onChange={() => setFontSize(option.value as any)}
-                    className="w-4 h-4 text-blue-500"
+                    className="sr-only"
                   />
-                  <div>
-                    <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{option.description}</div>
-                  </div>
+                  <Type className={option.iconSize} />
+                  {option.label}
                 </label>
               ))}
             </div>
@@ -251,24 +313,35 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('settings.sidebar_mode')}
             </h2>
-            <div className="space-y-2">
+            <div className="flex gap-2">
               {[
-                { value: 'icon', label: t('settings.sidebar_mode.icon') },
-                { value: 'text', label: t('settings.sidebar_mode.text') },
-                { value: 'both', label: t('settings.sidebar_mode.both') },
-              ].map((option) => (
-                <label key={option.value} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="sidebarMode"
-                    value={option.value}
-                    checked={sidebarMode === option.value}
-                    onChange={() => setSidebarMode(option.value as any)}
-                    className="w-4 h-4 text-blue-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">{option.label}</span>
-                </label>
-              ))}
+                { value: 'icon', label: t('settings.sidebar_mode.icon'), icon: LayoutGrid },
+                { value: 'text', label: t('settings.sidebar_mode.text'), icon: Type },
+                { value: 'both', label: t('settings.sidebar_mode.both'), icon: Layers },
+              ].map((option) => {
+                const Icon = option.icon;
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex flex-col items-center justify-center gap-1.5 w-20 h-16 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                      sidebarMode === option.value
+                        ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="sidebarMode"
+                      value={option.value}
+                      checked={sidebarMode === option.value}
+                      onChange={() => setSidebarMode(option.value as any)}
+                      className="sr-only"
+                    />
+                    <Icon className="w-5 h-5" />
+                    {option.label}
+                  </label>
+                );
+              })}
             </div>
           </section>
 
@@ -422,7 +495,7 @@ export default function SettingsPage() {
               {t('settings.theme_color.description')}
             </p>
 
-            <div className="grid grid-cols-10 gap-4">
+            <div className="grid grid-cols-12 gap-4">
               {THEME_COLORS.map((color) => {
                 const isSelected = themeColor === color.hex;
                 return (
@@ -432,7 +505,7 @@ export default function SettingsPage() {
                     className="flex flex-col items-center gap-2 group"
                   >
                     <div
-                      className={`w-7 h-7 rounded-lg transition-all ${
+                      className={`w-5 h-5 rounded-md transition-all ${
                         isSelected
                           ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 scale-110'
                           : 'hover:scale-105'
@@ -457,6 +530,8 @@ export default function SettingsPage() {
 
         </div>
       )}
+
+      </div>
     </div>
   );
 }

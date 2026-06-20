@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::db::models::Tag;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TagMoveItem {
     pub id: String,
     pub parent_id: Option<String>,

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTags, useLists } from '@/queries/useTaskQueries';
 import EmojiPickerButton from '@/components/EmojiPickerButton';
+import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import type { AdvancedGroup, AdvancedGroupFilter } from '@/stores/useAppStore';
 
@@ -15,12 +16,6 @@ function resolveIcon(icon?: string): string {
   if (icon.length <= 2) return icon;
   return ICON_KEY_TO_EMOJI[icon] || '📁';
 }
-
-const COLOR_OPTIONS = [
-  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
-  '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#64748B',
-];
 
 interface Props {
   isOpen: boolean;
@@ -126,22 +121,7 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
 
           {/* Color */}
           <div>
-            <div className="flex flex-wrap gap-1.5">
-              {COLOR_OPTIONS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-1 ring-blue-500' : ''}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-              <label className="relative w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 cursor-pointer flex items-center justify-center">
-                <span className="text-xs text-gray-500 dark:text-gray-300">+</span>
-                <input
-                  type="color" value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-              </label>
-            </div>
+            <Tw22ColorPickerButton value={color} onChange={setColor} />
           </div>
 
           {/* Filter: Lists */}

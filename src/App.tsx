@@ -17,10 +17,15 @@ import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
 import DatePickerDialogPage from './pages/dialogs/DatePickerDialogPage';
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage';
+import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage';
+import SettingsDialogPage from './pages/dialogs/SettingsDialogPage';
+import EmojiPickerDialogPage from './pages/dialogs/EmojiPickerDialogPage';
+import CountdownFormDialogPage from './pages/dialogs/CountdownFormDialogPage';
 import { useAppStore } from './stores/useAppStore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import * as api from './lib/api';
 import { startNotificationService, stopNotificationService, ensurePermission } from './services/notificationService';
+import { listen } from '@tauri-apps/api/event';
 
 function ThemeManager() {
   const theme = useAppStore((s) => s.theme);
@@ -210,6 +215,26 @@ function SettingsSync() {
     });
   }, [theme, themeColor, language, priorityMode, notificationEnabled, weekStartDay, taskSortBy, taskSortOrder, taskGroupBy, fontSize]);
 
+  // Listen for settings changes from other windows (e.g. settings dialog)
+  useEffect(() => {
+    const unlisten = listen<{ key: string; value: unknown }>('settings:changed', (event) => {
+      const { key, value } = event.payload;
+      const store = useAppStore.getState();
+      switch (key) {
+        case 'theme': store.setTheme(value as any); break;
+        case 'themeColor': store.setThemeColor(value as string); break;
+        case 'language':
+          store.setLanguage(value as any);
+          i18n.changeLanguage(value as string);
+          break;
+        case 'fontSize': store.setFontSize(value as any); break;
+        case 'priorityMode': store.setPriorityMode(value as any); break;
+        case 'notificationEnabled': store.setNotificationEnabled(value as boolean); break;
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [i18n]);
+
   return null;
 }
 
@@ -263,6 +288,7 @@ function GlobalSearchManager() {
 }
 
 function App() {
+
   return (
     <BrowserRouter>
       <ErrorBoundary>
@@ -278,6 +304,10 @@ function App() {
           <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
           <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} />
           <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
+          <Route path="/dialog/tag-management" element={<TagManagementDialogPage />} />
+          <Route path="/dialog/settings" element={<SettingsDialogPage />} />
+          <Route path="/dialog/emoji-picker" element={<EmojiPickerDialogPage />} />
+          <Route path="/dialog/countdown-form" element={<CountdownFormDialogPage />} />
           <Route path="*" element={
             <AppLayout>
               <Routes>

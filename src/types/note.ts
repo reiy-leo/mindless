@@ -25,6 +25,7 @@ export interface Note {
   updatedAt: string;
   completedAt?: string;
   deletedAt?: string;
+  targetDate?: string;
 }
 
 export interface NoteLinkedItem {

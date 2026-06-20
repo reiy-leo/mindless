@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMediaGroupsWithCount, useCreateMediaGroup, useUpdateMediaGroup, useDeleteMediaGroup } from '@/queries/useMediaQueries';
 import type { MediaGroupWithCount } from '@/types/media';
+import GroupFormPopup from '@/components/ui/GroupFormPopup';
 
 type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
 
@@ -55,6 +56,7 @@ export default function MediaSidebar({
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#3B82F6');
   const [newGroupIcon, setNewGroupIcon] = useState('🎬');
+  const [groupFormTriggerRect, setGroupFormTriggerRect] = useState<DOMRect | null>(null);
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) return;
@@ -86,11 +88,13 @@ export default function MediaSidebar({
     }
   };
 
-  const startEditGroup = (group: MediaGroupWithCount) => {
+  const startEditGroup = (e: React.MouseEvent, group: MediaGroupWithCount) => {
     setEditingGroup(group);
     setNewGroupName(group.name);
     setNewGroupColor(group.color || '#3B82F6');
     setNewGroupIcon(group.icon || '🎬');
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setGroupFormTriggerRect(rect);
     setShowGroupForm(true);
   };
 
@@ -137,11 +141,12 @@ export default function MediaSidebar({
             <span>{groupsExpanded ? '▼' : '▶'}</span>
           </button>
           <button
-            onClick={() => {
+            onClick={(e) => {
               setEditingGroup(null);
               setNewGroupName('');
               setNewGroupColor('#3B82F6');
               setNewGroupIcon('🎬');
+              setGroupFormTriggerRect(e.currentTarget.getBoundingClientRect());
               setShowGroupForm(true);
             }}
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -174,7 +179,7 @@ export default function MediaSidebar({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      startEditGroup(group);
+                      startEditGroup(e, group);
                     }}
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                     title={t('media.actions.edit_group')}
@@ -199,50 +204,24 @@ export default function MediaSidebar({
           </div>
         )}
 
-        {/* Group Form */}
-        {showGroupForm && (
-          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-            <input
-              type="text"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder={t('media.placeholder.title')}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded mb-2 bg-white dark:bg-gray-900"
-            />
-            <div className="flex gap-2 mb-2">
-              <input
-                type="color"
-                value={newGroupColor}
-                onChange={(e) => setNewGroupColor(e.target.value)}
-                className="w-8 h-8 rounded cursor-pointer"
-              />
-              <input
-                type="text"
-                value={newGroupIcon}
-                onChange={(e) => setNewGroupIcon(e.target.value)}
-                placeholder="Icon"
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={editingGroup ? handleUpdateGroup : handleCreateGroup}
-                className="flex-1 px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                {t('media.actions.save')}
-              </button>
-              <button
-                onClick={() => {
-                  setShowGroupForm(false);
-                  setEditingGroup(null);
-                }}
-                className="flex-1 px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-              >
-                {t('media.actions.cancel')}
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Group Form Popup */}
+        <GroupFormPopup
+          isOpen={showGroupForm}
+          onClose={() => {
+            setShowGroupForm(false);
+            setEditingGroup(null);
+          }}
+          onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
+          triggerRect={groupFormTriggerRect}
+          name={newGroupName}
+          onNameChange={setNewGroupName}
+          icon={newGroupIcon}
+          onIconChange={setNewGroupIcon}
+          color={newGroupColor}
+          onColorChange={setNewGroupColor}
+          namePlaceholder={t('media.placeholder.title')}
+          isEditing={!!editingGroup}
+        />
       </div>
     </div>
   );

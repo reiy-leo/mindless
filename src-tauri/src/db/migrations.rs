@@ -108,6 +108,17 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             UNIQUE(habit_id, log_date)
         );
 
+        CREATE TABLE IF NOT EXISTS countdown_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color TEXT DEFAULT '#3B82F6',
+            icon TEXT DEFAULT '📅',
+            is_preset INTEGER NOT NULL DEFAULT 0,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
         CREATE TABLE IF NOT EXISTS countdowns (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -122,6 +133,10 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             reminder_time TEXT,
             is_recurring INTEGER NOT NULL DEFAULT 0,
             recurrence_rule TEXT,
+            group_id TEXT REFERENCES countdown_groups(id) ON DELETE SET NULL,
+            is_favorite INTEGER NOT NULL DEFAULT 0,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            deleted_at TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -185,6 +200,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id ON habit_logs(habit_id);
         CREATE INDEX IF NOT EXISTS idx_habit_logs_log_date ON habit_logs(log_date);
         CREATE INDEX IF NOT EXISTS idx_countdowns_target_date ON countdowns(target_date);
+        CREATE INDEX IF NOT EXISTS idx_countdown_groups_sort_order ON countdown_groups(sort_order);
         CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(event_date);
 
         CREATE TABLE IF NOT EXISTS habit_groups (
@@ -215,6 +231,25 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE habits ADD COLUMN group_id TEXT REFERENCES habit_groups(id) ON DELETE SET NULL;");
             let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_habits_group_id ON habits(group_id);");
             let _ = conn.execute_batch("ALTER TABLE habits ADD COLUMN target_unit TEXT DEFAULT '次';");
+
+            // Add countdown columns that were added after initial migration
+            let _ = conn.execute_batch("ALTER TABLE countdowns ADD COLUMN group_id TEXT REFERENCES countdown_groups(id) ON DELETE SET NULL;");
+            let _ = conn.execute_batch("ALTER TABLE countdowns ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;");
+            let _ = conn.execute_batch("ALTER TABLE countdowns ADD COLUMN is_completed INTEGER NOT NULL DEFAULT 0;");
+            let _ = conn.execute_batch("ALTER TABLE countdowns ADD COLUMN deleted_at TEXT;");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_countdowns_group_id ON countdowns(group_id);");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_countdowns_deleted_at ON countdowns(deleted_at);");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_countdowns_is_favorite ON countdowns(is_favorite);");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_countdowns_is_completed ON countdowns(is_completed);");
+
+            // Insert preset countdown groups
+            conn.execute_batch(
+                "INSERT OR IGNORE INTO countdown_groups (id, name, color, icon, is_preset, sort_order) VALUES
+                    ('preset-holiday', '节日', '#EF4444', '🎉', 1, 1),
+                    ('preset-birthday', '生日', '#EC4899', '🎂', 1, 2),
+                    ('preset-anniversary', '纪念日', '#8B5CF6', '💍', 1, 3),
+                    ('preset-stats', '统计', '#3B82F6', '📊', 1, 4);"
+            ).map_err(|e| format!("Failed to insert preset countdown groups: {}", e))?;
 
             // Update existing lists to have default values for new columns
             let _ = conn.execute_batch("UPDATE lists SET is_pinned = 0 WHERE is_pinned IS NULL;");
@@ -299,18 +334,24 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
                     completed_at TEXT,
-                    deleted_at TEXT
+                    deleted_at TEXT,
+                    target_date TEXT
                 );
                 CREATE INDEX IF NOT EXISTS idx_notes_group_id ON notes(group_id);
                 CREATE INDEX IF NOT EXISTS idx_notes_parent_id ON notes(parent_id);
                 CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON notes(deleted_at);
                 CREATE INDEX IF NOT EXISTS idx_notes_is_archived ON notes(is_archived);
                 CREATE INDEX IF NOT EXISTS idx_notes_is_completed ON notes(is_completed);
+                CREATE INDEX IF NOT EXISTS idx_notes_target_date ON notes(target_date);
             ").map_err(|e| format!("Notes migration failed: {}", e))?;
 
             // Add is_pinned column for existing databases
             let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
             let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);");
+
+            // Add target_date column for existing databases
+            let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN target_date TEXT;");
+            let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_target_date ON notes(target_date);");
 
             // People tables
             conn.execute_batch("
@@ -565,6 +606,30 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             ('genre-art', '文艺', '#C084FC', '🖼️', 1, 31),
             ('genre-youth', '青春', '#38BDF8', '🌱', 1, 32);
     ").map_err(|e| format!("Failed to insert preset genres: {}", e))?;
+
+    // Add is_lunar column to countdowns table if not exists
+    let has_is_lunar: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('countdowns') WHERE name = 'is_lunar'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_is_lunar {
+        conn.execute("ALTER TABLE countdowns ADD COLUMN is_lunar INTEGER NOT NULL DEFAULT 0", [])
+            .map_err(|e| format!("Failed to add is_lunar column to countdowns: {}", e))?;
+    }
+
+    // Add display_mode column to countdowns table if not exists
+    let has_display_mode: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('countdowns') WHERE name = 'display_mode'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_display_mode {
+        conn.execute("ALTER TABLE countdowns ADD COLUMN display_mode TEXT NOT NULL DEFAULT 'day'", [])
+            .map_err(|e| format!("Failed to add display_mode column to countdowns: {}", e))?;
+    }
 
     Ok(())
 }

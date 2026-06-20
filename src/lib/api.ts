@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -325,8 +325,8 @@ export async function deleteHabitGroupWithHabits(id: string): Promise<void> {
 }
 
 // Countdown APIs
-export async function getCountdowns(): Promise<Countdown[]> {
-  return await invoke<Countdown[]>('get_countdowns');
+export async function getCountdowns(groupId?: string, smartGroup?: string): Promise<Countdown[]> {
+  return await invoke<Countdown[]>('get_countdowns', { groupId, smartGroup });
 }
 
 export async function getCountdownById(id: string): Promise<Countdown> {
@@ -346,6 +346,9 @@ export async function createCountdown(params: {
   reminderTime?: string;
   isRecurring?: boolean;
   recurrenceRule?: string;
+  groupId?: string;
+  isLunar?: boolean;
+  displayMode?: string;
 }): Promise<Countdown> {
   return await invoke<Countdown>('create_countdown', params);
 }
@@ -363,12 +366,52 @@ export async function updateCountdown(id: string, params: {
   reminderTime?: string;
   isRecurring?: boolean;
   recurrenceRule?: string;
+  groupId?: string;
+  isLunar?: boolean;
+  displayMode?: string;
 }): Promise<Countdown> {
   return await invoke<Countdown>('update_countdown', { id, ...params });
 }
 
 export async function deleteCountdown(id: string): Promise<void> {
   return await invoke<void>('delete_countdown', { id });
+}
+
+export async function restoreCountdown(id: string): Promise<void> {
+  return await invoke<void>('restore_countdown', { id });
+}
+
+export async function toggleCountdownFavorite(id: string): Promise<Countdown> {
+  return await invoke<Countdown>('toggle_countdown_favorite', { id });
+}
+
+export async function toggleCountdownCompleted(id: string): Promise<Countdown> {
+  return await invoke<Countdown>('toggle_countdown_completed', { id });
+}
+
+// Countdown Group APIs
+export async function getCountdownGroups(): Promise<CountdownGroupWithCount[]> {
+  return await invoke<CountdownGroupWithCount[]>('get_countdown_groups');
+}
+
+export async function createCountdownGroup(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<CountdownGroup> {
+  return await invoke<CountdownGroup>('create_countdown_group', params);
+}
+
+export async function updateCountdownGroup(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+}): Promise<CountdownGroup> {
+  return await invoke<CountdownGroup>('update_countdown_group', { id, ...params });
+}
+
+export async function deleteCountdownGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_countdown_group', { id });
 }
 
 // Settings APIs
@@ -513,6 +556,7 @@ export async function createNote(params: {
   parentId?: string;
   tagIds?: string;
   level?: number;
+  targetDate?: string;
 }): Promise<Note> {
   return await invoke<Note>('create_note', params);
 }
@@ -526,6 +570,7 @@ export async function updateNote(id: string, params: {
   isArchived?: boolean;
   isPinned?: boolean;
   sortOrder?: number;
+  targetDate?: string;
 }): Promise<Note> {
   return await invoke<Note>('update_note', {
     id,
@@ -537,6 +582,7 @@ export async function updateNote(id: string, params: {
     isArchived: params.isArchived,
     isPinned: params.isPinned,
     sortOrder: params.sortOrder,
+    targetDate: params.targetDate,
   });
 }
 

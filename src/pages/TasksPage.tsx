@@ -1219,6 +1219,9 @@ export default function TasksPage() {
             height: 600,
             resizable: false,
             alwaysOnTop: true,
+            decorations: false,
+            transparent: true,
+            // shadow: true,
         });
     };
 
@@ -1283,6 +1286,9 @@ export default function TasksPage() {
             resizable: false,
             center: true,
             alwaysOnTop: true,
+            decorations: false,
+            transparent: true,
+            // shadow: true,
         });
     };
 
@@ -1304,6 +1310,9 @@ export default function TasksPage() {
             resizable: false,
             center: true,
             alwaysOnTop: true,
+            decorations: false,
+            transparent: true,
+            // shadow: true,
         });
     };
 
@@ -1484,6 +1493,9 @@ export default function TasksPage() {
                                         resizable: false,
                                         center: true,
                                         alwaysOnTop: true,
+                                        decorations: false,
+                                        transparent: true,
+                                        // shadow: true,
                                     });
                                 }}
                                 className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -1517,7 +1529,7 @@ export default function TasksPage() {
                                                 }`}
                                                 style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                             >
-                                                <span className="text-base flex-shrink-0 text-sm">
+                                                <span className="flex-shrink-0 text-sm">
                                                     {resolveIcon(group.icon)}
                                                 </span>
                                                 <span className="flex-1 truncate">{group.name}</span>
@@ -1596,7 +1608,7 @@ export default function TasksPage() {
                                             }`}
                                             style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                                         >
-                                            <span className="text-base flex-shrink-0 text-sm">
+                                            <span className="flex-shrink-0 text-sm">
                                                 {resolveIcon(list.icon)}
                                             </span>
                                             <span className="flex-1 truncate">{list.name}</span>

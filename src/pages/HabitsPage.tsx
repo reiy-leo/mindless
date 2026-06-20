@@ -36,6 +36,7 @@ import {
 import Select from "@/components/Select";
 import MilkdownEditor from "@/components/MilkdownEditor";
 import EmojiPickerButton from "@/components/EmojiPickerButton";
+import Tw22ColorPickerButton from "@/components/Tw22ColorPickerButton";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import { getLunarDayStr } from "@/lib/lunar";
 import { openDialogWindow, listenFromDialog } from "@/lib/dialogWindow";
@@ -2098,51 +2099,7 @@ export default function HabitsPage() {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {t("habits.color")}
                                     </label>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        {[
-                                            "#EF4444",
-                                            "#F97316",
-                                            "#F59E0B",
-                                            "#EAB308",
-                                            "#84CC16",
-                                            "#22C55E",
-                                            "#10B981",
-                                            "#14B8A6",
-                                            "#06B6D4",
-                                            "#0EA5E9",
-                                            "#3B82F6",
-                                            "#6366F1",
-                                            "#8B5CF6",
-                                            "#A855F7",
-                                            "#D946EF",
-                                            "#EC4899",
-                                            "#F43F5E",
-                                            "#64748B",
-                                            "#6B7280",
-                                            "#71717A",
-                                        ].map((c) => (
-                                            <button
-                                                key={c}
-                                                type="button"
-                                                onClick={() => setEditGroupColor(c)}
-                                                className={`w-6 h-6 rounded-full transition-all flex-shrink-0 ${
-                                                    editGroupColor === c
-                                                        ? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800"
-                                                        : ""
-                                                }`}
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
-                                        <div className="relative">
-                                            <input
-                                                type="color"
-                                                value={editGroupColor}
-                                                onChange={(e) => setEditGroupColor(e.target.value)}
-                                                className="w-6 h-6 rounded-full cursor-pointer border-0 p-0 bg-transparent"
-                                                title={t("habits.target_unit_custom")}
-                                            />
-                                        </div>
-                                    </div>
+                                    <Tw22ColorPickerButton value={editGroupColor} onChange={setEditGroupColor} />
                                 </div>
 
                                 <div className="flex gap-3 pt-2">

@@ -73,7 +73,7 @@ export default function TagCombobox({
         {selectedTags.map((tag) => (
           <span
             key={tag.id}
-            className="inline-flex items-center gap-0.5 pl-1.5 pr-0.5 py-0.5 rounded-full text-xs"
+            className="inline-flex items-center gap-0.5 pl-1.5 pr-0.5 py-0.5 rounded-full text-sm"
             style={{ backgroundColor: tag.color + '20', color: tag.color }}
           >
             {tag.emoji && <span>{tag.emoji}</span>}
@@ -113,7 +113,7 @@ export default function TagCombobox({
                 key={tag.id}
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); onToggle(tag.id); setQuery(''); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left transition-colors ${
                   isSelected
                     ? 'bg-purple-50 dark:bg-purple-900/20'
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -136,7 +136,7 @@ export default function TagCombobox({
             <button
               type="button"
               onClick={handleCreateTag}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors border-t border-gray-100 dark:border-gray-700 mt-1"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors border-t border-gray-100 dark:border-gray-700 mt-1"
             >
               <PlusIcon className="w-3.5 h-3.5 flex-shrink-0" />
               <span>创建 "{query.trim()}"</span>

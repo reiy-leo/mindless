@@ -40,6 +40,7 @@ fn row_to_note(row: &rusqlite::Row) -> rusqlite::Result<Note> {
         updated_at: row.get(12)?,
         completed_at: row.get(13)?,
         deleted_at: row.get(14)?,
+        target_date: row.get(15)?,
     })
 }
 
@@ -143,12 +144,12 @@ pub async fn delete_note_group(app: AppHandle, id: String) -> Result<(), String>
 
 // ==================== Note Commands ====================
 
-const NOTE_COLUMNS: &str = "id, title, content, group_id, parent_id, tag_ids, is_completed, is_archived, is_pinned, level, sort_order, created_at, updated_at, completed_at, deleted_at";
+const NOTE_COLUMNS: &str = "id, title, content, group_id, parent_id, tag_ids, is_completed, is_archived, is_pinned, level, sort_order, created_at, updated_at, completed_at, deleted_at, target_date";
 
 #[tauri::command]
 pub async fn get_notes(app: AppHandle) -> Result<Vec<Note>, String> {
     let conn = get_db(&app)?;
-    let sql = format!("SELECT {} FROM notes WHERE deleted_at IS NULL AND parent_id IS NULL ORDER BY updated_at DESC", NOTE_COLUMNS);
+    let sql = format!("SELECT {} FROM notes WHERE deleted_at IS NULL AND parent_id IS NULL ORDER BY CASE WHEN target_date IS NULL THEN 1 ELSE 0 END, target_date ASC, updated_at DESC", NOTE_COLUMNS);
     let mut stmt = conn.prepare(&sql)
         .map_err(|e| format!("Failed to prepare: {}", e))?;
     let notes = stmt.query_map([], row_to_note)
@@ -160,7 +161,7 @@ pub async fn get_notes(app: AppHandle) -> Result<Vec<Note>, String> {
 #[tauri::command]
 pub async fn get_all_notes(app: AppHandle) -> Result<Vec<Note>, String> {
     let conn = get_db(&app)?;
-    let sql = format!("SELECT {} FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC", NOTE_COLUMNS);
+    let sql = format!("SELECT {} FROM notes WHERE deleted_at IS NULL ORDER BY CASE WHEN target_date IS NULL THEN 1 ELSE 0 END, target_date ASC, updated_at DESC", NOTE_COLUMNS);
     let mut stmt = conn.prepare(&sql)
         .map_err(|e| format!("Failed to prepare: {}", e))?;
     let notes = stmt.query_map([], row_to_note)
@@ -217,6 +218,7 @@ pub async fn create_note(
     parent_id: Option<String>,
     tag_ids: Option<String>,
     level: Option<i32>,
+    target_date: Option<String>,
 ) -> Result<Note, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
@@ -244,7 +246,7 @@ pub async fn create_note(
     };
 
     conn.execute(
-        "INSERT INTO notes (id, title, content, group_id, parent_id, tag_ids, level, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT INTO notes (id, title, content, group_id, parent_id, tag_ids, level, sort_order, target_date) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         rusqlite::params![
             &id,
             &title,
@@ -254,6 +256,7 @@ pub async fn create_note(
             opt_str(&tag_ids),
             &level,
             &max_sort,
+            opt_str(&target_date),
         ],
     ).map_err(|e| format!("Failed to create note: {}", e))?;
 
@@ -274,11 +277,13 @@ pub async fn update_note(
     is_archived: Option<bool>,
     is_pinned: Option<bool>,
     sort_order: Option<f64>,
+    target_date: Option<String>,
 ) -> Result<Note, String> {
     let conn = get_db(&app)?;
 
     let group_id = group_id.filter(|s| !s.is_empty());
     let tag_ids = tag_ids.filter(|s| !s.is_empty());
+    let target_date = target_date.filter(|s| !s.is_empty());
 
     let mut sql = String::from("UPDATE notes SET updated_at = datetime('now')");
     let mut param_idx = 1;
@@ -315,6 +320,10 @@ pub async fn update_note(
         sql.push_str(&format!(", sort_order = ?{}", param_idx));
         param_idx += 1;
     }
+    if target_date.is_some() {
+        sql.push_str(&format!(", target_date = ?{}", param_idx));
+        param_idx += 1;
+    }
 
     sql.push_str(&format!(" WHERE id = ?{}", param_idx));
 
@@ -327,6 +336,7 @@ pub async fn update_note(
     if let Some(v) = is_archived { params.push(Box::new(if v { 1i32 } else { 0i32 })); }
     if let Some(v) = is_pinned { params.push(Box::new(if v { 1i32 } else { 0i32 })); }
     if let Some(v) = sort_order { params.push(Box::new(v)); }
+    if let Some(ref v) = target_date { params.push(Box::new(v.clone())); }
     params.push(Box::new(id.clone()));
 
     let params_ref: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();

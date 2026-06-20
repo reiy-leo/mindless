@@ -11,6 +11,8 @@ declare module 'lunar-javascript' {
   export class Lunar {
     static fromYmd(year: number, month: number, day: number): Lunar;
     static fromDate(date: Date): Lunar;
+    static getLeapMonthDays(year: number): number;
+    static getMonthDays(year: number, month: number): number;
     getYear(): number;
     getMonth(): number;
     getDay(): number;
@@ -23,5 +25,7 @@ declare module 'lunar-javascript' {
     getJieQi(): string;
     getJieQiList(): string[];
     isLeapMonth(): boolean;
+    getLeapMonth(): number;
+    getSolar(): Solar;
   }
 }

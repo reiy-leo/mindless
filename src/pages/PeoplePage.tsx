@@ -45,6 +45,7 @@ import TagCombobox from "@/components/TagCombobox";
 import PhoneEmailListEditor from "@/components/PhoneEmailListEditor";
 import SimpleListEditor from "@/components/SimpleListEditor";
 import type { Person, PersonGroup, PhoneEntry, EmailEntry, OtherNameEntry } from "@/types/person";
+import GroupFormPopup from "@/components/ui/GroupFormPopup";
 
 // ==================== Helper ====================
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
@@ -399,6 +400,7 @@ export default function PeoplePage() {
     const detailAvatarButtonRef = useRef<HTMLDivElement>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
     const [personContextMenu, setPersonContextMenu] = useState<{ x: number; y: number; person: Person } | null>(null);
+    const [groupFormTriggerRect, setGroupFormTriggerRect] = useState<DOMRect | null>(null);
 
     // Data
     const { data: persons = [] } = usePersons();
@@ -742,6 +744,9 @@ export default function PeoplePage() {
         setNewGroupName(group.name);
         setNewGroupColor(group.color || "#3B82F6");
         setNewGroupIcon(group.icon || "👥");
+        const rect = (e.currentTarget as HTMLElement).closest('button')?.getBoundingClientRect()
+            || (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setGroupFormTriggerRect(rect);
         setShowGroupForm(true);
     }, []);
 
@@ -855,9 +860,6 @@ export default function PeoplePage() {
         return tagIds.split(",").filter(Boolean);
     }, []);
 
-    // Color presets
-    const COLOR_PRESETS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
-
     return (
         <div className="flex h-full bg-gray-50 dark:bg-gray-900">
             {/* Left Panel: Groups */}
@@ -912,11 +914,12 @@ export default function PeoplePage() {
                                 {t("people.groups.title")}
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={(e) => {
                                     setEditingGroup(null);
                                     setNewGroupName("");
                                     setNewGroupColor("#3B82F6");
                                     setNewGroupIcon("👥");
+                                    setGroupFormTriggerRect(e.currentTarget.getBoundingClientRect());
                                     setShowGroupForm(true);
                                 }}
                                 className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -963,59 +966,24 @@ export default function PeoplePage() {
                             </>
                         )}
 
-                        {/* Inline group form */}
-                        {showGroupForm && (
-                            <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <input
-                                    type="text"
-                                    value={newGroupName}
-                                    onChange={(e) => setNewGroupName(e.target.value)}
-                                    placeholder={t("people.groups.name_placeholder")}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            editingGroup ? handleUpdateGroup() : handleCreateGroup();
-                                        }
-                                        if (e.key === "Escape") {
-                                            setShowGroupForm(false);
-                                            setEditingGroup(null);
-                                        }
-                                    }}
-                                />
-                                <div className="flex gap-1 mt-1.5 flex-wrap">
-                                    {COLOR_PRESETS.map((c) => (
-                                        <button
-                                            key={c}
-                                            onClick={() => setNewGroupColor(c)}
-                                            className={`w-5 h-5 rounded-full border-2 ${
-                                                newGroupColor === c
-                                                    ? "border-gray-900 dark:border-white"
-                                                    : "border-transparent"
-                                            }`}
-                                            style={{ backgroundColor: c }}
-                                        />
-                                    ))}
-                                </div>
-                                <div className="flex gap-1 mt-1.5">
-                                    <button
-                                        onClick={editingGroup ? handleUpdateGroup : handleCreateGroup}
-                                        className="flex-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                    >
-                                        {t("common.save")}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowGroupForm(false);
-                                            setEditingGroup(null);
-                                        }}
-                                        className="flex-1 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                                    >
-                                        {t("common.cancel")}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        {/* Group Form Popup */}
+                        <GroupFormPopup
+                            isOpen={showGroupForm}
+                            onClose={() => {
+                                setShowGroupForm(false);
+                                setEditingGroup(null);
+                            }}
+                            onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
+                            triggerRect={groupFormTriggerRect}
+                            name={newGroupName}
+                            onNameChange={setNewGroupName}
+                            icon={newGroupIcon}
+                            onIconChange={setNewGroupIcon}
+                            color={newGroupColor}
+                            onColorChange={setNewGroupColor}
+                            namePlaceholder={t("people.groups.name_placeholder")}
+                            isEditing={!!editingGroup}
+                        />
                     </div>
                 </div>
             </div>

@@ -743,7 +743,7 @@ export default function NotesPage() {
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5">
-                                                {new Date(note.updatedAt).toLocaleDateString()}
+                                                {note.targetDate ? new Date(note.targetDate).toLocaleDateString() : new Date(note.updatedAt).toLocaleDateString()}
                                             </span>
                                         </div>
                                     </div>
@@ -798,6 +798,29 @@ export default function NotesPage() {
 
                         {/* Scrollable content */}
                         <div className="flex-1 overflow-auto min-h-0">
+
+                        {/* Target Date */}
+                        <div className="px-4 pb-2">
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    {t("notes.target_date")}
+                                </label>
+                                <input
+                                    type="date"
+                                    value={selectedNote.targetDate || ""}
+                                    onChange={(e) => handleUpdateNoteField({ targetDate: e.target.value || undefined })}
+                                    className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                                {selectedNote.targetDate && (
+                                    <button
+                                        onClick={() => handleUpdateNoteField({ targetDate: undefined })}
+                                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    >
+                                        <XMarkIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Tags */}
                         <div className="px-4 pb-2">

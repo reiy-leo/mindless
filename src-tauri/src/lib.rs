@@ -78,6 +78,13 @@ pub fn run() {
             commands::create_countdown,
             commands::update_countdown,
             commands::delete_countdown,
+            commands::restore_countdown,
+            commands::toggle_countdown_favorite,
+            commands::toggle_countdown_completed,
+            commands::get_countdown_groups,
+            commands::create_countdown_group,
+            commands::update_countdown_group,
+            commands::delete_countdown_group,
             // Notes
             commands::get_note_groups,
             commands::create_note_group,

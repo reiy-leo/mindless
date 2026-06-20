@@ -1,229 +1,161 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 import {
   PlusIcon, PencilIcon, TrashIcon, XMarkIcon,
-  ClockIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon,
-  CalendarIcon, Squares2X2Icon,
+  ClockIcon, ChevronLeftIcon, ChevronRightIcon,
+  CalendarIcon, Squares2X2Icon, StarIcon, CheckCircleIcon,
+  ArrowUturnLeftIcon, ListBulletIcon,
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import {
-  useCountdowns, useCreateCountdown, useUpdateCountdown, useDeleteCountdown,
+  useCountdowns, useDeleteCountdown,
+  useRestoreCountdown, useToggleCountdownFavorite, useToggleCountdownCompleted,
 } from '@/queries/useCountdownQueries';
-import { useCalendarEvents } from '@/queries/useTaskQueries';
-import DateTimePicker from '@/components/DateTimePicker';
-import { getLunarDayStr, getLunarInfo } from '@/lib/lunar';
+import { getLunarDayStr, getLunarInfo, getLunarFullDateStr } from '@/lib/lunar';
 import { getLocalToday } from '@/lib/taskHelpers';
 import { useAppStore } from '@/stores/useAppStore';
-import type { Countdown, EventType, CreateCountdownParams } from '@/types/countdown';
+import CountdownSidebar, { type SmartGroupId } from '@/components/countdown/CountdownSidebar';
+import type { Countdown, DisplayMode, RecurrenceRule } from '@/types/countdown';
 
-// ==================== Icon & Color Options ====================
-const ICON_OPTIONS = ['flag', 'heart', 'star', 'gift', 'cake', 'plane', 'ring', 'baby', 'graduation', 'house'];
+// ==================== Icon Map ====================
 const ICON_MAP: Record<string, string> = {
   flag: '🚩', heart: '❤️', star: '⭐', gift: '🎁', cake: '🎂',
   plane: '✈️', ring: '💍', baby: '👶', graduation: '🎓', house: '🏠',
 };
-const COLOR_OPTIONS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
-// ==================== Countdown Form Dialog ====================
-function CountdownFormDialog({
-  isOpen,
-  onClose,
-  onSubmit,
-  countdown,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (params: CreateCountdownParams) => void;
-  countdown?: Countdown | null;
-}) {
-  const { t } = useTranslation('common');
-  const isEditing = !!countdown;
-  const { data: calendarEvents = [] } = useCalendarEvents();
-
-  const [title, setTitle] = useState(countdown?.title || '');
-  const [description, setDescription] = useState(countdown?.description || '');
-  const [icon, setIcon] = useState(countdown?.icon || 'flag');
-  const [color, setColor] = useState(countdown?.color || '#8B5CF6');
-  const [targetDate, setTargetDate] = useState(countdown?.targetDate || '');
-  const [targetTime, setTargetTime] = useState(countdown?.targetTime || '');
-  const [eventType, setEventType] = useState<EventType>(countdown?.eventType || 'countdown');
-
-  // Reset form when opening
-  useEffect(() => {
-    if (isOpen && countdown) {
-      setTitle(countdown.title);
-      setDescription(countdown.description || '');
-      setIcon(countdown.icon || 'flag');
-      setColor(countdown.color || '#8B5CF6');
-      setTargetDate(countdown.targetDate || '');
-      setTargetTime(countdown.targetTime || '');
-      setEventType(countdown.eventType || 'countdown');
-    } else if (isOpen) {
-      setTitle('');
-      setDescription('');
-      setIcon('flag');
-      setColor('#8B5CF6');
-      setTargetDate('');
-      setTargetTime('');
-      setEventType('countdown');
-    }
-  }, [isOpen, countdown]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !targetDate) return;
-    onSubmit({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      icon,
-      color,
-      targetDate,
-      targetTime: targetTime || undefined,
-      eventType,
-    });
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {isEditing ? t('countdowns.edit_countdown') : t('countdowns.new_countdown')}
-          </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.event_name')} *
-            </label>
-            <input
-              type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-              required autoFocus placeholder={t('countdowns.event_name_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.description')}
-            </label>
-            <input
-              type="text" value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('countdowns.description_placeholder')}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          {/* Event Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.event_type')}
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setEventType('countdown')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  eventType === 'countdown'
-                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 ring-2 ring-purple-500'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <ClockIcon className="w-4 h-4" />
-                {t('countdowns.type_countdown')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEventType('countup')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  eventType === 'countup'
-                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 ring-2 ring-purple-500'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                {t('countdowns.type_countup')}
-              </button>
-            </div>
-          </div>
-
-          {/* Icon */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.icon')}
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {ICON_OPTIONS.map((ic) => (
-                <button key={ic} type="button" onClick={() => setIcon(ic)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
-                    icon === ic ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >{ICON_MAP[ic] || '🚩'}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Color */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.color')}
-            </label>
-            <div className="flex gap-2">
-              {COLOR_OPTIONS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition-all ${
-                    color === c ? 'ring-2 ring-offset-2 ring-purple-500' : ''
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Target Date & Time */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('countdowns.target_date')} *
-            </label>
-            <DateTimePicker
-              date={targetDate || undefined}
-              time={targetTime || undefined}
-              onChange={(d, tm) => { setTargetDate(d || ''); setTargetTime(tm || ''); }}
-              events={calendarEvents}
-              showTime={true}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
-              {t('common.cancel')}
-            </button>
-            <button type="submit" disabled={!title.trim() || !targetDate}
-              className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50">
-              {isEditing ? t('common.save') : t('common.create')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+// Helper to render icon (supports both emoji and icon key)
+function renderIcon(icon?: string): string {
+  if (!icon) return '🚩';
+  // If it's already an emoji (length <= 2 or not in ICON_MAP), return as is
+  if (icon.length <= 2 || !ICON_MAP[icon]) return icon;
+  return ICON_MAP[icon];
 }
 
-// ==================== Countdown Card ====================
-function CountdownCard({
-  countdown, onEdit, onDelete,
+// Calculate days until next recurrence
+function getNextRecurrenceDays(targetDate: string, recurrenceRule?: RecurrenceRule, recurrenceInterval?: number): number | null {
+  if (!recurrenceRule || recurrenceRule === 'none') return null;
+  
+  const [year, month, day] = targetDate.split('-').map(Number);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  let nextDate: Date;
+  
+  if (recurrenceRule === 'yearly') {
+    // Find next occurrence of this month/day
+    nextDate = new Date(now.getFullYear(), month - 1, day);
+    if (nextDate < now) {
+      nextDate = new Date(now.getFullYear() + 1, month - 1, day);
+    }
+  } else if (recurrenceRule === 'monthly') {
+    // Find next occurrence of this day
+    nextDate = new Date(now.getFullYear(), now.getMonth(), day);
+    if (nextDate < now) {
+      nextDate = new Date(now.getFullYear(), now.getMonth() + 1, day);
+    }
+  } else if (recurrenceRule === 'custom' && recurrenceInterval) {
+    // Find next occurrence based on interval
+    const targetYear = year;
+    const currentYear = now.getFullYear();
+    const yearsDiff = currentYear - targetYear;
+    const nextOccurrence = targetYear + Math.ceil(yearsDiff / recurrenceInterval) * recurrenceInterval;
+    nextDate = new Date(nextOccurrence, month - 1, day);
+    if (nextDate < now) {
+      nextDate = new Date(nextOccurrence + recurrenceInterval, month - 1, day);
+    }
+  } else {
+    return null;
+  }
+  
+  const diff = nextDate.getTime() - now.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+// Format display based on displayMode
+function formatDisplayValue(
+  targetDate: string,
+  daysRemaining: number,
+  displayMode: DisplayMode = 'day',
+  isCountup: boolean
+): { value: string | number; unit: string } {
+  const [year, month, day] = targetDate.split('-').map(Number);
+  const absDays = Math.abs(daysRemaining);
+  
+  if (displayMode === 'day') {
+    return { value: isCountup ? absDays : daysRemaining, unit: '' };
+  }
+  
+  if (displayMode === 'month') {
+    // Calculate months and days
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const target = new Date(year, month - 1, day);
+    
+    let months = (now.getFullYear() - target.getFullYear()) * 12 + (now.getMonth() - target.getMonth());
+    let remainingDays = now.getDate() - target.getDate();
+    
+    if (remainingDays < 0) {
+      months--;
+      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      remainingDays += prevMonth.getDate();
+    }
+    
+    if (isCountup) {
+      return { value: `${Math.abs(months)}月${Math.abs(remainingDays)}日`, unit: '' };
+    }
+    return { value: `${Math.abs(months)}月${Math.abs(remainingDays)}日`, unit: '' };
+  }
+  
+  if (displayMode === 'month_decimal') {
+    // Calculate decimal months
+    const totalMonths = absDays / 30.44; // Average days per month
+    return { value: totalMonths.toFixed(2), unit: '月' };
+  }
+  
+  if (displayMode === 'year') {
+    // Calculate years, months, days
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const target = new Date(year, month - 1, day);
+    
+    let years = now.getFullYear() - target.getFullYear();
+    let months = now.getMonth() - target.getMonth();
+    let days = now.getDate() - target.getDate();
+    
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    if (isCountup) {
+      return { value: `${Math.abs(years)}年${Math.abs(months)}月${Math.abs(days)}日`, unit: '' };
+    }
+    return { value: `${Math.abs(years)}年${Math.abs(months)}月${Math.abs(days)}日`, unit: '' };
+  }
+  
+  if (displayMode === 'year_decimal') {
+    // Calculate decimal years
+    const totalYears = absDays / 365.25; // Average days per year
+    return { value: totalYears.toFixed(2), unit: '年' };
+  }
+  
+  return { value: daysRemaining, unit: '' };
+}
+
+// ==================== Countdown List Item ====================
+function CountdownListItem({
+  countdown, onContextMenu,
 }: {
-  countdown: Countdown; onEdit: () => void; onDelete: () => void;
+  countdown: Countdown;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation('common');
 
@@ -245,9 +177,12 @@ function CountdownCard({
 
   const daysRemaining = getDaysRemaining();
   const isCountup = countdown.eventType === 'countup';
-  const displayDays = isCountup ? Math.abs(daysRemaining) : daysRemaining;
+  const displayMode = countdown.displayMode || 'day';
+  const formatted = formatDisplayValue(countdown.targetDate, daysRemaining, displayMode, isCountup);
+  const nextRecurrenceDays = getNextRecurrenceDays(countdown.targetDate, countdown.recurrenceRule, countdown.recurrenceInterval);
 
   const getStatusText = () => {
+    if (displayMode !== 'day') return '';
     if (isCountup) {
       if (daysRemaining >= 0) return t('countdowns.days_since');
       return t('countdowns.days_until');
@@ -257,21 +192,147 @@ function CountdownCard({
     return t('countdowns.days_left');
   };
 
-  const getDisplayValue = () => {
-    if (isCountup) return displayDays;
-    if (daysRemaining === 0) return t('countdowns.today');
-    return Math.abs(daysRemaining);
+  return (
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 px-4 py-3 hover:shadow-md transition-shadow flex items-center gap-4 ${
+        countdown.isCompleted ? 'opacity-30' : ''
+      }`}
+      style={{
+        backgroundColor: `color-mix(in srgb, ${countdown.color} 10%, white)`,
+        borderColor: `color-mix(in srgb, ${countdown.color} 13%, white)`
+      }}
+      onContextMenu={onContextMenu}
+    >
+      {/* Icon */}
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+        style={{ backgroundColor: countdown.color + '20' }}
+      >
+        {renderIcon(countdown.icon)}
+      </div>
+
+      {/* Title */}
+      <div className="flex flex-row flex-1 min-w-0">
+        <h3 className={`font-medium text-gray-900 dark:text-gray-100 truncate ${
+          countdown.isCompleted ? 'line-through' : ''
+        }`}>{countdown.title}</h3>
+
+        {/* Favorite Star */}
+        {countdown.isFavorite && (
+          <StarIconSolid className="w-2 h-2 flex-shrink-0" style={{
+            color: `hsl(from ${countdown.color} h s 30)`
+          }}/>
+        )}
+      </div>
+
+      {/* Days */}
+      <div className="flex items-baseline gap-1 flex-shrink-0">
+        <span
+          className="text-xl font-bold"
+          style={{ color: countdown.isCompleted ? undefined : countdown.color }}
+        >
+          {formatted.value}
+        </span>
+        {formatted.unit && (
+          <span className="text-sm text-gray-500 dark:text-gray-400">{formatted.unit}</span>
+        )}
+        <span className="text-gray-500 dark:text-gray-400 text-xs">{getStatusText()}</span>
+      </div>
+
+      {/* Next Recurrence */}
+      {nextRecurrenceDays !== null && (
+        <div className="flex items-center gap-1 flex-shrink-0 text-xs">
+          <span className="text-gray-400 dark:text-gray-500">{t('countdowns.next')}:</span>
+          <span
+            className="font-medium"
+            style={{ color: countdown.color }}
+          >
+            {nextRecurrenceDays}
+          </span>
+          <span className="text-gray-400 dark:text-gray-500">{t('countdowns.days')}</span>
+        </div>
+      )}
+
+      {/* Date */}
+      <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+        {countdown.isLunar
+          ? (() => {
+              const [y, m, d] = countdown.targetDate.split('-').map(Number);
+              return getLunarFullDateStr(y, m, d);
+            })()
+          : new Date(countdown.targetDate).toLocaleDateString(undefined, {
+              year: 'numeric', month: 'short', day: 'numeric',
+            })
+        }
+      </span>
+
+      {/* Type Badge */}
+      <span 
+        className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0`}
+        style={{
+          color: `hsl(from ${countdown.color} h s calc(l + 70))`,
+          backgroundColor: `hsl(from ${countdown.color} h s 50)`
+        }}
+      >
+        {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
+      </span>
+    </div>
+  );
+}
+
+// ==================== Countdown Card ====================
+function CountdownCard({
+  countdown, onContextMenu,
+}: {
+  countdown: Countdown;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}) {
+  const { t } = useTranslation('common');
+
+  const getDaysRemaining = () => {
+    const [year, month, day] = countdown.targetDate.split('-').map(Number);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    if (countdown.targetTime) {
+      const [h, m, s] = countdown.targetTime.split(':').map(Number);
+      const target = new Date(year, month - 1, day, h, m, s || 0, 0);
+      const diff = target.getTime() - now.getTime();
+      return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }
+    const target = new Date(year, month - 1, day);
+    const diff = target.getTime() - now.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  const getNumberColor = () => {
-    if (isCountup) return 'text-green-500';
-    if (daysRemaining < 0) return 'text-red-500';
-    if (daysRemaining === 0) return 'text-green-500';
-    return 'text-purple-500';
+  const daysRemaining = getDaysRemaining();
+  const isCountup = countdown.eventType === 'countup';
+  const displayMode = countdown.displayMode || 'day';
+  const formatted = formatDisplayValue(countdown.targetDate, daysRemaining, displayMode, isCountup);
+  const nextRecurrenceDays = getNextRecurrenceDays(countdown.targetDate, countdown.recurrenceRule, countdown.recurrenceInterval);
+
+  const getStatusText = () => {
+    if (displayMode !== 'day') return '';
+    if (isCountup) {
+      if (daysRemaining >= 0) return t('countdowns.days_since');
+      return t('countdowns.days_until');
+    }
+    if (daysRemaining < 0) return t('countdowns.days_ago');
+    if (daysRemaining === 0) return '';
+    return t('countdowns.days_left');
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow ${
+        countdown.isCompleted ? 'opacity-30' : ''
+      }`}
+      style={{
+        backgroundColor: `color-mix(in srgb, ${countdown.color} 10%, white)`,
+        borderColor: `color-mix(in srgb, ${countdown.color} 13%, white)`
+      }}
+      onContextMenu={onContextMenu}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -279,44 +340,73 @@ function CountdownCard({
             className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
             style={{ backgroundColor: countdown.color + '20' }}
           >
-            {ICON_MAP[countdown.icon] || '🚩'}
+            {renderIcon(countdown.icon)}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h3>
+            <h3 className={`font-semibold text-gray-900 dark:text-gray-100 ${
+              countdown.isCompleted ? 'line-through' : ''
+            }`}>{countdown.title}</h3>
             {countdown.description && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{countdown.description}</p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={t('common.edit')}>
-            <PencilIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-          </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={t('common.delete')}>
-            <TrashIcon className="w-4 h-4 text-red-400" />
-          </button>
-        </div>
+        {countdown.isFavorite && (
+          <StarIconSolid className="w-5 h-5" style={{
+            color: `hsl(from ${countdown.color} h s 30)`
+          }}/>
+        )}
       </div>
 
       {/* Days Display */}
-      <div className="flex items-baseline gap-2 mb-3">
-        <span className={`text-4xl font-bold ${getNumberColor()}`}>
-          {getDisplayValue()}
-        </span>
-        <span className="text-gray-500 dark:text-gray-400 text-sm">{getStatusText()}</span>
+      <div className="mb-3">
+        <div className="flex items-baseline gap-2">
+          <span
+            className="text-4xl font-bold"
+            style={{ color: countdown.isCompleted ? undefined : countdown.color }}
+          >
+            {formatted.value}
+          </span>
+          {formatted.unit && (
+            <span className="text-lg text-gray-500 dark:text-gray-400">{formatted.unit}</span>
+          )}
+          <span className="text-gray-500 dark:text-gray-400 text-sm">{getStatusText()}</span>
+        </div>
+        
+        {/* Next Recurrence */}
+        {nextRecurrenceDays !== null && (
+          <div className="flex items-center gap-1 mt-1 text-sm">
+            <span className="text-gray-400 dark:text-gray-500">{t('countdowns.next')}:</span>
+            <span
+              className="font-medium"
+              style={{ color: countdown.color }}
+            >
+              {nextRecurrenceDays}
+            </span>
+            <span className="text-gray-400 dark:text-gray-500">{t('countdowns.days')}</span>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
         <span>
-          {new Date(countdown.targetDate).toLocaleDateString(undefined, {
-            year: 'numeric', month: 'long', day: 'numeric',
-          })}
+          {countdown.isLunar
+            ? (() => {
+                const [y, m, d] = countdown.targetDate.split('-').map(Number);
+                return getLunarFullDateStr(y, m, d);
+              })()
+            : new Date(countdown.targetDate).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'long', day: 'numeric',
+              })
+          }
           {countdown.targetTime && ` ${countdown.targetTime.slice(0, 5)}`}
         </span>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-          isCountup ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
-        }`}>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium`}
+        style={{
+          color: `hsl(from ${countdown.color} h s calc(l + 70))`,
+          backgroundColor: `hsl(from ${countdown.color} h s 50)`
+        }}>
           {isCountup ? t('countdowns.type_countup') : t('countdowns.type_countdown')}
         </span>
       </div>
@@ -535,7 +625,7 @@ function CountdownCalendarView({
                           }`}
                           style={{ backgroundColor: isSelected ? undefined : cd.color + '12' }}
                         >
-                          <span className="text-sm flex-shrink-0">{ICON_MAP[cd.icon] || '🚩'}</span>
+                          <span className="text-sm flex-shrink-0">{renderIcon(cd.icon)}</span>
                           <div className="flex-1 min-w-0">
                             <div className={`truncate font-medium ${isSelected ? 'text-purple-700 dark:text-purple-300' : ''}`}
                               style={!isSelected ? { color: cd.color } : {}}>
@@ -609,7 +699,7 @@ function SelectedCountdownDetail({
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
           style={{ backgroundColor: countdown.color + '20' }}>
-          {ICON_MAP[countdown.icon] || '🚩'}
+          {renderIcon(countdown.icon)}
         </div>
         <div>
           <h4 className="font-semibold text-gray-900 dark:text-gray-100">{countdown.title}</h4>
@@ -709,7 +799,7 @@ function MonthEventsList({
               onClick={() => onSelect(cd)}
               className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
             >
-              <span className="text-lg">{ICON_MAP[cd.icon] || '🚩'}</span>
+              <span className="text-lg">{renderIcon(cd.icon)}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{cd.title}</div>
                 <div className={`text-xs font-medium ${
@@ -729,35 +819,65 @@ function MonthEventsList({
 // ==================== Main Page ====================
 export default function CountdownsPage() {
   const { t } = useTranslation('common');
-  const [showForm, setShowForm] = useState(false);
-  const [editingCountdown, setEditingCountdown] = useState<Countdown | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('grid');
+  const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [sidebarWidth] = useState(188);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; countdown: Countdown } | null>(null);
 
-  const { data: countdowns = [], isLoading, isError } = useCountdowns();
-  const createCountdown = useCreateCountdown();
-  const updateCountdown = useUpdateCountdown();
+  const { data: countdowns = [], isLoading, isError, refetch } = useCountdowns(
+    selectedGroupId || undefined,
+    selectedSmartGroup || undefined
+  );
   const deleteCountdown = useDeleteCountdown();
+  const restoreCountdown = useRestoreCountdown();
+  const toggleFavorite = useToggleCountdownFavorite();
+  const toggleCompleted = useToggleCountdownCompleted();
 
-  const handleCreate = (params: CreateCountdownParams) => {
-    createCountdown.mutate(params, {
-      onError: (err) => {
-        console.error('Failed to create countdown:', err);
-        alert(`Failed to create: ${err instanceof Error ? err.message : String(err)}`);
-      },
+  const handleSelectSmartGroup = (groupId: SmartGroupId) => {
+    setSelectedSmartGroup(groupId);
+    setSelectedGroupId(null);
+  };
+
+  const handleSelectGroup = (groupId: string) => {
+    setSelectedSmartGroup(null);
+    setSelectedGroupId(groupId);
+  };
+
+  const openCountdownForm = async (countdownId?: string) => {
+    const url = countdownId
+      ? `/dialog/countdown-form?countdownId=${countdownId}`
+      : '/dialog/countdown-form';
+
+    const win = new WebviewWindow(`countdown-form-${Date.now()}`, {
+      url,
+      title: '',
+      width: 420,
+      height: 660,
+      maximizable: false,
+      minimizable: false,
+      closable: false,
+      resizable: false,
+      decorations: true,
+      hiddenTitle: true,
+      titleBarStyle: "overlay",
+      parent: getCurrentWindow(),
+    });
+
+    win.once('tauri://created', () => {});
+    win.once('tauri://error', (e) => {
+      console.error('Failed to create window:', e);
     });
   };
 
-  const handleUpdate = (params: CreateCountdownParams) => {
-    if (editingCountdown) {
-      updateCountdown.mutate({ id: editingCountdown.id, ...params }, {
-        onError: (err) => {
-          console.error('Failed to update countdown:', err);
-          alert(`Failed to update: ${err instanceof Error ? err.message : String(err)}`);
-        },
-      });
-      setEditingCountdown(null);
-    }
-  };
+  useEffect(() => {
+    const unlisten = listen('dialog:result', (event) => {
+      if (event.payload && (event.payload as any).action === 'submit') {
+        refetch();
+      }
+    });
+    return () => { unlisten.then(fn => fn()); };
+  }, [refetch]);
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('countdowns.delete_confirm'))) {
@@ -768,6 +888,28 @@ export default function CountdownsPage() {
         },
       });
     }
+  };
+
+  const handleRestore = (id: string) => {
+    restoreCountdown.mutate(id, {
+      onError: (err) => {
+        console.error('Failed to restore countdown:', err);
+        alert(`Failed to restore: ${err instanceof Error ? err.message : String(err)}`);
+      },
+    });
+  };
+
+  const handleToggleFavorite = (id: string) => {
+    toggleFavorite.mutate(id);
+  };
+
+  const handleToggleCompleted = (id: string) => {
+    toggleCompleted.mutate(id);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, countdown: Countdown) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, countdown });
   };
 
   if (isLoading) {
@@ -787,82 +929,203 @@ export default function CountdownsPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
-      {/* Page header */}
-      <div data-tauri-drag-region className="flex items-center justify-between px-8 pt-4 pb-4">
-        <h1 data-tauri-drag-region className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('navigation.countdowns')}</h1>
-        <div className="flex items-center gap-3">
-          {/* View mode toggle */}
-          <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-              title={t('countdowns.view_grid')}
-            >
-              <Squares2X2Icon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors border-l border-gray-300 dark:border-gray-600 ${
-                viewMode === 'calendar'
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-              title={t('countdowns.view_calendar')}
-            >
-              <CalendarIcon className="w-4 h-4" />
-            </button>
-          </div>
-          <button
-            onClick={() => { setEditingCountdown(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            <span>{t('countdowns.new_countdown')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Content area */}
-      {countdowns.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-          <ClockIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
-          <p className="text-lg">{t('countdowns.no_countdowns')}</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 text-purple-500 hover:text-purple-600 dark:hover:text-purple-400">
-            {t('countdowns.create_first')}
-          </button>
-        </div>
-      ) : viewMode === 'calendar' ? (
-        <CountdownCalendarView
-          countdowns={countdowns}
-          onEdit={(cd) => { setEditingCountdown(cd); setShowForm(true); }}
-          onDelete={handleDelete}
-        />
-      ) : (
-          <div className="flex-1 overflow-auto px-8 pb-8">
-            <div className="space-y-4">
-            {countdowns.map((countdown) => (
-              <CountdownCard
-                key={countdown.id}
-                countdown={countdown}
-                onEdit={() => { setEditingCountdown(countdown); setShowForm(true); }}
-                onDelete={() => handleDelete(countdown.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <CountdownFormDialog
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingCountdown(null); }}
-        onSubmit={editingCountdown ? handleUpdate : handleCreate}
-        countdown={editingCountdown}
+    <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
+      {/* Sidebar */}
+      <CountdownSidebar
+        selectedSmartGroup={selectedSmartGroup}
+        selectedGroupId={selectedGroupId}
+        onSelectSmartGroup={handleSelectSmartGroup}
+        onSelectGroup={handleSelectGroup}
+        width={sidebarWidth}
       />
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Page header */}
+        <div data-tauri-drag-region className="flex items-center justify-between px-8 pt-4 pb-4">
+          <h1 data-tauri-drag-region className="text-xl font-bold" style={{
+            color: `hsl(from var(--theme-color) h s 40)`
+          }}>{t('navigation.countdowns')}</h1>
+          <div className="flex items-center gap-3">
+
+            {/* View mode toggle */}
+            <div 
+              className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"
+              style={{
+                color: `hsl(from var(--theme-color) h s 30)`,
+                borderColor: `color-mix(in srgb, var(--theme-color) 20%, white)`,
+              }}
+            >
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors`}
+                style={{
+                  backgroundColor: `${viewMode === 'grid' ? `color-mix(in srgb, var(--theme-color) 40%, white)` : 'inherit'}`
+                }}
+                title={t('countdowns.view_grid')}
+              >
+                <Squares2X2Icon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors border-l`}
+                style={{
+                  borderColor: `color-mix(in srgb, var(--theme-color) 20%, white)`,
+                  backgroundColor: `${viewMode === 'list' ? `color-mix(in srgb, var(--theme-color) 40%, white)` : 'inherit'}`
+                }}
+                title={t('countdowns.view_list')}
+              >
+                <ListBulletIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors border-l`}
+                style={{
+                  borderColor: `color-mix(in srgb, var(--theme-color) 20%, white)`,
+                  backgroundColor: `${viewMode === 'calendar' ? `color-mix(in srgb, var(--theme-color) 40%, white)` : 'inherit'}`
+                }}
+                title={t('countdowns.view_calendar')}
+              >
+                <CalendarIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => openCountdownForm()}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
+              style={{
+                color: `hsl(from var(--theme-color) h s 30)`,
+                backgroundColor: `color-mix(in srgb, var(--theme-color) 40%, white)`
+              }}
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content area */}
+        {countdowns.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <ClockIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
+            <p className="text-lg">
+              {selectedSmartGroup === 'deleted'
+                ? t('countdowns.no_deleted')
+                : selectedSmartGroup === 'favorites'
+                ? t('countdowns.no_favorites')
+                : selectedSmartGroup === 'completed'
+                ? t('countdowns.no_completed')
+                : selectedSmartGroup === 'missed'
+                ? t('countdowns.no_missed')
+                : selectedSmartGroup === 'all'
+                ? t('countdowns.no_all')
+                : t('countdowns.no_countdowns')}
+            </p>
+            {!selectedSmartGroup && (
+              <button onClick={() => openCountdownForm()} className="mt-4 text-purple-500 hover:text-purple-600 dark:hover:text-purple-400">
+                {t('countdowns.create_first')}
+              </button>
+            )}
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <CountdownCalendarView
+            countdowns={countdowns}
+            onEdit={(cd) => openCountdownForm(cd.id)}
+            onDelete={handleDelete}
+          />
+        ) : viewMode === 'list' ? (
+          <div className="flex-1 overflow-auto px-8 pb-8">
+            <div className="space-y-2">
+              {countdowns.map((countdown) => (
+                <CountdownListItem
+                  key={countdown.id}
+                  countdown={countdown}
+                  onContextMenu={(e) => handleContextMenu(e, countdown)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto px-8 pb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {countdowns.map((countdown) => (
+                <CountdownCard
+                  key={countdown.id}
+                  countdown={countdown}
+                  onContextMenu={(e) => handleContextMenu(e, countdown)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Context Menu */}
+        {contextMenu && (
+          <>
+            <div className="fixed inset-0 z-50" onClick={() => setContextMenu(null)} />
+            <div
+              className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[180px]"
+              style={{ left: contextMenu.x, top: contextMenu.y }}
+            >
+              {selectedSmartGroup === 'deleted' ? (
+                <button
+                  onClick={() => {
+                    handleRestore(contextMenu.countdown.id);
+                    setContextMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                >
+                  <ArrowUturnLeftIcon className="w-4 h-4" />
+                  {t('countdowns.restore')}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      handleToggleFavorite(contextMenu.countdown.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <StarIcon className="w-4 h-4" />
+                    {contextMenu.countdown.isFavorite ? t('countdowns.unfavorite') : t('countdowns.favorite')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleToggleCompleted(contextMenu.countdown.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <CheckCircleIcon className="w-4 h-4" />
+                    {contextMenu.countdown.isCompleted ? t('countdowns.mark_uncompleted') : t('countdowns.mark_completed')}
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                  <button
+                    onClick={() => {
+                      openCountdownForm(contextMenu.countdown.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                    {t('common.edit')}
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                  <button
+                    onClick={() => {
+                      handleDelete(contextMenu.countdown.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    {t('common.delete')}
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
