@@ -5,10 +5,11 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { checkAndNotify } from '@/services/notificationService';
 import { useCalendarEvents, useImportCalendarEvents, useClearAllCalendarEvents } from '@/queries/useTaskQueries';
 import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers, Clock } from 'lucide-react';
-import { emit } from '@tauri-apps/api/event';
+import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import TimezonePicker from '@/components/TimezonePicker';
+import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager';
 import { formatTime, formatDisplayDate, formatTimezoneOffset } from '@/lib/formatUtils';
+import { getScreenRect } from '@/lib/screenRect';
 import type { TimeFormat, DateFormat, TimezoneFormat } from '@/stores/useAppStore';
 
 const THEME_COLORS = [
@@ -89,6 +90,28 @@ export default function SettingsPage() {
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const timezoneButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const unlisten = listen<{ timezone?: string }>('timezone-picker-overlay:result', (e) => {
+      if (e.payload.timezone !== undefined) {
+        setSelectedTimezone(e.payload.timezone);
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [setSelectedTimezone]);
+
+  const handleOpenTimezonePicker = async () => {
+    const button = timezoneButtonRef.current;
+    if (!button) return;
+    const rect = await getScreenRect(button);
+    await showOverlay(TIMEZONE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+      timezone: selectedTimezone,
+      anchorX: rect.x,
+      anchorY: rect.y,
+      anchorH: rect.height,
+    });
+  };
 
   const eventCount = calendarEvents.length;
 
@@ -705,7 +728,17 @@ export default function SettingsPage() {
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
                   {t('settings.datetime.timezone_picker')}
                 </label>
-                <TimezonePicker value={selectedTimezone} onChange={setSelectedTimezone} />
+                <button
+                  ref={timezoneButtonRef}
+                  type="button"
+                  onClick={handleOpenTimezonePicker}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+                >
+                  <span className="truncate">{selectedTimezone.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                    {formatTimezoneOffset(selectedTimezone, timezoneFormat)}
+                  </span>
+                </button>
               </div>
             )}
           </section>

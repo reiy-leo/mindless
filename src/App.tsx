@@ -21,7 +21,11 @@ import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage';
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage';
 import EmojiPickerDialogPage from './pages/dialogs/EmojiPickerDialogPage';
 import CountdownFormDialogPage from './pages/dialogs/CountdownFormDialogPage';
+import DatePickerOverlayPage from './pages/overlays/DatePickerOverlayPage';
+import DateRangePickerOverlayPage from './pages/overlays/DateRangePickerOverlayPage';
+import TimezonePickerOverlayPage from './pages/overlays/TimezonePickerOverlayPage';
 import { useAppStore } from './stores/useAppStore';
+import { initOverlayWebviews } from './lib/overlayManager';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import * as api from './lib/api';
 import { startNotificationService, stopNotificationService, ensurePermission } from './services/notificationService';
@@ -303,6 +307,13 @@ function KeyboardShortcuts() {
   return null;
 }
 
+function OverlayManager() {
+  useEffect(() => {
+    initOverlayWebviews(window.location.origin);
+  }, []);
+  return null;
+}
+
 function GlobalSearchManager() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -326,16 +337,20 @@ function App() {
         <SettingsSync />
         <NotificationManager />
         <KeyboardShortcuts />
+        <OverlayManager />
         <GlobalSearchManager />
         <Routes>
           <Route path="/dialog/list-form" element={<ListFormDialogPage />} />
           <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
-          <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} />
+          {/* <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} /> */}
           <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route path="/dialog/tag-management" element={<TagManagementDialogPage />} />
           <Route path="/dialog/settings" element={<SettingsDialogPage />} />
           <Route path="/dialog/emoji-picker" element={<EmojiPickerDialogPage />} />
           <Route path="/dialog/countdown-form" element={<CountdownFormDialogPage />} />
+          <Route path="/overlay/date-picker" element={<DatePickerOverlayPage />} />
+          <Route path="/overlay/date-range-picker" element={<DateRangePickerOverlayPage />} />
+          <Route path="/overlay/timezone-picker" element={<TimezonePickerOverlayPage />} />
           <Route path="*" element={
             <AppLayout>
               <Routes>

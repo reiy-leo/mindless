@@ -48,7 +48,9 @@
     "empty": "暂无数据",
     "confirm": "确认",
     "close": "关闭",
-    "clear": "清除"
+    "clear": "清除",
+    "time": "时间",
+    "timezone": "时区"
   },
   "navigation": {
     "home": "首页",

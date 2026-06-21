@@ -2,9 +2,12 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { Moon, Sun, Sunrise, Rainbow, Calendar1, CalendarArrowDown, CalendarFold, CalendarDays } from "lucide-react";
+import { listen } from "@tauri-apps/api/event";
 import { getLunarDayStr } from "@/lib/lunar";
 import { useAppStore } from "@/stores/useAppStore";
 import { formatTimezoneOffset } from "@/lib/formatUtils";
+import { showOverlay, TIMEZONE_PICKER_LABEL } from "@/lib/overlayManager";
+import { getScreenRect } from "@/lib/screenRect";
 import type { CalendarEvent } from "@/types";
 
 interface DateTimeCalenderWithRangePickerProps {
@@ -26,6 +29,7 @@ interface DateTimeCalenderWithRangePickerProps {
         endTime?: string,
         isAllDay?: boolean,
     ) => void;
+    onTimezoneOverlayChange?: (opening: boolean) => void;
     // Options
     mode?: "single" | "range";
     events?: CalendarEvent[];
@@ -86,6 +90,7 @@ export default function DateTimeCalenderWithRangePicker({
     isAllDay = false,
     onSingleChange,
     onRangeChange,
+    onTimezoneOverlayChange,
     mode = "single",
     events = [],
     color,
@@ -100,7 +105,32 @@ export default function DateTimeCalenderWithRangePicker({
     const showLunar = useAppStore((s) => s.showLunar);
     const showTimezone = useAppStore((s) => s.showTimezone);
     const selectedTimezone = useAppStore((s) => s.selectedTimezone);
+    const setSelectedTimezone = useAppStore((s) => s.setSelectedTimezone);
     const timezoneFormat = useAppStore((s) => s.timezoneFormat);
+    const timezoneButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        const unlisten = listen<{ timezone?: string }>('timezone-picker-overlay:result', (e) => {
+            onTimezoneOverlayChange?.(false);
+            if (e.payload.timezone !== undefined) {
+                setSelectedTimezone(e.payload.timezone);
+            }
+        });
+        return () => { unlisten.then((fn) => fn()); };
+    }, [setSelectedTimezone, onTimezoneOverlayChange]);
+
+    const handleOpenTimezonePicker = async () => {
+        const button = timezoneButtonRef.current;
+        if (!button) return;
+        onTimezoneOverlayChange?.(true);
+        const rect = await getScreenRect(button);
+        await showOverlay(TIMEZONE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+            timezone: selectedTimezone,
+            anchorX: rect.x,
+            anchorY: rect.y,
+            anchorH: rect.height,
+        });
+    };
 
     // Local state for single date
     const [localDate, setLocalDate] = useState(date || "");
@@ -293,7 +323,7 @@ export default function DateTimeCalenderWithRangePicker({
     };
 
     return (
-        <div ref={containerRef} className="w-full min-w-[280px] bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+        <div ref={containerRef}>
             {/* Tabs */}
             <div className="flex border-b border-gray-200 dark:border-gray-700">
                 <button
@@ -398,7 +428,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={handlePrevMonth}
-                            className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
@@ -408,7 +438,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={handleNextMonth}
-                            className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
@@ -467,15 +497,20 @@ export default function DateTimeCalenderWithRangePicker({
                                         </div>
                                     )}
                                 </button>
-                            );
-                        })}
+                                    );
+                                })}
                     </div>
 
                     {/* Timezone */}
                     {showTimezone && (
-                        <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                        <button
+                            ref={timezoneButtonRef}
+                            type="button"
+                            onClick={handleOpenTimezonePicker}
+                            className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                        >
                             {formatTimezoneOffset(selectedTimezone, timezoneFormat)}
-                        </div>
+                        </button>
                     )}
 
                     {/* Time picker */}
@@ -526,7 +561,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 1)}
-                            className="group relative flex items-center justify-center p-2 rounded transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
                             style={{
                                 backgroundColor: colorStyles.hoverBg,
                                 color: colorStyles.quickButtonText,
@@ -534,7 +569,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <Calendar1 className="w-3.5 h-3.5" />
+                            <Calendar1 className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.two_days")}
                             </span>
@@ -542,7 +577,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 6)}
-                            className="group relative flex items-center justify-center p-2 rounded transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
                             style={{
                                 backgroundColor: colorStyles.hoverBg,
                                 color: colorStyles.quickButtonText,
@@ -550,7 +585,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <CalendarArrowDown className="w-3.5 h-3.5" />
+                            <CalendarArrowDown className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.week")}
                             </span>
@@ -558,7 +593,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 29)}
-                            className="group relative flex items-center justify-center p-1.5 rounded transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
                             style={{
                                 backgroundColor: colorStyles.hoverBg,
                                 color: colorStyles.quickButtonText,
@@ -566,7 +601,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <CalendarFold className="w-3.5 h-3.5" />
+                            <CalendarFold className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.month")}
                             </span>
@@ -574,7 +609,7 @@ export default function DateTimeCalenderWithRangePicker({
                         <button
                             type="button"
                             onClick={() => handleQuickRange(0, 364)}
-                            className="group relative flex items-center justify-center p-1.5 rounded transition-colors"
+                            className="group relative flex items-center justify-center p-1 rounded transition-colors"
                             style={{
                                 backgroundColor: colorStyles.hoverBg,
                                 color: colorStyles.quickButtonText,
@@ -582,7 +617,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorStyles.quickButtonHover!)}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorStyles.hoverBg!)}
                         >
-                            <CalendarDays className="w-3.5 h-3.5" />
+                            <CalendarDays className="w-5 h-5" />
                             <span className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                                 {t("tasks.year")}
                             </span>
@@ -725,9 +760,13 @@ export default function DateTimeCalenderWithRangePicker({
 
                     {/* Timezone */}
                     {showTimezone && (
-                        <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">
+                        <button
+                            type="button"
+                            onClick={handleOpenTimezonePicker}
+                            className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                        >
                             {formatTimezoneOffset(selectedTimezone, timezoneFormat)}
-                        </div>
+                        </button>
                     )}
 
                     {/* Action buttons */}

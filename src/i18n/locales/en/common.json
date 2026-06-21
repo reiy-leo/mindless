@@ -48,7 +48,9 @@
     "empty": "No data",
     "confirm": "Confirm",
     "close": "Close",
-    "clear": "Clear"
+    "clear": "Clear",
+    "time": "Time",
+    "timezone": "Timezone"
   },
   "navigation": {
     "home": "Home",
