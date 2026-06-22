@@ -64,7 +64,7 @@ export default function DateRangePickerOverlayPage() {
             const screenW = window.screen.width;
             const screenH = window.screen.height;
             const OVERLAY_W = 250;
-            const OVERLAY_H = 400;
+            const OVERLAY_H = 490;
             let finalY = p.anchorY + p.anchorH + 4;
             if (finalY + OVERLAY_H > screenH) finalY = p.anchorY - OVERLAY_H - 4;
             if (finalY < 0) finalY = 4;
@@ -100,7 +100,7 @@ export default function DateRangePickerOverlayPage() {
 
     return (
         <div className="w-full h-full bg-transparent">
-            <div className="border overflow-hidden bg-white dark:bg-gray-800">
+            <div className="rounded-lg overflow-hidden bg-white dark:bg-gray-800">
                 <DateTimeCalenderWithRangePicker
                     date={localDate}
                     time={localTime}

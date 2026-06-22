@@ -229,9 +229,20 @@ export function useCreateStep() {
   return useMutation({
     mutationFn: (params: { taskId: string; description: string; dueDate?: string; dueTime?: string }) =>
       api.createStep(params),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['steps', variables.taskId] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] });
+    onSuccess: (newStep, variables) => {
+      queryClient.setQueryData(['steps', variables.taskId], (old: any[] | undefined) => {
+        if (!old) return [newStep];
+        return [...old, newStep];
+      });
+    },
+    onSettled: (_data, _error, variables) => {
+      if (variables) {
+        queryClient.invalidateQueries({ queryKey: ['steps', variables.taskId] });
+        queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] });
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create step:', error);
     },
   });
 }

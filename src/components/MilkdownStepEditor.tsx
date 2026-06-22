@@ -1,19 +1,21 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Crepe } from "@milkdown/crepe";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { getMarkdown, replaceAll } from "@milkdown/kit/utils";
 import { editorViewCtx } from "@milkdown/kit/core";
-import { EditorView } from '@codemirror/view'
+import { openUrl } from "@tauri-apps/plugin-opener";
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
 
-interface MilkdownEditorInnerProps {
+interface MilkdownStepEditorInnerProps {
     markdown: string;
     onChange: (markdown: string) => void;
+    onKeyDown?: (e: KeyboardEvent) => void;
+    onBlur?: () => void;
     placeholder?: string;
 }
 
-function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditorInnerProps) {
+function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeholder }: MilkdownStepEditorInnerProps) {
     const prevMarkdownRef = useRef<string>(markdown);
     const updatingRef = useRef(false);
     const initializedRef = useRef(false);
@@ -23,31 +25,23 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
             root,
             defaultValue: markdown,
             features: {
-                [Crepe.Feature.Latex]: true,
+                [Crepe.Feature.CodeMirror]: false,
+                [Crepe.Feature.ListItem]: false,
+                [Crepe.Feature.LinkTooltip]: true,
+                [Crepe.Feature.Cursor]: false,
+                [Crepe.Feature.ImageBlock]: false,
+                [Crepe.Feature.BlockEdit]: false,
+                [Crepe.Feature.Toolbar]: true,
+                [Crepe.Feature.Table]: false,
+                [Crepe.Feature.Latex]: false,
+                [Crepe.Feature.TopBar]: false,
                 [Crepe.Feature.AI]: false,
             },
             featureConfigs: {
                 [Crepe.Feature.Placeholder]: {
                     text: placeholder || "",
                 },
-                [Crepe.Feature.ImageBlock]: {
-                    onUpload: async (_) => {
-                        alert("暂不支持上传本地图片，请使用图片链接。");
-                        return "";
-                    },
-                    inlineUploadButton: "",
-                    blockUploadButton: "",
-                    blockUploadPlaceholderText: "",
-                },
-                [Crepe.Feature.CodeMirror]: {
-                    previewOnlyByDefault: true,
-                    copyText: ' ',
-                    extensions: [
-                        EditorView.lineWrapping
-                    ]
-                }
             },
-            
         });
     }, []);
 
@@ -95,6 +89,18 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
             }
         };
 
+        const handleKeyDown = (e: Event) => {
+            if (onKeyDown && e instanceof KeyboardEvent) {
+                onKeyDown(e);
+            }
+        };
+
+        const handleBlur = () => {
+            if (onBlur) {
+                onBlur();
+            }
+        };
+
         const handlePaste = () => {
             setTimeout(() => {
                 if (updatingRef.current) return;
@@ -109,29 +115,54 @@ function MilkdownEditorInner({ markdown, onChange, placeholder }: MilkdownEditor
 
         view.dom.addEventListener("input", handleInput);
         view.dom.addEventListener("paste", handlePaste);
+        view.dom.addEventListener("keydown", handleKeyDown);
+        view.dom.addEventListener("blur", handleBlur);
+
+        const handleClick = async (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest("a");
+            if (link && link.href) {
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                    await openUrl(link.href);
+                } catch (err) {
+                    console.error("Failed to open link:", err);
+                }
+            }
+        };
+        view.dom.addEventListener("click", handleClick);
+
         return () => {
             view.dom.removeEventListener("input", handleInput);
             view.dom.removeEventListener("paste", handlePaste);
+            view.dom.removeEventListener("keydown", handleKeyDown);
+            view.dom.removeEventListener("blur", handleBlur);
+            view.dom.removeEventListener("click", handleClick);
         };
-    }, [loading, get, onChange]);
+    }, [loading, get, onChange, onKeyDown, onBlur]);
 
     return <Milkdown />;
 }
 
-interface MilkdownEditorProps {
+interface MilkdownStepEditorProps {
     markdown: string;
     onChange: (markdown: string) => void;
-    placeholder?: ReactNode;
+    onKeyDown?: (e: KeyboardEvent) => void;
+    onBlur?: () => void;
+    placeholder?: string;
 }
 
-export default function MilkdownEditor({ markdown, onChange, placeholder }: MilkdownEditorProps) {
+export default function MilkdownStepEditor({ markdown, onChange, onKeyDown, onBlur, placeholder }: MilkdownStepEditorProps) {
     return (
         <div className="text-sm">
             <MilkdownProvider>
-                <MilkdownEditorInner
+                <MilkdownStepEditorInner
                     markdown={markdown}
                     onChange={onChange}
-                    placeholder={typeof placeholder === "string" ? placeholder : undefined}
+                    onKeyDown={onKeyDown}
+                    onBlur={onBlur}
+                    placeholder={placeholder}
                 />
             </MilkdownProvider>
         </div>

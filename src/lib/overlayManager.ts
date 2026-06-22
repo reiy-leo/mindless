@@ -9,9 +9,10 @@ interface OverlayDef {
 }
 
 const OVERLAYS: OverlayDef[] = [
-  { label: 'date-picker-overlay', route: '/overlay/date-picker', width: 240, height: 435 },
-  { label: 'date-range-picker-overlay', route: '/overlay/date-range-picker', width: 250, height: 400 },
-  { label: 'timezone-picker-overlay', route: '/overlay/timezone-picker', width: 320, height: 400 },
+  { label: 'date-picker-overlay', route: '/overlay/date-picker', width: 240, height: 440 },
+  { label: 'date-range-picker-overlay', route: '/overlay/date-range-picker', width: 250, height: 490 },
+  { label: 'timezone-picker-overlay', route: '/overlay/timezone-picker', width: 240, height: 400 },
+  { label: 'tag-list-picker-overlay', route: '/overlay/tag-list-picker', width: 200, height: 50 },
 ];
 
 const overlays = new Map<string, WebviewWindow>();
@@ -71,3 +72,4 @@ export async function hideOverlay(label: string) {
 export const DATE_PICKER_LABEL = 'date-picker-overlay';
 export const DATE_RANGE_PICKER_LABEL = 'date-range-picker-overlay';
 export const TIMEZONE_PICKER_LABEL = 'timezone-picker-overlay';
+export const TAG_LIST_PICKER_LABEL = 'tag-list-picker-overlay';

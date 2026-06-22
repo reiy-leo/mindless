@@ -12,9 +12,10 @@ import {
     EyeIcon,
     EyeSlashIcon,
     PaperClipIcon,
-    AdjustmentsHorizontalIcon,
+    EllipsisVerticalIcon,
     ArchiveBoxIcon,
     TrashIcon,
+    FlagIcon,
 } from "@heroicons/react/24/outline";
 import { Pin } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,13 +55,15 @@ import StepList from "@/components/tasks/StepList";
 import CalendarView from "@/components/tasks/CalendarView";
 import KanbanView from "@/components/tasks/KanbanView";
 import TagCombobox from "@/components/TagCombobox";
-import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
+import { showOverlay, DATE_RANGE_PICKER_LABEL, TAG_LIST_PICKER_LABEL } from "@/lib/overlayManager";
+import { getScreenRect } from "@/lib/screenRect";
 import EisenhowerMatrixView from "@/components/tasks/EisenhowerMatrixView";
 import MilkdownEditor from "@/components/MilkdownEditor";
 import { TaskSortControls } from "@/components/tasks/TaskSortControls";
 import { TaskGroupControls } from "@/components/tasks/TaskGroupControls";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
+import { getLocalToday } from "@/lib/taskHelpers";
 import type { Task, Priority, SortBy, GroupBy, Step as StepType, List, ListSettings } from "@/types/task";
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
@@ -138,6 +141,7 @@ function TaskDetailPanel({
     onUpdateTask,
     onSubtaskClick,
     onSubtaskBack,
+    inlineDateOpenedRef,
 }: {
     task: Task;
     allTags: Tag[];
@@ -147,6 +151,7 @@ function TaskDetailPanel({
     onUpdateTask: (params: any) => void;
     onSubtaskClick?: (id: string) => void;
     onSubtaskBack?: () => void;
+    inlineDateOpenedRef?: React.RefObject<boolean>;
 }) {
     const { t } = useTranslation("common");
 
@@ -158,6 +163,21 @@ function TaskDetailPanel({
     }, [flatSubtasks, selectedSubtaskId]);
 
     const activeTask = selectedSubtask || task;
+    const [editTitle, setEditTitle] = useState(activeTask.title);
+
+    useEffect(() => {
+        setEditTitle(activeTask.title);
+    }, [activeTask.title]);
+
+    const handleTitleBlur = () => {
+        const trimmed = editTitle.trim();
+        if (trimmed && trimmed !== activeTask.title) {
+            onUpdateTask({ title: trimmed });
+        } else {
+            setEditTitle(activeTask.title);
+        }
+    };
+
     const { data: steps = [] } = useSteps(activeTask.id);
     // Load subtasks of the active task (direct children only)
     const { data: activeSubtasks = [] } = useSubtasks(activeTask.id);
@@ -178,10 +198,16 @@ function TaskDetailPanel({
     const progress = useMemo(() => calcFullProgress(activeSubtasks, steps), [activeSubtasks, steps]);
 
     // Auto-complete task when all subtasks and steps are done
+    const autoCompletedRef = useRef(false);
     useEffect(() => {
         if (!progress || progress.total === 0) return;
         if (progress.completed === progress.total && !activeTask.isCompleted) {
-            onUpdateTask({ isCompleted: true });
+            if (!autoCompletedRef.current) {
+                autoCompletedRef.current = true;
+                onUpdateTask({ isCompleted: true });
+            }
+        } else {
+            autoCompletedRef.current = false;
         }
     }, [progress, activeTask.isCompleted, onUpdateTask]);
 
@@ -254,7 +280,6 @@ function TaskDetailPanel({
     };
 
     const [showPriorityPicker, setShowPriorityPicker] = useState(false);
-    const [showDatePicker, setShowDatePicker] = useState(false);
     const [localDesc, setLocalDesc] = useState(activeTask.description || "");
 
     // Sync local description when active task changes
@@ -262,19 +287,33 @@ function TaskDetailPanel({
         setLocalDesc(activeTask.description || "");
     }, [activeTask.id, activeTask.description]);
 
-    // Close date picker on outside click
+    // Listen for date picker overlay results
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (!target.closest("[data-date-picker]")) {
-                setShowDatePicker(false);
+        const unlisten = listen<{
+            type: string;
+            date?: string;
+            time?: string;
+            startDate?: string;
+            startTime?: string;
+            endDate?: string;
+            endTime?: string;
+            isAllDay?: boolean;
+        }>("date-range-picker-overlay:result", (e) => {
+            if (inlineDateOpenedRef?.current) return;
+            const p = e.payload;
+            if (p.type === "single") {
+                onUpdateTask({ dueDate: p.date || undefined, dueTime: p.time || undefined });
+            } else {
+                onUpdateTask({
+                    dueDate: p.startDate || undefined,
+                    dueTime: p.startTime || undefined,
+                    endDate: p.endDate || undefined,
+                    endTime: p.endTime || undefined,
+                });
             }
-        };
-        if (showDatePicker) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [showDatePicker]);
+        });
+        return () => { unlisten.then((fn) => fn()); };
+    }, [onUpdateTask, inlineDateOpenedRef]);
 
     // Debounced save description
     const descTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -289,17 +328,32 @@ function TaskDetailPanel({
     return (
         <div className="flex flex-col h-full border-l border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
             {/* Date button above header */}
-            <div className="px-4 pt-4 pb-2">
-                <div className="relative" data-date-picker>
+            <div className="px-4 pt-2 pb-2">
+                <div className="relative flex" data-date-picker>
                     <button
-                        onClick={() => setShowDatePicker(!showDatePicker)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors w-full ${
-                            activeTask.dueDate
-                                ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-blue-50 dark:bg-blue-900/10"
-                                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 bg-gray-50 dark:bg-gray-800"
-                        }`}
+                        onClick={async (e) => {
+                            const rect = await getScreenRect(e.currentTarget);
+                            await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+                                date: activeTask.dueDate || undefined,
+                                time: activeTask.dueTime || undefined,
+                                startDate: activeTask.dueDate || undefined,
+                                startTime: activeTask.dueTime || undefined,
+                                endDate: activeTask.endDate || undefined,
+                                endTime: activeTask.endTime || undefined,
+                                mode: activeTask.endDate ? "range" : "single",
+                                anchorX: rect.x,
+                                anchorY: rect.y,
+                                anchorH: rect.height,
+                            });
+                        }}
+                        className={`flex flex-1 items-center gap-2 px-2 pl-0 rounded-lg text-sm transition-colors font-semibold w-full`}
+                        style={{
+                            color: `${activeTask.dueDate
+                                ? "var(--theme-color)"
+                                : "text-gray-500 dark:text-gray-400"}`
+                        }}
                     >
-                        <CalendarIcon className="w-4 h-4 flex-shrink-0" />
+                        <CalendarIcon className="w-4 h-4 flex-shrink-0" strokeWidth={`2`}/>
                         <span className="truncate">
                             {activeTask.dueDate
                                 ? activeTask.endDate
@@ -310,44 +364,6 @@ function TaskDetailPanel({
                                 : t("tasks.date_placeholder")}
                         </span>
                     </button>
-                    {showDatePicker && (
-                        <div className="absolute left-0 top-full mt-1 z-50 w-77 border shadow-2xl rounded-md">
-                            <DateTimeCalenderWithRangePicker
-                                date={activeTask.dueDate || undefined}
-                                time={activeTask.dueTime || undefined}
-                                startDate={activeTask.dueDate || undefined}
-                                startTime={activeTask.dueTime || undefined}
-                                endDate={activeTask.endDate || undefined}
-                                endTime={activeTask.endTime || undefined}
-                                mode={activeTask.endDate ? "range" : "single"}
-                                onSingleChange={(d, tm) => {
-                                    onUpdateTask({ dueDate: d || undefined, dueTime: tm || undefined });
-                                    setShowDatePicker(false);
-                                }}
-                                onRangeChange={(sd, st, ed, et) => {
-                                    onUpdateTask({
-                                        dueDate: sd || undefined,
-                                        dueTime: st || undefined,
-                                        endDate: ed || undefined,
-                                        endTime: et || undefined,
-                                    });
-                                    setShowDatePicker(false);
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Detail Header */}
-            <div className="px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2">
-                    <input
-                        type="text"
-                        value={activeTask.title}
-                        onChange={(e) => onUpdateTask({ title: e.target.value })}
-                        className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded px-1"
-                    />
                     {/* Priority icon button with dropdown */}
                     <div
                         className="relative flex-shrink-0"
@@ -358,10 +374,10 @@ function TaskDetailPanel({
                     >
                         <button
                             onClick={() => setShowPriorityPicker(!showPriorityPicker)}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             title={t("tasks.priority.label")}
                         >
-                            <AdjustmentsHorizontalIcon
+                            <FlagIcon
                                 className="w-4 h-4"
                                 style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }}
                             />
@@ -390,6 +406,20 @@ function TaskDetailPanel({
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Detail Header */}
+            <div className="px-4 pb-2">
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={handleTitleBlur}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        className="text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded"
+                    />
+                </div>
                 {/* Parent task link */}
                 {selectedSubtask && onSubtaskBack && (
                     <button
@@ -404,13 +434,13 @@ function TaskDetailPanel({
 
             {/* Progress bar - tightly below header */}
             {progress && progress.total > 0 && (
-                <div className="group relative">
-                    <div className="w-full h-1 bg-gray-100 dark:bg-gray-700">
+                <div className="group relative px-4 pb-2">
+                    <div className="w-full h-0.5 bg-gray-100 dark:bg-gray-700">
                         <div
                             className="h-full transition-all duration-300"
                             style={{
                                 width: `${(progress.completed / progress.total) * 100}%`,
-                                backgroundColor: progress.completed === progress.total ? "#10B981" : "#3B82F6",
+                                backgroundColor: progress.completed === progress.total ? "var(--theme-color)" : "var(--theme-color)",
                             }}
                         />
                     </div>
@@ -426,8 +456,7 @@ function TaskDetailPanel({
                 <MilkdownEditor
                     markdown={localDesc}
                     onChange={handleDescChange}
-
-                    // placeholder="详细说明"
+                    placeholder="写下任务详情..."
                 />
 
                 {/* Tags */}
@@ -449,7 +478,7 @@ function TaskDetailPanel({
                 />
 
                 {/* Steps */}
-                <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                <div className="pt-4">
                     <StepList
                         steps={steps}
                         taskDueDate={activeTask.dueDate}
@@ -486,22 +515,91 @@ function TaskRow({
     isSelected,
     onSelect,
     onToggle,
+    progressStyle = 'bar',
 }: {
     task: Task;
     isSelected: boolean;
     onSelect: () => void;
     onToggle: () => void;
+    progressStyle?: 'bar' | 'circle' | 'pie';
 }) {
     const { t } = useTranslation("common");
     const { data: taskSteps = [] } = useSteps(task.id);
     const rowProgress = useMemo(() => calcStepsProgress(taskSteps), [taskSteps]);
 
+    const percent = rowProgress ? Math.round((rowProgress.completed / rowProgress.total) * 100) : 0;
+    const isComplete = rowProgress && rowProgress.completed === rowProgress.total;
+
+    const renderProgress = () => {
+        if (!rowProgress || rowProgress.total === 0) return null;
+
+        if (progressStyle === 'circle') {
+            const r = 7;
+            const circumference = 2 * Math.PI * r;
+            const offset = circumference - (percent / 100) * circumference;
+            return (
+                <svg width="18" height="18" className="flex-shrink-0">
+                    <circle cx="9" cy="9" r={r} fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-600" strokeWidth="2" />
+                    <circle cx="9" cy="9" r={r} fill="none" strokeWidth="2" strokeLinecap="round"
+                        stroke={isComplete ? "var(--theme-color)" : "var(--theme-bg-70)"}
+                        strokeDasharray={circumference} strokeDashoffset={offset}
+                        transform="rotate(-90 9 9)" className="transition-all" />
+                </svg>
+            );
+        }
+
+        if (progressStyle === 'pie') {
+            const r = 7;
+            const cx = 9, cy = 9;
+            if (percent >= 100) {
+                return (
+                    <svg width="18" height="18" className="flex-shrink-0">
+                        <circle cx={cx} cy={cy} r={r} fill="var(--theme-color)" />
+                    </svg>
+                );
+            }
+            if (percent <= 0) {
+                return (
+                    <svg width="18" height="18" className="flex-shrink-0">
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-600" strokeWidth="2" />
+                    </svg>
+                );
+            }
+            const angle = (percent / 100) * 360;
+            const rad = (angle - 90) * (Math.PI / 180);
+            const endX = cx + r * Math.cos(rad);
+            const endY = cy + r * Math.sin(rad);
+            const largeArc = angle > 180 ? 1 : 0;
+            const pathD = `M${cx},${cy} L${cx},${cy - r} A${r},${r} 0 ${largeArc},1 ${endX},${endY} Z`;
+            return (
+                <svg width="18" height="18" className="flex-shrink-0">
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-600" strokeWidth="2" />
+                    <path d={pathD} fill={isComplete ? "var(--theme-color)" : "var(--theme-bg-70)"} />
+                </svg>
+            );
+        }
+
+        // bar (default)
+        return (
+            <div className="w-10 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                        width: `${percent}%`,
+                        backgroundColor: isComplete ? "var(--theme-color)" : "var(--theme-bg-70)",
+                    }}
+                />
+            </div>
+        );
+    };
+
     return (
         <div
             onClick={onSelect}
-            className={`group flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                isSelected ? "ring-2 ring-blue-500" : ""
-            }`}
+            className={`group flex items-center gap-3 px-2 py-2 bg-white dark:bg-gray-800 rounded-lg transition-shadow cursor-pointer`}
+            style={{
+                backgroundColor: isSelected ? `color-mix(in srgb, var(--theme-bg-20) 80%, white)` : `inherit`
+            }}
         >
             <input
                 type="checkbox"
@@ -511,7 +609,10 @@ function TaskRow({
                     onToggle();
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+                className="after:skew-y-10 w-4 h-4 rounded border-gray-300 dark:border-gray-600 flex-shrink-0"
+                style={{
+                    accentColor: `var(--theme-color)`
+                }}
             />
             <span
                 className={`flex-1 min-w-0 truncate text-sm ${
@@ -522,23 +623,10 @@ function TaskRow({
             >
                 {task.title}
             </span>
-            {/* Subtask/Step progress badge */}
-            {rowProgress && rowProgress.total > 0 && (
-                <div
-                    className="flex items-center gap-1 flex-shrink-0"
-                    title={`${rowProgress.completed}/${rowProgress.total}`}
-                >
-                    <div className="w-10 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                        <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                                width: `${(rowProgress.completed / rowProgress.total) * 100}%`,
-                                backgroundColor: rowProgress.completed === rowProgress.total ? "#10B981" : "#3B82F6",
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Step progress badge */}
+            <div className="flex items-center gap-1 flex-shrink-0" title={`${rowProgress?.completed ?? 0}/${rowProgress?.total ?? 0}`}>
+                {renderProgress()}
+            </div>
             {/* Due date badge */}
             {task.dueDate &&
                 (() => {
@@ -549,7 +637,7 @@ function TaskRow({
                     const isOverdue = diffDays < 0;
                     const absDays = Math.abs(diffDays);
                     const unit = t("dashboard.days_left");
-                    const label = diffDays === 0 ? t("today") : isOverdue ? `-${absDays}${unit}` : `+${absDays}${unit}`;
+                    const label = diffDays === 0 ? t("tasks.today") : isOverdue ? `-${absDays}${unit}` : `+${absDays}${unit}`;
                     return (
                         <span
                             className={`text-xs font-medium flex-shrink-0 ${
@@ -665,6 +753,13 @@ export default function TasksPage() {
     const [newTaskDescription, setNewTaskDescription] = useState("");
     const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0);
     const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+    const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
+    const tagButtonRef = useRef<HTMLButtonElement>(null);
+    const [newTaskDueDate, setNewTaskDueDate] = useState(() => getLocalToday());
+    const [newTaskDueTime, setNewTaskDueTime] = useState("");
+    const dateButtonRef = useRef<HTMLButtonElement>(null);
+    const inlineDateOpenedRef = useRef(false);
+    const dateExplicitlySetRef = useRef(false);
     const [contextMenu, setContextMenu] = useState<{
         x: number;
         y: number;
@@ -729,6 +824,38 @@ export default function TasksPage() {
             window.removeEventListener("mindless:escape", handleEscape);
         };
     }, [showTaskForm, selectedTaskId, selectedSubtaskId]);
+
+    // Listen for tag list picker overlay results
+    useEffect(() => {
+        const unlisten = listen<{ selectedIds: string[] }>("tag-list-picker-overlay:result", (e) => {
+            setNewTaskTagIds(e.payload.selectedIds);
+        });
+        return () => { unlisten.then((fn) => fn()); };
+    }, []);
+
+    // Listen for date picker results for inline form
+    useEffect(() => {
+        const unlisten = listen<{
+            type: string;
+            date?: string;
+            time?: string;
+            startDate?: string;
+            startTime?: string;
+        }>("date-range-picker-overlay:result", (e) => {
+            if (!inlineDateOpenedRef.current) return;
+            inlineDateOpenedRef.current = false;
+            dateExplicitlySetRef.current = true;
+            const p = e.payload;
+            if (p.type === "single") {
+                setNewTaskDueDate(p.date || "");
+                setNewTaskDueTime(p.time || "");
+            } else {
+                setNewTaskDueDate(p.startDate || "");
+                setNewTaskDueTime(p.startTime || "");
+            }
+        });
+        return () => { unlisten.then((fn) => fn()); };
+    }, []);
 
     const selectedTask = useMemo(
         () => tasks.find((task) => task.id === selectedTaskId) || null,
@@ -977,32 +1104,40 @@ export default function TasksPage() {
         return items;
     }, [filteredTasks, allSubtasks]);
 
-    const handleCreateInline = () => {
+    const handleCreateInline = (onSuccess?: (task: Task) => void) => {
         if (!newTaskTitle.trim()) return;
         createTask.mutate(
             {
                 title: newTaskTitle.trim(),
                 description: newTaskDescription.trim() || undefined,
                 priority: newTaskPriority,
+                dueDate: newTaskDueDate || undefined,
+                dueTime: newTaskDueTime || undefined,
+                tagIds: newTaskTagIds.length > 0 ? newTaskTagIds.join(",") : undefined,
                 listId:
                     selectedListId && !selectedListId.startsWith("smart:") && !selectedListId.startsWith("adv:")
                         ? selectedListId
                         : undefined,
             },
             {
-                onSuccess: () => {
+                onSuccess: (newTask) => {
                     setNewTaskTitle("");
                     setNewTaskDescription("");
                     setNewTaskPriority(0);
+                    setNewTaskTagIds([]);
+                    setNewTaskDueDate(getLocalToday());
+                    setNewTaskDueTime("");
+                    dateExplicitlySetRef.current = false;
+                    if (newTask && onSuccess) onSuccess(newTask);
                 },
             },
         );
     };
 
     const handleInlineKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        if (e.key === "Enter") {
             e.preventDefault();
-            handleCreateInline();
+            handleCreateInline((task) => setSelectedTaskId(task.id));
         }
         if (e.key === "Escape") {
             setNewTaskTitle("");
@@ -1068,16 +1203,16 @@ export default function TasksPage() {
         }
     };
 
-    const handleUpdateTaskField = (params: any) => {
+    const handleUpdateTaskField = useCallback((params: any) => {
         const targetId = selectedSubtaskId || selectedTask?.id;
         if (targetId) {
             updateTask.mutate({ id: targetId, ...params });
         }
-    };
+    }, [selectedSubtaskId, selectedTask?.id, updateTask]);
 
-    const handleUpdateTaskInline = (id: string, params: any) => {
+    const handleUpdateTaskInline = useCallback((id: string, params: any) => {
         updateTask.mutate({ id, ...params });
-    };
+    }, [updateTask]);
 
     // Task groups (smart lists + user lists)
     const SMART_LISTS = [
@@ -1649,7 +1784,7 @@ export default function TasksPage() {
             {/* Task List Panel */}
             <div className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                 {/* Header */}
-                <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-3">
+                <div className="px-2 py-1">
                     <div data-tauri-drag-region className="flex items-center justify-between">
                         <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{headerTitle}</h1>
                         <div className="flex items-center gap-2">
@@ -1662,14 +1797,10 @@ export default function TasksPage() {
                             >
                                 <button
                                     onClick={() => setShowSettings(!showSettings)}
-                                    className={`p-2 rounded-lg transition-colors ${
-                                        showSettings
-                                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-500"
-                                            : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                                    }`}
+                                    className={`p-2 rounded-lg transition-colors hover:bg-gray-100`}
                                     title={t("tasks.settings")}
                                 >
-                                    <AdjustmentsHorizontalIcon className="w-3 h-3" />
+                                    <EllipsisVerticalIcon className="w-4 h-4" />
                                 </button>
 
                                 {/* Settings popup */}
@@ -1787,18 +1918,18 @@ export default function TasksPage() {
                         onUpdateTask={handleUpdateTaskInline}
                     />
                 ) : (
-                    <div className="flex-1 overflow-auto p-4">
+                    <div className="flex-1 overflow-auto p-1">
                         {/* Inline new task form */}
-                        <div className="mb-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <textarea
+                        <div className="mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <input
+                                type="text"
                                 value={newTaskTitle}
                                 onChange={(e) => setNewTaskTitle(e.target.value)}
                                 onKeyDown={handleInlineKeyDown}
                                 placeholder={t("tasks.inline_placeholder")}
-                                rows={2}
-                                className="w-full px-4 pt-3 pb-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent resize-none focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                                className="w-full px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                             />
-                            <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center justify-between px-1 py-1.5 border-t border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center gap-1">
                                     {/* Priority */}
                                     <div className="relative">
@@ -1811,7 +1942,7 @@ export default function TasksPage() {
                                             }`}
                                             title={t("tasks.priority.label")}
                                         >
-                                            <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                                            <FlagIcon className="w-4 h-4" />
                                         </button>
                                         {showPriorityPicker && (
                                             <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1.5 flex gap-1 z-50">
@@ -1835,11 +1966,63 @@ export default function TasksPage() {
                                         )}
                                     </div>
                                     {/* Tags */}
+                                    <div className="relative">
+                                        <button
+                                            ref={tagButtonRef}
+                                            onClick={async () => {
+                                                if (tagButtonRef.current) {
+                                                    const rect = await getScreenRect(tagButtonRef.current);
+                                                    await showOverlay(TAG_LIST_PICKER_LABEL, rect.x, rect.y, {
+                                                        tags: allTags,
+                                                        selectedIds: newTaskTagIds,
+                                                        anchorX: rect.x,
+                                                        anchorY: rect.y,
+                                                        anchorH: rect.height,
+                                                    });
+                                                }
+                                            }}
+                                            className={`p-1.5 rounded transition-colors ${
+                                                newTaskTagIds.length > 0
+                                                    ? "text-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                                    : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500"
+                                            }`}
+                                            title={t("tasks.tags.title")}
+                                        >
+                                            <TagIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    {/* Date */}
                                     <button
-                                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 transition-colors"
-                                        title={t("tasks.tags.title")}
+                                        ref={dateButtonRef}
+                                        onClick={async () => {
+                                            inlineDateOpenedRef.current = true;
+                                            if (dateButtonRef.current) {
+                                                const rect = await getScreenRect(dateButtonRef.current);
+                                                await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+                                                    date: newTaskDueDate || undefined,
+                                                    time: newTaskDueTime || undefined,
+                                                    startDate: newTaskDueDate || undefined,
+                                                    startTime: newTaskDueTime || undefined,
+                                                    mode: "single",
+                                                    anchorX: rect.x,
+                                                    anchorY: rect.y,
+                                                    anchorH: rect.height,
+                                                });
+                                            }
+                                        }}
+                                        className={`flex items-center gap-1 p-1.5 rounded transition-colors ${
+                                            dateExplicitlySetRef.current
+                                                ? "text-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                                : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500"
+                                        }`}
+                                        title={t("tasks.date_placeholder")}
                                     >
-                                        <TagIcon className="w-4 h-4" />
+                                        <CalendarIcon className="w-4 h-4" />
+                                        {dateExplicitlySetRef.current && (
+                                            <span className="text-xs">
+                                                {newTaskDueDate}{newTaskDueTime ? ` ${newTaskDueTime}` : ""}
+                                            </span>
+                                        )}
                                     </button>
                                     {/* Attachment */}
                                     <button
@@ -1849,13 +2032,6 @@ export default function TasksPage() {
                                         <PaperClipIcon className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <button
-                                    onClick={handleCreateInline}
-                                    disabled={!newTaskTitle.trim()}
-                                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
-                                >
-                                    {t("tasks.create_task")}
-                                </button>
                             </div>
                         </div>
 
@@ -1884,6 +2060,7 @@ export default function TasksPage() {
                                         <TaskRow
                                             key={displayTask.id}
                                             task={displayTask as Task}
+                                            progressStyle="circle"
                                             isSelected={
                                                 isSubtask
                                                     ? selectedSubtaskId === displayTask.id
@@ -1941,6 +2118,7 @@ export default function TasksPage() {
                         onUpdateTask={handleUpdateTaskField}
                         onSubtaskClick={(id) => setSelectedSubtaskId(id)}
                         onSubtaskBack={() => setSelectedSubtaskId(null)}
+                        inlineDateOpenedRef={inlineDateOpenedRef}
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">

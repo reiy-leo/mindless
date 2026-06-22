@@ -144,12 +144,12 @@ export async function moveTags(items: {
 
 // Subtask APIs (subtasks are now tasks with parentTaskId)
 export async function getSubtasks(taskId: string): Promise<Task[]> {
-  return await invoke<Task[]>('get_subtasks', { task_id: taskId });
+  return await invoke<Task[]>('get_subtasks', { taskId });
 }
 
 export async function getAllSubtasks(taskIds: string[]): Promise<Task[]> {
   if (taskIds.length === 0) return [];
-  return await invoke<Task[]>('get_all_subtasks', { task_ids: taskIds });
+  return await invoke<Task[]>('get_all_subtasks', { taskIds });
 }
 
 export async function createSubtask(params: {
@@ -159,9 +159,9 @@ export async function createSubtask(params: {
   level?: number;
 }): Promise<Task> {
   return await invoke<Task>('create_subtask', {
-    task_id: params.taskId,
+    taskId: params.taskId,
     title: params.title,
-    parent_subtask_id: params.parentSubtaskId,
+    parentSubtaskId: params.parentSubtaskId,
     level: params.level,
   });
 }
@@ -175,9 +175,9 @@ export async function updateSubtask(id: string, params: {
   return await invoke<Task>('update_subtask', {
     id,
     title: params.title,
-    is_completed: params.isCompleted,
-    sort_order: params.sortOrder,
-    _task_id: params.taskId,
+    isCompleted: params.isCompleted,
+    sortOrder: params.sortOrder,
+    taskId: params.taskId,
   });
 }
 
@@ -187,7 +187,7 @@ export async function deleteSubtask(id: string, taskId?: string): Promise<void> 
 
 // Step APIs
 export async function getSteps(taskId: string): Promise<Step[]> {
-  return await invoke<Step[]>('get_steps', { task_id: taskId });
+  return await invoke<Step[]>('get_steps', { taskId });
 }
 
 export async function createStep(params: {
@@ -197,10 +197,10 @@ export async function createStep(params: {
   dueTime?: string;
 }): Promise<Step> {
   return await invoke<Step>('create_step', {
-    task_id: params.taskId,
+    taskId: params.taskId,
     description: params.description,
-    due_date: params.dueDate,
-    due_time: params.dueTime,
+    dueDate: params.dueDate,
+    dueTime: params.dueTime,
   });
 }
 
@@ -214,10 +214,10 @@ export async function updateStep(id: string, params: {
   return await invoke<Step>('update_step', {
     id,
     description: params.description,
-    due_date: params.dueDate,
-    due_time: params.dueTime,
-    is_completed: params.isCompleted,
-    sort_order: params.sortOrder,
+    dueDate: params.dueDate,
+    dueTime: params.dueTime,
+    isCompleted: params.isCompleted,
+    sortOrder: params.sortOrder,
   });
 }
 

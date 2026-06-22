@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { Tag } from '@/types/tag';
+import { useTranslation } from 'react-i18next';
+
 
 interface TagComboboxProps {
   allTags: Tag[];
@@ -15,6 +17,7 @@ export default function TagCombobox({
   onToggle,
   onCreateTag,
 }: TagComboboxProps) {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,8 +97,8 @@ export default function TagCombobox({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="+"
-          className="text-xs text-gray-900 dark:text-gray-100 bg-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500 w-[3ch] min-w-[3ch] flex-shrink-0"
+          placeholder={t("tasks.tags.add")}
+          className="text-sm bg-transparent outline-none w-[7ch] min-w-[7ch] flex-shrink-0"
         />
       </div>
 

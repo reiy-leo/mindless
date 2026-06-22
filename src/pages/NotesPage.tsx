@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import {
     PlusIcon,
     PencilIcon,
@@ -43,7 +44,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { formatDisplayDate, formatTime } from "@/lib/formatUtils";
 import TagCombobox from "@/components/TagCombobox";
 import MilkdownEditor from "@/components/MilkdownEditor";
-import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
+import { showOverlay, DATE_RANGE_PICKER_LABEL } from "@/lib/overlayManager";
+import { getScreenRect } from "@/lib/screenRect";
 import LinkedItemSelector from "@/components/media/LinkedItemSelector";
 import type { Note, NoteGroup } from "@/types/note";
 import GroupFormPopup from "@/components/ui/GroupFormPopup";
@@ -102,8 +104,6 @@ export default function NotesPage() {
 
     const [groupsExpanded, setGroupsExpanded] = useState(true);
     const [showGroupForm, setShowGroupForm] = useState(false);
-    const [showTargetDatePicker, setShowTargetDatePicker] = useState(false);
-    const targetDateRef = useRef<HTMLDivElement>(null);
     const [editingGroup, setEditingGroup] = useState<NoteGroup | null>(null);
     const [newGroupName, setNewGroupName] = useState("");
     const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
@@ -197,18 +197,6 @@ export default function NotesPage() {
             setLocalTitle("");
         }
     }, [selectedNote]);
-
-    // Close target date picker on outside click
-    useEffect(() => {
-        if (!showTargetDatePicker) return;
-        const handler = (e: MouseEvent) => {
-            if (targetDateRef.current && !targetDateRef.current.contains(e.target as Node)) {
-                setShowTargetDatePicker(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [showTargetDatePicker]);
 
     // Debounced content save - updates ref immediately, state only for initial sync
     const handleContentChange = useCallback(
@@ -398,6 +386,30 @@ export default function NotesPage() {
         },
         [selectedNoteId, updateNote],
     );
+
+    // Listen for date picker overlay results
+    useEffect(() => {
+        const unlisten = listen<{
+            type: string;
+            date?: string;
+            startDate?: string;
+            endDate?: string;
+        }>("date-range-picker-overlay:result", (e) => {
+            const p = e.payload;
+            if (p.type === "single") {
+                handleUpdateNoteField({
+                    targetDate: p.date || undefined,
+                    targetEndDate: "",
+                });
+            } else {
+                handleUpdateNoteField({
+                    targetDate: p.startDate || undefined,
+                    targetEndDate: p.endDate || undefined,
+                });
+            }
+        });
+        return () => { unlisten.then((fn) => fn()); };
+    }, [handleUpdateNoteField]);
 
     // Note Group CRUD
     const handleCreateGroup = useCallback(() => {
@@ -747,10 +759,22 @@ export default function NotesPage() {
                     <div className="flex flex-col h-full">
                         {/* Target Date */}
                         <div className="px-4 pt-3 pb-1 flex-shrink-0">
-                            <div className="relative" ref={targetDateRef}>
+                            <div className="relative">
                                 <button
                                     type="button"
-                                    onClick={() => setShowTargetDatePicker(!showTargetDatePicker)}
+                                    onClick={async (e) => {
+                                        const rect = await getScreenRect(e.currentTarget);
+                                        await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+                                            date: selectedNote.targetDate,
+                                            startDate: selectedNote.targetDate,
+                                            endDate: selectedNote.targetEndDate,
+                                            mode: selectedNote.targetEndDate ? "range" : "single",
+                                            hideTime: true,
+                                            anchorX: rect.x,
+                                            anchorY: rect.y,
+                                            anchorH: rect.height,
+                                        });
+                                    }}
                                     className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                 >
                                     <CalendarIcon className="w-4 h-4" />
@@ -762,31 +786,6 @@ export default function NotesPage() {
                                             : t("notes.target_date")}
                                     </span>
                                 </button>
-                                {showTargetDatePicker && (
-                                    <div className="absolute z-50 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                                        <DateTimeCalenderWithRangePicker
-                                            date={selectedNote.targetDate}
-                                            startDate={selectedNote.targetDate}
-                                            endDate={selectedNote.targetEndDate}
-                                            mode={selectedNote.targetEndDate ? "range" : "single"}
-                                            hideTime
-                                            onSingleChange={(date) => {
-                                                handleUpdateNoteField({ 
-                                                    targetDate: date || undefined, 
-                                                    targetEndDate: ""
-                                                });
-                                                setShowTargetDatePicker(false);
-                                            }}
-                                            onRangeChange={(startDate, _startTime, endDate, _endTime) => {
-                                                handleUpdateNoteField({
-                                                    targetDate: startDate || undefined,
-                                                    targetEndDate: endDate || undefined,
-                                                });
-                                                setShowTargetDatePicker(false);
-                                            }}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         </div>
 

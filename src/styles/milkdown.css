@@ -5,8 +5,19 @@
 .milkdown {
     --crepe-color-background: var(--theme-bg-2);
     .ProseMirror {
+
+        caret-color: hsl(from var(--theme-color) h s calc(l - 10));
+        caret-shape: bar;
+        caret: 5px;
+
+
         a {
             cursor: pointer;
+            text-decoration-skip-ink: none;
+            text-decoration-style: solid;
+            text-underline-offset: 0.25rem;
+            text-decoration-color: var(--theme-color);
+            text-decoration-thickness: 2px;
         }
 
         p {
@@ -24,23 +35,32 @@
         }
 
         blockquote {
-            background-color: rgb(247, 247, 247);
+            background-color: var(--theme-bg-20);
             border-radius: 5px;
-            padding-left: 2ch;
+            padding: 0.5ch;
+            padding-left: 1.5ch;
 
             &::before {
                 top: 0;
                 bottom: 0;
                 border-radius: 5px;
-                width: 6px;
+                width: 3px;
+                background: var(--theme-color);
             }
         }
 
         .milkdown-code-block {
             padding: unset;
+            position: relative;
 
             .tools {
                 background-color: white;
+                position: absolute;
+                top: -24px;
+                left: 0;
+                width: 100%;
+                z-index: 9999;
+                background: transparent;
             }
 
             .cm-activeLineGutter,
@@ -70,6 +90,7 @@
                 margin-bottom: 4px;
 
                 button {
+                    padding: 2px 8px;
                     border-radius: 4px !important;
                     background: var(--crepe-color-surface-low);
                 }
@@ -223,6 +244,8 @@
         background: white;
         height: 32px;
         color: black;
+        border: 1px solid rgb(207, 207, 207);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
         .toolbar-item {
             margin: 4px 2px;
@@ -231,6 +254,7 @@
             height: 24px;
 
             svg {
+                fill: black;
                 width: 20px;
                 height: 20px;
             }
@@ -244,12 +268,39 @@
         }
     }
 
+    .milkdown-button,
+    .milkdown-icon.button {
+        svg {
+            color: black;
+            fill: black;
+        }
+
+        &:hover {
+            background-color: var(--theme-bg-20);
+        }
+    }
+
     .milkdown-link-preview {
         .link-preview {
             border-radius: 4px;
             background: white;
             padding: 4px;
             gap: 4px;
+
+            .button {
+                svg {
+                    color: black;
+                    fill: black;
+                }
+        
+                &:hover {
+                    background-color: var(--theme-bg-20);
+                }
+            }
+        }
+
+        .link-display {
+            display: none;
         }
     }
 }

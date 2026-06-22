@@ -66,8 +66,8 @@ export function formatDisplayDate(dateStr: string, format: DateFormat, t: TFunct
       dayBefore.setDate(dayBefore.getDate() - 2);
       const dayBeforeStr = `${dayBefore.getFullYear()}-${String(dayBefore.getMonth() + 1).padStart(2, '0')}-${String(dayBefore.getDate()).padStart(2, '0')}`;
 
-      if (dateStr === todayStr) return t('today');
-      if (dateStr === yesterdayStr) return t('yesterday');
+      if (dateStr === todayStr) return t('tasks.today');
+      if (dateStr === yesterdayStr) return t('tasks.yesterday');
       if (dateStr === dayBeforeStr) return t('datetime.relative.day_before', { defaultValue: '前天' });
       return `${y}/${m}/${d}`;
     }

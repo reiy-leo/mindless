@@ -46,6 +46,7 @@ export interface CreateTaskParams {
   endTime?: string;
   startDate?: string;
   listId?: string;
+  tagIds?: string;
   recurrenceRule?: string;
   recurrenceEndDate?: string;
 }

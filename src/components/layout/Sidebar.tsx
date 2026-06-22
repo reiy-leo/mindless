@@ -136,7 +136,9 @@ export default function Sidebar() {
       <nav className="flex flex-col px-1.5 space-y-2 flex-1" style={{ position: 'relative', zIndex: 1 }}>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path && !selectedListId;
+          const isActive = item.path === '/tasks'
+            ? location.pathname === '/tasks'
+            : location.pathname === item.path && !selectedListId;
 
           if (item.path === null) {
             return <div key="spacer" data-tauri-drag-region className='flex-1'></div>

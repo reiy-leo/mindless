@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useAppStore } from "@/stores/useAppStore";
 import {
     PlusIcon,
     FireIcon,
@@ -40,27 +41,10 @@ import Tw22ColorPickerButton from "@/components/Tw22ColorPickerButton";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import { getLunarDayStr } from "@/lib/lunar";
 import { openDialogWindow, listenFromDialog } from "@/lib/dialogWindow";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useAppStore } from "@/stores/useAppStore";
 import { formatTime } from "@/lib/formatUtils";
+import { getScreenRect } from "@/lib/screenRect";
 import type { Habit, HabitGroup, HabitFrequency, TargetType, CreateHabitParams } from "@/types/habit";
 
-// Get screen coordinates of an element by adding window position to viewport rect
-async function getScreenRect(el: HTMLElement): Promise<{ x: number; y: number; width: number; height: number }> {
-    const rect = el.getBoundingClientRect();
-    const win = getCurrentWindow();
-    const outerPos = await win.outerPosition();
-    const innerPos = await win.innerPosition();
-    // outerPos includes titlebar, innerPos is content area
-    // The difference gives us the titlebar height
-    const titlebarH = outerPos.y - innerPos.y;
-    return {
-        x: outerPos.x + rect.left,
-        y: outerPos.y + titlebarH + rect.top,
-        width: rect.width,
-        height: rect.height,
-    };
-}
 
 // ==================== Check if Habit is Due on Date ====================
 function isHabitDueOnDate(habit: Habit, dateStr: string): boolean {

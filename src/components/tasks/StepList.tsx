@@ -9,8 +9,11 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import DateTimePicker from '@/components/DateTimePicker';
+import { listen } from '@tauri-apps/api/event';
+import { showOverlay, DATE_PICKER_LABEL } from '@/lib/overlayManager';
+import { getScreenRect } from '@/lib/screenRect';
 import { useCalendarEvents } from '@/queries/useTaskQueries';
+import MilkdownStepEditor from '@/components/MilkdownStepEditor';
 
 const restrictToVerticalAxis: Modifier = ({ transform }) => ({
   ...transform,
@@ -58,25 +61,19 @@ function InlineAddInput({
   onSubmit: (description: string) => void;
 }) {
   const [value, setValue] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const submittedRef = useRef(false);
 
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
+  const handleSubmit = (desc: string) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    onSubmit(desc);
+  };
 
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 'px';
-    }
-  }, [value]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (value.trim()) {
-        onSubmit(value.trim());
+        handleSubmit(value.trim());
         setValue('');
       }
     } else if (e.key === 'Escape') {
@@ -84,22 +81,31 @@ function InlineAddInput({
     }
   };
 
+  const handleBlur = () => {
+    if (!submittedRef.current && value.trim()) handleSubmit(value.trim());
+    else if (!submittedRef.current) onCancel();
+  };
+
   return (
-    <div className="flex items-start gap-2">
-      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex-shrink-0 mt-0.5" />
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => {
-          if (value.trim()) onSubmit(value.trim());
-          else onCancel();
-        }}
-        placeholder={placeholder}
-        rows={1}
-        className="flex-1 px-2 py-1 text-sm bg-transparent border-none outline-none resize-none min-w-0 leading-snug text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-      />
+    <div className="flex gap-0">
+      <div className='flex items-start justify-center pe-2 py-1'>
+        <input
+          type="checkbox"
+          className="mt-2 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+          style={{
+            accentColor: `var(--theme-color)`
+          }}
+        />
+      </div>
+      <div className="flex-1 px-1 py-1">
+        <MilkdownStepEditor
+          markdown={value}
+          onChange={setValue}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+        />
+      </div>
     </div>
   );
 }
@@ -110,87 +116,67 @@ function StepItem({
   onToggle,
   onDelete,
   onUpdateDescription,
-  onUpdateDueDate,
-  onUpdateDueTime,
-}: StepItemProps & { taskDueDate?: string }) {
+  onDateClick,
+}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void }) {
   const { t } = useTranslation('common');
   const [description, setDescription] = useState(step.description);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const { data: calendarEvents = [] } = useCalendarEvents();
-  const dateRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isInternalUpdateRef = useRef(false);
 
   useEffect(() => {
-    setDescription(step.description);
-  }, [step.description]);
-
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 'px';
+    if (!isInternalUpdateRef.current) {
+      setDescription(step.description);
     }
-  }, [description]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dateRef.current && !dateRef.current.contains(e.target as Node)) {
-        setShowDatePicker(false);
-      }
-    };
-    if (showDatePicker) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showDatePicker]);
+    isInternalUpdateRef.current = false;
+  }, [step.description]);
 
   const handleSave = () => {
     const trimmed = description.trim();
     if (trimmed && trimmed !== step.description) {
+      isInternalUpdateRef.current = true;
       onUpdateDescription(trimmed);
     } else if (!trimmed) {
       setDescription(step.description);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
-      (e.target as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       setDescription(step.description);
-      (e.target as HTMLElement).blur();
     }
   };
 
   const dateDisplay = formatStepDate(step.dueDate, step.dueTime, taskDueDate);
 
   return (
-    <div className="flex items-start gap-2 py-1.5 group">
+    <div className="flex items-start justify-center gap-2 py-1.5 group">
       {/* Checkbox */}
       <input
         type="checkbox"
         checked={step.isCompleted}
         onChange={onToggle}
-        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0 mt-0.5"
+        className="mt-2 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+        style={{
+          accentColor: `var(--theme-color)`
+        }}
       />
 
       {/* Description - always editable */}
-      <textarea
-        ref={textareaRef}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={handleKeyDown}
-        rows={1}
-        className={`flex-1 px-1 py-0.5 text-sm bg-transparent border-none outline-none resize-none min-w-0 leading-snug ${
-          step.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-        }`}
-      />
+      <div className={`flex-1 px-1 py-0.5 ${step.isCompleted ? 'opacity-30 text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+        <MilkdownStepEditor
+          markdown={description}
+          onChange={setDescription}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSave}
+        />
+      </div>
 
       {/* Date button - float right */}
-      <div ref={dateRef} className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0">
         <button
-          onClick={() => setShowDatePicker(!showDatePicker)}
+          onClick={onDateClick}
           className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs transition-colors ${
             dateDisplay
               ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -200,22 +186,6 @@ function StepItem({
           <CalendarIcon className="w-3 h-3" />
           {dateDisplay && <span>{dateDisplay}</span>}
         </button>
-        {showDatePicker && (
-          <div className="absolute right-0 top-full mt-1 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2">
-              <DateTimePicker
-                date={step.dueDate || undefined}
-                time={step.dueTime || undefined}
-                onChange={(d, tm) => {
-                  onUpdateDueDate(d || undefined);
-                  onUpdateDueTime(tm || undefined);
-                }}
-                events={calendarEvents}
-                showTime={true}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Delete */}
@@ -236,9 +206,8 @@ function SortableStepItem({
   onToggle,
   onDelete,
   onUpdateDescription,
-  onUpdateDueDate,
-  onUpdateDueTime,
-}: StepItemProps & { taskDueDate?: string }) {
+  onDateClick,
+}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void }) {
   const { t } = useTranslation('common');
   const {
     attributes,
@@ -262,7 +231,7 @@ function SortableStepItem({
         {...attributes}
         {...listeners}
         onClick={(e) => e.stopPropagation()}
-        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none mt-1 absolute -left-5"
+        className="flex items-center justify-center h-full rounded opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none absolute -left-4"
         title={t('tasks.views.drag_to_reorder')}
       >
         <Bars3Icon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
@@ -274,8 +243,7 @@ function SortableStepItem({
           onToggle={onToggle}
           onDelete={onDelete}
           onUpdateDescription={onUpdateDescription}
-          onUpdateDueDate={onUpdateDueDate}
-          onUpdateDueTime={onUpdateDueTime}
+          onDateClick={onDateClick}
         />
       </div>
     </div>
@@ -295,10 +263,40 @@ export default function StepList({
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [showAddInput, setShowAddInput] = useState(false);
+  const editingStepIdRef = useRef<string | null>(null);
+  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
+
+  // Single listener for date picker overlay results
+  useEffect(() => {
+    let unlistenFn: (() => void) | null = null;
+    listen<{ date?: string; time?: string }>('date-picker-overlay:result', (e) => {
+      const stepId = editingStepIdRef.current;
+      if (!stepId) return;
+      onUpdateDueDate(stepId, e.payload.date);
+      onUpdateDueTime(stepId, e.payload.time);
+      editingStepIdRef.current = null;
+    }).then((fn) => { unlistenFn = fn; });
+    return () => { unlistenFn?.(); };
+  }, [onUpdateDueDate, onUpdateDueTime]);
+
+  const handleStepDateClick = async (stepId: string, e: React.MouseEvent) => {
+    const step = steps.find((s) => s.id === stepId);
+    if (!step) return;
+    editingStepIdRef.current = stepId;
+    const rect = await getScreenRect(e.currentTarget as HTMLElement);
+    await showOverlay(DATE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+      date: step.dueDate || undefined,
+      time: step.dueTime || undefined,
+      events: calendarEvents,
+      anchorX: rect.x,
+      anchorY: rect.y,
+      anchorH: rect.height,
+    });
+  };
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -362,8 +360,7 @@ export default function StepList({
                   onToggle={() => onToggle(step.id)}
                   onDelete={() => onDelete(step.id)}
                   onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
-                  onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
-                  onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+                  onDateClick={(e) => handleStepDateClick(step.id, e)}
                 />
               ))}
             </div>
@@ -378,8 +375,7 @@ export default function StepList({
             onToggle={() => onToggle(step.id)}
             onDelete={() => onDelete(step.id)}
             onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
-            onUpdateDueDate={(date) => onUpdateDueDate(step.id, date)}
-            onUpdateDueTime={(time) => onUpdateDueTime(step.id, time)}
+            onDateClick={(e) => handleStepDateClick(step.id, e)}
           />
         ))
       )}
@@ -392,6 +388,4 @@ interface StepItemProps {
   onToggle: () => void;
   onDelete: () => void;
   onUpdateDescription: (description: string) => void;
-  onUpdateDueDate: (dueDate?: string) => void;
-  onUpdateDueTime: (dueTime?: string) => void;
 }

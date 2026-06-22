@@ -15,7 +15,6 @@ import MediaPage from './pages/MediaPage';
 import SettingsPage from './pages/SettingsPage';
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage';
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage';
-import DatePickerDialogPage from './pages/dialogs/DatePickerDialogPage';
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage';
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage';
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage';
@@ -24,6 +23,7 @@ import CountdownFormDialogPage from './pages/dialogs/CountdownFormDialogPage';
 import DatePickerOverlayPage from './pages/overlays/DatePickerOverlayPage';
 import DateRangePickerOverlayPage from './pages/overlays/DateRangePickerOverlayPage';
 import TimezonePickerOverlayPage from './pages/overlays/TimezonePickerOverlayPage';
+import TagListPickerOverlayPage from './pages/overlays/TagListPickerOverlayPage';
 import { useAppStore } from './stores/useAppStore';
 import { initOverlayWebviews } from './lib/overlayManager';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -351,6 +351,7 @@ function App() {
           <Route path="/overlay/date-picker" element={<DatePickerOverlayPage />} />
           <Route path="/overlay/date-range-picker" element={<DateRangePickerOverlayPage />} />
           <Route path="/overlay/timezone-picker" element={<TimezonePickerOverlayPage />} />
+          <Route path="/overlay/tag-list-picker" element={<TagListPickerOverlayPage />} />
           <Route path="*" element={
             <AppLayout>
               <Routes>
