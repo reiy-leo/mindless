@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useViewStore } from '@/stores/useViewStore';
 
 type ViewMode = 'list' | 'calendar' | 'kanban' | 'matrix';
@@ -10,6 +12,92 @@ const VIEW_KEYS: Record<string, ViewMode> = {
   '3': 'kanban',
   '4': 'matrix',
 };
+
+async function openSettingsDialog() {
+  try {
+    const existing = await WebviewWindow.getByLabel('settings');
+    if (existing) {
+      await existing.setFocus();
+      return;
+    }
+  } catch {}
+
+  try {
+    const mainWindow = getCurrentWindow();
+    const mainPos = await mainWindow.outerPosition();
+    const mainSize = await mainWindow.outerSize();
+    const scaleFactor = await mainWindow.scaleFactor();
+
+    const logicalX = mainPos.x / scaleFactor;
+    const logicalY = mainPos.y / scaleFactor;
+    const logicalW = mainSize.width / scaleFactor;
+    const logicalH = mainSize.height / scaleFactor;
+
+    const winWidth = 800;
+    const winHeight = 600;
+    const x = Math.round(logicalX + (logicalW - winWidth) / 2);
+    const y = Math.round(logicalY + (logicalH - winHeight) / 2);
+
+    const win = new WebviewWindow('settings', {
+      closable: false,
+      decorations: true,
+      height: winHeight,
+      hiddenTitle: true,
+      maximizable: false,
+      minimizable: false,
+      parent: mainWindow,
+      resizable: false,
+      title: '',
+      titleBarStyle: 'overlay',
+      url: '/dialog/settings',
+      width: winWidth,
+      x,
+      y,
+    });
+    win.once('tauri://error', (e) => {
+      console.error('Failed to create settings window:', e);
+    });
+  } catch (err) {
+    console.error('Error creating settings window:', err);
+  }
+}
+
+async function openTagManagementDialog() {
+  try {
+    const existing = await WebviewWindow.getByLabel('tag-management');
+    if (existing) {
+      await existing.setFocus();
+      return;
+    }
+  } catch {}
+
+  try {
+    const mainWindow = getCurrentWindow();
+    const win = new WebviewWindow('tag-management', {
+      alwaysOnTop: true,
+      closable: false,
+      decorations: true,
+      height: 640,
+      hiddenTitle: true,
+      maximizable: false,
+      minimizable: false,
+      parent: mainWindow,
+      resizable: false,
+      title: '',
+      titleBarStyle: 'overlay',
+      url: '/dialog/tag-management',
+      width: 640,
+    });
+    win.once('tauri://error', (e) => {
+      console.error('Failed to create tag-management window:', e);
+    });
+    win.once('tauri://focus', async () => {
+      await win.setShadow(true);
+    });
+  } catch (err) {
+    console.error('Error creating tag-management window:', err);
+  }
+}
 
 export function useKeyboardShortcuts() {
   const navigate = useNavigate();
@@ -22,45 +110,87 @@ export function useKeyboardShortcuts() {
       const tag = (e.target as HTMLElement)?.tagName;
       const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement)?.isContentEditable;
 
-      // Cmd+,: Settings
-      if (meta && e.key === ',') {
-        e.preventDefault();
-        navigate('/settings');
+      if (!meta) {
+        if (e.key === 'Escape' && !isInput) {
+          window.dispatchEvent(new CustomEvent('mindless:escape'));
+          return;
+        }
+
+        if (!e.altKey && !e.shiftKey && !isInput && location.pathname === '/tasks') {
+          const mode = VIEW_KEYS[e.key];
+          if (mode) {
+            e.preventDefault();
+            setViewMode(mode);
+            return;
+          }
+        }
         return;
       }
 
-      // Cmd+N: New task (navigate to tasks)
-      if (meta && e.key === 'n') {
+      // Cmd+,: Settings dialog
+      if (e.key === ',') {
+        e.preventDefault();
+        openSettingsDialog();
+        return;
+      }
+
+      // Cmd+N: New task
+      if (e.key === 'n') {
         e.preventDefault();
         if (location.pathname !== '/tasks') {
           navigate('/tasks');
         }
-        // Dispatch custom event so TasksPage can open the new task form
         window.dispatchEvent(new CustomEvent('mindless:new-task'));
         return;
       }
 
-      // Cmd+F: Open global search
-      if (meta && e.key === 'f') {
+      // Cmd+F: Global search
+      if (e.key === 'f') {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('mindless:global-search'));
         return;
       }
 
-      // Escape: Close panels/modals
-      if (e.key === 'Escape' && !isInput) {
-        window.dispatchEvent(new CustomEvent('mindless:escape'));
+      // Cmd+T: Tasks
+      if (e.key === 't') {
+        e.preventDefault();
+        navigate('/tasks');
         return;
       }
 
-      // Number keys 1-4 for view switching (only on tasks page, not in inputs)
-      if (!meta && !e.altKey && !e.shiftKey && !isInput && location.pathname === '/tasks') {
-        const mode = VIEW_KEYS[e.key];
-        if (mode) {
-          e.preventDefault();
-          setViewMode(mode);
-          return;
-        }
+      // Cmd+H: Habits
+      if (e.key === 'h') {
+        e.preventDefault();
+        navigate('/habits');
+        return;
+      }
+
+      // Cmd+D: Countdowns
+      if (e.key === 'd') {
+        e.preventDefault();
+        navigate('/countdowns');
+        return;
+      }
+
+      // Cmd+B: Tags management dialog
+      if (e.key === 'b') {
+        e.preventDefault();
+        openTagManagementDialog();
+        return;
+      }
+
+      // Cmd+Y: Media
+      if (e.key === 'y') {
+        e.preventDefault();
+        navigate('/media');
+        return;
+      }
+
+      // Cmd+P: People
+      if (e.key === 'p') {
+        e.preventDefault();
+        navigate('/people');
+        return;
       }
     };
 
