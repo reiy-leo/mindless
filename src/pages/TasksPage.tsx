@@ -2464,8 +2464,8 @@ export default function TasksPage() {
 
       {/* Task List Panel */}
       <div
-        className="flex flex-col overflow-hidden min-w-[300px] max-w-[400px]"
-        style={{ backgroundColor: 'var(--theme-bg-2)', width: detailPanelWidth }}
+        className={`flex flex-col overflow-hidden ${viewMode === 'list' ? 'min-w-[300px] max-w-[400px]' : 'flex-1 min-w-0'}`}
+        style={{ backgroundColor: 'var(--theme-bg-2)', ...(viewMode === 'list' ? { width: detailPanelWidth } : {}) }}
       >
         {/* Header */}
         <div className="px-2 py-1">
@@ -2510,7 +2510,10 @@ export default function TasksPage() {
                                 : 'bg-theme-100 dark:bg-theme-700 text-theme-700 dark:text-theme-300 hover:bg-theme-200 dark:hover:bg-theme-600'
                             }`}
                             key={key}
-                            onClick={() => handleSetViewMode(key as keyof typeof VIEW_MODES)}
+                            onClick={() => {
+                              handleSetViewMode(key as keyof typeof VIEW_MODES)
+                              setShowSettings(false)
+                            }}
                             type="button"
                           >
                             {t(label)}
@@ -2817,37 +2820,41 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* Resize handle: list <-> detail */}
-      <ResizeHandle onResize={(delta) => {
-        setDetailPanelWidth((w) => Math.max(300, Math.min(400, w + delta)))
-      }} />
+      {viewMode === 'list' && (
+        <>
+          {/* Resize handle: list <-> detail */}
+          <ResizeHandle onResize={(delta) => {
+            setDetailPanelWidth((w) => Math.max(300, Math.min(400, w + delta)))
+          }} />
 
-      {/* Task Detail Panel */}
-      <div
-        className="flex-1 overflow-hidden border-l border-theme-200 dark:border-theme-700"
-        style={{ backgroundColor: 'var(--theme-bg-2)' }}
-      >
-        {selectedTask ? (
-          <TaskDetailPanel
-            allTags={allTags}
-            inlineDateOpenedRef={inlineDateOpenedRef}
-            onClose={() => {
-              setSelectedTaskId(null)
-              setSelectedSubtaskId(null)
-            }}
-            onDelete={() => handleDeleteTask(selectedSubtaskId || selectedTask.id)}
-            onSubtaskBack={() => setSelectedSubtaskId(null)}
-            onSubtaskClick={(id) => setSelectedSubtaskId(id)}
-            onUpdateTask={handleUpdateTaskField}
-            selectedSubtaskId={selectedSubtaskId}
-            task={selectedTask}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-theme-400 dark:text-theme-500">
-            <p className="text-sm">{t('tasks.select_task')}</p>
+          {/* Task Detail Panel */}
+          <div
+            className="flex-1 overflow-hidden border-l border-theme-200 dark:border-theme-700"
+            style={{ backgroundColor: 'var(--theme-bg-2)' }}
+          >
+            {selectedTask ? (
+              <TaskDetailPanel
+                allTags={allTags}
+                inlineDateOpenedRef={inlineDateOpenedRef}
+                onClose={() => {
+                  setSelectedTaskId(null)
+                  setSelectedSubtaskId(null)
+                }}
+                onDelete={() => handleDeleteTask(selectedSubtaskId || selectedTask.id)}
+                onSubtaskBack={() => setSelectedSubtaskId(null)}
+                onSubtaskClick={(id) => setSelectedSubtaskId(id)}
+                onUpdateTask={handleUpdateTaskField}
+                selectedSubtaskId={selectedSubtaskId}
+                task={selectedTask}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-theme-400 dark:text-theme-500">
+                <p className="text-sm">{t('tasks.select_task')}</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Task Form Dialog */}
       <TaskForm
