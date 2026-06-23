@@ -384,6 +384,30 @@ export default function PeoplePage() {
     const { t } = useTranslation("common");
     const { personGroupsPanelWidth, detailPanelWidth, setPersonGroupsPanelWidth, setDetailPanelWidth, dateFormat, timeFormat } = useAppStore();
     const queryClient = useQueryClient();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+            }
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (containerWidth <= 0) return;
+        const available = containerWidth - personGroupsPanelWidth - 8;
+        if (available < 500) {
+            setDetailPanelWidth(Math.max(200, Math.min(300, available - 200)));
+        } else {
+            setDetailPanelWidth((w) => Math.max(200, Math.min(300, w)));
+        }
+    }, [containerWidth, personGroupsPanelWidth]);
 
     // State
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
@@ -862,7 +886,7 @@ export default function PeoplePage() {
     }, []);
 
     return (
-        <div className="flex h-full bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-full bg-gray-50 dark:bg-gray-900" ref={containerRef}>
             {/* Left Panel: Groups */}
             <div
                 className="overflow-hidden border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
@@ -994,7 +1018,7 @@ export default function PeoplePage() {
             />
 
             {/* Middle Panel: Person List */}
-            <div className="flex-1 flex flex-col min-w-[200px] max-w-[300px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
+            <div className="flex flex-col min-w-[200px] max-w-[300px]" style={{ backgroundColor: 'var(--theme-bg-2)', width: detailPanelWidth }}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
@@ -1055,12 +1079,14 @@ export default function PeoplePage() {
                 </div>
             </div>
 
-            <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
+            <ResizeHandle onResize={(delta) => {
+                setDetailPanelWidth((w) => Math.max(200, Math.min(300, w + delta)));
+            }} />
 
             {/* Right Panel: Person Detail / Create Form */}
             <div
-                className="overflow-hidden border-l border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
-                style={{ width: detailPanelWidth, backgroundColor: 'var(--theme-bg-2)' }}
+                className="flex-1 overflow-hidden border-l border-gray-200 dark:border-gray-700 flex flex-col"
+                style={{ backgroundColor: 'var(--theme-bg-2)' }}
             >
                 {showPersonForm ? (
                     <PersonCreateForm

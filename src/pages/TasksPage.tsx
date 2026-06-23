@@ -77,6 +77,8 @@ import { useViewStore } from '@/stores/useViewStore'
 import type { Attachment, PendingAttachment } from '@/types/attachment'
 import type { GroupBy, List, ListSettings, Priority, SortBy, Step as StepType, Task, TaskStatus } from '@/types/task'
 
+type TaskStatus3 = 'all' | 'active' | 'completed'
+
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   book: '📖',
   briefcase: '💼',
@@ -101,6 +103,7 @@ function resolveIcon(icon?: string): string {
   return ICON_KEY_TO_EMOJI[icon] || '📁'
 }
 
+import type { Octokit } from '@octokit/rest'
 import type { AdvancedGroup } from '@/stores/useAppStore'
 import type { Tag } from '@/types/tag'
 
@@ -109,12 +112,15 @@ function buildSubtaskTree(flatSubtasks: Task[]): (Task & { children?: Task[] })[
   const map = new Map<string, Task & { children?: Task[] }>()
   const roots: (Task & { children?: Task[] })[] = []
 
-  flatSubtasks.forEach((s) => map.set(s.id, { ...s, children: [] }))
+  flatSubtasks.forEach((s) => {
+    map.set(s.id, { ...s, children: [] })
+  })
 
   flatSubtasks.forEach((s) => {
-    const node = map.get(s.id)!
+    const node = map.get(s.id)
+    if (!node) return
     if (s.parentTaskId && map.has(s.parentTaskId)) {
-      map.get(s.parentTaskId)!.children!.push(node)
+      map.get(s.parentTaskId)?.children?.push(node) ?? ''
     } else {
       roots.push(node)
     }
@@ -488,21 +494,21 @@ function TaskDetailPanel({
       { description, taskId: activeTask.id },
       {
         onSuccess: (newStep) => {
-          if (!newStep) return;
-          const ids = steps.map((s) => s.id);
+          if (!newStep) return
+          const ids = steps.map((s) => s.id)
           if (afterStepId) {
-            const idx = ids.indexOf(afterStepId);
-            if (idx !== -1) ids.splice(idx + 1, 0, newStep.id);
-            else ids.push(newStep.id);
+            const idx = ids.indexOf(afterStepId)
+            if (idx !== -1) ids.splice(idx + 1, 0, newStep.id)
+            else ids.push(newStep.id)
           } else if (beforeStepId) {
-            const idx = ids.indexOf(beforeStepId);
-            if (idx !== -1) ids.splice(idx, 0, newStep.id);
-            else ids.unshift(newStep.id);
+            const idx = ids.indexOf(beforeStepId)
+            if (idx !== -1) ids.splice(idx, 0, newStep.id)
+            else ids.unshift(newStep.id)
           } else {
-            ids.push(newStep.id);
+            ids.push(newStep.id)
           }
-          const items = ids.map((id, i) => ({ id, sortOrder: i }));
-          reorderSteps.mutate(items);
+          const items = ids.map((id, i) => ({ id, sortOrder: i }))
+          reorderSteps.mutate(items)
         },
       },
     )
@@ -614,6 +620,7 @@ function TaskDetailPanel({
             style={{
               color: `${activeTask.dueDate ? 'hsl(from var(--theme-color) h s 30)' : 'hsl(from var(--theme-color) h s 80)'}`,
             }}
+            type="button"
           >
             <CalendarIcon className="w-4 h-4 flex-shrink-0" strokeWidth={`2`} />
             <span className="truncate">
@@ -640,6 +647,7 @@ function TaskDetailPanel({
               className="px-2 py-1 rounded-lg hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
               onClick={() => setShowPriorityPicker(!showPriorityPicker)}
               title={t('tasks.priority.label')}
+              type="button"
             >
               <FlagIcon className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
             </button>
@@ -653,6 +661,7 @@ function TaskDetailPanel({
                       onUpdateTask({ priority: p })
                       setShowPriorityPicker(false)
                     }}
+                    type="button"
                   >
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -690,6 +699,7 @@ function TaskDetailPanel({
           <button
             className="flex items-center gap-1 text-xs text-theme-500 dark:text-theme-400 hover:text-theme-600 dark:hover:text-theme-400 transition-colors mt-1"
             onClick={onSubtaskBack}
+            type="button"
           >
             <ChevronRightIcon className="w-3 h-3 rotate-180 flex-shrink-0" />
             <span className="truncate">{task.title}</span>
@@ -774,6 +784,7 @@ function TaskDetailPanel({
             <button
               className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
               onClick={handleAddAttachment}
+              type="button"
             >
               <PlusIcon className="w-4 h-4" />
             </button>
@@ -797,7 +808,7 @@ function TaskDetailPanel({
                           <img
                             alt={att.originalFilename}
                             className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
-                            onClick={() => setPreviewImage(imageUrls[att.id])}
+                            onKeyUp={() => setPreviewImage(imageUrls[att.id])}
                             src={imageUrls[att.id]}
                           />
                         </div>
@@ -830,7 +841,7 @@ function TaskDetailPanel({
       {previewImage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-theme-900"
-          onClick={() => setPreviewImage(null)}
+          onMouseDown={() => setPreviewImage(null)}
         >
           <img alt="Preview" className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl" src={previewImage} />
         </div>
@@ -840,7 +851,7 @@ function TaskDetailPanel({
         <>
           <div
             className="fixed inset-0 z-50"
-            onClick={() => {
+            onMouseDown={() => {
               setAttachContextMenu(null)
               setAttachContextMenuFlipY(false)
             }}
@@ -858,12 +869,14 @@ function TaskDetailPanel({
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
               onClick={() => handleCopyAttachmentLink(attachContextMenu.att)}
+              type="button"
             >
               {t('tasks.copy_link')}
             </button>
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
               onClick={() => handleDownloadAttachment(attachContextMenu.att)}
+              type="button"
             >
               {t('tasks.download')}
             </button>
@@ -873,6 +886,7 @@ function TaskDetailPanel({
                 handleDeleteAttachment(attachContextMenu.att)
                 setAttachContextMenu(null)
               }}
+              type="button"
             >
               {t('tasks.delete_attachment')}
             </button>
@@ -917,6 +931,7 @@ function TaskRow({
       const offset = circumference - (percent / 100) * circumference
       return (
         <svg className="flex-shrink-0" height="18" width="18">
+          <title>progress circle</title>
           <circle
             className="text-theme-200 dark:text-theme-600"
             cx="9"
@@ -950,6 +965,7 @@ function TaskRow({
       if (percent >= 100) {
         return (
           <svg className="flex-shrink-0" height="18" width="18">
+            <title>progress pie</title>
             <circle cx={cx} cy={cy} fill="var(--theme-color)" r={r} />
           </svg>
         )
@@ -957,6 +973,7 @@ function TaskRow({
       if (percent <= 0) {
         return (
           <svg className="flex-shrink-0" height="18" width="18">
+            <title>progress bar</title>
             <circle
               className="text-theme-200 dark:text-theme-600"
               cx={cx}
@@ -977,6 +994,7 @@ function TaskRow({
       const pathD = `M${cx},${cy} L${cx},${cy - r} A${r},${r} 0 ${largeArc},1 ${endX},${endY} Z`
       return (
         <svg className="flex-shrink-0" height="18" width="18">
+          <title>progress empty</title>
           <circle
             className="text-theme-200 dark:text-theme-600"
             cx={cx}
@@ -1008,11 +1026,11 @@ function TaskRow({
   return (
     <div
       className={`group flex items-center gap-3 px-2 py-2 bg-white dark:bg-theme-800 rounded-lg transition-shadow cursor-pointer`}
-      onClick={onSelect}
       onContextMenu={(e) => {
         e.preventDefault()
         onContextMenu?.(e)
       }}
+      onMouseDown={onSelect}
       style={{
         backgroundColor: isSelected ? `color-mix(in srgb, var(--theme-bg-20) 80%, white)` : `inherit`,
       }}
@@ -1049,7 +1067,7 @@ function TaskRow({
         (() => {
           const today = new Date()
           today.setHours(0, 0, 0, 0)
-          const due = new Date(task.dueDate + 'T00:00:00')
+          const due = new Date(`${task.dueDate}T00:00:00`)
           const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
           const isOverdue = diffDays < 0
           const absDays = Math.abs(diffDays)
@@ -1085,6 +1103,30 @@ export default function TasksPage() {
   } = useAppStore()
   const saveListSettings = useSaveListSettings()
   const isLoadingSettings = useRef(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (containerWidth <= 0) return
+    const available = containerWidth - groupsPanelWidth - 8
+    if (available < 600) {
+      setDetailPanelWidth(Math.max(200, Math.min(400, available - 300)))
+    } else {
+      setDetailPanelWidth((w) => Math.max(300, Math.min(400, w)))
+    }
+  }, [containerWidth, groupsPanelWidth])
 
   // Load per-list settings when selectedListId changes
   useEffect(() => {
@@ -1142,7 +1184,7 @@ export default function TasksPage() {
   )
 
   const handleSetFilterStatus = useCallback(
-    (status: 'all' | 'active' | 'completed') => {
+    (status: TaskStatus3) => {
       setFilterStatus(status)
       persistSettings({ filterStatus: status })
     },
@@ -1514,7 +1556,7 @@ export default function TasksPage() {
   // Sort tasks
   const filteredTasks = useMemo(() => {
     const sorted = [...filteredTasksBase].sort((a, b) => {
-      let aVal: any, bVal: any
+      let aVal: number | string, bVal: number | string
       switch (taskSortBy) {
         case 'sortOrder':
           aVal = a.sortOrder ?? 0
@@ -1668,7 +1710,7 @@ export default function TasksPage() {
             }
             const api = await import('@/lib/api')
             const syncUrl = localStorage.getItem('mindless-sync-url')
-            let octokit: any = null
+            let octokit: Octokit | null = null
             let owner = ''
             let repo = ''
             if (syncUrl) {
@@ -1807,6 +1849,7 @@ export default function TasksPage() {
   )
 
   const handleUpdateTaskField = useCallback(
+    // biome-lint-ignore: noExplictAny
     (params: any) => {
       const targetId = selectedSubtaskId || selectedTask?.id
       if (targetId) {
@@ -2113,7 +2156,7 @@ export default function TasksPage() {
     )
   }
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden" ref={containerRef}>
       {/* Task Groups Panel */}
       <div
         className="border-r border-theme-200 dark:border-theme-700 flex flex-col overflow-hidden"
@@ -2141,6 +2184,7 @@ export default function TasksPage() {
                       onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
                       style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                       title={list.name}
+                      type="button"
                     >
                       {resolveIcon(list.icon)}
                     </button>
@@ -2159,6 +2203,7 @@ export default function TasksPage() {
                       onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
                       style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                       title={group.name}
+                      type="button"
                     >
                       {resolveIcon(group.icon)}
                     </button>
@@ -2196,6 +2241,7 @@ export default function TasksPage() {
                     }`}
                     onClick={() => handleListClick(smartList.id)}
                     style={isActive ? { color: 'var(--theme-text-70)' } : {}}
+                    type="button"
                   >
                     {getGroupIcon(smartList.iconKey)}
                     <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
@@ -2205,6 +2251,7 @@ export default function TasksPage() {
                     <button
                       className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600 opacity-70 hover:opacity-100"
                       onClick={() => setSmartGroupVisibility(groupKey, !smartGroupVisibility[groupKey])}
+                      type="button"
                     >
                       {smartGroupVisibility[groupKey] ? (
                         <EyeIcon className="w-3 h-3 text-theme-400" />
@@ -2234,6 +2281,7 @@ export default function TasksPage() {
             <button
               className="flex items-center gap-1 text-[11px] font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
               onClick={() => setAdvListsExpanded(!advListsExpanded)}
+              type="button"
             >
               {advListsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
               {t('advanced_groups.title')}
@@ -2247,6 +2295,7 @@ export default function TasksPage() {
                 }`}
                 onClick={() => setShowGroupSettings(!showGroupSettings)}
                 title={t('lists.manage')}
+                type="button"
               >
                 <EyeIcon className="w-3.5 h-3.5" />
               </button>
@@ -2276,6 +2325,7 @@ export default function TasksPage() {
                   })
                 }}
                 title={t('lists.create_list')}
+                type="button"
               >
                 <PlusIcon className="w-3.5 h-3.5 text-theme-400 dark:text-theme-500" />
               </button>
@@ -2308,6 +2358,7 @@ export default function TasksPage() {
                         onClick={() => handleAdvGroupClick(group.id)}
                         onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
                         style={isActive ? { color: 'var(--theme-text-70)' } : {}}
+                        type="button"
                       >
                         <span className="flex-shrink-0 text-sm">{resolveIcon(group.icon)}</span>
                         <span className="flex-1 truncate">{group.name}</span>
@@ -2318,7 +2369,7 @@ export default function TasksPage() {
                         )}
                         <span
                           className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
-                          onClick={(e) => handleEditAdvGroup(e, group)}
+                          onMouseDown={(e) => handleEditAdvGroup(e, group)}
                         >
                           <PencilIcon className="w-3 h-3 text-theme-400 dark:text-theme-500" />
                         </span>
@@ -2337,6 +2388,7 @@ export default function TasksPage() {
             <button
               className="flex items-center gap-1 text-[11px] font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
               onClick={() => setListsExpanded(!listsExpanded)}
+              type="button"
             >
               {listsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
               {t('lists.title')}
@@ -2350,6 +2402,7 @@ export default function TasksPage() {
                 }`}
                 onClick={() => setShowGroupSettings(!showGroupSettings)}
                 title={t('lists.manage')}
+                type="button"
               >
                 <EyeIcon className="w-3.5 h-3.5" />
               </button>
@@ -2357,6 +2410,7 @@ export default function TasksPage() {
                 className="p-0.5 rounded hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                 onClick={handleCreateList}
                 title={t('lists.create_list')}
+                type="button"
               >
                 <PlusIcon className="w-3.5 h-3.5 text-theme-400 dark:text-theme-500" />
               </button>
@@ -2378,9 +2432,10 @@ export default function TasksPage() {
                           ? 'bg-black/10 dark:bg-white/15'
                           : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
                       }`}
-                      onClick={() => handleListClick(list.id)}
                       onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
+                      onMouseDown={() => handleListClick(list.id)}
                       style={isActive ? { color: 'var(--theme-text-70)' } : {}}
+                      type="button"
                     >
                       <span className="flex-shrink-0 text-sm">{resolveIcon(list.icon)}</span>
                       <span className="flex-1 truncate">{list.name}</span>
@@ -2391,7 +2446,7 @@ export default function TasksPage() {
                       )}
                       <span
                         className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
-                        onClick={(e) => handleEditList(e, list)}
+                        onMouseDown={(e) => handleEditList(e, list)}
                       >
                         <PencilIcon className="w-3 h-3 text-theme-400 dark:text-theme-500" />
                       </span>
@@ -2409,8 +2464,8 @@ export default function TasksPage() {
 
       {/* Task List Panel */}
       <div
-        className="flex flex-col overflow-hidden flex-1 min-w-[300px] max-w-[400px]"
-        style={{ backgroundColor: 'var(--theme-bg-2)' }}
+        className="flex flex-col overflow-hidden min-w-[300px] max-w-[400px]"
+        style={{ backgroundColor: 'var(--theme-bg-2)', width: detailPanelWidth }}
       >
         {/* Header */}
         <div className="px-2 py-1">
@@ -2430,6 +2485,7 @@ export default function TasksPage() {
                   className={`p-2 rounded-lg transition-colors hover:bg-theme-100`}
                   onClick={() => setShowSettings(!showSettings)}
                   title={t('tasks.settings')}
+                  type="button"
                 >
                   <EllipsisVerticalIcon className="w-4 h-4" />
                 </button>
@@ -2438,13 +2494,13 @@ export default function TasksPage() {
                 {showSettings && (
                   <div
                     className="absolute right-0 top-full mt-1 w-72 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 z-50 p-4 space-y-4"
-                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {/* View mode */}
                     <div>
-                      <label className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
+                      <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_view')}
-                      </label>
+                      </div>
                       <div className="flex gap-1">
                         {Object.entries(VIEW_MODES).map(([key, label]) => (
                           <button
@@ -2455,6 +2511,7 @@ export default function TasksPage() {
                             }`}
                             key={key}
                             onClick={() => handleSetViewMode(key as keyof typeof VIEW_MODES)}
+                            type="button"
                           >
                             {t(label)}
                           </button>
@@ -2464,9 +2521,9 @@ export default function TasksPage() {
 
                     {/* Status filter */}
                     <div>
-                      <label className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
+                      <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_status')}
-                      </label>
+                      </div>
                       <div className="flex gap-1">
                         {[
                           { label: t('tasks.status.all'), value: 'all' },
@@ -2480,7 +2537,8 @@ export default function TasksPage() {
                                 : 'bg-theme-100 dark:bg-theme-700 text-theme-700 dark:text-theme-300 hover:bg-theme-200 dark:hover:bg-theme-600'
                             }`}
                             key={opt.value}
-                            onClick={() => handleSetFilterStatus(opt.value as any)}
+                            onClick={() => handleSetFilterStatus(opt.value as TaskStatus3)}
+                            type="button"
                           >
                             {opt.label}
                           </button>
@@ -2490,9 +2548,9 @@ export default function TasksPage() {
 
                     {/* Sort */}
                     <div>
-                      <label className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
+                      <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_sort')}
-                      </label>
+                      </div>
                       <TaskSortControls
                         onChange={(sortBy, sortOrder) => {
                           setTaskSortBy(sortBy as SortBy)
@@ -2507,9 +2565,9 @@ export default function TasksPage() {
 
                     {/* Group */}
                     <div>
-                      <label className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
+                      <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_group')}
-                      </label>
+                      </div>
                       <TaskGroupControls onChange={(groupBy) => handleSetTaskGroupBy(groupBy)} />
                     </div>
                   </div>
@@ -2570,6 +2628,7 @@ export default function TasksPage() {
                       }`}
                       onClick={() => setShowPriorityPicker(!showPriorityPicker)}
                       title={t('tasks.priority.label')}
+                      type="button"
                     >
                       <FlagIcon className="w-4 h-4" />
                     </button>
@@ -2587,6 +2646,7 @@ export default function TasksPage() {
                               setNewTaskPriority(p as Priority)
                               setShowPriorityPicker(false)
                             }}
+                            type="button"
                           >
                             {t(`tasks.priority.${['none', 'low', 'medium', 'high'][p]}`)}
                           </button>
@@ -2616,6 +2676,7 @@ export default function TasksPage() {
                       }}
                       ref={tagButtonRef}
                       title={t('tasks.tags.title')}
+                      type="button"
                     >
                       <TagIcon className="w-4 h-4" />
                     </button>
@@ -2645,6 +2706,7 @@ export default function TasksPage() {
                     }}
                     ref={dateButtonRef}
                     title={t('tasks.date_placeholder')}
+                    type="button"
                   >
                     <CalendarIcon className="w-4 h-4" />
                     {dateExplicitlySetRef.current && (
@@ -2663,6 +2725,7 @@ export default function TasksPage() {
                     }`}
                     onClick={handleAttachmentClick}
                     title={t('tasks.attachment')}
+                    type="button"
                   >
                     <PaperClipIcon className="w-4 h-4" />
                     {pendingAttachments.length > 0 && <span className="text-xs">{pendingAttachments.length}</span>}
@@ -2680,6 +2743,7 @@ export default function TasksPage() {
                       <button
                         className="hover:text-red-500"
                         onClick={() => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))}
+                        type="button"
                       >
                         ×
                       </button>
@@ -2754,12 +2818,14 @@ export default function TasksPage() {
       </div>
 
       {/* Resize handle: list <-> detail */}
-      <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
+      <ResizeHandle onResize={(delta) => {
+        setDetailPanelWidth((w) => Math.max(300, Math.min(400, w + delta)))
+      }} />
 
       {/* Task Detail Panel */}
       <div
-        className="overflow-hidden border-l border-theme-200 dark:border-theme-700 flex-shrink-0"
-        style={{ backgroundColor: 'var(--theme-bg-2)', width: detailPanelWidth }}
+        className="flex-1 overflow-hidden border-l border-theme-200 dark:border-theme-700"
+        style={{ backgroundColor: 'var(--theme-bg-2)' }}
       >
         {selectedTask ? (
           <TaskDetailPanel
@@ -2799,7 +2865,7 @@ export default function TasksPage() {
         <>
           <div
             className="fixed inset-0 z-50"
-            onClick={() => {
+            onMouseDown={() => {
               setContextMenu(null)
               setContextMenuFlipY(false)
             }}
@@ -2823,6 +2889,7 @@ export default function TasksPage() {
                     }
                     setContextMenu(null)
                   }}
+                  type="button"
                 >
                   <PencilIcon className="w-4 h-4" />
                   {t('common.edit')}
@@ -2830,6 +2897,7 @@ export default function TasksPage() {
                 <button
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                   onClick={() => handlePinList(contextMenu.id)}
+                  type="button"
                 >
                   <Pin className="w-4 h-4" />
                   {allLists.find((l) => l.id === contextMenu.id)?.isPinned ? t('lists.unpin') : t('lists.pin')}
@@ -2837,6 +2905,7 @@ export default function TasksPage() {
                 <button
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                   onClick={() => handleArchiveList(contextMenu.id)}
+                  type="button"
                 >
                   <ArchiveBoxIcon className="w-4 h-4" />
                   {allLists.find((l) => l.id === contextMenu.id)?.isArchived
@@ -2847,6 +2916,7 @@ export default function TasksPage() {
                 <button
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   onClick={() => handleDeleteList(contextMenu.id)}
+                  type="button"
                 >
                   <TrashIcon className="w-4 h-4" />
                   {t('common.delete')}
@@ -2863,6 +2933,7 @@ export default function TasksPage() {
                     }
                     setContextMenu(null)
                   }}
+                  type="button"
                 >
                   <PencilIcon className="w-4 h-4" />
                   {t('common.edit')}
@@ -2870,6 +2941,7 @@ export default function TasksPage() {
                 <button
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                   onClick={() => handlePinAdvGroup(contextMenu.id)}
+                  type="button"
                 >
                   <Pin className="w-4 h-4" />
                   {advancedGroups.find((g) => g.id === contextMenu.id)?.isPinned ? t('lists.unpin') : t('lists.pin')}
@@ -2878,6 +2950,7 @@ export default function TasksPage() {
                 <button
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   onClick={() => handleDeleteAdvGroup(contextMenu.id)}
+                  type="button"
                 >
                   <TrashIcon className="w-4 h-4" />
                   {t('common.delete')}
@@ -2893,7 +2966,7 @@ export default function TasksPage() {
         <>
           <div
             className="fixed inset-0 z-50"
-            onClick={() => {
+            onMouseDown={() => {
               setTaskContextMenu(null)
               setTaskMenuPanel(null)
               setMenuFlipY(false)
@@ -2932,6 +3005,7 @@ export default function TasksPage() {
                         handleToggleTodayTag(taskContextMenu.taskId)
                         setTaskContextMenu(null)
                       }}
+                      type="button"
                     >
                       <SunIcon className="w-4 h-4" />
                       {hasToday ? t('tasks.context.remove_today') : t('tasks.context.add_today')}
@@ -2945,6 +3019,7 @@ export default function TasksPage() {
                 onClick={() => {
                   setTaskMenuPanel(taskMenuPanel === 'priority' ? null : 'priority')
                 }}
+                type="button"
               >
                 <FlagIcon className="w-4 h-4" />
                 {t('tasks.context.set_priority')}
@@ -2997,6 +3072,7 @@ export default function TasksPage() {
                     unlisten.then((fn) => fn())
                   })
                 }}
+                type="button"
               >
                 <CalendarIcon className="w-4 h-4" />
                 {t('tasks.context.set_date')}
@@ -3008,6 +3084,7 @@ export default function TasksPage() {
                 onClick={() => {
                   setTaskMenuPanel(taskMenuPanel === 'status' ? null : 'status')
                 }}
+                type="button"
               >
                 <ViewColumnsIcon className="w-4 h-4" />
                 {t('tasks.context.set_status')}
@@ -3021,6 +3098,7 @@ export default function TasksPage() {
                   setTaskMenuPanel(taskMenuPanel === 'parent' ? null : 'parent')
                   setTaskPanelSearch('')
                 }}
+                type="button"
               >
                 <ArrowTurnUpLeftIcon className="w-4 h-4" />
                 {t('tasks.context.link_parent')}
@@ -3034,6 +3112,7 @@ export default function TasksPage() {
                   setTaskMenuPanel(taskMenuPanel === 'subtask' ? null : 'subtask')
                   setTaskPanelSearch('')
                 }}
+                type="button"
               >
                 <ArrowTurnDownRightIcon className="w-4 h-4" />
                 {t('tasks.context.link_subtask')}
@@ -3047,6 +3126,7 @@ export default function TasksPage() {
                   setTaskMenuPanel(taskMenuPanel === 'list' ? null : 'list')
                   setTaskPanelSearch('')
                 }}
+                type="button"
               >
                 <InboxIcon className="w-4 h-4" />
                 {t('tasks.context.set_list')}
@@ -3063,6 +3143,7 @@ export default function TasksPage() {
                   setTaskContextMenu(null)
                   setTaskMenuPanel(null)
                 }}
+                type="button"
               >
                 <TrashIcon className="w-4 h-4" />
                 {t('common.delete')}
@@ -3097,6 +3178,7 @@ export default function TasksPage() {
                             setTaskContextMenu(null)
                             setTaskMenuPanel(null)
                           }}
+                          type="button"
                         >
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -3134,6 +3216,7 @@ export default function TasksPage() {
                             setTaskContextMenu(null)
                             setTaskMenuPanel(null)
                           }}
+                          type="button"
                         >
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -3161,7 +3244,6 @@ export default function TasksPage() {
                         <div className="relative">
                           <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
                           <input
-                            autoFocus
                             className="w-full pl-7 pr-2 py-1 text-xs bg-theme-50 dark:bg-theme-700 border border-theme-200 dark:border-theme-600 rounded focus:outline-none focus:ring-1 focus:ring-theme-500 text-theme-900 dark:text-theme-100"
                             onChange={(e) => setTaskPanelSearch(e.target.value)}
                             placeholder={t('tasks.search_placeholder')}
@@ -3182,6 +3264,7 @@ export default function TasksPage() {
                             setTaskContextMenu(null)
                             setTaskMenuPanel(null)
                           }}
+                          type="button"
                         >
                           <InboxIcon className="w-3.5 h-3.5" />
                           {t('lists.inbox')}
@@ -3200,6 +3283,7 @@ export default function TasksPage() {
                               setTaskContextMenu(null)
                               setTaskMenuPanel(null)
                             }}
+                            type="button"
                           >
                             <span
                               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -3227,7 +3311,6 @@ export default function TasksPage() {
                       <div className="relative">
                         <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
                         <input
-                          autoFocus
                           className="w-full pl-7 pr-2 py-1 text-xs bg-theme-50 dark:bg-theme-700 border border-theme-200 dark:border-theme-600 rounded focus:outline-none focus:ring-1 focus:ring-theme-500 text-theme-900 dark:text-theme-100"
                           onChange={(e) => setTaskPanelSearch(e.target.value)}
                           placeholder={t('tasks.search_placeholder')}
@@ -3262,6 +3345,7 @@ export default function TasksPage() {
                                 setTaskContextMenu(null)
                                 setTaskMenuPanel(null)
                               }}
+                              type="button"
                             >
                               <span className="truncate">{tk.title}</span>
                               {isLinked && <span className="ml-auto text-xs flex-shrink-0 text-theme-500">✓</span>}

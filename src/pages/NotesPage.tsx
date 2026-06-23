@@ -83,6 +83,30 @@ const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: 
 export default function NotesPage() {
     const { t } = useTranslation("common");
     const { noteGroupsPanelWidth, detailPanelWidth, setNoteGroupsPanelWidth, setDetailPanelWidth, dateFormat, timeFormat } = useAppStore();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+            }
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (containerWidth <= 0) return;
+        const available = containerWidth - noteGroupsPanelWidth - 8;
+        if (available < 600) {
+            setDetailPanelWidth(Math.max(200, Math.min(350, available - 250)));
+        } else {
+            setDetailPanelWidth((w) => Math.max(250, Math.min(350, w)));
+        }
+    }, [containerWidth, noteGroupsPanelWidth]);
 
     // State
     const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>("all");
@@ -518,7 +542,7 @@ export default function NotesPage() {
     }, []);
 
     return (
-        <div className="flex h-full bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-full bg-gray-50 dark:bg-gray-900" ref={containerRef}>
             {/* Left Panel: Groups */}
             <div
                 className="overflow-hidden border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
@@ -647,7 +671,7 @@ export default function NotesPage() {
             />
 
             {/* Middle Panel: Notes List */}
-            <div className="flex-1 flex flex-col min-w-[250px] max-w-[350px]" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
+            <div className="flex flex-col min-w-[250px] max-w-[350px]" style={{ backgroundColor: 'var(--theme-bg-2)', width: detailPanelWidth }}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
                     <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{activeLabel}</h2>
@@ -748,12 +772,14 @@ export default function NotesPage() {
                 </div>
             </div>
 
-            <ResizeHandle onResize={(delta) => setDetailPanelWidth((w) => Math.max(300, Math.min(800, w - delta)))} />
+            <ResizeHandle onResize={(delta) => {
+                setDetailPanelWidth((w) => Math.max(250, Math.min(350, w + delta)));
+            }} />
 
             {/* Right Panel: Note Detail */}
             <div
-                className="border-l border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col"
-                style={{ width: detailPanelWidth, backgroundColor: 'var(--theme-bg-2)' }}
+                className="flex-1 border-l border-gray-200 dark:border-gray-700 flex flex-col"
+                style={{ backgroundColor: 'var(--theme-bg-2)' }}
             >
                 {selectedNote ? (
                     <div className="flex flex-col h-full">
