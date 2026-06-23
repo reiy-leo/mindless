@@ -40,6 +40,13 @@ export function useTags() {
   });
 }
 
+export function useAtomTag(name: string) {
+  return useQuery({
+    queryKey: ['atom-tag', name],
+    queryFn: () => api.getAtomTag(name),
+  });
+}
+
 export function useSubtasks(taskId: string) {
   return useQuery({
     queryKey: ['subtasks', taskId],
@@ -411,6 +418,37 @@ export function useSaveListSettings() {
     mutationFn: (settings: ListSettings) => api.saveListSettings(settings),
     onSuccess: (_data, variables) => {
       queryClient.setQueryData(['list-settings', variables.listId], variables);
+    },
+  });
+}
+
+// ==================== Attachment Queries ====================
+
+export function useAttachments(taskId: string) {
+  return useQuery({
+    queryKey: ['attachments', taskId],
+    queryFn: () => api.getAttachmentsByTask(taskId),
+    enabled: !!taskId,
+  });
+}
+
+export function useCreateAttachment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { taskId: string; originalFilename: string; fileBytes: number[] }) =>
+      api.createAttachment(params),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['attachments', variables.taskId] });
+    },
+  });
+}
+
+export function useDeleteAttachment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteAttachment(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['attachments', data.taskId] });
     },
   });
 }

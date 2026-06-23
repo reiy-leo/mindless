@@ -77,6 +77,14 @@
     "create_task": "作成",
     "inline_placeholder": "タスクタイトルを入力...",
     "attachment": "添付ファイル",
+    "attachment_added": "ファイルを添付しました",
+    "attachment_too_large": "ファイルが30MBの上限を超えています",
+    "attachment_uploading": "アップロード中...",
+    "attachments": "添付ファイル",
+    "no_attachments": "添付ファイルなし",
+    "delete_attachment": "添付ファイルを削除",
+    "copy_link": "リンクをコピー",
+    "download": "ダウンロード",
     "settings": "設定",
     "settings_view": "ビュー",
     "settings_status": "ステータス",
@@ -106,7 +114,23 @@
     "status": {
       "all": "すべて",
       "active": "進行中",
-      "completed": "完了"
+      "completed": "完了",
+      "pending": "保留",
+      "in_progress": "進行中",
+      "today": "今日",
+      "done": "完了",
+      "closed": "クローズ"
+    },
+    "context": {
+      "add_today": "「今日」に追加",
+      "remove_today": "「今日」から削除",
+      "set_priority": "優先度を設定",
+      "set_date": "日付を設定",
+      "set_status": "ステータスを設定",
+      "link_parent": "親タスクを关联",
+      "link_subtask": "サブタスクを关联",
+      "set_list": "タスクグループを設定",
+      "no_candidates": "候補なし"
     },
     "priority": {
       "label": "優先度",
@@ -528,7 +552,8 @@
     "tabs": {
       "general": "一般",
       "theme": "テーマ",
-      "datetime": "日付と時刻"
+      "datetime": "日付と時刻",
+      "sync": "同期"
     },
     "language": "言語",
     "theme": "テーマ",
@@ -570,6 +595,23 @@
       "clear_events": "イベントを削除",
       "import_success": "{{count}}件のイベントをインポートしました",
       "import_empty": "ファイルにイベントが見つかりません"
+    },
+    "sync": {
+      "repo_url": "リポジトリURL",
+      "repo_url_placeholder": "https://github.com/username/repo",
+      "pat": "アクセストークン",
+      "pat_placeholder": "Personal Access Tokenを入力",
+      "pat_help": "リポジトリの読み書き権限が必要です",
+      "test": "接続テスト",
+      "sync_now": "データ同期",
+      "testing": "テスト中...",
+      "syncing": "同期中...",
+      "test_success": "接続テスト成功",
+      "test_failed": "接続テスト失敗",
+      "sync_success": "データ同期成功",
+      "sync_failed": "データ同期失敗",
+      "invalid_url": "github.comとgitlab.comのみサポートされています",
+      "empty_fields": "リポジトリURLとアクセストークンを入力してください"
     },
     "theme_color": {
       "title": "テーマカラー",

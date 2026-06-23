@@ -35,9 +35,10 @@ export default function TagCombobox({
   }, [open]);
 
   const filtered = useMemo(() => {
+    const visible = allTags.filter((tag) => !tag.atom);
     const q = query.toLowerCase().trim();
-    if (!q) return allTags;
-    return allTags.filter((tag) => tag.name.toLowerCase().includes(q));
+    if (!q) return visible;
+    return visible.filter((tag) => tag.name.toLowerCase().includes(q));
   }, [allTags, query]);
 
   const exactMatch = useMemo(() => {

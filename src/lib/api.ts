@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -46,6 +46,9 @@ export async function updateTask(id: string, params: {
   listId?: string;
   tagIds?: string;
   sortOrder?: number;
+  parentTaskId?: string;
+  level?: number;
+  status?: string;
   recurrenceRule?: string;
   recurrenceEndDate?: string;
 }): Promise<Task> {
@@ -112,6 +115,10 @@ export async function deleteList(id: string): Promise<void> {
 // Tag APIs
 export async function getTags(): Promise<Tag[]> {
   return await invoke<Tag[]>('get_tags');
+}
+
+export async function getAtomTag(name: string): Promise<Tag | null> {
+  return await invoke<Tag | null>('get_atom_tag', { name });
 }
 
 export async function createTag(params: {
@@ -499,6 +506,27 @@ export async function exportAllData(): Promise<string> {
 
 export async function importAllData(json: string): Promise<void> {
   return await invoke<void>('import_all_data', { json });
+}
+
+// Sync APIs
+export async function getDbBase64(): Promise<string> {
+  return await invoke<string>('get_db_base64');
+}
+
+export async function getAppDataDir(): Promise<string> {
+  return await invoke<string>('get_app_data_dir');
+}
+
+export async function savePat(account: string, pat: string): Promise<void> {
+  return await invoke<void>('save_pat', { account, pat });
+}
+
+export async function loadPat(account: string): Promise<string | null> {
+  return await invoke<string | null>('load_pat', { account });
+}
+
+export async function deletePat(account: string): Promise<void> {
+  return await invoke<void>('delete_pat', { account });
 }
 
 // Note Group APIs
@@ -941,4 +969,37 @@ export interface HeatmapData {
 
 export async function getHeatmapData(): Promise<HeatmapData> {
   return await invoke<HeatmapData>('get_heatmap_data');
+}
+
+// Attachment APIs
+export async function createAttachment(params: {
+  taskId: string;
+  originalFilename: string;
+  fileBytes: number[];
+}): Promise<Attachment> {
+  return await invoke<Attachment>('create_attachment', params);
+}
+
+export async function getAttachmentsByTask(taskId: string): Promise<Attachment[]> {
+  return await invoke<Attachment[]>('get_attachments_by_task', { taskId });
+}
+
+export async function readFileBytes(path: string): Promise<number[]> {
+  return await invoke<number[]>('read_file_bytes', { path });
+}
+
+export async function deleteAttachment(id: string): Promise<Attachment> {
+  return await invoke<Attachment>('delete_attachment', { id });
+}
+
+export async function cacheAttachmentImage(params: {
+  id: string;
+  filename: string;
+  fileBytes: number[];
+}): Promise<string> {
+  return await invoke<string>('cache_attachment_image', params);
+}
+
+export async function readImageDataUrl(path: string): Promise<string> {
+  return await invoke<string>('read_image_data_url', { path });
 }

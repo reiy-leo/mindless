@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlusIcon, TrashIcon, CalendarIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -39,6 +39,7 @@ interface StepListProps {
   onUpdateDueDate: (id: string, dueDate?: string) => void;
   onUpdateDueTime: (id: string, dueTime?: string) => void;
   onReorder?: (items: { id: string; sortOrder: number }[]) => void;
+  onInsertAt?: (description: string, afterStepId: string | null, beforeStepId: string | null) => void;
 }
 
 function formatStepDate(date?: string, time?: string, taskDueDate?: string): string {
@@ -117,7 +118,9 @@ function StepItem({
   onDelete,
   onUpdateDescription,
   onDateClick,
-}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void }) {
+  onInsertBelow,
+  onInsertAbove,
+}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void; onInsertBelow?: () => void; onInsertAbove?: () => void }) {
   const { t } = useTranslation('common');
   const [description, setDescription] = useState(step.description);
   const isInternalUpdateRef = useRef(false);
@@ -140,7 +143,15 @@ function StepItem({
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && e.altKey && e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+      onInsertAbove?.();
+    } else if (e.key === 'Enter' && e.altKey) {
+      e.preventDefault();
+      handleSave();
+      onInsertBelow?.();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
@@ -207,7 +218,9 @@ function SortableStepItem({
   onDelete,
   onUpdateDescription,
   onDateClick,
-}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void }) {
+  onInsertBelow,
+  onInsertAbove,
+}: StepItemProps & { taskDueDate?: string; onDateClick: (e: React.MouseEvent) => void; onInsertBelow?: () => void; onInsertAbove?: () => void }) {
   const { t } = useTranslation('common');
   const {
     attributes,
@@ -244,6 +257,8 @@ function SortableStepItem({
           onDelete={onDelete}
           onUpdateDescription={onUpdateDescription}
           onDateClick={onDateClick}
+          onInsertBelow={onInsertBelow}
+          onInsertAbove={onInsertAbove}
         />
       </div>
     </div>
@@ -260,6 +275,7 @@ export default function StepList({
   onUpdateDueDate,
   onUpdateDueTime,
   onReorder,
+  onInsertAt,
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common');
   const [showAddInput, setShowAddInput] = useState(false);
@@ -317,6 +333,25 @@ export default function StepList({
 
   const total = steps.length;
   const completed = steps.filter((s) => s.isCompleted).length;
+  const reversedSteps = useMemo(() => [...steps].reverse(), [steps]);
+
+  const makeInsertBelow = (stepId: string) => {
+    if (!onInsertAt) return undefined;
+    return () => {
+      const idx = steps.findIndex((s) => s.id === stepId);
+      const prevStep = idx > 0 ? steps[idx - 1] : null;
+      onInsertAt('', prevStep ? prevStep.id : null, stepId);
+    };
+  };
+
+  const makeInsertAbove = (stepId: string) => {
+    if (!onInsertAt) return undefined;
+    return () => {
+      const idx = steps.findIndex((s) => s.id === stepId);
+      const nextStep = idx < steps.length - 1 ? steps[idx + 1] : null;
+      onInsertAt('', stepId, nextStep ? nextStep.id : null);
+    };
+  };
 
   return (
     <div>
@@ -350,9 +385,9 @@ export default function StepList({
 
       {onReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
-          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={reversedSteps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             <div className="relative">
-              {steps.map((step) => (
+              {reversedSteps.map((step) => (
                 <SortableStepItem
                   key={step.id}
                   step={step}
@@ -361,13 +396,15 @@ export default function StepList({
                   onDelete={() => onDelete(step.id)}
                   onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
                   onDateClick={(e) => handleStepDateClick(step.id, e)}
+                  onInsertBelow={makeInsertBelow(step.id)}
+                  onInsertAbove={makeInsertAbove(step.id)}
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
       ) : (
-        steps.map((step) => (
+        reversedSteps.map((step) => (
           <StepItem
             key={step.id}
             step={step}
@@ -376,6 +413,8 @@ export default function StepList({
             onDelete={() => onDelete(step.id)}
             onUpdateDescription={(desc) => onUpdateDescription(step.id, desc)}
             onDateClick={(e) => handleStepDateClick(step.id, e)}
+            onInsertBelow={makeInsertBelow(step.id)}
+            onInsertAbove={makeInsertAbove(step.id)}
           />
         ))
       )}

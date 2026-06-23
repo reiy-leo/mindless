@@ -420,9 +420,10 @@ export default function TagManagementDialogPage() {
   }, [tasks]);
 
   const filteredTags = useMemo(() => {
-    if (!searchQuery.trim()) return tags;
+    const visible = tags.filter((tag) => !tag.atom);
+    if (!searchQuery.trim()) return visible;
     const q = searchQuery.toLowerCase();
-    return tags.filter((tag) => tag.name.toLowerCase().includes(q));
+    return visible.filter((tag) => tag.name.toLowerCase().includes(q));
   }, [tags, searchQuery]);
 
   const rootTags = useMemo(() => filteredTags.filter((tag) => !tag.parentId), [filteredTags]);

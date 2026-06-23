@@ -25,6 +25,7 @@ fn row_to_tag(row: &rusqlite::Row) -> rusqlite::Result<Tag> {
         parent_id: row.get(4)?,
         level: row.get(5)?,
         sort_order: row.get(6)?,
+        atom: row.get::<_, i32>(9)? != 0,
         created_at: row.get(7)?,
         updated_at: row.get(8)?,
     })
@@ -33,7 +34,7 @@ fn row_to_tag(row: &rusqlite::Row) -> rusqlite::Result<Tag> {
 #[tauri::command]
 pub async fn get_tags(app: AppHandle) -> Result<Vec<Tag>, String> {
     let conn = get_db(&app)?;
-    let mut stmt = conn.prepare("SELECT * FROM tags ORDER BY sort_order ASC")
+    let mut stmt = conn.prepare("SELECT * FROM tags WHERE atom = 0 ORDER BY sort_order ASC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
 
     let tags = stmt.query_map([], row_to_tag)
@@ -41,6 +42,21 @@ pub async fn get_tags(app: AppHandle) -> Result<Vec<Tag>, String> {
 
     let result: Result<Vec<_>, _> = tags.collect();
     result.map_err(|e| format!("Failed to collect: {}", e))
+}
+
+#[tauri::command]
+pub async fn get_atom_tag(app: AppHandle, name: String) -> Result<Option<Tag>, String> {
+    let conn = get_db(&app)?;
+    let result = conn.query_row(
+        "SELECT * FROM tags WHERE atom = 1 AND name = ?1",
+        [&name],
+        row_to_tag,
+    );
+    match result {
+        Ok(tag) => Ok(Some(tag)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(format!("Failed to query atom tag: {}", e)),
+    }
 }
 
 #[tauri::command]
@@ -88,6 +104,15 @@ pub async fn update_tag(
 ) -> Result<Tag, String> {
     let conn = get_db(&app)?;
 
+    // Check if atom tag
+    let is_atom: bool = conn.query_row(
+        "SELECT atom FROM tags WHERE id = ?1", [&id],
+        |row| Ok(row.get::<_, i32>(0)? != 0),
+    ).unwrap_or(false);
+    if is_atom {
+        return Err("Cannot modify atom tag".to_string());
+    }
+
     if let Some(ref name) = name {
         conn.execute(
             "UPDATE tags SET name = ?1, updated_at = datetime('now') WHERE id = ?2",
@@ -118,6 +143,15 @@ pub async fn update_tag(
 #[tauri::command]
 pub async fn delete_tag(app: AppHandle, id: String) -> Result<(), String> {
     let conn = get_db(&app)?;
+
+    // Check if atom tag
+    let is_atom: bool = conn.query_row(
+        "SELECT atom FROM tags WHERE id = ?1", [&id],
+        |row| Ok(row.get::<_, i32>(0)? != 0),
+    ).unwrap_or(false);
+    if is_atom {
+        return Err("Cannot delete atom tag".to_string());
+    }
 
     let tx = conn.unchecked_transaction().map_err(|e| format!("Failed to begin transaction: {}", e))?;
 

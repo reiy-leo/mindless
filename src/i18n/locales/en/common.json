@@ -78,6 +78,14 @@
     "create_task": "Create",
     "inline_placeholder": "Enter task title...",
     "attachment": "Attachment",
+    "attachment_added": "File attached",
+    "attachment_too_large": "File exceeds 30MB limit",
+    "attachment_uploading": "Uploading...",
+    "attachments": "Attachments",
+    "no_attachments": "No attachments",
+    "delete_attachment": "Delete attachment",
+    "copy_link": "Copy Link",
+    "download": "Download",
     "settings": "Settings",
     "settings_view": "View",
     "settings_status": "Status",
@@ -107,7 +115,23 @@
     "status": {
       "all": "All",
       "active": "Active",
-      "completed": "Completed"
+      "completed": "Completed",
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "today": "Today",
+      "done": "Done",
+      "closed": "Closed"
+    },
+    "context": {
+      "add_today": "Add to \"Today\"",
+      "remove_today": "Remove from \"Today\"",
+      "set_priority": "Set Priority",
+      "set_date": "Set Date",
+      "set_status": "Set Status",
+      "link_parent": "Link Parent Task",
+      "link_subtask": "Link Subtask",
+      "set_list": "Set Task Group",
+      "no_candidates": "No candidates"
     },
     "priority": {
       "label": "Priority",
@@ -529,7 +553,8 @@
     "tabs": {
       "general": "General",
       "theme": "Theme",
-      "datetime": "Date & Time"
+      "datetime": "Date & Time",
+      "sync": "Sync"
     },
     "language": "Language",
     "theme": "Theme",
@@ -571,6 +596,23 @@
       "clear_events": "Clear Events",
       "import_success": "Successfully imported {{count}} events",
       "import_empty": "No events found in the file"
+    },
+    "sync": {
+      "repo_url": "Repository URL",
+      "repo_url_placeholder": "https://github.com/username/repo",
+      "pat": "Personal Access Token",
+      "pat_placeholder": "Enter Personal Access Token",
+      "pat_help": "Requires read/write access to the repository",
+      "test": "Test Connection",
+      "sync_now": "Sync Data",
+      "testing": "Testing...",
+      "syncing": "Syncing...",
+      "test_success": "Connection test successful",
+      "test_failed": "Connection test failed",
+      "sync_success": "Data synced successfully",
+      "sync_failed": "Data sync failed",
+      "invalid_url": "Only github.com and gitlab.com are supported",
+      "empty_fields": "Please enter repository URL and access token"
     },
     "theme_color": {
       "title": "Theme Color",

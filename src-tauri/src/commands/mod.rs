@@ -11,7 +11,9 @@ pub mod persons;
 pub mod notifications;
 pub mod calendar;
 pub mod data;
+pub mod sync;
 pub mod media;
+pub mod attachments;
 
 pub use tasks::*;
 pub use habits::*;
@@ -26,3 +28,5 @@ pub use persons::*;
 pub use notifications::*;
 pub use calendar::*;
 pub use data::*;
+pub use sync::*;
+pub use attachments::*;

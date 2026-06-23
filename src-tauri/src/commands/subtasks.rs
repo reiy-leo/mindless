@@ -32,6 +32,7 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         end_time: row.get(21)?,
         parent_task_id: row.get(22)?,
         level: row.get(23)?,
+        status: row.get(24)?,
     })
 }
 

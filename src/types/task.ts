@@ -3,6 +3,7 @@ import type { Tag } from './tag';
 
 export type PriorityMode = 'simple' | 'detailed';
 export type Priority = 0 | 1 | 2 | 3; // 4级优先级: 0=无, 1=低, 2=中, 3=高
+export type TaskStatus = 'pending' | 'in_progress' | 'today' | 'completed' | 'closed';
 export type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt';
 export type GroupBy = 'none' | 'priority' | 'list';
 
@@ -34,6 +35,7 @@ export interface Task {
   completedAt?: string;
   deletedAt?: string;
   sortOrder: number;
+  status: TaskStatus;
 }
 
 export interface CreateTaskParams {
@@ -62,6 +64,10 @@ export interface UpdateTaskParams {
   endTime?: string;
   startDate?: string;
   listId?: string;
+  tagIds?: string;
+  parentTaskId?: string;
+  level?: number;
+  status?: TaskStatus;
   recurrenceRule?: string;
   recurrenceEndDate?: string;
 }

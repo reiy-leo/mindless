@@ -40,6 +40,7 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         end_time: row.get(21)?,
         parent_task_id: row.get(22)?,
         level: row.get(23)?,
+        status: row.get(24)?,
     })
 }
 
@@ -60,13 +61,14 @@ pub async fn create_task(
     end_time: Option<String>,
     parent_task_id: Option<String>,
     level: Option<i32>,
+    status: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v4().to_string();
     let priority = priority.unwrap_or(0);
     let level = level.unwrap_or(0);
+    let status = status.unwrap_or_else(|| "pending".to_string());
 
-    // If parent_task_id is set, inherit list_id from parent if not provided
     let effective_list_id = if list_id.is_none() && parent_task_id.is_some() {
         let pid = parent_task_id.as_ref().unwrap();
         conn.query_row(
@@ -94,7 +96,7 @@ pub async fn create_task(
     };
 
     conn.execute(
-        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time, parent_task_id, level) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+        "INSERT INTO tasks (id, title, description, priority, due_date, due_time, start_date, list_id, tag_ids, sort_order, recurrence_rule, recurrence_end_date, end_date, end_time, parent_task_id, level, status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
         rusqlite::params![
             &id,
             &title,
@@ -112,6 +114,7 @@ pub async fn create_task(
             opt_str(&end_time),
             opt_str(&parent_task_id),
             &level,
+            &status,
         ]
     ).map_err(|e| format!("Failed to create task: {}", e))?;
 
@@ -173,10 +176,13 @@ pub async fn update_task(
     list_id: Option<String>,
     tag_ids: Option<String>,
     sort_order: Option<f64>,
+    parent_task_id: Option<String>,
+    level: Option<i32>,
     recurrence_rule: Option<String>,
     recurrence_end_date: Option<String>,
     end_date: Option<String>,
     end_time: Option<String>,
+    status: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
@@ -185,7 +191,8 @@ pub async fn update_task(
     let due_date = due_date.filter(|s| !s.is_empty());
     let due_time = due_time.filter(|s| !s.is_empty());
     let start_date = start_date.filter(|s| !s.is_empty());
-    let tag_ids = tag_ids.filter(|s| !s.is_empty());
+    let tag_ids = tag_ids; // keep empty string to allow clearing
+    let mut parent_task_id = parent_task_id.filter(|s| !s.is_empty());
     let recurrence_rule = recurrence_rule.filter(|s| !s.is_empty());
     let recurrence_end_date = recurrence_end_date.filter(|s| !s.is_empty());
     let end_date = end_date.filter(|s| !s.is_empty());
@@ -208,9 +215,13 @@ pub async fn update_task(
         param_idx += 1;
     }
     if is_completed.is_some() {
-        sql.push_str(&format!(", is_completed = ?{}, completed_at = CASE WHEN ?{} = 1 THEN datetime('now') ELSE NULL END", param_idx, param_idx));
+        let completed = is_completed.unwrap();
+        if completed {
+            sql.push_str(", is_completed = 1, status = 'completed', completed_at = datetime('now')");
+        } else {
+            sql.push_str(", is_completed = 0, status = 'pending', completed_at = NULL");
+        }
         updates.push("is_completed".to_string());
-        param_idx += 1;
     }
     if priority.is_some() {
         sql.push_str(&format!(", priority = ?{}", param_idx));
@@ -238,8 +249,27 @@ pub async fn update_task(
         param_idx += 1;
     }
     if tag_ids.is_some() {
-        sql.push_str(&format!(", tag_ids = ?{}", param_idx));
+        let tid = tag_ids.as_ref().unwrap();
+        if tid.is_empty() {
+            sql.push_str(", tag_ids = NULL");
+        } else {
+            sql.push_str(&format!(", tag_ids = ?{}", param_idx));
+            param_idx += 1;
+        }
         updates.push("tag_ids".to_string());
+    }
+    if parent_task_id.is_some() {
+        let parent = parent_task_id.as_ref().unwrap();
+        let pid = if parent.is_empty() { None } else { Some(parent.as_str()) };
+        sql.push_str(&format!(", parent_task_id = ?{}", param_idx));
+        updates.push("parent_task_id".to_string());
+        param_idx += 1;
+        // Store normalized value back
+        parent_task_id = pid.map(|s| s.to_string());
+    }
+    if level.is_some() {
+        sql.push_str(&format!(", level = ?{}", param_idx));
+        updates.push("level".to_string());
         param_idx += 1;
     }
     if sort_order.is_some() {
@@ -267,6 +297,14 @@ pub async fn update_task(
         updates.push("end_time".to_string());
         param_idx += 1;
     }
+    if status.is_some() {
+        let s = status.as_ref().unwrap();
+        let is_done = if s == "completed" || s == "closed" { 1 } else { 0 };
+        let completed_at_sql = if is_done == 1 { "datetime('now')" } else { "NULL" };
+        sql.push_str(&format!(", status = ?{}, is_completed = {}, completed_at = {}", param_idx, is_done, completed_at_sql));
+        updates.push("status".to_string());
+        param_idx += 1;
+    }
 
     sql.push_str(&format!(" WHERE id = ?{}", param_idx));
 
@@ -277,18 +315,20 @@ pub async fn update_task(
 
     if let Some(ref v) = title { params.push(Box::new(v.clone())); }
     if let Some(ref v) = description { params.push(Box::new(v.clone())); }
-    if let Some(v) = is_completed { params.push(Box::new(if v { 1i32 } else { 0i32 })); }
     if let Some(v) = priority { params.push(Box::new(v)); }
     if let Some(ref v) = due_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = due_time { params.push(Box::new(v.clone())); }
     if let Some(ref v) = start_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = list_id { params.push(Box::new(v.clone())); }
-    if let Some(ref v) = tag_ids { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = tag_ids { if !v.is_empty() { params.push(Box::new(v.clone())); } }
+    if let Some(ref v) = parent_task_id { params.push(Box::new(v.clone())); }
+    if let Some(v) = level { params.push(Box::new(v)); }
     if let Some(v) = sort_order { params.push(Box::new(v)); }
     if let Some(ref v) = recurrence_rule { params.push(Box::new(v.clone())); }
     if let Some(ref v) = recurrence_end_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = end_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = end_time { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = status { params.push(Box::new(v.clone())); }
     params.push(Box::new(id.clone()));
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
@@ -473,7 +513,7 @@ pub async fn complete_recurring_task(
         Some(r) if !r.is_empty() => r.clone(),
         _ => {
             conn.execute(
-                "UPDATE tasks SET is_completed = 1, completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
                 [&id],
             ).map_err(|e| format!("Failed to complete task: {}", e))?;
             return Ok(None);
@@ -485,7 +525,7 @@ pub async fn complete_recurring_task(
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         if today > *end_date {
             conn.execute(
-                "UPDATE tasks SET is_completed = 1, completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
                 [&id],
             ).map_err(|e| format!("Failed to complete task: {}", e))?;
             return Ok(None);
@@ -498,7 +538,7 @@ pub async fn complete_recurring_task(
 
     // Mark current task as complete
     conn.execute(
-        "UPDATE tasks SET is_completed = 1, completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+        "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
         [&id],
     ).map_err(|e| format!("Failed to complete task: {}", e))?;
 

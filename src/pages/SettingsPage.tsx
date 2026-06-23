@@ -4,7 +4,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { checkAndNotify } from '@/services/notificationService';
 import { useCalendarEvents, useImportCalendarEvents, useClearAllCalendarEvents } from '@/queries/useTaskQueries';
-import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers, Clock } from 'lucide-react';
+import { Settings, Palette, Sun, Moon, Laptop, LayoutGrid, Type, Layers, Clock, Cloud } from 'lucide-react';
 import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager';
@@ -81,7 +81,7 @@ export default function SettingsPage() {
     emit('settings:changed', { key: 'timezoneFormat', value: timezoneFormat });
   }, [timezoneFormat]);
 
-  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime' | 'sync'>('general');
   const [permStatus, setPermStatus] = useState<string | null>(null);
 
   const { data: calendarEvents = [] } = useCalendarEvents();
@@ -91,6 +91,75 @@ export default function SettingsPage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timezoneButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Sync state
+  const [syncUrl, setSyncUrl] = useState(() => localStorage.getItem('mindless-sync-url') || '');
+  const [syncPat, setSyncPat] = useState('');
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncAction, setSyncAction] = useState<'test' | 'sync' | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('mindless-sync-url', syncUrl);
+  }, [syncUrl]);
+
+  useEffect(() => {
+    (async () => {
+      if (syncUrl) {
+        try {
+          const { loadPat } = await import('@/lib/api');
+          const domain = new URL(syncUrl).hostname;
+          const pat = await loadPat(domain);
+          if (pat) setSyncPat(pat);
+        } catch {}
+      }
+    })();
+  }, []);
+
+  const handleSavePat = async () => {
+    if (!syncUrl || !syncPat) return;
+    try {
+      const { savePat } = await import('@/lib/api');
+      const domain = new URL(syncUrl).hostname;
+      await savePat(domain, syncPat);
+    } catch {}
+  };
+
+  const handleTest = async () => {
+    if (!syncUrl || !syncPat) { setSyncStatus('empty_fields'); return; }
+    setSyncLoading(true);
+    setSyncAction('test');
+    setSyncStatus(null);
+    try {
+      const { testConnection } = await import('@/lib/syncService');
+      const result = await testConnection(syncPat, syncUrl);
+      setSyncStatus(result.success ? 'test_success' : 'test_failed');
+    } catch {
+      setSyncStatus('test_failed');
+    } finally {
+      setSyncLoading(false);
+      setSyncAction(null);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!syncUrl || !syncPat) { setSyncStatus('empty_fields'); return; }
+    setSyncLoading(true);
+    setSyncAction('sync');
+    setSyncStatus(null);
+    try {
+      const { exportAllData, getDbBase64 } = await import('@/lib/api');
+      const { syncToRepo } = await import('@/lib/syncService');
+      const [exportJson, dbBase64] = await Promise.all([exportAllData(), getDbBase64()]);
+      const result = await syncToRepo(syncPat, syncUrl, exportJson, dbBase64);
+      setSyncStatus(result.success ? 'sync_success' : 'sync_failed');
+    } catch {
+      setSyncStatus('sync_failed');
+    } finally {
+      setSyncLoading(false);
+      setSyncAction(null);
+    }
+  };
 
   useEffect(() => {
     const unlisten = listen<{ timezone?: string }>('timezone-picker-overlay:result', (e) => {
@@ -203,6 +272,7 @@ export default function SettingsPage() {
     { id: 'general' as const, label: t('settings.tabs.general'), icon: Settings },
     { id: 'datetime' as const, label: t('settings.tabs.datetime'), icon: Clock },
     { id: 'theme' as const, label: t('settings.tabs.theme'), icon: Palette },
+    { id: 'sync' as const, label: t('settings.tabs.sync'), icon: Cloud },
   ];
 
   return (
@@ -789,6 +859,67 @@ export default function SettingsPage() {
             </div>
           </section>
 
+        </div>
+      )}
+
+      {/* Sync Tab */}
+      {activeTab === 'sync' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="space-y-6 max-w-2xl">
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {t('settings.sync.repo_url')}
+              </h3>
+              <input
+                type="text"
+                value={syncUrl}
+                onChange={(e) => setSyncUrl(e.target.value)}
+                placeholder={t('settings.sync.repo_url_placeholder')}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-4">
+                {t('settings.sync.pat')}
+              </h3>
+              <input
+                type="password"
+                value={syncPat}
+                onChange={(e) => setSyncPat(e.target.value)}
+                onBlur={handleSavePat}
+                placeholder={t('settings.sync.pat_placeholder')}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('settings.sync.pat_help')}</p>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleTest}
+                  disabled={syncLoading}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm disabled:opacity-50"
+                >
+                  {syncLoading && syncAction === 'test' ? t('settings.sync.testing') : t('settings.sync.test')}
+                </button>
+                <button
+                  onClick={handleSync}
+                  disabled={syncLoading}
+                  className="px-4 py-2 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--theme-color)' }}
+                >
+                  {syncLoading && syncAction === 'sync' ? t('settings.sync.syncing') : t('settings.sync.sync_now')}
+                </button>
+              </div>
+
+              {syncStatus && (
+                <p className={`mt-4 text-sm ${
+                  syncStatus === 'test_success' || syncStatus === 'sync_success'
+                    ? 'text-green-500'
+                    : 'text-red-500'
+                }`}>
+                  {t(`settings.sync.${syncStatus}`)}
+                </p>
+              )}
+            </section>
+          </div>
         </div>
       )}
 

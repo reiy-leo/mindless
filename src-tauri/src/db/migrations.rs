@@ -644,5 +644,52 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
         let _ = conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_target_end_date ON notes(target_end_date);");
     }
 
+    // Add atom column to tags table if not exists
+    let has_atom: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('tags') WHERE name = 'atom'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_atom {
+        conn.execute("ALTER TABLE tags ADD COLUMN atom INTEGER NOT NULL DEFAULT 0", [])
+            .map_err(|e| format!("Failed to add atom column to tags: {}", e))?;
+    }
+
+    // Insert preset atom tags
+    conn.execute_batch("
+        INSERT OR IGNORE INTO tags (id, name, color, emoji, level, sort_order, atom)
+        VALUES ('atom-today', 'today', '#3B82F6', '📌', 0, -1, 1);
+    ").map_err(|e| format!("Failed to insert atom tags: {}", e))?;
+
+    // Add status column to tasks table if not exists
+    let has_status: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('tasks') WHERE name = 'status'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_status {
+        conn.execute("ALTER TABLE tasks ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'", [])
+            .map_err(|e| format!("Failed to add status column to tasks: {}", e))?;
+        conn.execute("UPDATE tasks SET status = 'completed' WHERE is_completed = 1", [])
+            .map_err(|e| format!("Failed to backfill task status: {}", e))?;
+    }
+
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS attachments (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            original_filename TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            added_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+            sha256 TEXT NOT NULL,
+            local_path TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+    ").map_err(|e| format!("Failed to migrate attachments table: {}", e))?;
+
+    let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN local_path TEXT;");
+
     Ok(())
 }

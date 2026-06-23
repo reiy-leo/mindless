@@ -28,6 +28,7 @@ pub struct Task {
     pub sort_order: f64,
     pub end_date: Option<String>,
     pub end_time: Option<String>,
+    pub status: String,
 }
 
 // List model
@@ -56,6 +57,7 @@ pub struct Tag {
     pub parent_id: Option<String>,
     pub level: i32,
     pub sort_order: f64,
+    pub atom: bool,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -440,4 +442,17 @@ pub struct MediaWatchHistoryLinkDetail {
     pub linked_type: String,
     pub linked_id: String,
     pub title: String,
+}
+
+// Attachment model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Attachment {
+    pub id: String,
+    pub task_id: String,
+    pub original_filename: String,
+    pub filename: String,
+    pub added_datetime: String,
+    pub sha256: String,
+    pub local_path: Option<String>,
 }

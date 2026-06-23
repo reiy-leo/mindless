@@ -48,6 +48,7 @@ pub fn run() {
             commands::delete_step,
             // Tags
             commands::get_tags,
+            commands::get_atom_tag,
             commands::create_tag,
             commands::update_tag,
             commands::delete_tag,
@@ -147,6 +148,12 @@ pub fn run() {
             // Data Export/Import
             commands::export_all_data,
             commands::import_all_data,
+            // Sync
+            commands::save_pat,
+            commands::load_pat,
+            commands::delete_pat,
+            commands::get_db_base64,
+            commands::get_app_data_dir,
             // Media
             commands::media::get_media_groups,
             commands::media::create_media_group,
@@ -164,6 +171,13 @@ pub fn run() {
             commands::media::get_media_groups_with_count,
             commands::media::get_media_item_genres,
             commands::media::update_media_item_genres,
+            // Attachments
+            commands::create_attachment,
+            commands::get_attachments_by_task,
+            commands::read_file_bytes,
+            commands::delete_attachment,
+            commands::cache_attachment_image,
+            commands::read_image_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-family-text: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "微软雅黑", "Microsoft YaHei", Arial, sans-serif;
+  --font-family-text:
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", "微软雅黑", "Microsoft YaHei", Arial, sans-serif;
   font-family: var(--font-family-text);
   line-height: 1.5;
   font-weight: 400;
@@ -24,7 +25,8 @@
   background-color: transparent !important;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -55,4 +57,115 @@ html, body {
 
 .milkdown .ProseMirror {
   padding: 0 !important;
+}
+
+.text-theme-50 {
+  color: hsl(from var(--theme-color) h s 95);
+}
+.text-theme-100 {
+  color: hsl(from var(--theme-color) h s 90);
+}
+.text-theme-200 {
+  color: hsl(from var(--theme-color) h s 80);
+}
+.text-theme-300 {
+  color: hsl(from var(--theme-color) h s 70);
+}
+.text-theme-400 {
+  color: hsl(from var(--theme-color) h s 60);
+}
+.text-theme-500 {
+  color: hsl(from var(--theme-color) h s 50);
+}
+.text-theme-600 {
+  color: hsl(from var(--theme-color) h s 40);
+}
+.text-theme-700 {
+  color: hsl(from var(--theme-color) h s 40);
+}
+.text-theme-700 {
+  color: hsl(from var(--theme-color) h s 30);
+}
+.text-theme-800 {
+  color: hsl(from var(--theme-color) h s 20);
+}
+.text-theme-900 {
+  color: hsl(from var(--theme-color) h s 10);
+}
+.text-theme-950 {
+  color: hsl(from var(--theme-color) h s 5);
+}
+
+.border-theme-50 {
+  border-color: hsl(from var(--theme-color) h s 95);
+}
+.border-theme-100 {
+  border-color: hsl(from var(--theme-color) h s 90);
+}
+.border-theme-200 {
+  border-color: hsl(from var(--theme-color) h s 80);
+}
+.border-theme-300 {
+  border-color: hsl(from var(--theme-color) h s 70);
+}
+.border-theme-400 {
+  border-color: hsl(from var(--theme-color) h s 60);
+}
+.border-theme-500 {
+  border-color: hsl(from var(--theme-color) h s 50);
+}
+.border-theme-600 {
+  border-color: hsl(from var(--theme-color) h s 40);
+}
+.border-theme-700 {
+  border-color: hsl(from var(--theme-color) h s 40);
+}
+.border-theme-700 {
+  border-color: hsl(from var(--theme-color) h s 30);
+}
+.border-theme-800 {
+  border-color: hsl(from var(--theme-color) h s 20);
+}
+.border-theme-900 {
+  border-color: hsl(from var(--theme-color) h s 10);
+}
+.border-theme-950 {
+  border-color: hsl(from var(--theme-color) h s 5);
+}
+
+.bg-theme-50 {
+  background-color: hsl(from var(--theme-color) h s 95);
+}
+.bg-theme-100 {
+  background-color: hsl(from var(--theme-color) h s 90);
+}
+.bg-theme-200 {
+  background-color: hsl(from var(--theme-color) h s 80);
+}
+.bg-theme-300 {
+  background-color: hsl(from var(--theme-color) h s 70);
+}
+.bg-theme-400 {
+  background-color: hsl(from var(--theme-color) h s 60);
+}
+.bg-theme-500 {
+  background-color: hsl(from var(--theme-color) h s 50);
+}
+.bg-theme-600 {
+  background-color: hsl(from var(--theme-color) h s 40);
+}
+.bg-theme-700 {
+  background-color: hsl(from var(--theme-color) h s 40);
+}
+.bg-theme-700 {
+  background-color: hsl(from var(--theme-color) h s 30);
+}
+.bg-theme-800 {
+  background-color: hsl(from var(--theme-color) h s 20);
+}
+.bg-theme-900 {
+  background-color: hsl(from var(--theme-color) h s 10);
+}
+.bg-theme-950 {
+  background-color: hsl(from var(--theme-color) h s 5);
 }

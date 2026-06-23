@@ -8,6 +8,7 @@ export interface Tag {
   parentId?: string;            // 父标签ID
   level: number;                // 层级深度 (0-3)
   sortOrder: number;
+  atom: boolean;                // 原子标签（不可修改/删除/展示）
   children?: Tag[];             // 子标签 (树形结构)
   createdAt: string;
   updatedAt: string;

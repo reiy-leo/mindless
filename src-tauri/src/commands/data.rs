@@ -52,7 +52,7 @@ fn row_to_json_with_names(column_names: &[String], row: &rusqlite::Row) -> rusql
 }
 
 /// Simple base64 encoding for blob data.
-fn base64_encode(data: &[u8]) -> String {
+pub fn base64_encode(data: &[u8]) -> String {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut result = String::new();
     for chunk in data.chunks(3) {
