@@ -571,10 +571,20 @@
   "settings": {
     "tabs": {
       "general": "一般",
+      "tasks": "タスク",
       "theme": "テーマ",
       "datetime": "日付と時刻",
       "sync": "同期",
       "shortcuts": "ショートカット"
+    },
+    "tasks": {
+      "default_sections": "デフォルト表示セクション",
+      "default_open": "デフォルトの開くビュー",
+      "default_open.last": "最後に開いたビュー",
+      "default_open.today": "今日",
+      "default_open.inbox": "受信箱",
+      "today_reset": "今日に追加",
+      "today_reset_desc": "「今日」リストの每日のリセット時間"
     },
     "shortcuts": {
       "title": "キーボードショートカット",

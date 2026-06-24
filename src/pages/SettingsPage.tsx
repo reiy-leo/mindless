@@ -1,7 +1,15 @@
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
-import { Clock, Cloud, Command, Laptop, Layers, LayoutGrid, Moon, Palette, Settings, Sun, Type } from 'lucide-react'
+import {
+  DocumentIcon,
+  FilmIcon,
+  IdentificationIcon,
+  PaperClipIcon,
+  QueueListIcon,
+  TableCellsIcon,
+} from '@heroicons/react/24/outline'
+import { Clock, Cloud, Command, Laptop, Layers, LayoutGrid, ListTodo, Moon, Palette, Settings, Sun, Type } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDisplayDate, formatTime, formatTimezoneOffset } from '@/lib/formatUtils'
@@ -9,7 +17,7 @@ import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import { useCalendarEvents, useClearAllCalendarEvents, useImportCalendarEvents } from '@/queries/useTaskQueries'
 import { checkAndNotify } from '@/services/notificationService'
-import type { DateFormat, FontSize, SidebarMode, TimeFormat, TimezoneFormat } from '@/stores/useAppStore'
+import type { DateFormat, DefaultTaskSections, FontSize, SidebarMode, TimeFormat, TimezoneFormat } from '@/stores/useAppStore'
 import { useAppStore } from '@/stores/useAppStore'
 import type { PriorityMode, Theme } from '@/types'
 
@@ -56,6 +64,8 @@ export default function SettingsPage() {
     timeFormat,
     dateFormat,
     timezoneFormat,
+    defaultTaskOpenView,
+    todayResetHour,
     setTheme,
     setThemeColor,
     setLanguage,
@@ -70,7 +80,14 @@ export default function SettingsPage() {
     setTimeFormat,
     setDateFormat,
     setTimezoneFormat,
+    setDefaultTaskSections,
+    setDefaultTaskOpenView,
+    setTodayResetHour,
   } = useAppStore()
+  const defaultTaskSections = useAppStore((s) => s.defaultTaskSections, (a, b) =>
+    a.steps === b.steps && a.subtasks === b.subtasks && a.attachments === b.attachments &&
+    a.notes === b.notes && a.persons === b.persons && a.media === b.media
+  )
 
   useEffect(() => {
     emit('settings:changed', { key: 'theme', value: theme })
@@ -105,8 +122,27 @@ export default function SettingsPage() {
   useEffect(() => {
     emit('settings:changed', { key: 'timezoneFormat', value: timezoneFormat })
   }, [timezoneFormat])
+  const prevSectionsRef = useRef(defaultTaskSections)
+  useEffect(() => {
+    const prev = prevSectionsRef.current
+    const curr = defaultTaskSections
+    if (
+      prev.steps !== curr.steps ||
+      prev.subtasks !== curr.subtasks ||
+      prev.attachments !== curr.attachments ||
+      prev.notes !== curr.notes ||
+      prev.persons !== curr.persons ||
+      prev.media !== curr.media
+    ) {
+      prevSectionsRef.current = curr
+      emit('settings:changed', { key: 'defaultTaskSections', value: curr })
+    }
+  }, [defaultTaskSections])
+  useEffect(() => {
+    emit('settings:changed', { key: 'defaultTaskOpenView', value: defaultTaskOpenView })
+  }, [defaultTaskOpenView])
 
-  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime' | 'sync' | 'shortcuts'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime' | 'sync' | 'shortcuts' | 'tasks'>('general')
   const [permStatus, setPermStatus] = useState<string | null>(null)
 
   const { data: calendarEvents = [] } = useCalendarEvents()
@@ -305,6 +341,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { icon: Settings, id: 'general' as const, label: t('settings.tabs.general') },
+    { icon: ListTodo, id: 'tasks' as const, label: t('settings.tabs.tasks') },
     { icon: Clock, id: 'datetime' as const, label: t('settings.tabs.datetime') },
     { icon: Palette, id: 'theme' as const, label: t('settings.tabs.theme') },
     { icon: Cloud, id: 'sync' as const, label: t('settings.tabs.sync') },
@@ -511,45 +548,6 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* Priority mode */}
-            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                {t('settings.priority_mode')}
-              </h2>
-              <div className="space-y-2">
-                {[
-                  {
-                    description: t('settings.priority_mode.simple_desc'),
-                    label: t('settings.priority_mode.simple'),
-                    value: 'simple',
-                  },
-                  {
-                    description: t('settings.priority_mode.detailed_desc'),
-                    label: t('settings.priority_mode.detailed'),
-                    value: 'detailed',
-                  },
-                ].map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <input
-                      type="radio"
-                      name="priorityMode"
-                      value={option.value}
-                      checked={priorityMode === option.value}
-                      onChange={() => setPriorityMode(option.value as PriorityMode)}
-                      className="w-4 h-4 text-blue-500 mt-1"
-                    />
-                    <div>
-                      <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{option.description}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </section>
-
             {/* Notifications */}
             <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -648,6 +646,143 @@ export default function SettingsPage() {
                   <strong>Mindless</strong> - {t('app.name')}
                 </p>
                 <p className="text-sm">{t('settings.version')}: 1.0.0</p>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* Tasks Tab */}
+        {activeTab === 'tasks' && (
+          <div className="space-y-6 max-w-2xl">
+            {/* Default visible sections */}
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {t('settings.tasks.default_sections')}
+              </h2>
+              <div className="relative flex items-center gap-1">
+                {[
+                  { icon: QueueListIcon, key: 'steps', label: t('tasks.steps.title') },
+                  { icon: TableCellsIcon, key: 'subtasks', label: t('tasks.subtasks.title') },
+                  { icon: PaperClipIcon, key: 'attachments', label: t('tasks.attachments') },
+                  { icon: DocumentIcon, key: 'notes', label: t('media.linkedNotes') },
+                  { icon: IdentificationIcon, key: 'persons', label: t('notes.linked_persons') },
+                  { icon: FilmIcon, key: 'media', label: t('notes.linked_media') },
+                ].map(({ key, icon: Icon, label }) => (
+                  <button
+                    className={`relative group p-2 rounded-lg transition-colors ${
+                      defaultTaskSections[key as keyof DefaultTaskSections]
+                        ? 'bg-theme-100 dark:bg-theme-800 text-theme-600 dark:text-theme-100'
+                        : 'text-theme-700 dark:text-theme-500 hover:bg-theme-100 dark:hover:bg-theme-700'
+                    }`}
+                    key={key}
+                    onClick={() =>
+                      setDefaultTaskSections({
+                        ...defaultTaskSections,
+                        [key]: !defaultTaskSections[key as keyof DefaultTaskSections],
+                      })
+                    }
+                    type="button"
+                  >
+                    <Icon className="w-5 h-5" style={{ strokeWidth: '1.5px' }} />
+                    <span className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-theme-900 dark:bg-theme-100 text-white dark:text-theme-900 text-[10px] px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Default open view */}
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {t('settings.tasks.default_open')}
+              </h2>
+              <div className="space-y-2">
+                {([
+                  { label: t('settings.tasks.default_open.last'), value: 'last' },
+                  { label: t('settings.tasks.default_open.today'), value: 'today' },
+                  { label: t('settings.tasks.default_open.inbox'), value: 'inbox' },
+                ] as const).map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <input
+                      type="radio"
+                      name="defaultTaskOpenView"
+                      value={option.value}
+                      checked={defaultTaskOpenView === option.value}
+                      onChange={() => setDefaultTaskOpenView(option.value)}
+                      className="w-4 h-4 text-blue-500"
+                    />
+                    <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* Priority mode */}
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {t('settings.priority_mode')}
+              </h2>
+              <div className="space-y-2">
+                {[
+                  {
+                    description: t('settings.priority_mode.simple_desc'),
+                    label: t('settings.priority_mode.simple'),
+                    value: 'simple',
+                  },
+                  {
+                    description: t('settings.priority_mode.detailed_desc'),
+                    label: t('settings.priority_mode.detailed'),
+                    value: 'detailed',
+                  },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <input
+                      type="radio"
+                      name="priorityMode"
+                      value={option.value}
+                      checked={priorityMode === option.value}
+                      onChange={() => setPriorityMode(option.value as PriorityMode)}
+                      className="w-4 h-4 text-blue-500 mt-1"
+                    />
+                    <div>
+                      <div className="text-gray-900 dark:text-gray-100 font-medium">{option.label}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{option.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* Today reset hour */}
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                {t('settings.tasks.today_reset')}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {t('settings.tasks.today_reset_desc')}
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {([0, 6, 12, 18] as const).map((hour) => (
+                  <button
+                    key={hour}
+                    type="button"
+                    onClick={() => setTodayResetHour(hour)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      todayResetHour === hour
+                        ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {String(hour).padStart(2, '0')}:00
+                  </button>
+                ))}
               </div>
             </section>
           </div>

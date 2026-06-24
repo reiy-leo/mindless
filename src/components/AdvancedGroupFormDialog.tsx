@@ -303,7 +303,7 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
           <div>
             <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t('advanced_groups.filter_priority')}</label>
             <div className="flex gap-1.5">
-              {[0, 1, 2, 3].map((p) => (
+              {[0, 3, 6, 9].map((p) => (
                 <button key={p} type="button" onClick={() => togglePriority(p)}
                   className={`px-3 py-1 rounded-full text-xs transition-all ${
                     (filters.priorities || []).includes(p)
@@ -311,7 +311,7 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {t(`tasks.priority.${['none', 'low', 'medium', 'high'][p]}`)}
+                  {t(`tasks.priority.${{ 0: 'none', 3: 'low', 6: 'medium', 9: 'high' }[p]}`)}
                 </button>
               ))}
             </div>

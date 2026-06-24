@@ -12,6 +12,17 @@ export type TimeFormat = 'cn_natural' | 'cn_24h' | 'cn_12h' | 'en_12h' | '24h'
 export type DateFormat = 'relative' | 'yyyy_slash_mm_dd' | 'yyyy_dash_mm_dd' | 'mm_dd_yyyy' | 'mm_dd'
 export type TimezoneFormat = 'short_offset' | 'iana' | 'compact' | 'gmt' | 'utc_colon' | 'iso_colon' | 'cn_zone'
 export type ViewModeSimple = 'grid' | 'list'
+export type DefaultTaskOpenView = 'last' | 'today' | 'inbox'
+export type TodayResetHour = 0 | 6 | 12 | 18
+
+export interface DefaultTaskSections {
+  attachments: boolean
+  media: boolean
+  notes: boolean
+  persons: boolean
+  steps: boolean
+  subtasks: boolean
+}
 
 interface SmartGroupVisibility {
   recent7days: boolean
@@ -45,6 +56,8 @@ interface AppState {
   addAdvancedGroup: (group: AdvancedGroup) => void
   advancedGroups: AdvancedGroup[]
   dateFormat: DateFormat
+  defaultTaskOpenView: DefaultTaskOpenView
+  defaultTaskSections: DefaultTaskSections
   deleteAdvancedGroup: (id: string) => void
   detailPanelWidth: number
   fontSize: FontSize
@@ -62,6 +75,8 @@ interface AppState {
   selectedHabitGroupId: string
   selectedTimezone: string
   setDateFormat: (fmt: DateFormat) => void
+  setDefaultTaskOpenView: (view: DefaultTaskOpenView) => void
+  setDefaultTaskSections: (sections: DefaultTaskSections) => void
   setDetailPanelWidth: (width: number | ((prev: number) => number)) => void
   setFontSize: (size: FontSize) => void
   setGroupsPanelWidth: (width: number | ((prev: number) => number)) => void
@@ -84,6 +99,7 @@ interface AppState {
   setTaskGroupBy: (by: GroupBy) => void
   setTaskSortBy: (by: SortBy) => void
   setTaskSortOrder: (order: SortOrder) => void
+  setTodayResetHour: (hour: TodayResetHour) => void
 
   setTheme: (theme: Theme) => void
   setThemeColor: (color: ThemeColor) => void
@@ -102,6 +118,7 @@ interface AppState {
   themeColor: ThemeColor
   timeFormat: TimeFormat
   timezoneFormat: TimezoneFormat
+  todayResetHour: TodayResetHour
   toggleSidebar: () => void
   updateAdvancedGroup: (group: AdvancedGroup) => void
   weekStartDay: number
@@ -113,6 +130,8 @@ export const useAppStore = create<AppState>()(
       addAdvancedGroup: (group) => set((state) => ({ advancedGroups: [...state.advancedGroups, group] })),
       advancedGroups: [],
       dateFormat: 'relative',
+      defaultTaskOpenView: 'last',
+      defaultTaskSections: { steps: true, subtasks: true, attachments: true, notes: true, persons: true, media: true },
       deleteAdvancedGroup: (id) =>
         set((state) => ({ advancedGroups: state.advancedGroups.filter((g) => g.id !== id) })),
       detailPanelWidth: 400,
@@ -131,6 +150,8 @@ export const useAppStore = create<AppState>()(
       selectedHabitGroupId: 'all',
       selectedTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       setDateFormat: (dateFormat) => set({ dateFormat }),
+      setDefaultTaskOpenView: (defaultTaskOpenView) => set({ defaultTaskOpenView }),
+      setDefaultTaskSections: (defaultTaskSections) => set({ defaultTaskSections }),
       setDetailPanelWidth: (width) =>
         set((state) => ({
           detailPanelWidth: typeof width === 'function' ? width(state.detailPanelWidth) : width,
@@ -179,6 +200,7 @@ export const useAppStore = create<AppState>()(
       setThemeColor: (themeColor) => set({ themeColor }),
       setTimeFormat: (timeFormat) => set({ timeFormat }),
       setTimezoneFormat: (timezoneFormat) => set({ timezoneFormat }),
+      setTodayResetHour: (todayResetHour) => set({ todayResetHour }),
       setWeekStartDay: (weekStartDay) => set({ weekStartDay }),
       showLunar: true,
       showTimezone: true,
@@ -192,6 +214,7 @@ export const useAppStore = create<AppState>()(
       themeColor: '#6B8E23',
       timeFormat: '24h',
       timezoneFormat: 'short_offset',
+      todayResetHour: 0,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       updateAdvancedGroup: (group) =>
         set((state) => ({
@@ -204,6 +227,8 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         advancedGroups: state.advancedGroups,
         dateFormat: state.dateFormat,
+        defaultTaskOpenView: state.defaultTaskOpenView,
+        defaultTaskSections: state.defaultTaskSections,
         detailPanelWidth: state.detailPanelWidth,
         fontSize: state.fontSize,
         groupsPanelWidth: state.groupsPanelWidth,
@@ -228,6 +253,7 @@ export const useAppStore = create<AppState>()(
         themeColor: state.themeColor,
         timeFormat: state.timeFormat,
         timezoneFormat: state.timezoneFormat,
+        todayResetHour: state.todayResetHour,
         weekStartDay: state.weekStartDay,
       }),
     },

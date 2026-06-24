@@ -572,10 +572,20 @@
   "settings": {
     "tabs": {
       "general": "通用",
+      "tasks": "任务",
       "theme": "主题",
       "datetime": "日期时间",
       "sync": "同步",
       "shortcuts": "快捷键"
+    },
+    "tasks": {
+      "default_sections": "默认展示的功能",
+      "default_open": "默认打开",
+      "default_open.last": "最后一次打开的视图",
+      "default_open.today": "今天",
+      "default_open.inbox": "收件箱",
+      "today_reset": "添加到今天",
+      "today_reset_desc": "每天重置「今天」列表的时间"
     },
     "shortcuts": {
       "title": "键盘快捷键",

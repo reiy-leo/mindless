@@ -287,14 +287,12 @@ function TaskDetailPanel({
   }, [])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [previewImage, setPreviewImage] = useState<string | null>(null)
-  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({
-    attachments: true,
-    media: true,
-    notes: true,
-    persons: true,
-    steps: true,
-    subtasks: true,
-  })
+  const defaultTaskSections = useAppStore((s) => s.defaultTaskSections)
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({ ...defaultTaskSections })
+
+  useEffect(() => {
+    setVisibleSections({ ...defaultTaskSections })
+  }, [defaultTaskSections])
   const [attachContextMenu, setAttachContextMenu] = useState<{ x: number; y: number; att: Attachment } | null>(null)
   const attachContextMenuRef = useRef<HTMLDivElement>(null)
   const [attachContextMenuFlipY, setAttachContextMenuFlipY] = useState(false)
@@ -717,7 +715,7 @@ function TaskDetailPanel({
                 className={`relative group p-1 rounded transition-colors ${
                   visibleSections[key]
                     ? 'bg-theme-100 dark:bg-theme-800 text-theme-600 dark:text-theme-100'
-                    : 'text-theme-700 dark:text-theme-500 hover:bg-theme-100 dark:hover:bg-theme-700'
+                    : 'text-theme-200 dark:text-theme-700 hover:bg-theme-100 dark:hover:bg-theme-700'
                 }`}
                 key={key}
                 onClick={() => toggleSection(key)}
@@ -772,7 +770,7 @@ function TaskDetailPanel({
             </button>
             {showPriorityPicker && (
               <div className="absolute right-0 top-full mt-1 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 z-50 py-1 w-32">
-                {[0, 1, 2, 3].map((p) => (
+                {[0, 3, 6, 9].map((p) => (
                   <button
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                     key={p}
@@ -787,7 +785,7 @@ function TaskDetailPanel({
                       style={{ backgroundColor: PRIORITY_COLORS[p] }}
                     />
                     <span className="text-theme-700 dark:text-theme-300">
-                      {t(`tasks.priority.${['none', 'low', 'medium', 'high'][p]}`)}
+                      {t(`tasks.priority.${{ 0: 'none', 3: 'low', 6: 'medium', 9: 'high' }[p]}`)}
                     </span>
                   </button>
                 ))}
@@ -1359,6 +1357,22 @@ export default function TasksPage() {
   const isLoadingSettings = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+
+  // Apply defaultTaskOpenView on mount
+  const defaultAppliedRef = useRef(false)
+  useEffect(() => {
+    if (defaultAppliedRef.current) return
+    const view = useAppStore.getState().defaultTaskOpenView
+    if (view === 'today') {
+      defaultAppliedRef.current = true
+      setSelectedListId('smart:today')
+    } else if (view === 'inbox') {
+      defaultAppliedRef.current = true
+      setSelectedListId('inbox')
+    } else {
+      defaultAppliedRef.current = true
+    }
+  }, [selectedListId])
 
   useEffect(() => {
     const el = containerRef.current
@@ -3411,9 +3425,9 @@ export default function TasksPage() {
                 if (taskMenuPanel === 'priority') {
                   const priorities = [
                     { color: '#9CA3AF', label: t('tasks.priority.none'), value: 0 },
-                    { color: '#3B82F6', label: t('tasks.priority.low'), value: 1 },
-                    { color: '#F59E0B', label: t('tasks.priority.medium'), value: 2 },
-                    { color: '#EF4444', label: t('tasks.priority.high'), value: 3 },
+                    { color: '#3B82F6', label: t('tasks.priority.low'), value: 3 },
+                    { color: '#F59E0B', label: t('tasks.priority.medium'), value: 6 },
+                    { color: '#EF4444', label: t('tasks.priority.high'), value: 9 },
                   ]
                   return (
                     <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[180px] ml-0.5">

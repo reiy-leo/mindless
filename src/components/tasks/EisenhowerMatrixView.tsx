@@ -22,7 +22,7 @@ const URGENCY_DAYS = 3;
 
 function classifyTask(task: Task, todayStr: string): Quadrant {
   const today = parseLocalDate(todayStr);
-  const isImportant = task.priority >= 2; // medium or high
+  const isImportant = task.priority >= 6; // medium or high
 
   let isUrgent = false;
   if (task.dueDate) {
@@ -161,20 +161,20 @@ export default function EisenhowerMatrixView({
 
     switch (targetQuadrant) {
       case 'q1': // Urgent & Important
-        updates.priority = 3 as Priority; // high
+        updates.priority = 9 as Priority; // high
         if (!task.dueDate || parseLocalDate(task.dueDate) > addDays(todayStr, URGENCY_DAYS)) {
           updates.dueDate = todayStr;
         }
         break;
       case 'q2': // Important, Not Urgent
-        if (task.priority < 2) updates.priority = 2 as Priority; // at least medium
+        if (task.priority < 6) updates.priority = 6 as Priority; // at least medium
         if (task.dueDate && parseLocalDate(task.dueDate) <= addDays(todayStr, URGENCY_DAYS)) {
           // Move due date out to make it not urgent
           updates.dueDate = formatDate(addDays(todayStr, URGENCY_DAYS + 1));
         }
         break;
       case 'q3': // Urgent, Not Important
-        updates.priority = 1 as Priority; // low
+        updates.priority = 3 as Priority; // low
         if (!task.dueDate || parseLocalDate(task.dueDate) > addDays(todayStr, URGENCY_DAYS)) {
           updates.dueDate = todayStr;
         }
@@ -302,7 +302,7 @@ export default function EisenhowerMatrixView({
                               <span
                                 className="w-2 h-2 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: priorityColor }}
-                                title={t(`tasks.priority.${['none', 'low', 'medium', 'high'][task.priority]}`)}
+                                title={t(`tasks.priority.${({ 0: 'none', 3: 'low', 6: 'medium', 9: 'high' } as Record<number, string>)[task.priority] || 'none'}`)}
                               />
                             )}
                             {taskTags.slice(0, 2).map((tag) => (

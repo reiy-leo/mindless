@@ -169,7 +169,10 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             ('default_list_id', 'inbox'),
             ('priority_mode', 'simple'),
             ('task_sort_by', 'due_date'),
-            ('task_group_by', 'none');
+            ('task_group_by', 'none'),
+            ('default_task_sections', '{"steps":true,"subtasks":true,"attachments":true,"notes":true,"persons":true,"media":true}'),
+            ('default_task_open_view', 'last'),
+            ('today_reset_hour', '0');
 
         CREATE TABLE IF NOT EXISTS calendar_events (
             id TEXT PRIMARY KEY,
@@ -455,6 +458,11 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
 
             // Media tables
             migrate_media_tables(&conn)?;
+
+            // Migrate priority values: 1→3, 2→6, 3→9 (must be done in descending order to avoid conflicts)
+            let _ = conn.execute_batch("UPDATE tasks SET priority = 9 WHERE priority = 3;");
+            let _ = conn.execute_batch("UPDATE tasks SET priority = 6 WHERE priority = 2;");
+            let _ = conn.execute_batch("UPDATE tasks SET priority = 3 WHERE priority = 1;");
 
             println!("Migrations applied successfully");
         }

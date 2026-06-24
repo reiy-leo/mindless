@@ -30,6 +30,7 @@ import TagsPage from './pages/TagsPage'
 import TasksPage from './pages/TasksPage'
 import { ensurePermission, startNotificationService, stopNotificationService } from './services/notificationService'
 import { type DateFormat, type FontSize, type TimeFormat, type TimezoneFormat, useAppStore } from './stores/useAppStore'
+import { useViewStore } from './stores/useViewStore'
 import type { Language, PriorityMode, Theme } from './types'
 
 function ThemeManager() {
@@ -371,6 +372,17 @@ function SettingsSync() {
           break
         case 'timezoneFormat':
           store.setTimezoneFormat(value as any)
+          break
+        case 'defaultTaskSections':
+          store.setDefaultTaskSections(value as any)
+          break
+        case 'defaultTaskOpenView':
+          store.setDefaultTaskOpenView(value as any)
+          if (value === 'today') {
+            useViewStore.getState().setSelectedListId('smart:today')
+          } else if (value === 'inbox') {
+            useViewStore.getState().setSelectedListId('inbox')
+          }
           break
       }
     })

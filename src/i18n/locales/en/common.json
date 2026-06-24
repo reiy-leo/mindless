@@ -572,10 +572,20 @@
   "settings": {
     "tabs": {
       "general": "General",
+      "tasks": "Tasks",
       "theme": "Theme",
       "datetime": "Date & Time",
       "sync": "Sync",
       "shortcuts": "Shortcuts"
+    },
+    "tasks": {
+      "default_sections": "Default Visible Sections",
+      "default_open": "Default Open View",
+      "default_open.last": "Last Opened View",
+      "default_open.today": "Today",
+      "default_open.inbox": "Inbox",
+      "today_reset": "Add to Today",
+      "today_reset_desc": "Daily reset time for the Today list"
     },
     "shortcuts": {
       "title": "Keyboard Shortcuts",

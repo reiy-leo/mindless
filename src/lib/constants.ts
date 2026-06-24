@@ -1,9 +1,9 @@
 // Priority constants
 export const PRIORITY = {
   NONE: 0,    // 无优先级
-  LOW: 1,     // 低优先级
-  MEDIUM: 2,  // 中等优先级
-  HIGH: 3,    // 高优先级
+  LOW: 3,     // 低优先级
+  MEDIUM: 6,  // 中等优先级
+  HIGH: 9,    // 高优先级
 } as const;
 
 // Priority colors
