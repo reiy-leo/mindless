@@ -16,7 +16,7 @@ import ListFormDialogPage from './pages/dialogs/ListFormDialogPage'
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage'
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage'
 import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
-import { useMenuEvents, useMenuLanguageSync } from './hooks/useMenuEvents'
+import { useMenuEvents, useMenuLanguageSync, syncMenuLanguage } from './hooks/useMenuEvents'
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage'
 import HabitsPage from './pages/HabitsPage'
 import HomePage from './pages/HomePage'
@@ -343,7 +343,7 @@ function SettingsSync() {
           break
         case 'language':
           store.setLanguage(value as Language)
-          i18n.changeLanguage(value as string)
+          i18n.changeLanguage(value as string).then(() => syncMenuLanguage())
           break
         case 'fontSize':
           store.setFontSize(value as FontSize)

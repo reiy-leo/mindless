@@ -108,6 +108,11 @@ export function useMenuEvents() {
   }, [navigate]);
 }
 
+export function syncMenuLanguage() {
+  const labels = buildMenuLabels();
+  api.updateMenuLanguage(labels).catch(console.error);
+}
+
 function buildMenuLabels(): api.MenuLabels {
   const t = (key: string, opts?: Record<string, unknown>): string => i18n.t(key, opts as any) as string;
   return {
@@ -152,27 +157,15 @@ function buildMenuLabels(): api.MenuLabels {
 
 export function useMenuLanguageSync() {
   useEffect(() => {
-    const sync = () => {
-      api.updateMenuLanguage(buildMenuLabels()).catch(console.error);
-    };
-
     // Initial sync
-    sync();
+    syncMenuLanguage();
 
-    // Listen for language changes from the i18n instance directly
-    i18n.on('languageChanged', sync);
-
-    // Also listen for the settings:changed broadcast (cross-window)
-    const unlisten = listen<{ key: string; value: unknown }>('settings:changed', (event) => {
-      if (event.payload.key === 'language') {
-        // Small delay to let i18n process the language change first
-        setTimeout(sync, 50);
-      }
-    });
+    // Listen for language changes from the i18n instance
+    const onLangChanged = () => syncMenuLanguage();
+    i18n.on('languageChanged', onLangChanged);
 
     return () => {
-      i18n.off('languageChanged', sync);
-      unlisten.then((fn) => fn());
+      i18n.off('languageChanged', onLangChanged);
     };
   }, []);
 }

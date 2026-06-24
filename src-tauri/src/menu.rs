@@ -232,6 +232,7 @@ fn setup_menu_handler(app: &AppHandle) {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MenuLabels {
     pub app_menu: String,
     pub about: String,
