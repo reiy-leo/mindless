@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
@@ -39,64 +40,54 @@ export default function Sidebar() {
   const { selectedListId, setSelectedListId } = useViewStore()
   const sidebarMode = useAppStore((s) => s.sidebarMode)
 
-  const handleOpenTagManagement = async () => {
-    console.log('handleOpenTagManagement called')
+  const tagWinRef = useRef<WebviewWindow | null>(null)
+  const attachmentWinRef = useRef<WebviewWindow | null>(null)
+  const settingsWinRef = useRef<WebviewWindow | null>(null)
 
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('tag-management')
-      console.log('existingWindow:', existingWindow)
-      if (existingWindow) {
-        await existingWindow.setFocus()
+  const handleOpenTagManagement = async () => {
+    if (tagWinRef.current) {
+      try {
+        await tagWinRef.current.setFocus()
         return
+      } catch {
+        tagWinRef.current = null
       }
-    } catch (err) {
-      console.log('getByLabel error (expected if window does not exist):', err)
     }
 
-    console.log('Creating new tag-management window')
-    const mainWindow = getCurrentWindow()
-    const win = new WebviewWindow('tag-management', {
-      alwaysOnTop: true,
-      closable: false,
-      decorations: true,
-      height: 640,
-      hiddenTitle: true,
-      maximizable: false,
-      minimizable: false,
-      parent: mainWindow,
-      resizable: false,
-      title: '',
-      // transparent: true,
-      titleBarStyle: 'overlay',
-      url: '/dialog/tag-management',
-      width: 640,
-    })
-    win.once('tauri://error', (e) => {
-      console.error('Failed to create tag-management window:', e)
-    })
-
-    win.once('tauri://focus', async () => {
-      await win.setShadow(true)
-      console.log('Tag management window focused')
-    })
-
-    win.once('tauri://error', (e) => {
-      console.error('Failed to create tag-picker window:', e)
-    })
-
-    win.once('tauri://created', () => {
-      console.log('Tag picker window created successfully')
-    })
+    try {
+      const mainWindow = getCurrentWindow()
+      const win = new WebviewWindow('tag-management', {
+        alwaysOnTop: true,
+        closable: false,
+        decorations: true,
+        height: 640,
+        hiddenTitle: true,
+        maximizable: false,
+        minimizable: false,
+        parent: mainWindow,
+        resizable: false,
+        title: '',
+        titleBarStyle: 'overlay',
+        url: '/dialog/tag-management',
+        width: 640,
+      })
+      tagWinRef.current = win
+      win.once('tauri://error', () => { tagWinRef.current = null })
+      win.once('tauri://destroyed', () => { tagWinRef.current = null })
+    } catch (err) {
+      console.error('Error creating tag-management window:', err)
+    }
   }
 
   const handleOpenAttachmentManagement = async () => {
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('attachment-management')
-      if (existingWindow) {
-        await existingWindow.setFocus()
+    if (attachmentWinRef.current) {
+      try {
+        await attachmentWinRef.current.setFocus()
         return
+      } catch {
+        attachmentWinRef.current = null
       }
-    } catch {}
+    }
 
     try {
       const mainWindow = getCurrentWindow()
@@ -115,25 +106,23 @@ export default function Sidebar() {
         url: '/dialog/attachment-management',
         width: 720,
       })
-      win.once('tauri://error', (e) => {
-        console.error('Failed to create attachment-management window:', e)
-      })
-      win.once('tauri://focus', async () => {
-        await win.setShadow(true)
-      })
+      attachmentWinRef.current = win
+      win.once('tauri://error', () => { attachmentWinRef.current = null })
+      win.once('tauri://destroyed', () => { attachmentWinRef.current = null })
     } catch (err) {
       console.error('Error creating attachment-management window:', err)
     }
   }
 
   const handleOpenSettings = async () => {
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('settings')
-      if (existingWindow) {
-        await existingWindow.setFocus()
+    if (settingsWinRef.current) {
+      try {
+        await settingsWinRef.current.setFocus()
         return
+      } catch {
+        settingsWinRef.current = null
       }
-    } catch {}
+    }
 
     try {
       const mainWindow = getCurrentWindow()
@@ -166,11 +155,10 @@ export default function Sidebar() {
         width: winWidth,
         x,
         y,
-        // shadow: true
       })
-      win.once('tauri://error', (e) => {
-        console.error('Failed to create settings window:', e)
-      })
+      settingsWinRef.current = win
+      win.once('tauri://error', () => { settingsWinRef.current = null })
+      win.once('tauri://destroyed', () => { settingsWinRef.current = null })
     } catch (err) {
       console.error('Error creating settings window:', err)
     }
