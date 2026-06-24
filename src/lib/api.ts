@@ -1033,6 +1033,12 @@ export async function deleteAttachmentLocalCache(id: string): Promise<void> {
 
 export interface MenuLabels {
   appMenu: string;
+  about: string;
+  preferences: string;
+  checkUpdate: string;
+  services: string;
+  hideApp: string;
+  hideOthers: string;
   quit: string;
   fileMenu: string;
   newTask: string;

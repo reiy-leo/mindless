@@ -914,6 +914,12 @@
     "bring_all_front": "すべてのウィンドウを前面に",
     "fullscreen": "フルスクリーン",
     "help": "ヘルプ",
-    "help_center": "ヘルプセンター"
+    "help_center": "ヘルプセンター",
+    "about": "{{appName}}について",
+    "preferences": "環境設定…",
+    "check_update": "アップデートを確認…",
+    "services": "サービス",
+    "hide_app": "{{appName}}を隠す",
+    "hide_others": "ほかを隠す"
   }
 }

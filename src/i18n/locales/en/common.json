@@ -915,6 +915,12 @@
     "bring_all_front": "Bring All to Front",
     "fullscreen": "Enter Full Screen",
     "help": "Help",
-    "help_center": "Help Center"
+    "help_center": "Help Center",
+    "about": "About {{appName}}",
+    "preferences": "Preferences…",
+    "check_update": "Check for Updates…",
+    "services": "Services",
+    "hide_app": "Hide {{appName}}",
+    "hide_others": "Hide Others"
   }
 }

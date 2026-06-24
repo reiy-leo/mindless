@@ -78,9 +78,11 @@ export function useMenuEvents() {
           case 'main_window':
             getCurrentWindow().setFocus().catch(console.error);
             break;
-          case 'bring_all_front':
-            // macOS: no direct API, focus main window
-            getCurrentWindow().setFocus().catch(console.error);
+          case 'preferences':
+            openDialog('settings', '/dialog/settings', 800, 600);
+            break;
+          case 'check_update':
+            // TODO: implement update check
             break;
           case 'help_center':
             window.dispatchEvent(new CustomEvent('mindless:help'));
@@ -114,6 +116,12 @@ export function useMenuLanguageSync() {
     const updateMenu = () => {
       const labels: api.MenuLabels = {
         appMenu: t('app.name'),
+        about: t('menu.about', { appName: t('app.name') }),
+        preferences: t('menu.preferences'),
+        checkUpdate: t('menu.check_update'),
+        services: t('menu.services'),
+        hideApp: t('menu.hide_app', { appName: t('app.name') }),
+        hideOthers: t('menu.hide_others'),
         quit: t('menu.quit', { appName: t('app.name') }),
         fileMenu: t('menu.file'),
         newTask: t('menu.new_task'),

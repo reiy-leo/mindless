@@ -9,8 +9,29 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
     let menu = Menu::new(app).map_err(|e| e.to_string())?;
 
     // --- App menu ---
+    let about = PredefinedMenuItem::about(app, Some(&l.about), None).map_err(|e| e.to_string())?;
+    let settings = MenuItemBuilder::with_id("app:preferences", &l.preferences)
+        .accelerator("CmdOrCtrl+,")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let check_update = MenuItemBuilder::with_id("app:check_update", &l.check_update)
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let services = PredefinedMenuItem::services(app, Some(&l.services)).map_err(|e| e.to_string())?;
+    let hide = PredefinedMenuItem::hide(app, Some(&l.hide_app)).map_err(|e| e.to_string())?;
+    let hide_others = PredefinedMenuItem::hide_others(app, Some(&l.hide_others)).map_err(|e| e.to_string())?;
     let quit = PredefinedMenuItem::quit(app, Some(&l.quit)).map_err(|e| e.to_string())?;
     let app_submenu = SubmenuBuilder::new(app, &l.app_menu)
+        .item(&about)
+        .separator()
+        .item(&settings)
+        .item(&check_update)
+        .separator()
+        .item(&services)
+        .separator()
+        .item(&hide)
+        .item(&hide_others)
+        .separator()
         .item(&quit)
         .build()
         .map_err(|e| e.to_string())?;
@@ -132,9 +153,7 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
     let main_window = MenuItemBuilder::with_id("window:main_window", &l.main_window)
         .build(app)
         .map_err(|e| e.to_string())?;
-    let bring_all_front = MenuItemBuilder::with_id("window:bring_all_front", &l.bring_all_front)
-        .build(app)
-        .map_err(|e| e.to_string())?;
+    let bring_all_front = PredefinedMenuItem::bring_all_to_front(app, Some(&l.bring_all_front)).map_err(|e| e.to_string())?;
 
     let window_submenu = SubmenuBuilder::new(app, &l.window_menu)
         .item(&minimize)
@@ -181,6 +200,9 @@ fn setup_menu_handler(app: &AppHandle) {
     app.on_menu_event(move |_app, event| {
         let id = event.id().as_ref();
         match id {
+            // App
+            "app:check_update" => { let _ = app_handle.emit("menu:navigate", "check_update"); }
+            "app:preferences" => { let _ = app_handle.emit("menu:navigate", "preferences"); }
             // File
             "file:new_task" => { let _ = app_handle.emit("menu:navigate", "new_task"); }
             "file:new_note" => { let _ = app_handle.emit("menu:navigate", "new_note"); }
@@ -202,7 +224,6 @@ fn setup_menu_handler(app: &AppHandle) {
             "nav:manage_attachments" => { let _ = app_handle.emit("menu:navigate", "manage_attachments"); }
             // Window
             "window:main_window" => { let _ = app_handle.emit("menu:navigate", "main_window"); }
-            "window:bring_all_front" => { let _ = app_handle.emit("menu:navigate", "bring_all_front"); }
             // Help
             "help:center" => { let _ = app_handle.emit("menu:navigate", "help_center"); }
             _ => {}
@@ -213,6 +234,12 @@ fn setup_menu_handler(app: &AppHandle) {
 #[derive(serde::Deserialize)]
 pub struct MenuLabels {
     pub app_menu: String,
+    pub about: String,
+    pub preferences: String,
+    pub check_update: String,
+    pub services: String,
+    pub hide_app: String,
+    pub hide_others: String,
     pub quit: String,
     pub file_menu: String,
     pub new_task: String,
@@ -248,6 +275,12 @@ impl MenuLabels {
     pub fn default_zh() -> Self {
         Self {
             app_menu: "Mindless".into(),
+            about: "关于 Mindless".into(),
+            preferences: "偏好设置…".into(),
+            check_update: "检查更新…".into(),
+            services: "服务".into(),
+            hide_app: "隐藏 Mindless".into(),
+            hide_others: "隐藏其他".into(),
             quit: "退出 Mindless".into(),
             file_menu: "文件".into(),
             new_task: "新建任务".into(),

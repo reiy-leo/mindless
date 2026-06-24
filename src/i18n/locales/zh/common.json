@@ -915,6 +915,12 @@
     "bring_all_front": "前置全部窗口",
     "fullscreen": "进入全屏",
     "help": "帮助",
-    "help_center": "帮助中心"
+    "help_center": "帮助中心",
+    "about": "关于 {{appName}}",
+    "preferences": "偏好设置…",
+    "check_update": "检查更新…",
+    "services": "服务",
+    "hide_app": "隐藏 {{appName}}",
+    "hide_others": "隐藏其他"
   }
 }
