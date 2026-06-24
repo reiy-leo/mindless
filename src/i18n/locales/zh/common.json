@@ -903,6 +903,18 @@
     "switch_notes": "切换到「笔记」",
     "manage_tags": "管理「标签」",
     "manage_attachments": "管理「附件」",
-    "edit": "编辑"
+    "edit": "编辑",
+    "file": "文件",
+    "new_task": "新建任务",
+    "new_note": "新建笔记",
+    "global_search": "全局搜索",
+    "window": "窗口",
+    "minimize": "最小化",
+    "close_window": "关闭窗口",
+    "main_window": "主窗口",
+    "bring_all_front": "前置全部窗口",
+    "fullscreen": "进入全屏",
+    "help": "帮助",
+    "help_center": "帮助中心"
   }
 }

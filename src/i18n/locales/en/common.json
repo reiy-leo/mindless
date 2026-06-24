@@ -903,6 +903,18 @@
     "switch_notes": "Switch to Notes",
     "manage_tags": "Manage Tags",
     "manage_attachments": "Manage Attachments",
-    "edit": "Edit"
+    "edit": "Edit",
+    "file": "File",
+    "new_task": "New Task",
+    "new_note": "New Note",
+    "global_search": "Global Search",
+    "window": "Window",
+    "minimize": "Minimize",
+    "close_window": "Close Window",
+    "main_window": "Main Window",
+    "bring_all_front": "Bring All to Front",
+    "fullscreen": "Enter Full Screen",
+    "help": "Help",
+    "help_center": "Help Center"
   }
 }

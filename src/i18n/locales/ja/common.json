@@ -902,6 +902,18 @@
     "switch_notes": "ノートに切替",
     "manage_tags": "タグを管理",
     "manage_attachments": "添付ファイルを管理",
-    "edit": "編集"
+    "edit": "編集",
+    "file": "ファイル",
+    "new_task": "新しいタスク",
+    "new_note": "新しいノート",
+    "global_search": "グローバル検索",
+    "window": "ウィンドウ",
+    "minimize": "最小化",
+    "close_window": "ウィンドウを閉じる",
+    "main_window": "メインウィンドウ",
+    "bring_all_front": "すべてのウィンドウを前面に",
+    "fullscreen": "フルスクリーン",
+    "help": "ヘルプ",
+    "help_center": "ヘルプセンター"
   }
 }

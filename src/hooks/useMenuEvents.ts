@@ -64,6 +64,27 @@ export function useMenuEvents() {
           case 'manage_attachments':
             openDialog('attachment-management', '/dialog/attachment-management', 720, 560);
             break;
+          case 'new_task':
+            navigate('/tasks');
+            setTimeout(() => window.dispatchEvent(new CustomEvent('mindless:new-task')), 100);
+            break;
+          case 'new_note':
+            navigate('/notes');
+            setTimeout(() => window.dispatchEvent(new CustomEvent('mindless:new-note')), 100);
+            break;
+          case 'global_search':
+            window.dispatchEvent(new CustomEvent('mindless:global-search'));
+            break;
+          case 'main_window':
+            getCurrentWindow().setFocus().catch(console.error);
+            break;
+          case 'bring_all_front':
+            // macOS: no direct API, focus main window
+            getCurrentWindow().setFocus().catch(console.error);
+            break;
+          case 'help_center':
+            window.dispatchEvent(new CustomEvent('mindless:help'));
+            break;
         }
       })
     );
@@ -94,6 +115,10 @@ export function useMenuLanguageSync() {
       const labels: api.MenuLabels = {
         appMenu: t('app.name'),
         quit: t('menu.quit', { appName: t('app.name') }),
+        fileMenu: t('menu.file'),
+        newTask: t('menu.new_task'),
+        newNote: t('menu.new_note'),
+        globalSearch: t('menu.global_search'),
         tasksMenu: t('menu.tasks'),
         priorityMenu: t('menu.set_priority'),
         priorityTraditional: t('menu.priority_traditional'),
@@ -110,6 +135,14 @@ export function useMenuLanguageSync() {
         manageTags: t('menu.manage_tags'),
         manageAttachments: t('menu.manage_attachments'),
         editMenu: t('menu.edit'),
+        windowMenu: t('menu.window'),
+        minimize: t('menu.minimize'),
+        closeWindow: t('menu.close_window'),
+        mainWindow: t('menu.main_window'),
+        bringAllFront: t('menu.bring_all_front'),
+        fullscreen: t('menu.fullscreen'),
+        helpMenu: t('menu.help'),
+        helpCenter: t('menu.help_center'),
       };
       api.updateMenuLanguage(labels).catch(console.error);
     };

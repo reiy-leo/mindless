@@ -8,6 +8,35 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
 
     let menu = Menu::new(app).map_err(|e| e.to_string())?;
 
+    // --- App menu ---
+    let quit = PredefinedMenuItem::quit(app, Some(&l.quit)).map_err(|e| e.to_string())?;
+    let app_submenu = SubmenuBuilder::new(app, &l.app_menu)
+        .item(&quit)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // --- File menu ---
+    let new_task = MenuItemBuilder::with_id("file:new_task", &l.new_task)
+        .accelerator("CmdOrCtrl+N")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let new_note = MenuItemBuilder::with_id("file:new_note", &l.new_note)
+        .accelerator("CmdOrCtrl+Shift+N")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let global_search = MenuItemBuilder::with_id("file:global_search", &l.global_search)
+        .accelerator("CmdOrCtrl+Shift+F")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+
+    let file_submenu = SubmenuBuilder::new(app, &l.file_menu)
+        .item(&new_task)
+        .item(&new_note)
+        .separator()
+        .item(&global_search)
+        .build()
+        .map_err(|e| e.to_string())?;
+
     // --- Tasks submenu ---
     let priority_traditional = MenuItemBuilder::with_id("priority:3", &l.priority_traditional)
         .accelerator("CmdOrCtrl+Shift+1")
@@ -96,17 +125,46 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .build()
         .map_err(|e| e.to_string())?;
 
-    // --- App menu ---
-    let quit = PredefinedMenuItem::quit(app, Some(&l.quit)).map_err(|e| e.to_string())?;
-    let app_submenu = SubmenuBuilder::new(app, &l.app_menu)
-        .item(&quit)
+    // --- Window menu ---
+    let minimize = PredefinedMenuItem::minimize(app, Some(&l.minimize)).map_err(|e| e.to_string())?;
+    let close_window = PredefinedMenuItem::close_window(app, Some(&l.close_window)).map_err(|e| e.to_string())?;
+    let fullscreen = PredefinedMenuItem::fullscreen(app, Some(&l.fullscreen)).map_err(|e| e.to_string())?;
+    let main_window = MenuItemBuilder::with_id("window:main_window", &l.main_window)
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let bring_all_front = MenuItemBuilder::with_id("window:bring_all_front", &l.bring_all_front)
+        .build(app)
+        .map_err(|e| e.to_string())?;
+
+    let window_submenu = SubmenuBuilder::new(app, &l.window_menu)
+        .item(&minimize)
+        .item(&close_window)
+        .separator()
+        .item(&main_window)
+        .item(&bring_all_front)
+        .separator()
+        .item(&fullscreen)
         .build()
         .map_err(|e| e.to_string())?;
 
+    // --- Help menu ---
+    let help_center = MenuItemBuilder::with_id("help:center", &l.help_center)
+        .build(app)
+        .map_err(|e| e.to_string())?;
+
+    let help_submenu = SubmenuBuilder::new(app, &l.help_menu)
+        .item(&help_center)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // --- Assemble menu in macOS order ---
     menu.prepend(&app_submenu).map_err(|e| e.to_string())?;
+    menu.append(&file_submenu).map_err(|e| e.to_string())?;
     menu.append(&tasks_submenu).map_err(|e| e.to_string())?;
     menu.append(&nav_submenu).map_err(|e| e.to_string())?;
     menu.append(&edit_menu).map_err(|e| e.to_string())?;
+    menu.append(&window_submenu).map_err(|e| e.to_string())?;
+    menu.append(&help_submenu).map_err(|e| e.to_string())?;
 
     Ok(menu)
 }
@@ -123,18 +181,30 @@ fn setup_menu_handler(app: &AppHandle) {
     app.on_menu_event(move |_app, event| {
         let id = event.id().as_ref();
         match id {
+            // File
+            "file:new_task" => { let _ = app_handle.emit("menu:navigate", "new_task"); }
+            "file:new_note" => { let _ = app_handle.emit("menu:navigate", "new_note"); }
+            "file:global_search" => { let _ = app_handle.emit("menu:navigate", "global_search"); }
+            // Task priority
             "priority:3" => { let _ = app_handle.emit("menu:priority", 3); }
             "priority:9" => { let _ = app_handle.emit("menu:priority", 9); }
+            // Task actions
             "task:set_date" => { let _ = app_handle.emit("menu:task_action", "set_date"); }
             "task:mark_completed" => { let _ = app_handle.emit("menu:task_action", "mark_completed"); }
             "task:mark_closed" => { let _ = app_handle.emit("menu:task_action", "mark_closed"); }
             "task:add_to_today" => { let _ = app_handle.emit("menu:task_action", "add_to_today"); }
+            // Navigation
             "nav:tasks" => { let _ = app_handle.emit("menu:navigate", "/tasks"); }
             "nav:habits" => { let _ = app_handle.emit("menu:navigate", "/habits"); }
             "nav:countdowns" => { let _ = app_handle.emit("menu:navigate", "/countdowns"); }
             "nav:notes" => { let _ = app_handle.emit("menu:navigate", "/notes"); }
             "nav:manage_tags" => { let _ = app_handle.emit("menu:navigate", "manage_tags"); }
             "nav:manage_attachments" => { let _ = app_handle.emit("menu:navigate", "manage_attachments"); }
+            // Window
+            "window:main_window" => { let _ = app_handle.emit("menu:navigate", "main_window"); }
+            "window:bring_all_front" => { let _ = app_handle.emit("menu:navigate", "bring_all_front"); }
+            // Help
+            "help:center" => { let _ = app_handle.emit("menu:navigate", "help_center"); }
             _ => {}
         }
     });
@@ -144,6 +214,10 @@ fn setup_menu_handler(app: &AppHandle) {
 pub struct MenuLabels {
     pub app_menu: String,
     pub quit: String,
+    pub file_menu: String,
+    pub new_task: String,
+    pub new_note: String,
+    pub global_search: String,
     pub tasks_menu: String,
     pub priority_menu: String,
     pub priority_traditional: String,
@@ -160,6 +234,14 @@ pub struct MenuLabels {
     pub manage_tags: String,
     pub manage_attachments: String,
     pub edit_menu: String,
+    pub window_menu: String,
+    pub minimize: String,
+    pub close_window: String,
+    pub main_window: String,
+    pub bring_all_front: String,
+    pub fullscreen: String,
+    pub help_menu: String,
+    pub help_center: String,
 }
 
 impl MenuLabels {
@@ -167,6 +249,10 @@ impl MenuLabels {
         Self {
             app_menu: "Mindless".into(),
             quit: "退出 Mindless".into(),
+            file_menu: "文件".into(),
+            new_task: "新建任务".into(),
+            new_note: "新建笔记".into(),
+            global_search: "全局搜索".into(),
             tasks_menu: "任务".into(),
             priority_menu: "设置优先级".into(),
             priority_traditional: "传统 (低)".into(),
@@ -183,6 +269,14 @@ impl MenuLabels {
             manage_tags: "管理「标签」".into(),
             manage_attachments: "管理「附件」".into(),
             edit_menu: "编辑".into(),
+            window_menu: "窗口".into(),
+            minimize: "最小化".into(),
+            close_window: "关闭窗口".into(),
+            main_window: "主窗口".into(),
+            bring_all_front: "前置全部窗口".into(),
+            fullscreen: "进入全屏".into(),
+            help_menu: "帮助".into(),
+            help_center: "帮助中心".into(),
         }
     }
 }

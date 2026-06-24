@@ -1034,6 +1034,10 @@ export async function deleteAttachmentLocalCache(id: string): Promise<void> {
 export interface MenuLabels {
   appMenu: string;
   quit: string;
+  fileMenu: string;
+  newTask: string;
+  newNote: string;
+  globalSearch: string;
   tasksMenu: string;
   priorityMenu: string;
   priorityTraditional: string;
@@ -1050,6 +1054,14 @@ export interface MenuLabels {
   manageTags: string;
   manageAttachments: string;
   editMenu: string;
+  windowMenu: string;
+  minimize: string;
+  closeWindow: string;
+  mainWindow: string;
+  bringAllFront: string;
+  fullscreen: string;
+  helpMenu: string;
+  helpCenter: string;
 }
 
 export async function updateMenuLanguage(labels: MenuLabels): Promise<void> {
