@@ -99,6 +99,43 @@ async function openTagManagementDialog() {
   }
 }
 
+async function openAttachmentManagementDialog() {
+  try {
+    const existing = await WebviewWindow.getByLabel('attachment-management');
+    if (existing) {
+      await existing.setFocus();
+      return;
+    }
+  } catch {}
+
+  try {
+    const mainWindow = getCurrentWindow();
+    const win = new WebviewWindow('attachment-management', {
+      alwaysOnTop: true,
+      closable: false,
+      decorations: true,
+      height: 560,
+      hiddenTitle: true,
+      maximizable: false,
+      minimizable: false,
+      parent: mainWindow,
+      resizable: false,
+      title: '',
+      titleBarStyle: 'overlay',
+      url: '/dialog/attachment-management',
+      width: 720,
+    });
+    win.once('tauri://error', (e) => {
+      console.error('Failed to create attachment-management window:', e);
+    });
+    win.once('tauri://focus', async () => {
+      await win.setShadow(true);
+    });
+  } catch (err) {
+    console.error('Error creating attachment-management window:', err);
+  }
+}
+
 export function useKeyboardShortcuts() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -176,6 +213,13 @@ export function useKeyboardShortcuts() {
       if (e.key === 'b') {
         e.preventDefault();
         openTagManagementDialog();
+        return;
+      }
+
+      // Cmd+Shift+B: Attachment management dialog
+      if (e.key === 'B' && e.shiftKey) {
+        e.preventDefault();
+        openAttachmentManagementDialog();
         return;
       }
 

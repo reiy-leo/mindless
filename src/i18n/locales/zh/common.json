@@ -61,7 +61,8 @@
     "notes": "笔记",
     "settings": "设置",
     "people": "人员",
-    "media": "影视"
+    "media": "影视",
+    "attachments": "附件管理"
   },
   "search": {
     "placeholder": "搜索任务、习惯、倒数日...",
@@ -870,5 +871,19 @@
       "search": "搜索类型...",
       "noResults": "未找到匹配的类型"
     }
+  },
+  "attachment_mgmt": {
+    "title": "附件管理",
+    "no_attachments": "暂无附件",
+    "has_cache": "有本地缓存",
+    "no_cache": "无本地缓存",
+    "on_github": "存在于GitHub",
+    "not_on_github": "不存在于GitHub",
+    "delete_cache": "删除本地缓存",
+    "fetch_from_github": "从GitHub获取",
+    "rename": "重命名",
+    "last_fetched": "上次获取",
+    "added": "上传时间",
+    "search_placeholder": "搜索附件..."
   }
 }

@@ -181,6 +181,9 @@ pub fn run() {
             commands::delete_attachment,
             commands::cache_attachment_image,
             commands::read_image_data_url,
+            commands::get_all_attachments,
+            commands::update_attachment_filename,
+            commands::delete_attachment_local_cache,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

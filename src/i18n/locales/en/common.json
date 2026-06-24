@@ -61,7 +61,8 @@
     "notes": "Notes",
     "settings": "Settings",
     "people": "People",
-    "media": "Media"
+    "media": "Media",
+    "attachments": "Attachments"
   },
   "search": {
     "placeholder": "Search tasks, habits, countdowns...",
@@ -870,5 +871,19 @@
       "search": "Search genres...",
       "noResults": "No genres found"
     }
+  },
+  "attachment_mgmt": {
+    "title": "Attachment Management",
+    "no_attachments": "No attachments",
+    "has_cache": "Cached locally",
+    "no_cache": "Not cached locally",
+    "on_github": "Exists on GitHub",
+    "not_on_github": "Not on GitHub",
+    "delete_cache": "Delete local cache",
+    "fetch_from_github": "Fetch from GitHub",
+    "rename": "Rename",
+    "last_fetched": "Last fetched",
+    "added": "Added",
+    "search_placeholder": "Search attachments..."
   }
 }

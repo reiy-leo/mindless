@@ -1015,3 +1015,18 @@ export async function cacheAttachmentImage(params: {
 export async function readImageDataUrl(path: string): Promise<string> {
   return await invoke<string>('read_image_data_url', { path });
 }
+
+export async function getAllAttachments(): Promise<Attachment[]> {
+  return await invoke<Attachment[]>('get_all_attachments');
+}
+
+export async function updateAttachmentFilename(params: {
+  id: string;
+  originalFilename: string;
+}): Promise<void> {
+  return await invoke('update_attachment_filename', params);
+}
+
+export async function deleteAttachmentLocalCache(id: string): Promise<void> {
+  return await invoke('delete_attachment_local_cache', { id });
+}

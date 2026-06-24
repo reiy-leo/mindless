@@ -60,7 +60,8 @@
     "notes": "ノート",
     "settings": "設定",
     "people": "人物",
-    "media": "メディア"
+    "media": "メディア",
+    "attachments": "添付ファイル管理"
   },
   "search": {
     "placeholder": "タスク、習慣、カウントダウンを検索...",
@@ -869,5 +870,19 @@
       "search": "ジャンルを検索...",
       "noResults": "ジャンルが見つかりません"
     }
+  },
+  "attachment_mgmt": {
+    "title": "添付ファイル管理",
+    "no_attachments": "添付ファイルなし",
+    "has_cache": "ローカルキャッシュあり",
+    "no_cache": "ローカルキャッシュなし",
+    "on_github": "GitHubに存在",
+    "not_on_github": "GitHubに存在しない",
+    "delete_cache": "ローカルキャッシュを削除",
+    "fetch_from_github": "GitHubから取得",
+    "rename": "名前を変更",
+    "last_fetched": "最終取得",
+    "added": "追加日時",
+    "search_placeholder": "添付ファイルを検索..."
   }
 }

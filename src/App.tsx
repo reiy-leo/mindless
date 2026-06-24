@@ -15,6 +15,7 @@ import EmojiPickerDialogPage from './pages/dialogs/EmojiPickerDialogPage'
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage'
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage'
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage'
+import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage'
 import HabitsPage from './pages/HabitsPage'
 import HomePage from './pages/HomePage'
@@ -470,6 +471,7 @@ function App() {
           {/* <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} /> */}
           <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route path="/dialog/tag-management" element={<TagManagementDialogPage />} />
+          <Route path="/dialog/attachment-management" element={<AttachmentManagementDialogPage />} />
           <Route path="/dialog/settings" element={<SettingsDialogPage />} />
           <Route path="/dialog/emoji-picker" element={<EmojiPickerDialogPage />} />
           <Route path="/dialog/countdown-form" element={<CountdownFormDialogPage />} />

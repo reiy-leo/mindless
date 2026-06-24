@@ -453,6 +453,35 @@ export function useDeleteAttachment() {
   });
 }
 
+
+export function useAllAttachments() {
+  return useQuery({
+    queryKey: ['all-attachments'],
+    queryFn: () => api.getAllAttachments(),
+  });
+}
+
+export function useUpdateAttachmentFilename() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; originalFilename: string }) =>
+      api.updateAttachmentFilename(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-attachments'] });
+    },
+  });
+}
+
+export function useDeleteAttachmentLocalCache() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteAttachmentLocalCache(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-attachments'] });
+    },
+  });
+}
+
 export function useTaskLinkedItems(taskId: string | undefined) {
   return useQuery({
     queryKey: ['taskLinkedItems', taskId],

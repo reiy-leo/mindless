@@ -150,6 +150,56 @@ pub async fn cache_attachment_image(
 }
 
 #[tauri::command]
+pub async fn get_all_attachments(app: AppHandle) -> Result<Vec<Attachment>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn
+        .prepare("SELECT id, task_id, original_filename, filename, added_datetime, sha256, local_path FROM attachments ORDER BY added_datetime DESC")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map([], row_to_attachment)
+        .map_err(|e| format!("Failed to query attachments: {}", e))?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to read attachments: {}", e))
+}
+
+#[tauri::command]
+pub async fn update_attachment_filename(
+    app: AppHandle,
+    id: String,
+    original_filename: String,
+) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "UPDATE attachments SET original_filename = ?1 WHERE id = ?2",
+        rusqlite::params![&original_filename, &id],
+    ).map_err(|e| format!("Failed to update attachment filename: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_attachment_local_cache(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    let local_path: Option<String> = conn.query_row(
+        "SELECT local_path FROM attachments WHERE id = ?1",
+        [&id],
+        |row| row.get(0),
+    ).map_err(|e| format!("Attachment not found: {}", e))?;
+
+    if let Some(ref path) = local_path {
+        let _ = std::fs::remove_file(path);
+    }
+
+    conn.execute(
+        "UPDATE attachments SET local_path = NULL WHERE id = ?1",
+        [&id],
+    ).map_err(|e| format!("Failed to update attachment: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn read_image_data_url(
     _app: AppHandle,
     path: String,

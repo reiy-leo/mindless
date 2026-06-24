@@ -6,6 +6,7 @@ import {
   CogIcon,
   Film,
   HomeIcon,
+  PaperclipIcon,
   HourglassIcon,
   RepeatIcon,
   StickyNote,
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Film, labelKey: 'navigation.media', path: '/media' },
   { path: null },
   { icon: BookmarkIcon, labelKey: 'navigation.tags', path: '/tags' },
+  { icon: PaperclipIcon, labelKey: 'navigation.attachments', path: '/attachments' },
   { icon: CogIcon, labelKey: 'navigation.settings', path: '/settings' },
 ]
 
@@ -85,6 +87,43 @@ export default function Sidebar() {
     win.once('tauri://created', () => {
       console.log('Tag picker window created successfully')
     })
+  }
+
+  const handleOpenAttachmentManagement = async () => {
+    try {
+      const existingWindow = await WebviewWindow.getByLabel('attachment-management')
+      if (existingWindow) {
+        await existingWindow.setFocus()
+        return
+      }
+    } catch {}
+
+    try {
+      const mainWindow = getCurrentWindow()
+      const win = new WebviewWindow('attachment-management', {
+        alwaysOnTop: true,
+        closable: false,
+        decorations: true,
+        height: 560,
+        hiddenTitle: true,
+        maximizable: false,
+        minimizable: false,
+        parent: mainWindow,
+        resizable: false,
+        title: '',
+        titleBarStyle: 'overlay',
+        url: '/dialog/attachment-management',
+        width: 720,
+      })
+      win.once('tauri://error', (e) => {
+        console.error('Failed to create attachment-management window:', e)
+      })
+      win.once('tauri://focus', async () => {
+        await win.setShadow(true)
+      })
+    } catch (err) {
+      console.error('Error creating attachment-management window:', err)
+    }
   }
 
   const handleOpenSettings = async () => {
@@ -171,6 +210,31 @@ export default function Sidebar() {
                 className={buttonClass}
                 key={item.path}
                 onClick={handleOpenTagManagement}
+                style={{
+                  color: isActive ? `hsl(from var(--theme-color) h s 80)` : `hsl(from var(--theme-color) h s 30)`,
+                  position: 'relative',
+                  zIndex: 2,
+                }}
+              >
+                {showIcon && <Icon className="w-5 h-5" />}
+                {showText && (
+                  <p
+                    className={sidebarMode === 'both' ? 'text-[10px]' : sidebarMode === 'text' ? 'text-lg' : 'text-xs'}
+                  >
+                    {t(item.labelKey)}
+                  </p>
+                )}
+              </button>
+            )
+          }
+
+          if (item.path === '/attachments') {
+            return (
+              <button
+                type="button"
+                className={buttonClass}
+                key={item.path}
+                onClick={handleOpenAttachmentManagement}
                 style={{
                   color: isActive ? `hsl(from var(--theme-color) h s 80)` : `hsl(from var(--theme-color) h s 30)`,
                   position: 'relative',
