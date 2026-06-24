@@ -72,6 +72,11 @@
     "type_countdown": "倒数日",
     "esc_to_close": "按 Esc 关闭"
   },
+  "datetime": {
+    "relative": {
+      "day_before": "前天"
+    }
+  },
   "tasks": {
     "filters": "过滤器",
     "new_task": "新建任务",
@@ -91,6 +96,18 @@
     "settings_status": "状态",
     "settings_sort": "排序",
     "settings_group": "分组",
+    "group": {
+      "by": "分组",
+      "none": "不分组",
+      "list": "按列表",
+      "priority": "按优先级"
+    },
+    "matrix": {
+      "urgent": "紧急",
+      "important": "重要",
+      "not_urgent": "不紧急",
+      "not_important": "不重要"
+    },
     "search_placeholder": "搜索任务...",
     "no_tasks": "暂无任务",
     "select_task": "选择一个任务查看详情",
@@ -104,6 +121,7 @@
     "due_time": "截止时间",
     "sort": {
       "by": "排序",
+      "order": "排序方向",
       "manual": "手动排序",
       "due_date": "截止日期",
       "start_date": "开始日期",
@@ -417,6 +435,7 @@
     "recurrence_custom": "每N年",
     "recurrence_interval": "间隔年数",
     "display_mode": "显示",
+    "view_list": "列表视图",
     "display_year": "年",
     "display_year_decimal": "年(小数)",
     "display_month": "月",
@@ -738,8 +757,12 @@
       "remark_placeholder": "输入备注..."
     }
   },
+  "editor": {
+    "image_upload_not_supported": "暂不支持上传本地图片，请使用图片链接。"
+  },
   "media": {
     "title": "影视",
+    "linkedNotes": "关联笔记",
     "smart_groups": {
       "all": "所有",
       "favorites": "收藏",

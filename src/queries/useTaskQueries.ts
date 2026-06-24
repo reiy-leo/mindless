@@ -452,3 +452,32 @@ export function useDeleteAttachment() {
     },
   });
 }
+
+export function useTaskLinkedItems(taskId: string | undefined) {
+  return useQuery({
+    queryKey: ['taskLinkedItems', taskId],
+    queryFn: () => api.getTaskLinkedItems(taskId!),
+    enabled: !!taskId,
+  });
+}
+
+export function useLinkTaskItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, linkedType, linkedId }: { taskId: string; linkedType: string; linkedId: string }) =>
+      api.linkTaskItem(taskId, linkedType, linkedId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskLinkedItems'] });
+    },
+  });
+}
+
+export function useUnlinkTaskItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.unlinkTaskItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskLinkedItems'] });
+    },
+  });
+}

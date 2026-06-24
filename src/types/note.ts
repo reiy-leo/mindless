@@ -35,3 +35,10 @@ export interface NoteLinkedItem {
   linkedType: 'task' | 'person' | 'media';
   linkedId: string;
 }
+
+export interface TaskLinkedItem {
+  id: string;
+  taskId: string;
+  linkedType: 'note' | 'person' | 'media';
+  linkedId: string;
+}

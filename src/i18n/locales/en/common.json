@@ -72,6 +72,11 @@
     "type_countdown": "Countdown",
     "esc_to_close": "Press Esc to close"
   },
+  "datetime": {
+    "relative": {
+      "day_before": "Day before yesterday"
+    }
+  },
   "tasks": {
     "filters": "Filters",
     "new_task": "New Task",
@@ -91,6 +96,18 @@
     "settings_status": "Status",
     "settings_sort": "Sort",
     "settings_group": "Group",
+    "group": {
+      "by": "Group",
+      "none": "No Group",
+      "list": "By List",
+      "priority": "By Priority"
+    },
+    "matrix": {
+      "urgent": "Urgent",
+      "important": "Important",
+      "not_urgent": "Not Urgent",
+      "not_important": "Not Important"
+    },
     "search_placeholder": "Search tasks...",
     "no_tasks": "No tasks",
     "select_task": "Select a task to view details",
@@ -104,6 +121,7 @@
     "due_time": "Due Time",
     "sort": {
       "by": "Sort",
+      "order": "Sort Order",
       "manual": "Manual",
       "due_date": "Due Date",
       "start_date": "Start Date",
@@ -256,6 +274,7 @@
     "unarchive": "Unarchive"
   },
   "advanced_groups": {
+    "title": "Advanced Groups",
     "create": "New Advanced Group",
     "edit": "Edit Advanced Group",
     "delete": "Delete",
@@ -416,6 +435,7 @@
     "recurrence_custom": "Every N Years",
     "recurrence_interval": "Interval (Years)",
     "display_mode": "Display",
+    "view_list": "List View",
     "display_year": "Year",
     "display_year_decimal": "Year (Decimal)",
     "display_month": "Month",
@@ -737,8 +757,12 @@
       "remark_placeholder": "Enter remark..."
     }
   },
+  "editor": {
+    "image_upload_not_supported": "Local image upload is not supported. Please use an image URL."
+  },
   "media": {
     "title": "Media",
+    "linkedNotes": "Linked Notes",
     "smart_groups": {
       "all": "All",
       "favorites": "Favorites",

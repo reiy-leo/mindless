@@ -71,6 +71,11 @@
     "type_countdown": "カウントダウン",
     "esc_to_close": "Escで閉じる"
   },
+  "datetime": {
+    "relative": {
+      "day_before": "一昨日"
+    }
+  },
   "tasks": {
     "filters": "フィルター",
     "new_task": "新規タスク",
@@ -90,6 +95,18 @@
     "settings_status": "ステータス",
     "settings_sort": "並び替え",
     "settings_group": "グループ",
+    "group": {
+      "by": "グループ",
+      "none": "グループなし",
+      "list": "リスト別",
+      "priority": "優先度別"
+    },
+    "matrix": {
+      "urgent": "緊急",
+      "important": "重要",
+      "not_urgent": "緊急でない",
+      "not_important": "重要でない"
+    },
     "search_placeholder": "タスクを検索...",
     "no_tasks": "タスクなし",
     "select_task": "タスクを選択して詳細を表示",
@@ -103,6 +120,7 @@
     "due_time": "期限時間",
     "sort": {
       "by": "並び替え",
+      "order": "並び順",
       "manual": "手動",
       "due_date": "期限",
       "start_date": "開始日",
@@ -255,6 +273,7 @@
     "unarchive": "アーカイブ解除"
   },
   "advanced_groups": {
+    "title": "アドバンスドグループ",
     "create": "新規アドバンスドグループ",
     "edit": "アドバンスドグループを編集",
     "delete": "削除",
@@ -415,6 +434,7 @@
     "recurrence_custom": "N年ごと",
     "recurrence_interval": "間隔（年）",
     "display_mode": "表示",
+    "view_list": "リスト表示",
     "display_year": "年",
     "display_year_decimal": "年（小数）",
     "display_month": "月",
@@ -736,8 +756,12 @@
       "remark_placeholder": "備考を入力..."
     }
   },
+  "editor": {
+    "image_upload_not_supported": "ローカル画像のアップロードはサポートされていません。画像URLをご使用ください。"
+  },
   "media": {
     "title": "メディア",
+    "linkedNotes": "リンクされたノート",
     "smart_groups": {
       "all": "すべて",
       "favorites": "お気に入り",

@@ -31,6 +31,9 @@ pub fn run() {
             commands::get_heatmap_data,
             commands::get_lists,
             commands::complete_recurring_task,
+            commands::get_task_linked_items,
+            commands::link_task_item,
+            commands::unlink_task_item,
             // Lists
             commands::create_list,
             commands::update_list,

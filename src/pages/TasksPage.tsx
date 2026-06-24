@@ -2,6 +2,7 @@ import {
   ArchiveBoxIcon,
   ArrowTurnDownRightIcon,
   ArrowTurnUpLeftIcon,
+  BookOpenIcon,
   CalendarIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -10,16 +11,21 @@ import {
   EllipsisVerticalIcon,
   EyeIcon,
   EyeSlashIcon,
+  FilmIcon,
   FlagIcon,
+  IdentificationIcon,
   InboxIcon,
   MagnifyingGlassIcon,
   PaperClipIcon,
   PencilIcon,
   PlusIcon,
+  QueueListIcon,
   SunIcon,
+  TableCellsIcon,
   TagIcon,
   TrashIcon,
   ViewColumnsIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useQueryClient } from '@tanstack/react-query'
 import { listen } from '@tauri-apps/api/event'
@@ -28,6 +34,8 @@ import { Pin } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import MilkdownEditor from '@/components/MilkdownEditor'
+import LinkedItemSelector from '@/components/media/LinkedItemSelector'
+import { AvatarImage } from '@/components/people/AvatarImage'
 import { ResizeHandle } from '@/components/ResizeHandle'
 import TagCombobox from '@/components/TagCombobox'
 import CalendarView from '@/components/tasks/CalendarView'
@@ -42,6 +50,9 @@ import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants'
 import { DATE_RANGE_PICKER_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
+import { useMediaItems } from '@/queries/useMediaQueries'
+import { useAllNotes } from '@/queries/useNoteQueries'
+import { useAllPersons } from '@/queries/usePersonQueries'
 import {
   useAllSubtasks,
   useAllTasks,
@@ -58,6 +69,7 @@ import {
   useDeleteStep,
   useDeleteSubtask,
   useDeleteTask,
+  useLinkTaskItem,
   useLists,
   useReorderSteps,
   useReorderSubtasks,
@@ -65,8 +77,10 @@ import {
   useSteps,
   useSubtasks,
   useTags,
+  useTaskLinkedItems,
   useTasks,
   useToggleTaskCompletion,
+  useUnlinkTaskItem,
   useUpdateList,
   useUpdateStep,
   useUpdateSubtask,
@@ -223,8 +237,64 @@ function TaskDetailPanel({
   const { data: attachments = [] } = useAttachments(activeTask.id)
   const createAttachmentMutation = useCreateAttachment()
   const deleteAttachmentMutation = useDeleteAttachment()
+
+  const { data: linkedItemsData = [] } = useTaskLinkedItems(activeTask.id)
+  const linkTaskItem = useLinkTaskItem()
+  const unlinkTaskItem = useUnlinkTaskItem()
+  const { data: allPersons = [] } = useAllPersons()
+  const { data: mediaItemsData = [] } = useMediaItems()
+  const { data: allNotes = [] } = useAllNotes()
+
+  const linkedNoteIds = useMemo(
+    () => linkedItemsData.filter((li) => li.linkedType === 'note').map((li) => li.linkedId),
+    [linkedItemsData],
+  )
+  const linkedPersonIds = useMemo(
+    () => linkedItemsData.filter((li) => li.linkedType === 'person').map((li) => li.linkedId),
+    [linkedItemsData],
+  )
+  const linkedMediaIds = useMemo(
+    () => linkedItemsData.filter((li) => li.linkedType === 'media').map((li) => li.linkedId),
+    [linkedItemsData],
+  )
+
+  const linkedNotes = useMemo(() => allNotes.filter((n) => linkedNoteIds.includes(n.id)), [allNotes, linkedNoteIds])
+  const linkedPersons = useMemo(
+    () => allPersons.filter((p) => linkedPersonIds.includes(p.id)),
+    [allPersons, linkedPersonIds],
+  )
+  const linkedMediaItems = useMemo(
+    () => mediaItemsData.filter((m) => linkedMediaIds.includes(m.id)),
+    [mediaItemsData, linkedMediaIds],
+  )
+
+  const handleLinkItem = useCallback(
+    (linkedType: string, linkedId: string) => {
+      linkTaskItem.mutate({ linkedId, linkedType, taskId: activeTask.id })
+    },
+    [activeTask.id, linkTaskItem],
+  )
+
+  const handleUnlinkItem = useCallback(
+    (linkId: string) => {
+      unlinkTaskItem.mutate(linkId)
+    },
+    [unlinkTaskItem],
+  )
+
+  const toggleSection = useCallback((key: string) => {
+    setVisibleSections((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({
+    attachments: true,
+    media: true,
+    notes: true,
+    persons: true,
+    steps: true,
+    subtasks: true,
+  })
   const [attachContextMenu, setAttachContextMenu] = useState<{ x: number; y: number; att: Attachment } | null>(null)
   const attachContextMenuRef = useRef<HTMLDivElement>(null)
   const [attachContextMenuFlipY, setAttachContextMenuFlipY] = useState(false)
@@ -633,7 +703,56 @@ function TaskDetailPanel({
                 : t('tasks.date_placeholder')}
             </span>
           </button>
-          {/* Priority icon button with dropdown */}
+          {/* Section toggle drawer */}
+          <div className="relative flex-shrink-0 flex items-center gap-0.5">
+            {[
+              { icon: QueueListIcon, key: 'steps', label: t('tasks.steps.title') },
+              { icon: TableCellsIcon, key: 'subtasks', label: t('tasks.subtasks.title') },
+              { icon: PaperClipIcon, key: 'attachments', label: t('tasks.attachments') },
+              { icon: DocumentIcon, key: 'notes', label: t('media.linkedNotes') },
+              { icon: IdentificationIcon, key: 'persons', label: t('notes.linked_persons') },
+              { icon: FilmIcon, key: 'media', label: t('notes.linked_media') },
+            ].map(({ key, icon: Icon, label }) => (
+              <button
+                className={`relative group p-1 rounded transition-colors ${
+                  visibleSections[key]
+                    ? 'bg-theme-100 dark:bg-theme-800 text-theme-600 dark:text-theme-100'
+                    : 'text-theme-700 dark:text-theme-500 hover:bg-theme-100 dark:hover:bg-theme-700'
+                }`}
+                key={key}
+                onClick={() => toggleSection(key)}
+                type="button"
+              >
+                <Icon
+                  className="w-4 h-4"
+                  style={{
+                    strokeWidth: '1.5px',
+                  }}
+                />
+                <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-theme-900 dark:bg-theme-100 text-white dark:text-theme-900 text-[10px] px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Detail Header */}
+      <div className="px-4 pb-2">
+        <div className="flex items-center gap-2">
+          <input
+            className="text-lg font-semibold text-theme-900 dark:text-theme-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded"
+            onBlur={handleTitleBlur}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                ;(e.target as HTMLInputElement).blur()
+              }
+            }}
+            type="text"
+            value={editTitle}
+          />
           <div
             className="relative flex-shrink-0"
             onBlur={(e) => {
@@ -644,7 +763,7 @@ function TaskDetailPanel({
             tabIndex={-1}
           >
             <button
-              className="px-2 py-1 rounded-lg hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+              className="p-1 rounded-lg hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
               onClick={() => setShowPriorityPicker(!showPriorityPicker)}
               title={t('tasks.priority.label')}
               type="button"
@@ -675,24 +794,6 @@ function TaskDetailPanel({
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Detail Header */}
-      <div className="px-4 pb-2">
-        <div className="flex items-center gap-2">
-          <input
-            className="text-lg font-semibold text-theme-900 dark:text-theme-100 bg-transparent border-none outline-none flex-1 min-w-0 truncate rounded"
-            onBlur={handleTitleBlur}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                ;(e.target as HTMLInputElement).blur()
-              }
-            }}
-            type="text"
-            value={editTitle}
-          />
         </div>
         {/* Parent task link */}
         {selectedSubtask && onSubtaskBack && (
@@ -749,91 +850,244 @@ function TaskDetailPanel({
         />
 
         {/* Steps */}
-        <div className="pt-4">
-          <StepList
-            onAdd={handleAddStep}
-            onDelete={handleDeleteStep}
-            onInsertAt={handleInsertStepAt}
-            onReorder={(items) => reorderSteps.mutate(items)}
-            onToggle={handleToggleStep}
-            onUpdateDescription={handleUpdateStepDescription}
-            onUpdateDueDate={handleUpdateStepDueDate}
-            onUpdateDueTime={handleUpdateStepDueTime}
-            steps={steps}
-            taskDueDate={activeTask.dueDate}
-          />
-        </div>
+        {visibleSections.steps && (
+          <div className="pt-4">
+            <StepList
+              onAdd={handleAddStep}
+              onDelete={handleDeleteStep}
+              onInsertAt={handleInsertStepAt}
+              onReorder={(items) => reorderSteps.mutate(items)}
+              onToggle={handleToggleStep}
+              onUpdateDescription={handleUpdateStepDescription}
+              onUpdateDueDate={handleUpdateStepDueDate}
+              onUpdateDueTime={handleUpdateStepDueTime}
+              steps={steps}
+              taskDueDate={activeTask.dueDate}
+            />
+          </div>
+        )}
 
         {/* Subtasks */}
-        <div className="border-t border-theme-200 dark:border-theme-600 pt-4">
-          <SubtaskList
-            onAdd={handleAddSubtask}
-            onDelete={handleDeleteSubtask}
-            onReorder={(items) => reorderSubtasks.mutate(items)}
-            onSubtaskClick={onSubtaskClick}
-            onToggle={handleToggleSubtask}
-            onUpdateTitle={handleUpdateSubtaskTitle}
-            subtasks={subtaskTree}
-          />
-        </div>
+        {visibleSections.subtasks && (
+          <div className="border-t border-theme-200 dark:border-theme-600 pt-4">
+            <SubtaskList
+              onAdd={handleAddSubtask}
+              onDelete={handleDeleteSubtask}
+              onReorder={(items) => reorderSubtasks.mutate(items)}
+              onSubtaskClick={onSubtaskClick}
+              onToggle={handleToggleSubtask}
+              onUpdateTitle={handleUpdateSubtaskTitle}
+              subtasks={subtaskTree}
+            />
+          </div>
+        )}
 
         {/* Attachments */}
-        <div className="border-t border-theme-100 dark:border-theme-700 pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-theme-800 dark:text-theme-200">{t('tasks.attachments')}</h3>
-            <button
-              className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
-              onClick={handleAddAttachment}
-              type="button"
-            >
-              <PlusIcon className="w-4 h-4" />
-            </button>
+        {visibleSections.attachments && (
+          <div className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-theme-800 dark:text-theme-200">{t('tasks.attachments')}</h3>
+              <button
+                className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
+                onClick={handleAddAttachment}
+                type="button"
+              >
+                <PlusIcon className="w-4 h-4" />
+              </button>
+            </div>
+            {attachments.length === 0 ? (
+              <p className="text-xs text-theme-400 dark:text-theme-500 italic">{t('tasks.no_attachments')}</p>
+            ) : (
+              (() => {
+                const imageAttachments = attachments.filter((a) => isImageFile(a.originalFilename) && imageUrls[a.id])
+                const fileAttachments = attachments.filter((a) => !isImageFile(a.originalFilename) || !imageUrls[a.id])
+                return (
+                  <>
+                    {imageAttachments.length > 0 && (
+                      <div className="grid grid-cols-5 gap-2 mb-2">
+                        {imageAttachments.map((att) => (
+                          <div
+                            className="relative group aspect-square"
+                            key={att.id}
+                            onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
+                          >
+                            <img
+                              alt={att.originalFilename}
+                              className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
+                              onKeyUp={() => setPreviewImage(imageUrls[att.id])}
+                              src={imageUrls[att.id]}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {fileAttachments.length > 0 && (
+                      <div className="space-y-0.5">
+                        {fileAttachments.map((att) => (
+                          <div
+                            className="cursor-pointer flex items-center gap-2 group px-1 py-0.5 bg-theme-50 rounded hover:bg-theme-100 dark:hover:bg-theme-800"
+                            key={att.id}
+                            onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
+                          >
+                            <DocumentIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
+                            <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
+                              {att.originalFilename}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )
+              })()
+            )}
           </div>
-          {attachments.length === 0 ? (
-            <p className="text-xs text-theme-400 dark:text-theme-500 italic">{t('tasks.no_attachments')}</p>
-          ) : (
-            (() => {
-              const imageAttachments = attachments.filter((a) => isImageFile(a.originalFilename) && imageUrls[a.id])
-              const fileAttachments = attachments.filter((a) => !isImageFile(a.originalFilename) || !imageUrls[a.id])
-              return (
-                <>
-                  {imageAttachments.length > 0 && (
-                    <div className="grid grid-cols-5 gap-2 mb-2">
-                      {imageAttachments.map((att) => (
-                        <div
-                          className="relative group aspect-square"
-                          key={att.id}
-                          onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
-                        >
-                          <img
-                            alt={att.originalFilename}
-                            className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
-                            onKeyUp={() => setPreviewImage(imageUrls[att.id])}
-                            src={imageUrls[att.id]}
-                          />
+        )}
+
+        {/* Linked Items */}
+        <div className="pt-4 space-y-3">
+          {/* Linked Notes */}
+          {visibleSections.notes && (
+            <div>
+              <div className="relative flex">
+                <h3 className="flex-1 text-xs font-medium text-theme-500 dark:text-theme-400 mb-1">
+                  {t('media.linkedNotes')}
+                </h3>
+                <LinkedItemSelector
+                  items={allNotes.map((n) => ({ id: n.id, title: n.title }))}
+                  onChange={(ids) => {
+                    const added = ids.find((id) => !linkedNoteIds.includes(id))
+                    if (added) handleLinkItem('note', added)
+                  }}
+                  placeholder={t('tasks.search_placeholder')}
+                  value={linkedNoteIds}
+                />
+              </div>
+              {linkedNotes.length > 0 && (
+                <div className="mt-1 space-y-1">
+                  {linkedNotes.map((note) => {
+                    const linkItem = linkedItemsData.find((li) => li.linkedType === 'note' && li.linkedId === note.id)
+                    return (
+                      <div className="flex items-center gap-2 group text-sm" key={note.id}>
+                        <span className="flex-1 text-theme-700 dark:text-theme-300 truncate">{note.title}</span>
+                        {linkItem && (
+                          <button
+                            className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-theme-400 flex-shrink-0"
+                            onClick={() => handleUnlinkItem(linkItem.id)}
+                            type="button"
+                          >
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Linked Persons */}
+          {visibleSections.persons && (
+            <div>
+              <div className="flex">
+                <h3 className="flex-1 text-xs font-medium text-theme-500 dark:text-theme-400 mb-1">
+                  {t('notes.linked_persons')}
+                </h3>
+                <LinkedItemSelector
+                  items={allPersons.map((p) => ({ id: p.id, title: p.name }))}
+                  onChange={(ids) => {
+                    const added = ids.find((id) => !linkedPersonIds.includes(id))
+                    if (added) handleLinkItem('person', added)
+                  }}
+                  placeholder={t('people.search_placeholder')}
+                  value={linkedPersonIds}
+                />
+              </div>
+              {linkedPersons.length > 0 && (
+                <div className="mt-1 flex flex-row gap-2">
+                  {linkedPersons.map((person) => {
+                    const linkItem = linkedItemsData.find(
+                      (li) => li.linkedType === 'person' && li.linkedId === person.id,
+                    )
+                    return (
+                      <div className="relative group flex flex-col items-center gap-1 p-2" key={person.id}>
+                        {linkItem && (
+                          <button
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 hover:text-red-500 text-theme-400"
+                            onClick={() => handleUnlinkItem(linkItem.id)}
+                            type="button"
+                          >
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                        {person.avatar ? (
+                          <AvatarImage seed={person.avatar} size={32} />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-theme-200 dark:bg-theme-600 flex items-center justify-center text-xs text-theme-500 dark:text-theme-400">
+                            {person.name[0]}
+                          </div>
+                        )}
+                        <span className="text-xs text-theme-700 dark:text-theme-300 truncate w-full text-center">
+                          {person.name}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Linked Media */}
+          {visibleSections.media && (
+            <div>
+              <div className="flex">
+                <h3 className="flex-1 text-xs font-medium text-theme-500 dark:text-theme-400 mb-1">
+                  {t('notes.linked_media')}
+                </h3>
+                <LinkedItemSelector
+                  items={mediaItemsData.map((m) => ({ id: m.id, title: m.title }))}
+                  onChange={(ids) => {
+                    const added = ids.find((id) => !linkedMediaIds.includes(id))
+                    if (added) handleLinkItem('media', added)
+                  }}
+                  placeholder={t('media.placeholder.search')}
+                  value={linkedMediaIds}
+                />
+              </div>
+              {linkedMediaItems.length > 0 && (
+                <div className="mt-1 flex flex-row gap-2">
+                  {linkedMediaItems.map((media) => {
+                    const linkItem = linkedItemsData.find((li) => li.linkedType === 'media' && li.linkedId === media.id)
+                    return (
+                      <div className="relative group flex flex-col overflow-hidden" key={media.id}>
+                        {linkItem && (
+                          <button
+                            className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 hover:text-red-500 text-white drop-shadow"
+                            onClick={() => handleUnlinkItem(linkItem.id)}
+                            type="button"
+                          >
+                            <XMarkIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                        {media.cover ? (
+                          <img alt={media.title} className="w-14 aspect-[2/3] object-cover" src={media.cover} />
+                        ) : (
+                          <div className="w-14 aspect-[2/3] bg-theme-200 dark:bg-theme-700 flex items-center justify-center text-theme-400 dark:text-theme-500">
+                            <BookOpenIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div className="p-1.5">
+                          <p className="text-xs text-theme-700 dark:text-theme-300 truncate">{media.title}</p>
+                          {media.year && <p className="text-[10px] text-theme-400 dark:text-theme-500">{media.year}</p>}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {fileAttachments.length > 0 && (
-                    <div className="space-y-0.5">
-                      {fileAttachments.map((att) => (
-                        <div
-                          className="cursor-pointer flex items-center gap-2 group px-1 py-0.5 bg-theme-50 rounded hover:bg-theme-100 dark:hover:bg-theme-800"
-                          key={att.id}
-                          onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
-                        >
-                          <DocumentIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
-                          <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
-                            {att.originalFilename}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )
-            })()
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -2211,14 +2465,6 @@ export default function TasksPage() {
                 )
               })}
             </div>
-
-            {/* Separator line */}
-            <hr
-              className="mt-2"
-              style={{
-                borderColor: `color-mix(in srgb, ${themeColor} 30%, white)`,
-              }}
-            />
           </div>
         )}
 
@@ -2619,7 +2865,7 @@ export default function TasksPage() {
                 type="text"
                 value={newTaskTitle}
               />
-              <div className="flex items-center justify-between px-1 py-1.5 border-t border-theme-100 dark:border-theme-700">
+              <div className="flex items-center justify-between px-1 py-1.5">
                 <div className="flex items-center gap-1">
                   {/* Priority */}
                   <div className="relative">
@@ -2823,15 +3069,14 @@ export default function TasksPage() {
       {viewMode === 'list' && (
         <>
           {/* Resize handle: list <-> detail */}
-          <ResizeHandle onResize={(delta) => {
-            setDetailPanelWidth((w) => Math.max(300, Math.min(400, w + delta)))
-          }} />
+          <ResizeHandle
+            onResize={(delta) => {
+              setDetailPanelWidth((w) => Math.max(300, Math.min(400, w + delta)))
+            }}
+          />
 
           {/* Task Detail Panel */}
-          <div
-            className="flex-1 overflow-hidden border-l border-theme-200 dark:border-theme-700"
-            style={{ backgroundColor: 'var(--theme-bg-2)' }}
-          >
+          <div className="flex-1 overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
             {selectedTask ? (
               <TaskDetailPanel
                 allTags={allTags}

@@ -5,6 +5,7 @@ import { getMarkdown, replaceAll } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { githubDark, githubLight } from '@uiw/codemirror-theme-github'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/stores/useAppStore'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
@@ -72,6 +73,7 @@ interface MilkdownEditorInnerProps {
 }
 
 function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: MilkdownEditorInnerProps) {
+  const { t } = useTranslation('common')
   const prevMarkdownRef = useRef<string>(markdown)
   const updatingRef = useRef(false)
   const initializedRef = useRef(false)
@@ -103,7 +105,7 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
           blockUploadPlaceholderText: '',
           inlineUploadButton: '',
           onUpload: async (_) => {
-            alert('暂不支持上传本地图片，请使用图片链接。')
+            alert(t('editor.image_upload_not_supported'))
             return ''
           },
         },

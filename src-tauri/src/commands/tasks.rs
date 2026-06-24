@@ -622,3 +622,51 @@ pub async fn get_heatmap_data(app: AppHandle) -> Result<HeatmapData, String> {
         habits: habit_map,
     })
 }
+
+// ==================== Task Linked Items ====================
+
+#[tauri::command]
+pub async fn get_task_linked_items(app: AppHandle, task_id: String) -> Result<Vec<crate::db::models::TaskLinkedItem>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn.prepare(
+        "SELECT id, task_id, linked_type, linked_id FROM task_linked_items WHERE task_id = ?1"
+    ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    let items = stmt.query_map([&task_id], |row| {
+        Ok(crate::db::models::TaskLinkedItem {
+            id: row.get(0)?,
+            task_id: row.get(1)?,
+            linked_type: row.get(2)?,
+            linked_id: row.get(3)?,
+        })
+    }).map_err(|e| format!("Failed to query task linked items: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect task linked items: {}", e))?;
+    Ok(items)
+}
+
+#[tauri::command]
+pub async fn link_task_item(app: AppHandle, task_id: String, linked_type: String, linked_id: String) -> Result<crate::db::models::TaskLinkedItem, String> {
+    let conn = get_db(&app)?;
+    let existing: Option<String> = conn.query_row(
+        "SELECT id FROM task_linked_items WHERE task_id = ?1 AND linked_type = ?2 AND linked_id = ?3",
+        rusqlite::params![task_id, linked_type, linked_id],
+        |row| row.get(0),
+    ).ok();
+    if let Some(id) = existing {
+        return Ok(crate::db::models::TaskLinkedItem { id, task_id, linked_type, linked_id });
+    }
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO task_linked_items (id, task_id, linked_type, linked_id) VALUES (?1, ?2, ?3, ?4)",
+        rusqlite::params![&id, &task_id, &linked_type, &linked_id],
+    ).map_err(|e| format!("Failed to link task item: {}", e))?;
+    Ok(crate::db::models::TaskLinkedItem { id, task_id, linked_type, linked_id })
+}
+
+#[tauri::command]
+pub async fn unlink_task_item(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute("DELETE FROM task_linked_items WHERE id = ?1", [&id])
+        .map_err(|e| format!("Failed to unlink task item: {}", e))?;
+    Ok(())
+}

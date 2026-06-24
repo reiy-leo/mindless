@@ -409,6 +409,15 @@ pub struct NoteLinkedItem {
     pub linked_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskLinkedItem {
+    pub id: String,
+    pub task_id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+}
+
 // Media watch history model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

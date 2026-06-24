@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, TaskLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -647,6 +647,18 @@ export async function linkNoteItem(noteId: string, linkedType: string, linkedId:
 
 export async function unlinkNoteItem(id: string): Promise<void> {
   return await invoke<void>('unlink_note_item', { id });
+}
+
+export async function getTaskLinkedItems(taskId: string): Promise<TaskLinkedItem[]> {
+  return await invoke<TaskLinkedItem[]>('get_task_linked_items', { taskId });
+}
+
+export async function linkTaskItem(taskId: string, linkedType: string, linkedId: string): Promise<TaskLinkedItem> {
+  return await invoke<TaskLinkedItem>('link_task_item', { taskId, linkedType, linkedId });
+}
+
+export async function unlinkTaskItem(id: string): Promise<void> {
+  return await invoke<void>('unlink_task_item', { id });
 }
 
 // Person Group APIs

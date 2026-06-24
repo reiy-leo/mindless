@@ -691,5 +691,17 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
 
     let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN local_path TEXT;");
 
+    // Task linked items (bidirectional relations)
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS task_linked_items (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            linked_type TEXT NOT NULL,
+            linked_id TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_task_linked_items_task_id ON task_linked_items(task_id);
+        CREATE INDEX IF NOT EXISTS idx_task_linked_items_linked_id ON task_linked_items(linked_id);
+    ").map_err(|e| format!("Failed to migrate task linked items table: {}", e))?;
+
     Ok(())
 }
