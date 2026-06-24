@@ -114,7 +114,7 @@ export function syncMenuLanguage() {
 }
 
 function buildMenuLabels(): api.MenuLabels {
-  const t = (key: string, opts?: Record<string, unknown>): string => i18n.t(key, opts as any) as string;
+  const t = i18n.getFixedT(null, 'common');
   return {
     appMenu: t('app.name'),
     about: t('menu.about', { appName: t('app.name') }),
