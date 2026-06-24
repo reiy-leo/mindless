@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 import * as api from '@/lib/api';
 
 async function openDialog(label: string, url: string, width: number, height: number) {
@@ -82,7 +82,6 @@ export function useMenuEvents() {
             openDialog('settings', '/dialog/settings', 800, 600);
             break;
           case 'check_update':
-            // TODO: implement update check
             break;
           case 'help_center':
             window.dispatchEvent(new CustomEvent('mindless:help'));
@@ -109,56 +108,71 @@ export function useMenuEvents() {
   }, [navigate]);
 }
 
+function buildMenuLabels(): api.MenuLabels {
+  const t = (key: string, opts?: Record<string, unknown>): string => i18n.t(key, opts as any) as string;
+  return {
+    appMenu: t('app.name'),
+    about: t('menu.about', { appName: t('app.name') }),
+    preferences: t('menu.preferences'),
+    checkUpdate: t('menu.check_update'),
+    services: t('menu.services'),
+    hideApp: t('menu.hide_app', { appName: t('app.name') }),
+    hideOthers: t('menu.hide_others'),
+    quit: t('menu.quit', { appName: t('app.name') }),
+    fileMenu: t('menu.file'),
+    newTask: t('menu.new_task'),
+    newNote: t('menu.new_note'),
+    globalSearch: t('menu.global_search'),
+    tasksMenu: t('menu.tasks'),
+    priorityMenu: t('menu.set_priority'),
+    priorityTraditional: t('menu.priority_traditional'),
+    priorityAnoxia: t('menu.priority_anoxia'),
+    setDate: t('menu.set_date'),
+    markCompleted: t('menu.mark_completed'),
+    markClosed: t('menu.mark_closed'),
+    addToToday: t('menu.add_to_today'),
+    navMenu: t('menu.navigation'),
+    navTasks: t('menu.switch_tasks'),
+    navHabits: t('menu.switch_habits'),
+    navCountdowns: t('menu.switch_countdowns'),
+    navNotes: t('menu.switch_notes'),
+    manageTags: t('menu.manage_tags'),
+    manageAttachments: t('menu.manage_attachments'),
+    editMenu: t('menu.edit'),
+    windowMenu: t('menu.window'),
+    minimize: t('menu.minimize'),
+    closeWindow: t('menu.close_window'),
+    mainWindow: t('menu.main_window'),
+    bringAllFront: t('menu.bring_all_front'),
+    fullscreen: t('menu.fullscreen'),
+    helpMenu: t('menu.help'),
+    helpCenter: t('menu.help_center'),
+  };
+}
+
 export function useMenuLanguageSync() {
-  const { t, i18n } = useTranslation('common');
-
   useEffect(() => {
-    const updateMenu = () => {
-      const labels: api.MenuLabels = {
-        appMenu: t('app.name'),
-        about: t('menu.about', { appName: t('app.name') }),
-        preferences: t('menu.preferences'),
-        checkUpdate: t('menu.check_update'),
-        services: t('menu.services'),
-        hideApp: t('menu.hide_app', { appName: t('app.name') }),
-        hideOthers: t('menu.hide_others'),
-        quit: t('menu.quit', { appName: t('app.name') }),
-        fileMenu: t('menu.file'),
-        newTask: t('menu.new_task'),
-        newNote: t('menu.new_note'),
-        globalSearch: t('menu.global_search'),
-        tasksMenu: t('menu.tasks'),
-        priorityMenu: t('menu.set_priority'),
-        priorityTraditional: t('menu.priority_traditional'),
-        priorityAnoxia: t('menu.priority_anoxia'),
-        setDate: t('menu.set_date'),
-        markCompleted: t('menu.mark_completed'),
-        markClosed: t('menu.mark_closed'),
-        addToToday: t('menu.add_to_today'),
-        navMenu: t('menu.navigation'),
-        navTasks: t('menu.switch_tasks'),
-        navHabits: t('menu.switch_habits'),
-        navCountdowns: t('menu.switch_countdowns'),
-        navNotes: t('menu.switch_notes'),
-        manageTags: t('menu.manage_tags'),
-        manageAttachments: t('menu.manage_attachments'),
-        editMenu: t('menu.edit'),
-        windowMenu: t('menu.window'),
-        minimize: t('menu.minimize'),
-        closeWindow: t('menu.close_window'),
-        mainWindow: t('menu.main_window'),
-        bringAllFront: t('menu.bring_all_front'),
-        fullscreen: t('menu.fullscreen'),
-        helpMenu: t('menu.help'),
-        helpCenter: t('menu.help_center'),
-      };
-      api.updateMenuLanguage(labels).catch(console.error);
+    const sync = () => {
+      api.updateMenuLanguage(buildMenuLabels()).catch(console.error);
     };
 
-    updateMenu();
-    i18n.on('languageChanged', updateMenu);
+    // Initial sync
+    sync();
+
+    // Listen for language changes from the i18n instance directly
+    i18n.on('languageChanged', sync);
+
+    // Also listen for the settings:changed broadcast (cross-window)
+    const unlisten = listen<{ key: string; value: unknown }>('settings:changed', (event) => {
+      if (event.payload.key === 'language') {
+        // Small delay to let i18n process the language change first
+        setTimeout(sync, 50);
+      }
+    });
+
     return () => {
-      i18n.off('languageChanged', updateMenu);
+      i18n.off('languageChanged', sync);
+      unlisten.then((fn) => fn());
     };
-  }, [t, i18n]);
+  }, []);
 }
