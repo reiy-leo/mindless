@@ -1,5 +1,6 @@
 mod commands;
 mod db;
+mod menu;
 
 use tauri::Builder;
 
@@ -15,6 +16,7 @@ pub fn run() {
             window_shadows_v2::set_shadows(app, true);
             let app_handle = app.handle();
             db::migrations::run_migrations(&app_handle)?;
+            menu::init_menu(&app_handle)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -184,6 +186,7 @@ pub fn run() {
             commands::get_all_attachments,
             commands::update_attachment_filename,
             commands::delete_attachment_local_cache,
+            menu::update_menu_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

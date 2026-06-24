@@ -885,5 +885,24 @@
     "last_fetched": "上次获取",
     "added": "上传时间",
     "search_placeholder": "搜索附件..."
+  },
+  "menu": {
+    "quit": "退出 {{appName}}",
+    "tasks": "任务",
+    "set_priority": "设置优先级",
+    "priority_traditional": "传统 (低)",
+    "priority_anoxia": "缺氧 (高)",
+    "set_date": "设置日期",
+    "mark_completed": "标记已完成",
+    "mark_closed": "标记已关闭",
+    "add_to_today": "添加到「今天」",
+    "navigation": "导航",
+    "switch_tasks": "切换到「任务」",
+    "switch_habits": "切换到「习惯」",
+    "switch_countdowns": "切换到「倒数日」",
+    "switch_notes": "切换到「笔记」",
+    "manage_tags": "管理「标签」",
+    "manage_attachments": "管理「附件」",
+    "edit": "编辑"
   }
 }

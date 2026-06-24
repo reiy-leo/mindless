@@ -16,6 +16,7 @@ import ListFormDialogPage from './pages/dialogs/ListFormDialogPage'
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage'
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage'
 import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
+import { useMenuEvents, useMenuLanguageSync } from './hooks/useMenuEvents'
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage'
 import HabitsPage from './pages/HabitsPage'
 import HomePage from './pages/HomePage'
@@ -431,6 +432,8 @@ function NotificationManager() {
 
 function KeyboardShortcuts() {
   useKeyboardShortcuts()
+  useMenuEvents()
+  useMenuLanguageSync()
   return null
 }
 

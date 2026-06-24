@@ -1030,3 +1030,28 @@ export async function updateAttachmentFilename(params: {
 export async function deleteAttachmentLocalCache(id: string): Promise<void> {
   return await invoke('delete_attachment_local_cache', { id });
 }
+
+export interface MenuLabels {
+  appMenu: string;
+  quit: string;
+  tasksMenu: string;
+  priorityMenu: string;
+  priorityTraditional: string;
+  priorityAnoxia: string;
+  setDate: string;
+  markCompleted: string;
+  markClosed: string;
+  addToToday: string;
+  navMenu: string;
+  navTasks: string;
+  navHabits: string;
+  navCountdowns: string;
+  navNotes: string;
+  manageTags: string;
+  manageAttachments: string;
+  editMenu: string;
+}
+
+export async function updateMenuLanguage(labels: MenuLabels): Promise<void> {
+  return await invoke('update_menu_language', { labels });
+}

@@ -884,5 +884,24 @@
     "last_fetched": "最終取得",
     "added": "追加日時",
     "search_placeholder": "添付ファイルを検索..."
+  },
+  "menu": {
+    "quit": "{{appName}} を終了",
+    "tasks": "タスク",
+    "set_priority": "優先度を設定",
+    "priority_traditional": "伝統的 (低)",
+    "priority_anoxia": "酸素不足 (高)",
+    "set_date": "日付を設定",
+    "mark_completed": "完了にする",
+    "mark_closed": "閉じる",
+    "add_to_today": "「今日」に追加",
+    "navigation": "ナビゲーション",
+    "switch_tasks": "タスクに切替",
+    "switch_habits": "習慣に切替",
+    "switch_countdowns": "カウントダウンに切替",
+    "switch_notes": "ノートに切替",
+    "manage_tags": "タグを管理",
+    "manage_attachments": "添付ファイルを管理",
+    "edit": "編集"
   }
 }

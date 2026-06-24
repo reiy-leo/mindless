@@ -885,5 +885,24 @@
     "last_fetched": "Last fetched",
     "added": "Added",
     "search_placeholder": "Search attachments..."
+  },
+  "menu": {
+    "quit": "Quit {{appName}}",
+    "tasks": "Tasks",
+    "set_priority": "Set Priority",
+    "priority_traditional": "Traditional (Low)",
+    "priority_anoxia": "Anoxia (High)",
+    "set_date": "Set Date",
+    "mark_completed": "Mark Completed",
+    "mark_closed": "Mark Closed",
+    "add_to_today": "Add to \"Today\"",
+    "navigation": "Navigation",
+    "switch_tasks": "Switch to Tasks",
+    "switch_habits": "Switch to Habits",
+    "switch_countdowns": "Switch to Countdowns",
+    "switch_notes": "Switch to Notes",
+    "manage_tags": "Manage Tags",
+    "manage_attachments": "Manage Attachments",
+    "edit": "Edit"
   }
 }
