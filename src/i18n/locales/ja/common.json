@@ -650,11 +650,16 @@
       "import_empty": "ファイルにイベントが見つかりません"
     },
     "sync": {
+      "provider_github": "GitHub",
+      "provider_gitlab": "GitLab",
+      "provider_gitee": "Gitee",
       "repo_url": "リポジトリURL",
       "repo_url_placeholder": "https://github.com/username/repo",
+      "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
+      "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
       "pat": "アクセストークン",
       "pat_placeholder": "Personal Access Tokenを入力",
-      "pat_help": "リポジトリの読み書き権限が必要です",
+      "pat_help": "GitHub: repoスコープ; GitLab: apiまたはread_repository + write_repository; Gitee: projectsスコープ",
       "test": "接続テスト",
       "sync_now": "データ同期",
       "testing": "テスト中...",
@@ -663,7 +668,7 @@
       "test_failed": "接続テスト失敗",
       "sync_success": "データ同期成功",
       "sync_failed": "データ同期失敗",
-      "invalid_url": "github.comとgitlab.comのみサポートされています",
+      "invalid_url": "GitHub、GitLab、Giteeのみサポートされています",
       "empty_fields": "リポジトリURLとアクセストークンを入力してください"
     },
     "theme_color": {

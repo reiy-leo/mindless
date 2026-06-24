@@ -154,26 +154,51 @@ export default function SettingsPage() {
   const timezoneButtonRef = useRef<HTMLButtonElement>(null)
 
   // Sync state
-  const [syncUrl, setSyncUrl] = useState(() => localStorage.getItem('mindless-sync-url') || '')
-  const [syncPat, setSyncPat] = useState('')
+  const [syncProvider, setSyncProvider] = useState<'github' | 'gitlab' | 'gitee'>(() => (localStorage.getItem('mindless-sync-provider') as 'github' | 'gitlab' | 'gitee') || 'github')
+  const [syncUrls, setSyncUrls] = useState<Record<string, string>>(() => ({
+    github: localStorage.getItem('mindless-sync-url-github') || '',
+    gitlab: localStorage.getItem('mindless-sync-url-gitlab') || '',
+    gitee: localStorage.getItem('mindless-sync-url-gitee') || '',
+  }))
+  const [syncPats, setSyncPats] = useState<Record<string, string>>({ github: '', gitlab: '', gitee: '' })
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
   const [syncLoading, setSyncLoading] = useState(false)
   const [syncAction, setSyncAction] = useState<'test' | 'sync' | null>(null)
 
+  const syncUrl = syncUrls[syncProvider] || ''
+  const syncPat = syncPats[syncProvider] || ''
+
+  const setSyncUrl = (url: string) => {
+    setSyncUrls(prev => ({ ...prev, [syncProvider]: url }))
+    localStorage.setItem(`mindless-sync-url-${syncProvider}`, url)
+  }
+
+  const setSyncPat = (pat: string) => {
+    setSyncPats(prev => ({ ...prev, [syncProvider]: pat }))
+  }
+
+  const domainMap: Record<string, string> = {
+    github: 'github.com',
+    gitlab: 'gitlab.com',
+    gitee: 'gitee.com',
+  }
+
   useEffect(() => {
-    localStorage.setItem('mindless-sync-url', syncUrl)
-  }, [syncUrl])
+    localStorage.setItem('mindless-sync-provider', syncProvider)
+  }, [syncProvider])
 
   useEffect(() => {
     ;(async () => {
-      if (syncUrl) {
-        try {
-          const { loadPat } = await import('@/lib/api')
-          const domain = new URL(syncUrl).hostname
-          const pat = await loadPat(domain)
-          if (pat) setSyncPat(pat)
-        } catch {}
-      }
+      try {
+        const { loadPat } = await import('@/lib/api')
+        const results: Record<string, string> = {}
+        for (const provider of ['github', 'gitlab', 'gitee']) {
+          const pat = await loadPat(domainMap[provider])
+          if (pat) results[provider] = pat
+        }
+        setSyncPats(prev => ({ ...prev, ...results }))
+      } catch {}
     })()
   }, [])
 
@@ -181,8 +206,7 @@ export default function SettingsPage() {
     if (!syncUrl || !syncPat) return
     try {
       const { savePat } = await import('@/lib/api')
-      const domain = new URL(syncUrl).hostname
-      await savePat(domain, syncPat)
+      await savePat(domainMap[syncProvider], syncPat)
     } catch {}
   }
 
@@ -194,12 +218,20 @@ export default function SettingsPage() {
     setSyncLoading(true)
     setSyncAction('test')
     setSyncStatus(null)
+    setSyncError(null)
     try {
-      const { testConnection } = await import('@/lib/syncService')
+      const { testConnection } = await import('@/lib/sync')
       const result = await testConnection(syncPat, syncUrl)
-      setSyncStatus(result.success ? 'test_success' : 'test_failed')
-    } catch {
+      if (result.success) {
+        setSyncStatus('test_success')
+        setSyncError(null)
+      } else {
+        setSyncStatus('test_failed')
+        setSyncError(result.error || 'unknown_error')
+      }
+    } catch (err: any) {
       setSyncStatus('test_failed')
+      setSyncError(err.message || 'unknown_error')
     } finally {
       setSyncLoading(false)
       setSyncAction(null)
@@ -216,7 +248,7 @@ export default function SettingsPage() {
     setSyncStatus(null)
     try {
       const { exportAllData, getDbBase64 } = await import('@/lib/api')
-      const { syncToRepo } = await import('@/lib/syncService')
+      const { syncToRepo } = await import('@/lib/sync')
       const [exportJson, dbBase64] = await Promise.all([exportAllData(), getDbBase64()])
       const result = await syncToRepo(syncPat, syncUrl, exportJson, dbBase64)
       setSyncStatus(result.success ? 'sync_success' : 'sync_failed')
@@ -1050,6 +1082,33 @@ export default function SettingsPage() {
           <div className="flex-1 overflow-auto p-6">
             <div className="space-y-6 max-w-2xl">
               <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="flex gap-2 mb-6">
+                  {[
+                    { label: t('settings.sync.provider_github'), value: 'github' },
+                    { label: t('settings.sync.provider_gitlab'), value: 'gitlab' },
+                    { label: t('settings.sync.provider_gitee'), value: 'gitee' },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all ${
+                        syncProvider === option.value
+                          ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-sm'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="syncProvider"
+                        value={option.value}
+                        checked={syncProvider === option.value}
+                        onChange={() => setSyncProvider(option.value as 'github' | 'gitlab' | 'gitee')}
+                        className="sr-only"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                   {t('settings.sync.repo_url')}
                 </h3>
@@ -1057,7 +1116,7 @@ export default function SettingsPage() {
                   type="text"
                   value={syncUrl}
                   onChange={(e) => setSyncUrl(e.target.value)}
-                  placeholder={t('settings.sync.repo_url_placeholder')}
+                  placeholder={t(`settings.sync.repo_url_placeholder${syncProvider !== 'github' ? `_${syncProvider}` : ''}`)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
 
@@ -1093,13 +1152,20 @@ export default function SettingsPage() {
                 </div>
 
                 {syncStatus && (
-                  <p
-                    className={`mt-4 text-sm ${
-                      syncStatus === 'test_success' || syncStatus === 'sync_success' ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {t(`settings.sync.${syncStatus}`)}
-                  </p>
+                  <div className="mt-4">
+                    <p
+                      className={`text-sm ${
+                        syncStatus === 'test_success' || syncStatus === 'sync_success' ? 'text-green-500' : 'text-red-500'
+                      }`}
+                    >
+                      {t(`settings.sync.${syncStatus}`)}
+                    </p>
+                    {syncError && (
+                      <p className="mt-2 text-xs text-red-400 dark:text-red-500 break-all">
+                        {syncError}
+                      </p>
+                    )}
+                  </div>
                 )}
               </section>
             </div>

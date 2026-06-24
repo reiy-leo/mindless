@@ -651,11 +651,16 @@
       "import_empty": "文件中未找到事件"
     },
     "sync": {
+      "provider_github": "GitHub",
+      "provider_gitlab": "GitLab",
+      "provider_gitee": "Gitee",
       "repo_url": "仓库地址",
       "repo_url_placeholder": "https://github.com/username/repo",
+      "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
+      "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
       "pat": "访问令牌",
       "pat_placeholder": "输入 Personal Access Token",
-      "pat_help": "需要 repo 的读写权限",
+      "pat_help": "GitHub: repo 权限; GitLab: api 或 read_repository + write_repository; Gitee: projects 权限",
       "test": "测试连接",
       "sync_now": "同步数据",
       "testing": "测试中...",
@@ -664,7 +669,7 @@
       "test_failed": "连接测试失败",
       "sync_success": "数据同步成功",
       "sync_failed": "数据同步失败",
-      "invalid_url": "仅支持 github.com 和 gitlab.com",
+      "invalid_url": "仅支持 GitHub、GitLab 和 Gitee",
       "empty_fields": "请填写仓库地址和访问令牌"
     },
     "theme_color": {

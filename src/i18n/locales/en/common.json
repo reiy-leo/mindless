@@ -651,11 +651,16 @@
       "import_empty": "No events found in the file"
     },
     "sync": {
+      "provider_github": "GitHub",
+      "provider_gitlab": "GitLab",
+      "provider_gitee": "Gitee",
       "repo_url": "Repository URL",
       "repo_url_placeholder": "https://github.com/username/repo",
+      "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
+      "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
       "pat": "Personal Access Token",
       "pat_placeholder": "Enter Personal Access Token",
-      "pat_help": "Requires read/write access to the repository",
+      "pat_help": "GitHub: repo scope; GitLab: api or read_repository + write_repository; Gitee: projects scope",
       "test": "Test Connection",
       "sync_now": "Sync Data",
       "testing": "Testing...",
@@ -664,7 +669,7 @@
       "test_failed": "Connection test failed",
       "sync_success": "Data synced successfully",
       "sync_failed": "Data sync failed",
-      "invalid_url": "Only github.com and gitlab.com are supported",
+      "invalid_url": "Only GitHub, GitLab, and Gitee are supported",
       "empty_fields": "Please enter repository URL and access token"
     },
     "theme_color": {
