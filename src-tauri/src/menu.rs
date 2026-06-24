@@ -9,7 +9,13 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
     let menu = Menu::new(app).map_err(|e| e.to_string())?;
 
     // --- App menu ---
-    let about = PredefinedMenuItem::about(app, Some(&l.about), None).map_err(|e| e.to_string())?;
+    let icon_bytes = include_bytes!("../icons/icon.png");
+    let icon = tauri::image::Image::from_bytes(icon_bytes).ok();
+    let about_metadata = tauri::menu::AboutMetadataBuilder::new()
+        .name(Some("Mindless"))
+        .icon(icon)
+        .build();
+    let about = PredefinedMenuItem::about(app, Some(&l.about), Some(about_metadata)).map_err(|e| e.to_string())?;
     let settings = MenuItemBuilder::with_id("app:preferences", &l.preferences)
         .accelerator("CmdOrCtrl+,")
         .build(app)
