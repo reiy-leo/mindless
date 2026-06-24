@@ -47,18 +47,40 @@
       }
     }
 
-    .milkdown-code-block {
-      position: relative;
-      padding: unset;
-
+    .milkdown-code-block:nth-of-type(2) {
       .tools {
-        background-color: white;
+        position: absolute;
+        bottom: -26px;
+        left: 0;
+        z-index: 9999;
+        width: 100%;
+        background: transparent;
+
+        .language-button {
+          margin: 0;
+        }
+      }
+    }
+
+    .milkdown-code-block:not(:nth-of-type(2)) {
+      .tools {
         position: absolute;
         top: -24px;
         left: 0;
-        width: 100%;
         z-index: 9999;
+        width: 100%;
         background: transparent;
+      }
+    }
+
+    .milkdown-code-block {
+      position: relative;
+      padding: unset;
+      font-family: "SF Mono", "Cascadia Mono", "Courier New", Courier, monospace;
+      font-size: 0.825rem;
+
+      .cm-editor {
+        border-radius: 0.5rem;
       }
 
       /* 禁用行号 */
@@ -93,7 +115,7 @@
         margin-bottom: 4px;
 
         button {
-          padding: 2px 8px;
+          padding: 3px 8px;
           background: var(--crepe-color-surface-low);
           border-radius: 4px !important;
         }

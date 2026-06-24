@@ -139,9 +139,7 @@ export default function Sidebar() {
 
   return (
     <div
-      aria-label="Main navigation"
       className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white"
-      role="navigation"
       style={{
         background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))',
       }}
@@ -169,6 +167,7 @@ export default function Sidebar() {
           if (item.path === '/tags') {
             return (
               <button
+                type="button"
                 className={buttonClass}
                 key={item.path}
                 onClick={handleOpenTagManagement}
@@ -193,6 +192,7 @@ export default function Sidebar() {
           if (item.path === '/settings') {
             return (
               <button
+                type="button"
                 className={buttonClass}
                 key={item.path}
                 onClick={handleOpenSettings}

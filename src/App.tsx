@@ -29,7 +29,8 @@ import SettingsPage from './pages/SettingsPage'
 import TagsPage from './pages/TagsPage'
 import TasksPage from './pages/TasksPage'
 import { ensurePermission, startNotificationService, stopNotificationService } from './services/notificationService'
-import { useAppStore } from './stores/useAppStore'
+import { type DateFormat, type FontSize, type TimeFormat, type TimezoneFormat, useAppStore } from './stores/useAppStore'
+import type { Language, PriorityMode, Theme } from './types'
 
 function ThemeManager() {
   const theme = useAppStore((s) => s.theme)
@@ -192,7 +193,7 @@ function SettingsSync() {
         const map = new Map(entries)
         const dbTheme = map.get('theme') as 'light' | 'dark' | 'system' | undefined
         const dbLang = map.get('language') as 'zh' | 'en' | 'ja' | undefined
-        const dbPriority = map.get('priority_mode') as 'simple' | 'detailed' | undefined
+        const dbPriority = map.get('priority_mode') as PriorityMode | undefined
         const dbNotif = map.get('notification_enabled')
         const dbWeekStart = map.get('week_start_day')
         const dbTaskSortBy = map.get('task_sort_by') as
@@ -217,7 +218,7 @@ function SettingsSync() {
           setLanguage(dbLang)
           i18n.changeLanguage(dbLang)
         }
-        if (dbPriority && ['simple', 'detailed'].includes(dbPriority)) {
+        if (dbPriority && ['Traditional', 'OxygenNotIncluded'].includes(dbPriority)) {
           setPriorityMode(dbPriority)
         }
         if (dbNotif !== undefined) {
@@ -245,19 +246,19 @@ function SettingsSync() {
           setSelectedTimezone(dbSelectedTimezone)
         }
         if (dbTimeFormat && ['cn_natural', 'cn_24h', 'cn_12h', 'en_12h', '24h'].includes(dbTimeFormat)) {
-          setTimeFormat(dbTimeFormat as any)
+          setTimeFormat(dbTimeFormat as TimeFormat)
         }
         if (
           dbDateFormat &&
           ['relative', 'yyyy_slash_mm_dd', 'yyyy_dash_mm_dd', 'mm_dd_yyyy', 'mm_dd'].includes(dbDateFormat)
         ) {
-          setDateFormat(dbDateFormat as any)
+          setDateFormat(dbDateFormat as DateFormat)
         }
         if (
           dbTimezoneFormat &&
           ['short_offset', 'iana', 'compact', 'gmt', 'utc_colon', 'iso_colon', 'cn_zone'].includes(dbTimezoneFormat)
         ) {
-          setTimezoneFormat(dbTimezoneFormat as any)
+          setTimezoneFormat(dbTimezoneFormat as TimezoneFormat)
         }
         if (dbTaskSortBy && ['sortOrder', 'dueDate', 'startDate', 'priority', 'createdAt'].includes(dbTaskSortBy)) {
           useAppStore.getState().setTaskSortBy(dbTaskSortBy)
@@ -332,17 +333,17 @@ function SettingsSync() {
       const store = useAppStore.getState()
       switch (key) {
         case 'theme':
-          store.setTheme(value as any)
+          store.setTheme(value as Theme)
           break
         case 'themeColor':
           store.setThemeColor(value as string)
           break
         case 'language':
-          store.setLanguage(value as any)
+          store.setLanguage(value as Language)
           i18n.changeLanguage(value as string)
           break
         case 'fontSize':
-          store.setFontSize(value as any)
+          store.setFontSize(value as FontSize)
           break
         case 'priorityMode':
           store.setPriorityMode(value as any)
