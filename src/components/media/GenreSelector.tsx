@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDownIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { ChevronDown, X, Search } from 'lucide-react';
 import { useMediaGroupsWithCount } from '@/queries/useMediaQueries';
 
 interface GenreSelectorProps {
@@ -76,12 +76,12 @@ export default function GenreSelector({ value, onChange }: GenreSelectorProps) {
                 }}
                 className="hover:opacity-70"
               >
-                <XMarkIcon className="w-3 h-3" />
+                <X className="w-3 h-3" />
               </button>
             </span>
           ))
         )}
-        <ChevronDownIcon className="w-4 h-4 text-gray-400 ml-auto self-center" />
+        <ChevronDown className="w-4 h-4 text-gray-400 ml-auto self-center" />
       </div>
 
       {/* Dropdown */}
@@ -90,7 +90,7 @@ export default function GenreSelector({ value, onChange }: GenreSelectorProps) {
           {/* Search */}
           <div className="p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={search}

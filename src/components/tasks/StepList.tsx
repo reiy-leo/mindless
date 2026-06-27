@@ -9,8 +9,8 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Bars3Icon, CalendarIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { listen } from '@tauri-apps/api/event'
+import { Calendar, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import CheckNow from '@/components/common/CheckNow'
@@ -99,7 +99,7 @@ function InlineAddInput({
           hasSteps={false}
           color1="var(--theme-color)"
           color2="var(--theme-bg-70)"
-          className="mt-2 flex-shrink-0"
+          className="mt-2 shrink-0"
         />
       </div>
       <div className="flex-1 px-1 py-1">
@@ -178,7 +178,7 @@ function StepItem({
         hasSteps={false}
         color1="var(--theme-color)"
         color2="var(--theme-bg-70)"
-        className="mt-2 flex-shrink-0"
+        className="mt-2 shrink-0"
         onClick={onToggle}
       />
 
@@ -195,7 +195,7 @@ function StepItem({
       </div>
 
       {/* Date button - float right */}
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         <button
           className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs transition-colors ${
             dateDisplay
@@ -205,19 +205,19 @@ function StepItem({
           onClick={onDateClick}
           type="button"
         >
-          <CalendarIcon className="w-3 h-3" />
+          <Calendar className="w-3 h-3" />
           {dateDisplay && <span>{dateDisplay}</span>}
         </button>
       </div>
 
       {/* Delete */}
       <button
-        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0"
+        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all shrink-0"
         onClick={onDelete}
         title={t('common.delete')}
         type="button"
       >
-        <TrashIcon className="w-3.5 h-3.5 text-red-400" />
+        <Trash2 className="w-3.5 h-3.5 text-red-400" />
       </button>
     </div>
   )
@@ -253,11 +253,11 @@ function SortableStepItem({
       <button
         {...attributes}
         {...listeners}
-        className="flex items-center justify-center h-full rounded opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none absolute -left-4"
+        className="flex items-top pt-4 justify-center h-full rounded opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0 touch-none absolute -left-4"
         onClick={(e) => e.stopPropagation()}
         title={t('tasks.views.drag_to_reorder')}
       >
-        <Bars3Icon className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        <GripVertical className="w-3 h-3 text-gray-400 dark:text-gray-500" />
       </button>
       <div className="flex-1">
         <StepItem
@@ -384,7 +384,7 @@ export default function StepList({
           onClick={() => setShowAddInput(true)}
           type="button"
         >
-          <PlusIcon className="w-4 h-4" />
+          <Plus className="w-4 h-4" />
         </button>
       </div>
 

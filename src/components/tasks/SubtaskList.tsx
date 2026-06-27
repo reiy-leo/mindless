@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { PlusIcon, TrashIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import { Plus, Trash2, GripVertical } from "lucide-react";
 import CheckNow from "@/components/common/CheckNow";
 import {
     DndContext,
@@ -192,7 +192,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
                             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             title={t("tasks.subtasks.add_child")}
                         >
-                            <PlusIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                            <Plus className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                         </button>
                     )}
                     <button
@@ -203,7 +203,7 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
                         className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title={t("common.delete")}
                     >
-                        <TrashIcon className="w-3.5 h-3.5 text-red-400 dark:text-red-500" />
+                        <Trash2 className="w-3.5 h-3.5 text-red-400 dark:text-red-500" />
                     </button>
                 </div>
             </div>
@@ -275,7 +275,7 @@ function SortableSubtaskItem({
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/sort:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none absolute -left-5"
                 title={t("tasks.views.drag_to_reorder")}
             >
-                <Bars3Icon className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500" />
+                <GripVertical className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500" />
             </button>
             <div className="flex-1">
                 <SubtaskItem
@@ -356,7 +356,7 @@ export default function SubtaskList({
                     onClick={() => setShowAddInput(true)}
                     className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                 >
-                    <PlusIcon className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
                 </button>
             </div>
 

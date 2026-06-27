@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import CheckNow from '@/components/common/CheckNow';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
 import { getLocalToday } from '@/lib/taskHelpers';
@@ -156,7 +156,7 @@ export default function CalendarView({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} aria-label={t('tasks.views.prev_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div className="min-w-[200px] text-center">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -167,7 +167,7 @@ export default function CalendarView({
             </span>
           </div>
           <button onClick={nextMonth} aria-label={t('tasks.views.next_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
         <button

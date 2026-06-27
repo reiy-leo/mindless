@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { X, Plus, Trash2, Search } from 'lucide-react';
 import { useCreateMediaWatchHistory, useUpdateMediaWatchHistory } from '@/queries/useMediaQueries';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '@/lib/api';
@@ -113,7 +113,7 @@ export default function WatchHistoryForm({ mediaItemId, history, onClose }: Watc
             onClick={onClose}
             className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <XMarkIcon className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -170,7 +170,7 @@ export default function WatchHistoryForm({ mediaItemId, history, onClose }: Watc
                 onClick={() => setShowSearch(!showSearch)}
                 className="p-0.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <PlusIcon className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
               </button>
             </div>
 
@@ -202,7 +202,7 @@ export default function WatchHistoryForm({ mediaItemId, history, onClose }: Watc
                   </button>
                 </div>
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchQuery}
@@ -247,7 +247,7 @@ export default function WatchHistoryForm({ mediaItemId, history, onClose }: Watc
                       onClick={() => handleRemoveLink(item.linkedId)}
                       className="p-0.5 text-gray-400 hover:text-red-500"
                     >
-                      <TrashIcon className="w-3 h-3" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 ))}

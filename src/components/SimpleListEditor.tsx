@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Plus, X } from 'lucide-react';
 
 interface SimpleListEditorProps {
   items: string[];
@@ -62,7 +62,7 @@ export default function SimpleListEditor({ items, onChange, placeholder = 'è¾“å…
             disabled={!value.trim()}
             className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
-            <PlusIcon className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
@@ -80,7 +80,7 @@ export default function SimpleListEditor({ items, onChange, placeholder = 'è¾“å…
                 onClick={() => handleDelete(index)}
                 className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <XMarkIcon className="w-3 h-3" />
+                <X className="w-3 h-3" />
               </button>
             </span>
           ))}

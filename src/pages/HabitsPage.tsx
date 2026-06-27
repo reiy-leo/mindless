@@ -2,20 +2,20 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import {
-    PlusIcon,
-    FireIcon,
-    PencilIcon,
-    TrashIcon,
-    XMarkIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    CheckCircleIcon,
-    MinusIcon,
-    ArrowPathIcon,
-    ArchiveBoxIcon,
-    ArrowUturnLeftIcon,
-    CalendarDaysIcon,
-} from "@heroicons/react/24/outline";
+    Plus,
+    Flame,
+    Pencil,
+    Trash2,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    CheckCircle,
+    Minus,
+    RefreshCw,
+    Archive,
+    Undo2,
+    CalendarDays,
+} from "lucide-react";
 import {
     useHabits,
     useCreateHabit,
@@ -321,7 +321,7 @@ function HabitFormDialog({
                         {isEditing ? t("habits.edit_habit") : t("habits.new_habit")}
                     </h2>
                     <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <XMarkIcon className="w-5 h-5 text-gray-500" />
+                        <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
@@ -398,7 +398,7 @@ function HabitFormDialog({
                                 onClick={() => setEveryXDays(Math.max(2, everyXDays - 1))}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                             >
-                                <MinusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                <Minus className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                             </button>
                             <input
                                 type="number"
@@ -413,7 +413,7 @@ function HabitFormDialog({
                                 onClick={() => setEveryXDays(Math.min(365, everyXDays + 1))}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                             >
-                                <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                <Plus className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                             </button>
                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                 {t("habits.frequency.days_unit")}
@@ -580,7 +580,7 @@ function HabitFormDialog({
                                                 onClick={() => removeReminderTime(index)}
                                                 className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                                             >
-                                                <XMarkIcon className="w-4 h-4 text-red-400" />
+                                                <X className="w-4 h-4 text-red-400" />
                                             </button>
                                         )}
                                     </div>
@@ -590,7 +590,7 @@ function HabitFormDialog({
                                     onClick={addReminderTime}
                                     className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
                                 >
-                                    <PlusIcon className="w-3.5 h-3.5" />
+                                    <Plus className="w-3.5 h-3.5" />
                                     {t("habits.reminder_add")}
                                 </button>
                             </div>
@@ -835,7 +835,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                         onClick={prevMonth}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                        <ChevronLeftIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <ChevronLeft className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </button>
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[130px] text-center">
                         {monthLabel}
@@ -844,7 +844,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                         onClick={nextMonth}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                        <ChevronRightIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </button>
                     <button
                         onClick={goToday}
@@ -1001,7 +1001,7 @@ function CheckInCalendar({ habit }: { habit: Habit }) {
                                     </span>
                                 )}
                                 <span className="flex items-center gap-0.5 text-xs text-green-600 dark:text-green-400">
-                                    <CheckCircleIcon className="w-3 h-3" />
+                                    <CheckCircle className="w-3 h-3" />
                                     {selectedLog.logTime ? formatTime(selectedLog.logTime, timeFormat) : t("habits.checked_in")}
                                 </span>
                             </div>
@@ -1081,7 +1081,7 @@ function WeekView({ selectedDate, onSelectDate }: { selectedDate: string; onSele
                 onClick={() => setWeekOffset(weekOffset - 1)}
                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-                <ChevronLeftIcon className="w-4 h-4 text-gray-500" />
+                <ChevronLeft className="w-4 h-4 text-gray-500" />
             </button>
             <div className="flex-1 grid grid-cols-7 gap-1">
                 {days.map((day) => {
@@ -1131,7 +1131,7 @@ function WeekView({ selectedDate, onSelectDate }: { selectedDate: string; onSele
                 onClick={() => setWeekOffset(weekOffset + 1)}
                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-                <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                <ChevronRight className="w-4 h-4 text-gray-500" />
             </button>
         </div>
     );
@@ -1220,7 +1220,7 @@ function HabitCard({
                 <div className="flex items-center gap-2 flex-shrink-0">
                     {habit.currentStreak > 0 && (
                         <span className="flex items-center gap-0.5 text-orange-500 text-xs font-medium">
-                            <FireIcon className="w-3.5 h-3.5" />
+                            <Flame className="w-3.5 h-3.5" />
                             {habit.currentStreak}
                         </span>
                     )}
@@ -1232,7 +1232,7 @@ function HabitCard({
                                     className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
                                     title={t("habits.unarchive")}
                                 >
-                                    <ArrowUturnLeftIcon className="w-3.5 h-3.5 text-green-500" />
+                                    <Undo2 className="w-3.5 h-3.5 text-green-500" />
                                 </button>
                             )}
                             {onHardDelete && (
@@ -1241,7 +1241,7 @@ function HabitCard({
                                     className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                                     title={t("habits.hard_delete")}
                                 >
-                                    <TrashIcon className="w-3.5 h-3.5 text-red-500" />
+                                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                 </button>
                             )}
                         </div>
@@ -1286,7 +1286,7 @@ function HabitCard({
                                     disabled={todayValue <= 0}
                                     className="w-7 h-7 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                    <MinusIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+                                    <Minus className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                                 </button>
                                 <button
                                     onClick={() => {
@@ -1302,12 +1302,12 @@ function HabitCard({
                                 >
                                     {targetMet ? (
                                         <>
-                                            <CheckCircleIcon className="w-3.5 h-3.5" />
+                                            <CheckCircle className="w-3.5 h-3.5" />
                                             {t("habits.target_met")}
                                         </>
                                     ) : (
                                         <>
-                                            <PlusIcon className="w-3.5 h-3.5" />
+                                            <Plus className="w-3.5 h-3.5" />
                                             {t("habits.add_value")}
                                         </>
                                     )}
@@ -1317,7 +1317,7 @@ function HabitCard({
                                     disabled={targetMet}
                                     className="w-7 h-7 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                    <PlusIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+                                    <Plus className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                                 </button>
                             </div>
                         </div>
@@ -1334,7 +1334,7 @@ function HabitCard({
                         >
                             {todayValue > 0 ? (
                                 <>
-                                    <CheckCircleIcon className="w-4 h-4" />
+                                    <CheckCircle className="w-4 h-4" />
                                     {t("habits.checked_in")}
                                 </>
                             ) : (
@@ -1353,7 +1353,7 @@ function HabitCard({
                         }`}
                         title={t("habits.show_history")}
                     >
-                        <CalendarDaysIcon className="w-4 h-4" />
+                        <CalendarDays className="w-4 h-4" />
                     </button>
                 )}
             </div>
@@ -1454,7 +1454,7 @@ function HabitRow({
                                 className="p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
                                 title={t("habits.unarchive")}
                             >
-                                <ArrowUturnLeftIcon className="w-3.5 h-3.5 text-green-500" />
+                                <Undo2 className="w-3.5 h-3.5 text-green-500" />
                             </button>
                         )}
                         {onHardDelete && (
@@ -1463,7 +1463,7 @@ function HabitRow({
                                 className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                                 title={t("habits.hard_delete")}
                             >
-                                <TrashIcon className="w-3.5 h-3.5 text-red-500" />
+                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
                             </button>
                         )}
                     </div>
@@ -1489,9 +1489,9 @@ function HabitRow({
                             }`}
                         >
                             {targetMet ? (
-                                <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                                <CheckCircle className="w-4 h-4 text-green-500" />
                             ) : (
-                                <PlusIcon className="w-4 h-4 text-gray-400" />
+                                <Plus className="w-4 h-4 text-gray-400" />
                             )}
                         </button>
                     </div>
@@ -1514,7 +1514,7 @@ function HabitRow({
             <div className="flex items-center gap-3 flex-shrink-0 text-[11px] text-gray-400 dark:text-gray-500">
                 {habit.currentStreak > 0 && (
                     <span className="flex items-center gap-0.5 text-orange-500">
-                        <FireIcon className="w-3 h-3" />
+                        <Flame className="w-3 h-3" />
                         {habit.currentStreak}
                     </span>
                 )}
@@ -1787,7 +1787,7 @@ export default function HabitsPage() {
                             onClick={() => setShowNewGroup(true)}
                             className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <PlusIcon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                            <Plus className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                         </button>
                     </div>
                     <div className="space-y-px">
@@ -1905,7 +1905,7 @@ export default function HabitsPage() {
                             className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                             title={t("habits.refresh_streaks")}
                         >
-                            <ArrowPathIcon className={`w-4 h-4 ${refreshStreaks.isPending ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`w-4 h-4 ${refreshStreaks.isPending ? "animate-spin" : ""}`} />
                         </button>
                         {selectedHabitGroupId !== "deleted" && (
                             <button
@@ -1916,7 +1916,7 @@ export default function HabitsPage() {
                                 className="flex items-center justify-center w-9 h-9 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                                 title={t("habits.new_habit")}
                             >
-                                <PlusIcon className="w-5 h-5" />
+                                <Plus className="w-5 h-5" />
                             </button>
                         )}
                     </div>
@@ -2063,7 +2063,7 @@ export default function HabitsPage() {
                                     onClick={() => setEditingGroup(null)}
                                     className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
-                                    <XMarkIcon className="w-5 h-5 text-gray-500" />
+                                    <X className="w-5 h-5 text-gray-500" />
                                 </button>
                             </div>
                             <div className="p-5 space-y-4">
@@ -2123,14 +2123,14 @@ export default function HabitsPage() {
                                 onClick={() => handleOpenEditGroup(contextMenu.group)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                <PencilIcon className="w-4 h-4" />
+                                <Pencil className="w-4 h-4" />
                                 {t("habits.groups.edit_group")}
                             </button>
                             <button
                                 onClick={() => handleDissolveGroup(contextMenu.group)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                <ArrowUturnLeftIcon className="w-4 h-4" />
+                                <Undo2 className="w-4 h-4" />
                                 {t("habits.groups.dissolve")}
                             </button>
                             <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
@@ -2138,7 +2138,7 @@ export default function HabitsPage() {
                                 onClick={() => handleDeleteGroupWithHabits(contextMenu.group)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
-                                <TrashIcon className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />
                                 {t("habits.groups.delete_with_habits")}
                             </button>
                         </>
@@ -2152,7 +2152,7 @@ export default function HabitsPage() {
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                <PencilIcon className="w-4 h-4" />
+                                <Pencil className="w-4 h-4" />
                                 {t("common.edit")}
                             </button>
                             <button
@@ -2162,7 +2162,7 @@ export default function HabitsPage() {
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                <ArchiveBoxIcon className="w-4 h-4" />
+                                <Archive className="w-4 h-4" />
                                 {t("habits.groups.archived")}
                             </button>
                         </>

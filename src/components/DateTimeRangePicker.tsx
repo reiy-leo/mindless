@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { getLunarInfo, getLunarDayStr } from '@/lib/lunar';
 import { useAppStore } from '@/stores/useAppStore';
 import { formatDisplayDate } from '@/lib/formatUtils';
@@ -240,13 +240,13 @@ export default function DateTimeRangePicker({
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={handlePrevMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-          <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {viewYear} / {String(viewMonth).padStart(2, '0')}
         </span>
         <button type="button" onClick={handleNextMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-          <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
 
@@ -326,7 +326,7 @@ export default function DateTimeRangePicker({
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
       >
-        <CalendarIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
         <span className={`text-sm truncate ${startDate || endDate ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
           {triggerText}
         </span>

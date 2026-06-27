@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DocumentDuplicateIcon } from '@heroicons/react/24/outline'
+import { Copy } from 'lucide-react'
 import { useTaskTemplates } from '@/queries/useTaskQueries'
 import type { TaskTemplate } from '@/types'
 
@@ -59,7 +59,7 @@ export default function TemplatePickerOverlay({ onSelect, onClose }: TemplatePic
         <div className="flex-1 overflow-auto p-1.5">
           {filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
-              <DocumentDuplicateIcon className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
+              <Copy className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
               <p className="text-sm">{t('templates.no_templates')}</p>
             </div>
           ) : (

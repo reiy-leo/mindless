@@ -3,21 +3,20 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import {
-    PlusIcon,
-    PencilIcon,
-    ChevronDownIcon,
-    ChevronRightIcon,
-    ArchiveBoxIcon,
-    TrashIcon,
-    CheckCircleIcon,
-    BookOpenIcon,
-    XMarkIcon,
-    StarIcon,
-    ClipboardIcon,
-    CalendarIcon,
-} from "@heroicons/react/24/outline";
+    Plus,
+    Pencil,
+    ChevronDown,
+    ChevronRight,
+    Archive,
+    Trash2,
+    CheckCircle,
+    BookOpen,
+    X,
+    Star,
+    Clipboard,
+    Calendar,
+} from "lucide-react";
 import { AvatarImage } from "@/components/people/AvatarImage";
-import { Star } from "lucide-react";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
     useNotes,
@@ -74,10 +73,10 @@ function resolveIcon(icon?: string): string {
 type SmartGroupId = "favorites" | "all" | "archived" | "completed";
 
 const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: string }>; labelKey: string }[] = [
-    { id: "favorites", icon: StarIcon, labelKey: "notes.smart_groups.favorites" },
-    { id: "all", icon: BookOpenIcon, labelKey: "notes.smart_groups.all" },
-    { id: "archived", icon: ArchiveBoxIcon, labelKey: "notes.smart_groups.archived" },
-    { id: "completed", icon: CheckCircleIcon, labelKey: "notes.smart_groups.completed" },
+    { id: "favorites", icon: Star, labelKey: "notes.smart_groups.favorites" },
+    { id: "all", icon: BookOpen, labelKey: "notes.smart_groups.all" },
+    { id: "archived", icon: Archive, labelKey: "notes.smart_groups.archived" },
+    { id: "completed", icon: CheckCircle, labelKey: "notes.smart_groups.completed" },
 ];
 
 export default function NotesPage() {
@@ -584,9 +583,9 @@ export default function NotesPage() {
                                 className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                             >
                                 {groupsExpanded ? (
-                                    <ChevronDownIcon className="w-3 h-3" />
+                                    <ChevronDown className="w-3 h-3" />
                                 ) : (
-                                    <ChevronRightIcon className="w-3 h-3" />
+                                    <ChevronRight className="w-3 h-3" />
                                 )}
                                 {t("notes.groups.title")}
                             </button>
@@ -601,7 +600,7 @@ export default function NotesPage() {
                                 }}
                                 className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             >
-                                <PlusIcon className="w-3.5 h-3.5" />
+                                <Plus className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
@@ -673,7 +672,7 @@ export default function NotesPage() {
                             onClick={handleNewNote}
                             className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 transition-colors"
                         >
-                            <PlusIcon className="w-4 h-4" />
+                            <Plus className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -682,7 +681,7 @@ export default function NotesPage() {
                 <div className="flex-1 overflow-y-auto">
                     {flatItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                            <BookOpenIcon className="w-10 h-10 mb-2 opacity-50" />
+                            <BookOpen className="w-10 h-10 mb-2 opacity-50" />
                             <p className="text-sm">{t("notes.no_notes")}</p>
                         </div>
                     ) : (
@@ -796,7 +795,7 @@ export default function NotesPage() {
                                     }}
                                     className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                 >
-                                    <CalendarIcon className="w-4 h-4" />
+                                    <Calendar className="w-4 h-4" />
                                     <span>
                                         {selectedNote.targetDate
                                             ? selectedNote.targetEndDate
@@ -890,7 +889,7 @@ export default function NotesPage() {
                                                     <span className="flex-1 text-gray-700 dark:text-gray-300 truncate">{task.title}</span>
                                                     {linkItem && (
                                                         <button onClick={() => handleUnlinkItem(linkItem.id)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-gray-400 flex-shrink-0">
-                                                            <XMarkIcon className="w-3 h-3" />
+                                                            <X className="w-3 h-3" />
                                                         </button>
                                                     )}
                                                 </div>
@@ -924,7 +923,7 @@ export default function NotesPage() {
                                                 <div key={person.id} className="relative group flex flex-col items-center gap-1 p-2">
                                                     {linkItem && (
                                                         <button onClick={() => handleUnlinkItem(linkItem.id)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 hover:text-red-500 text-gray-400">
-                                                            <XMarkIcon className="w-3 h-3" />
+                                                            <X className="w-3 h-3" />
                                                         </button>
                                                     )}
                                                     {person.avatar ? (
@@ -966,14 +965,14 @@ export default function NotesPage() {
                                                 <div key={media.id} className="relative group flex flex-col overflow-hidden">
                                                     {linkItem && (
                                                         <button onClick={() => handleUnlinkItem(linkItem.id)} className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 hover:text-red-500 text-white drop-shadow">
-                                                            <XMarkIcon className="w-3 h-3" />
+                                                            <X className="w-3 h-3" />
                                                         </button>
                                                     )}
                                                     {media.cover ? (
                                                         <img src={media.cover} alt={media.title} className="w-14 aspect-[2/3] object-cover" />
                                                     ) : (
                                                         <div className="w-14 aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                                                            <BookOpenIcon className="w-5 h-5" />
+                                                            <BookOpen className="w-5 h-5" />
                                                         </div>
                                                     )}
                                                     <div className="p-1.5">
@@ -1047,7 +1046,7 @@ export default function NotesPage() {
                                                 onClick={() => handleDeleteNote(sub.id)}
                                                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400"
                                             >
-                                                <XMarkIcon className="w-3 h-3" />
+                                                <X className="w-3 h-3" />
                                             </button>
                                         </div>
                                     ))}
@@ -1070,7 +1069,7 @@ export default function NotesPage() {
                                     disabled={!newSubNoteTitle.trim()}
                                     className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors text-sm"
                                 >
-                                    <PlusIcon className="w-3.5 h-3.5" />
+                                    <Plus className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         </div>
@@ -1085,7 +1084,7 @@ export default function NotesPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                        <BookOpenIcon className="w-10 h-10 mb-2 opacity-50" />
+                        <BookOpen className="w-10 h-10 mb-2 opacity-50" />
                         <p className="text-sm">{t("notes.select_note")}</p>
                     </div>
                 )}
@@ -1107,14 +1106,14 @@ export default function NotesPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <PencilIcon className="w-4 h-4" />
+                            <Pencil className="w-4 h-4" />
                             {t("common.edit")}
                         </button>
                         <button
                             onClick={() => handleArchiveGroup(contextMenu.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ArchiveBoxIcon className="w-4 h-4" />
+                            <Archive className="w-4 h-4" />
                             {noteGroups.find((g) => g.id === contextMenu.id)?.isArchived
                                 ? t("notes.groups.unarchive")
                                 : t("notes.groups.archive")}
@@ -1124,7 +1123,7 @@ export default function NotesPage() {
                             onClick={() => handleDeleteGroup(contextMenu.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                             {t("common.delete")}
                         </button>
                     </div>
@@ -1156,7 +1155,7 @@ export default function NotesPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ClipboardIcon className="w-4 h-4" />
+                            <Clipboard className="w-4 h-4" />
                             {t("notes.copy")}
                         </button>
                         <button
@@ -1166,7 +1165,7 @@ export default function NotesPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ArchiveBoxIcon className="w-4 h-4" />
+                            <Archive className="w-4 h-4" />
                             {noteContextMenu.note.isArchived ? t("notes.groups.unarchive") : t("notes.groups.archive")}
                         </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
@@ -1177,7 +1176,7 @@ export default function NotesPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                             {t("common.delete")}
                         </button>
                     </div>

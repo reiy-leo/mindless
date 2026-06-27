@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { Star } from 'lucide-react';
 import type { MediaItem } from '@/types/media';
 
 interface MediaListItemProps {
@@ -63,7 +63,7 @@ export default function MediaListItem({ item, onClick, onContextMenu }: MediaLis
       {/* Rating */}
       {item.rating && (
         <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
-          <StarIcon className="w-4 h-4 text-yellow-400" />
+          <Star className="w-4 h-4 text-yellow-400" />
           <span>{item.rating.toFixed(1)}</span>
         </div>
       )}

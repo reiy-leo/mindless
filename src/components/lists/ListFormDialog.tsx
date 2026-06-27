@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { X } from 'lucide-react';
 import { useCreateList, useUpdateList, useDeleteList } from '@/queries/useTaskQueries';
 import EmojiPickerButton from '@/components/EmojiPickerButton';
 import type { List } from '@/types/task';
@@ -88,7 +88,7 @@ export default function ListFormDialog({ isOpen, onClose, list }: ListFormDialog
             {isEditing ? t('lists.edit_list') : t('lists.create_list')}
           </h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 

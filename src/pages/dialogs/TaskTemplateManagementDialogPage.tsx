@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, TrashIcon, ClipboardDocumentIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Plus, Trash2, Clipboard, Search } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useTaskTemplates, useCreateTaskTemplate, useUpdateTaskTemplate, useDeleteTaskTemplate } from '@/queries/useTaskQueries';
 import type { TaskTemplate } from '@/types';
@@ -111,7 +111,7 @@ export default function TaskTemplateManagementDialogPage() {
               </button>
             </div>
             <div className="relative flex-1">
-              <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder={t('template_mgmt.search_placeholder')}
@@ -124,7 +124,7 @@ export default function TaskTemplateManagementDialogPage() {
               onClick={handleCreate}
               className="p-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex-shrink-0"
             >
-              <PlusIcon className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function TaskTemplateManagementDialogPage() {
         <div className="flex-1 overflow-auto">
           {filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-3">
-              <ClipboardDocumentIcon className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
+              <Clipboard className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
               <p className="text-sm text-center">{searchQuery ? t('template_mgmt.no_results') : t('template_mgmt.no_templates')}</p>
             </div>
           ) : (
@@ -195,7 +195,7 @@ export default function TaskTemplateManagementDialogPage() {
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               onClick={() => handleDelete(contextMenu.id)}
             >
-              <TrashIcon className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" />
               {t('common.delete')}
             </button>
           </div>

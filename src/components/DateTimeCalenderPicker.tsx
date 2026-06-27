@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import { Moon, Sun, Sunrise, Rainbow } from "lucide-react";
+import { Moon, Sun, Sunrise, Rainbow, ChevronLeft, ChevronRight } from "lucide-react";
 import { getLunarDayStr } from "@/lib/lunar";
 import { useAppStore } from "@/stores/useAppStore";
 import type { TimezoneFormat } from "@/stores/useAppStore";
@@ -288,7 +287,7 @@ export default function DateTimeCalenderPicker({
                         onClick={handlePrevMonth}
                         className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     </button>
                     <span className="text-sm text-gray-900 dark:text-gray-100">
                         {viewYear} / {String(viewMonth).padStart(2, "0")}
@@ -298,7 +297,7 @@ export default function DateTimeCalenderPicker({
                         onClick={handleNextMonth}
                         className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     </button>
                 </div>
 

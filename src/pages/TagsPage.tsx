@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  PlusIcon, TrashIcon, XMarkIcon,
-  ChevronDownIcon, ChevronRightIcon, TagIcon, Bars3Icon,
-} from '@heroicons/react/24/outline';
+  Plus, Trash2, X,
+  ChevronDown, ChevronRight, Tag as TagLucide, GripVertical,
+} from 'lucide-react';
 import {
   DndContext, closestCorners, PointerSensor, useSensor, useSensors,
   type DragEndEvent, type DragOverEvent,
@@ -143,7 +143,7 @@ function ContextMenu({
         onClick={() => { onDelete(tag); onClose(); }}
         className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
       >
-        <TrashIcon className="w-3.5 h-3.5" />
+        <Trash2 className="w-3.5 h-3.5" />
         {t('common.delete')}
       </button>
     </div>
@@ -202,7 +202,7 @@ function TagRow({
         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
         title={t('tags.drag_to_reorder')}
       >
-        <Bars3Icon className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+        <GripVertical className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
       </button>
 
       {/* Emoji / Collapse (shared position) */}
@@ -214,9 +214,9 @@ function TagRow({
             className="absolute inset-0 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             {isCollapsed ? (
-              <ChevronRightIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             ) : (
-              <ChevronDownIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             )}
           </button>
         )}
@@ -360,7 +360,7 @@ function TagEditPanel({
   if (mode === 'empty') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
-        <TagIcon className="w-16 h-16 mb-4 text-gray-200 dark:text-gray-700" />
+        <TagLucide className="w-16 h-16 mb-4 text-gray-200 dark:text-gray-700" />
         <p className="text-sm">{t('tags.select_to_edit')}</p>
       </div>
     );
@@ -408,7 +408,7 @@ function TagEditPanel({
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
-          <XMarkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
         </button>
       </div>
 
@@ -843,7 +843,7 @@ export default function TagsPage() {
               onClick={handleCreateRoot}
               className="p-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              <PlusIcon className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
           <input
@@ -859,7 +859,7 @@ export default function TagsPage() {
         <div className="flex-1 overflow-auto p-2">
           {rootTags.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-4">
-              <TagIcon className="w-10 h-10 mb-3 text-gray-300 dark:text-gray-600" />
+              <TagLucide className="w-10 h-10 mb-3 text-gray-300 dark:text-gray-600" />
               <p className="text-sm text-center">
                 {searchQuery ? t('tags.no_results') : t('tags.no_tags')}
               </p>

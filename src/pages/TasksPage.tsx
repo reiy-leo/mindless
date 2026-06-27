@@ -1,35 +1,35 @@
 import {
-  ArchiveBoxIcon,
-  ArrowPathIcon,
-  ArrowTurnDownRightIcon,
-  ArrowTurnUpLeftIcon,
-  BookOpenIcon,
-  CalendarIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ClipboardDocumentCheckIcon,
-  ClipboardDocumentIcon,
-  ClipboardDocumentListIcon,
-  ClockIcon,
-  DocumentIcon,
-  EllipsisVerticalIcon,
-  ExclamationCircleIcon,
-  FilmIcon,
-  FlagIcon,
-  IdentificationIcon,
-  InboxIcon,
-  MagnifyingGlassIcon,
-  PaperClipIcon,
-  PencilIcon,
-  PlusIcon,
-  QueueListIcon,
-  SunIcon,
-  TableCellsIcon,
-  TagIcon,
-  TrashIcon,
-  ViewColumnsIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
+  Archive,
+  RefreshCw,
+  CornerDownRight,
+  CornerUpLeft,
+  BookOpen,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCheck,
+  Clipboard,
+  ClipboardList,
+  Clock,
+  File,
+  MoreVertical,
+  AlertCircle,
+  Film,
+  Flag,
+  Contact,
+  Inbox,
+  Search,
+  Paperclip,
+  Pencil,
+  Plus,
+  List as ListIcon,
+  Sun,
+  Table2,
+  Tag as TagIconLucide,
+  Trash2,
+  Columns,
+  X,
+} from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -1166,7 +1166,7 @@ function TaskDetailPanel({
             }}
             type="button"
           >
-            <CalendarIcon className="w-4 h-4 flex-shrink-0" strokeWidth={`2`} />
+            <Calendar className="w-4 h-4 flex-shrink-0" strokeWidth={`2`} />
             <span className="truncate">
               {activeTask.dueDate
                 ? activeTask.endDate
@@ -1181,12 +1181,12 @@ function TaskDetailPanel({
           {/* Section toggle drawer */}
           <div className="relative flex-shrink-0 flex items-center gap-0.5">
             {[
-              { icon: QueueListIcon, key: 'steps', label: t('tasks.steps.title') },
-              { icon: TableCellsIcon, key: 'subtasks', label: t('tasks.subtasks.title') },
-              { icon: PaperClipIcon, key: 'attachments', label: t('tasks.attachments') },
-              { icon: DocumentIcon, key: 'notes', label: t('media.linkedNotes') },
-              { icon: IdentificationIcon, key: 'persons', label: t('notes.linked_persons') },
-              { icon: FilmIcon, key: 'media', label: t('notes.linked_media') },
+              { icon: ListIcon, key: 'steps', label: t('tasks.steps.title') },
+              { icon: Table2, key: 'subtasks', label: t('tasks.subtasks.title') },
+              { icon: Paperclip, key: 'attachments', label: t('tasks.attachments') },
+              { icon: File, key: 'notes', label: t('media.linkedNotes') },
+              { icon: Contact, key: 'persons', label: t('notes.linked_persons') },
+              { icon: Film, key: 'media', label: t('notes.linked_media') },
             ].map(({ key, icon: Icon, label }) => (
               <button
                 className={`relative group p-1 rounded transition-colors ${
@@ -1244,7 +1244,7 @@ function TaskDetailPanel({
               title={t('tasks.priority.label')}
               type="button"
             >
-              <FlagIcon className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
+              <Flag className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
             </button>
             {showPriorityPicker && (
               <div className="absolute right-0 top-full mt-1 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 z-50 py-1 w-32">
@@ -1278,7 +1278,7 @@ function TaskDetailPanel({
             onClick={onSubtaskBack}
             type="button"
           >
-            <ChevronRightIcon className="w-3 h-3 rotate-180 flex-shrink-0" />
+            <ChevronRight className="w-3 h-3 rotate-180 flex-shrink-0" />
             <span className="truncate">{task.title}</span>
           </button>
         )}
@@ -1371,14 +1371,14 @@ function TaskDetailPanel({
                   type="button"
                   title={t('tasks.clipboard_paste')}
                 >
-                  <ClipboardDocumentIcon className="w-4 h-4" />
+                  <Clipboard className="w-4 h-4" />
                 </button>
                 <button
                   className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
                   onClick={handleAddAttachment}
                   type="button"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1423,11 +1423,11 @@ function TaskDetailPanel({
                             >
                               {status === 'uploading' || status === 'syncing' ? (
                                 <div className="w-full h-full rounded-sm border border-theme-100 flex items-center justify-center bg-theme-50">
-                                  <ArrowPathIcon className="w-6 h-6 text-theme-400 animate-spin" />
+                                  <RefreshCw className="w-6 h-6 text-theme-400 animate-spin" />
                                 </div>
                               ) : status === 'failed' ? (
                                 <div className="w-full h-full rounded-sm border border-red-200 flex items-center justify-center bg-red-50 relative">
-                                  <ExclamationCircleIcon className="w-6 h-6 text-red-400" />
+                                  <AlertCircle className="w-6 h-6 text-red-400" />
                                   {uploadingAttachments.get(att.id)?.error && (
                                     <span className="absolute -bottom-5 left-0 right-0 text-[10px] text-red-400 text-center truncate px-0.5">
                                       {uploadingAttachments.get(att.id)?.error}
@@ -1459,11 +1459,11 @@ function TaskDetailPanel({
                               onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
                             >
                               {status === 'uploading' || status === 'syncing' ? (
-                                <ArrowPathIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0 animate-spin" />
+                                <RefreshCw className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0 animate-spin" />
                               ) : status === 'failed' ? (
-                                <ExclamationCircleIcon className="w-4 h-4 text-red-400 dark:text-red-500 flex-shrink-0" />
+                                <AlertCircle className="w-4 h-4 text-red-400 dark:text-red-500 flex-shrink-0" />
                               ) : (
-                                <DocumentIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
+                                <File className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
                               )}
                               <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
                                 {att.originalFilename}
@@ -1517,7 +1517,7 @@ function TaskDetailPanel({
                             onClick={() => handleUnlinkItem(linkItem.id)}
                             type="button"
                           >
-                            <XMarkIcon className="w-3 h-3" />
+                            <X className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -1559,7 +1559,7 @@ function TaskDetailPanel({
                             onClick={() => handleUnlinkItem(linkItem.id)}
                             type="button"
                           >
-                            <XMarkIcon className="w-3 h-3" />
+                            <X className="w-3 h-3" />
                           </button>
                         )}
                         {person.avatar ? (
@@ -1609,14 +1609,14 @@ function TaskDetailPanel({
                             onClick={() => handleUnlinkItem(linkItem.id)}
                             type="button"
                           >
-                            <XMarkIcon className="w-3 h-3" />
+                            <X className="w-3 h-3" />
                           </button>
                         )}
                         {media.cover ? (
                           <img alt={media.title} className="w-14 aspect-[2/3] object-cover" src={media.cover} />
                         ) : (
                           <div className="w-14 aspect-[2/3] bg-theme-200 dark:bg-theme-700 flex items-center justify-center text-theme-400 dark:text-theme-500">
-                            <BookOpenIcon className="w-5 h-5" />
+                            <BookOpen className="w-5 h-5" />
                           </div>
                         )}
                         <div className="p-1.5">
@@ -2781,12 +2781,12 @@ export default function TasksPage() {
   ] as const
 
   const GROUP_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-    calendar: CalendarIcon,
-    clock: ClockIcon,
-    inbox: InboxIcon,
-    recent: ClockIcon,
-    recent7days: ClockIcon,
-    thisMonth: CalendarIcon,
+    calendar: Calendar,
+    clock: Clock,
+    inbox: Inbox,
+    recent: Clock,
+    recent7days: Clock,
+    thisMonth: Calendar,
   }
 
   const visibleSmartLists = SMART_LISTS
@@ -2997,7 +2997,7 @@ export default function TasksPage() {
   }
 
   const getGroupIcon = (iconKey: string) => {
-    const Icon = GROUP_ICON_MAP[iconKey] || InboxIcon
+    const Icon = GROUP_ICON_MAP[iconKey] || Inbox
     return <Icon className="w-3.5 h-3.5" />
   }
 
@@ -3143,7 +3143,7 @@ export default function TasksPage() {
               onClick={() => setAdvListsExpanded(!advListsExpanded)}
               type="button"
             >
-              {advListsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
+              {advListsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
               <p className='visible'>{t('advanced_groups.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
@@ -3175,7 +3175,7 @@ export default function TasksPage() {
                 title={t('lists.create_list')}
                 type="button"
               >
-                <PlusIcon className="w-3.5 h-3.5 text-theme-700 dark:text-theme-500" />
+                <Plus className="w-3.5 h-3.5 text-theme-700 dark:text-theme-500" />
               </button>
             </div>
           </div>
@@ -3219,7 +3219,7 @@ export default function TasksPage() {
                           className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
                           onMouseDown={(e) => handleEditAdvGroup(e, group)}
                         >
-                          <PencilIcon className="w-3 h-3 text-theme-400 dark:text-theme-500" />
+                          <Pencil className="w-3 h-3 text-theme-400 dark:text-theme-500" />
                         </span>
                       </button>
                     </div>
@@ -3238,7 +3238,7 @@ export default function TasksPage() {
               onClick={() => setListsExpanded(!listsExpanded)}
               type="button"
             >
-              {listsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
+              {listsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
               <p className='visible'>{t('lists.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
@@ -3248,7 +3248,7 @@ export default function TasksPage() {
                 title={t('lists.create_list')}
                 type="button"
               >
-                <PlusIcon className="w-3.5 h-3.5 text-theme-400 dark:text-theme-500" />
+                <Plus className="w-3.5 h-3.5 text-theme-400 dark:text-theme-500" />
               </button>
             </div>
           </div>
@@ -3284,7 +3284,7 @@ export default function TasksPage() {
                         className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
                         onMouseDown={(e) => handleEditList(e, list)}
                       >
-                        <PencilIcon className="w-3 h-3 text-theme-400 dark:text-theme-500" />
+                        <Pencil className="w-3 h-3 text-theme-400 dark:text-theme-500" />
                       </span>
                     </button>
                   </div>
@@ -3323,7 +3323,7 @@ export default function TasksPage() {
                   title={t('tasks.settings')}
                   type="button"
                 >
-                  <EllipsisVerticalIcon className="w-4 h-4" />
+                  <MoreVertical className="w-4 h-4" />
                 </button>
 
                 {/* Settings popup */}
@@ -3469,7 +3469,7 @@ export default function TasksPage() {
                       title={t('tasks.priority.label')}
                       type="button"
                     >
-                      <FlagIcon className="w-4 h-4" />
+                      <Flag className="w-4 h-4" />
                     </button>
                     {showPriorityPicker && (
                       <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 p-1.5 flex gap-1 z-50">
@@ -3517,7 +3517,7 @@ export default function TasksPage() {
                       title={t('tasks.tags.title')}
                       type="button"
                     >
-                      <TagIcon className="w-4 h-4" />
+                      <TagIconLucide className="w-4 h-4" />
                     </button>
                   </div>
                   {/* Date */}
@@ -3547,7 +3547,7 @@ export default function TasksPage() {
                     title={t('tasks.date_placeholder')}
                     type="button"
                   >
-                    <CalendarIcon className="w-4 h-4" />
+                    <Calendar className="w-4 h-4" />
                     {dateExplicitlySetRef.current && (
                       <span className="text-xs">
                         {newTaskDueDate}
@@ -3562,7 +3562,7 @@ export default function TasksPage() {
                     title={t('tasks.clipboard_paste')}
                     type="button"
                   >
-                    <ClipboardDocumentIcon className="w-4 h-4" />
+                    <Clipboard className="w-4 h-4" />
                   </button>
                   {/* Attachment */}
                   <button
@@ -3575,7 +3575,7 @@ export default function TasksPage() {
                     title={t('tasks.attachment')}
                     type="button"
                   >
-                    <PaperClipIcon className="w-4 h-4" />
+                    <Paperclip className="w-4 h-4" />
                     {pendingAttachments.length > 0 && <span className="text-xs">{pendingAttachments.length}</span>}
                   </button>
                   {/* Template */}
@@ -3587,7 +3587,7 @@ export default function TasksPage() {
                       title={t('tasks.template')}
                       type="button"
                     >
-                      <ClipboardDocumentListIcon className="w-4 h-4" />
+                      <ClipboardList className="w-4 h-4" />
                     </button>
                     {showTemplatePicker && allTemplates.length > 0 &&
                       createPortal(
@@ -3825,7 +3825,7 @@ export default function TasksPage() {
                   }}
                   type="button"
                 >
-                  <PencilIcon className="w-4 h-4" />
+                  <Pencil className="w-4 h-4" />
                   {t('common.edit')}
                 </button>
                 <button
@@ -3841,7 +3841,7 @@ export default function TasksPage() {
                   onClick={() => handleArchiveList(contextMenu.id)}
                   type="button"
                 >
-                  <ArchiveBoxIcon className="w-4 h-4" />
+                  <Archive className="w-4 h-4" />
                   {allLists.find((l) => l.id === contextMenu.id)?.isArchived
                     ? t('lists.unarchive')
                     : t('lists.archive')}
@@ -3852,7 +3852,7 @@ export default function TasksPage() {
                   onClick={() => handleDeleteList(contextMenu.id)}
                   type="button"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                   {t('common.delete')}
                 </button>
               </>
@@ -3869,7 +3869,7 @@ export default function TasksPage() {
                   }}
                   type="button"
                 >
-                  <PencilIcon className="w-4 h-4" />
+                  <Pencil className="w-4 h-4" />
                   {t('common.edit')}
                 </button>
                 <button
@@ -3886,7 +3886,7 @@ export default function TasksPage() {
                   onClick={() => handleDeleteAdvGroup(contextMenu.id)}
                   type="button"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                   {t('common.delete')}
                 </button>
               </>
@@ -3941,7 +3941,7 @@ export default function TasksPage() {
                       }}
                       type="button"
                     >
-                      <SunIcon className="w-4 h-4" />
+                      <Sun className="w-4 h-4" />
                       {hasToday ? t('tasks.context.remove_today') : t('tasks.context.add_today')}
                     </button>
                   )
@@ -3955,9 +3955,9 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <FlagIcon className="w-4 h-4" />
+                <Flag className="w-4 h-4" />
                 {t('tasks.context.set_priority')}
-                <ChevronRightIcon className="w-3 h-3 ml-auto" />
+                <ChevronRight className="w-3 h-3 ml-auto" />
               </button>
 
               {/* 3. 指定日期 */}
@@ -4008,7 +4008,7 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <CalendarIcon className="w-4 h-4" />
+                <Calendar className="w-4 h-4" />
                 {t('tasks.context.set_date')}
               </button>
 
@@ -4020,9 +4020,9 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <ViewColumnsIcon className="w-4 h-4" />
+                <Columns className="w-4 h-4" />
                 {t('tasks.context.set_status')}
-                <ChevronRightIcon className="w-3 h-3 ml-auto" />
+                <ChevronRight className="w-3 h-3 ml-auto" />
               </button>
 
               {/* 5. 关联主任务 */}
@@ -4034,9 +4034,9 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <ArrowTurnUpLeftIcon className="w-4 h-4" />
+                <CornerUpLeft className="w-4 h-4" />
                 {t('tasks.context.link_parent')}
-                <ChevronRightIcon className="w-3 h-3 ml-auto" />
+                <ChevronRight className="w-3 h-3 ml-auto" />
               </button>
 
               {/* 6. 关联子任务 */}
@@ -4048,9 +4048,9 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <ArrowTurnDownRightIcon className="w-4 h-4" />
+                <CornerDownRight className="w-4 h-4" />
                 {t('tasks.context.link_subtask')}
-                <ChevronRightIcon className="w-3 h-3 ml-auto" />
+                <ChevronRight className="w-3 h-3 ml-auto" />
               </button>
 
               {/* 7. 指定任务组 */}
@@ -4062,9 +4062,9 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <InboxIcon className="w-4 h-4" />
+                <Inbox className="w-4 h-4" />
                 {t('tasks.context.set_list')}
-                <ChevronRightIcon className="w-3 h-3 ml-auto" />
+                <ChevronRight className="w-3 h-3 ml-auto" />
               </button>
 
               <div className="border-t border-theme-200 dark:border-theme-700 my-1" />
@@ -4112,7 +4112,7 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <ClipboardDocumentCheckIcon className="w-4 h-4" />
+                <ClipboardCheck className="w-4 h-4" />
                 {t('tasks.save_as_template')}
               </button>
 
@@ -4126,7 +4126,7 @@ export default function TasksPage() {
                 }}
                 type="button"
               >
-                <TrashIcon className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" />
                 {t('common.delete')}
               </button>
             </div>
@@ -4223,7 +4223,7 @@ export default function TasksPage() {
                     <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[220px] ml-0.5">
                       <div className="px-2 pb-1">
                         <div className="relative">
-                          <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
+                          <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
                           <input
                             className="w-full pl-7 pr-2 py-1 text-xs bg-theme-50 dark:bg-theme-700 border border-theme-200 dark:border-theme-600 rounded focus:outline-none focus:ring-1 focus:ring-theme-500 text-theme-900 dark:text-theme-100"
                             onChange={(e) => setTaskPanelSearch(e.target.value)}
@@ -4247,7 +4247,7 @@ export default function TasksPage() {
                           }}
                           type="button"
                         >
-                          <InboxIcon className="w-3.5 h-3.5" />
+                          <Inbox className="w-3.5 h-3.5" />
                           {t('lists.inbox')}
                           {!currentTask?.listId && <span className="ml-auto text-xs">✓</span>}
                         </button>
@@ -4290,7 +4290,7 @@ export default function TasksPage() {
                   <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[220px] ml-0.5">
                     <div className="px-2 pb-1">
                       <div className="relative">
-                        <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
+                        <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
                         <input
                           className="w-full pl-7 pr-2 py-1 text-xs bg-theme-50 dark:bg-theme-700 border border-theme-200 dark:border-theme-600 rounded focus:outline-none focus:ring-1 focus:ring-theme-500 text-theme-900 dark:text-theme-100"
                           onChange={(e) => setTaskPanelSearch(e.target.value)}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Plus, X } from 'lucide-react';
 import type { Tag } from '@/types/tag';
 import { useTranslation } from 'react-i18next';
 
@@ -87,7 +87,7 @@ export default function TagCombobox({
               onClick={() => onToggle(tag.id)}
               className="opacity-0 hover:opacity-70 transition-opacity p-0.5"
             >
-              <XMarkIcon className="w-2.5 h-2.5" />
+              <X className="w-2.5 h-2.5" />
             </button>
           </span>
         ))}
@@ -142,7 +142,7 @@ export default function TagCombobox({
               onClick={handleCreateTag}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors border-t border-gray-100 dark:border-gray-700 mt-1"
             >
-              <PlusIcon className="w-3.5 h-3.5 flex-shrink-0" />
+              <Plus className="w-3.5 h-3.5 flex-shrink-0" />
               <span>创建 "{query.trim()}"</span>
             </button>
           )}

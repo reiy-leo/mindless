@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  DocumentIcon, ServerIcon, WindowIcon,
-} from '@heroicons/react/24/outline';
+  File, Database, Square,
+} from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useAllAttachments, useUpdateAttachmentFilename, useDeleteAttachmentLocalCache } from '@/queries/useTaskQueries';
 import type { Attachment } from '@/types/attachment';
@@ -124,7 +124,7 @@ function AttachmentRow({
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 group">
-      <DocumentIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      <File className="w-4 h-4 text-gray-400 flex-shrink-0" />
 
       <div className="flex-1 min-w-0">
         {editing ? (
@@ -159,7 +159,7 @@ function AttachmentRow({
         title={hasCache ? t('attachment_mgmt.has_cache') : t('attachment_mgmt.no_cache')}
         onContextMenu={(e) => onContextMenu(e, attachment)}
       >
-        <ServerIcon
+        <Database
           className={`w-4 h-4 ${hasCache ? 'text-theme-500' : 'text-gray-300 dark:text-gray-600'}`}
           strokeWidth={2}
         />
@@ -178,7 +178,7 @@ function AttachmentRow({
         {githubChecking ? (
           <div className="w-4 h-4 border border-gray-300 border-t-theme-500 rounded-full animate-spin" />
         ) : (
-          <WindowIcon
+          <Square
             className={`w-4 h-4 ${githubExists ? 'text-theme-500' : 'text-gray-300 dark:text-gray-600'}`}
             strokeWidth={2}
           />
@@ -438,7 +438,7 @@ export default function AttachmentManagementDialogPage() {
         <div className="flex-1 overflow-auto">
           {filteredAttachments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-3">
-              <DocumentIcon className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
+              <File className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
               <p className="text-sm text-center">
                 {searchQuery ? t('common.empty') : t('attachment_mgmt.no_attachments')}
               </p>

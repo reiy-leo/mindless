@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Check, X } from "lucide-react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useDialogPosition } from "@/hooks/useDialogPosition";
@@ -53,7 +53,7 @@ export default function UnitSelectorDialogPage() {
                 {/* Close button + Title */}
                 <div className="flex items-center gap-2">
                     <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <XMarkIcon className="w-4 h-4 text-gray-400" />
+                        <X className="w-4 h-4 text-gray-400" />
                     </button>
                     <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {t("habits.target_unit")}
@@ -119,7 +119,7 @@ export default function UnitSelectorDialogPage() {
                         onClick={handleConfirm}
                         className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-1 text-sm"
                     >
-                        <CheckIcon className="w-4 h-4" />
+                        <Check className="w-4 h-4" />
                         {t("common.save")}
                     </button>
                 </div>

@@ -1,4 +1,4 @@
-import { CalendarIcon, CheckCircleIcon, ClockIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Calendar, CheckCircle, Clock, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -88,7 +88,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -98,7 +98,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
             className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
           />
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-            <XMarkIcon className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
 
@@ -176,16 +176,16 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
                       </span>
                       {result.type === 'task' && result.item.dueDate && (
                         <span className="flex items-center gap-0.5">
-                          <CalendarIcon className="w-3 h-3" />
+                          <Calendar className="w-3 h-3" />
                           {formatDisplayDate(result.item.dueDate, dateFormat, t)}
                         </span>
                       )}
                       {result.type === 'task' && result.item.isCompleted && (
-                        <CheckCircleIcon className="w-3 h-3 text-green-500" />
+                        <CheckCircle className="w-3 h-3 text-green-500" />
                       )}
                       {result.type === 'countdown' && (
                         <span className="flex items-center gap-0.5">
-                          <ClockIcon className="w-3 h-3" />
+                          <Clock className="w-3 h-3" />
                           {result.item.targetDate}
                         </span>
                       )}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { Star } from 'lucide-react';
 import type { MediaItem } from '@/types/media';
 
 interface MediaCardProps {
@@ -50,7 +50,7 @@ export default function MediaCard({ item, onClick, onContextMenu }: MediaCardPro
         {/* Rating */}
         {item.rating && (
           <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 text-white px-2 py-1 rounded text-xs">
-            <StarIcon className="w-3 h-3 text-yellow-400" />
+            <Star className="w-3 h-3 text-yellow-400" />
             <span>{item.rating.toFixed(1)}</span>
           </div>
         )}

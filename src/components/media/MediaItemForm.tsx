@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, ArrowUpRightIcon, ChevronDownIcon, EyeSlashIcon, ClockIcon, FilmIcon, CheckCircleIcon, ArchiveBoxIcon, XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { Plus, ExternalLink, ChevronDown, EyeOff, Clock, Film, CheckCircle, Archive, X, Pencil } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import CoverUploader from './CoverUploader';
 import RatingSlider from './RatingSlider';
@@ -52,11 +52,11 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
   const yearOptions = Array.from({ length: currentYear + 10 - 1900 + 1 }, (_, i) => (1900 + i).toString()).reverse();
 
   const statusOptions = [
-    { value: 'unwatched', icon: EyeSlashIcon, labelKey: 'media.status.unwatched' },
-    { value: 'planned', icon: ClockIcon, labelKey: 'media.status.planned' },
-    { value: 'normal', icon: FilmIcon, labelKey: 'media.status.normal' },
-    { value: 'watched', icon: CheckCircleIcon, labelKey: 'media.status.watched' },
-    { value: 'archived', icon: ArchiveBoxIcon, labelKey: 'media.status.archived' },
+    { value: 'unwatched', icon: EyeOff, labelKey: 'media.status.unwatched' },
+    { value: 'planned', icon: Clock, labelKey: 'media.status.planned' },
+    { value: 'normal', icon: Film, labelKey: 'media.status.normal' },
+    { value: 'watched', icon: CheckCircle, labelKey: 'media.status.watched' },
+    { value: 'archived', icon: Archive, labelKey: 'media.status.archived' },
   ] as const;
 
   useEffect(() => {
@@ -324,7 +324,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                         return null;
                       })}
                     </div>
-                    <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
                   </button>
                   {showStatusDropdown && (
                     <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">
@@ -414,7 +414,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                         >
                           {cfg.label}
                           {hasLink && (
-                            <ArrowUpRightIcon className="w-3 h-3" />
+                            <ExternalLink className="w-3 h-3" />
                           )}
                         </button>
                         {hasLink && (
@@ -426,7 +426,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                             }}
                             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                           >
-                            <PencilIcon className="w-2.5 h-2.5" />
+                            <Pencil className="w-2.5 h-2.5" />
                           </button>
                         )}
                       </div>
@@ -458,7 +458,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                         onClick={() => handleOpenLink(formData[externalLinkConfig.find((c) => c.key === editingLink)!.field])}
                         className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                       >
-                        <ArrowUpRightIcon className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" />
                       </button>
                     )}
                     <button
@@ -471,7 +471,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                       }}
                       className="p-1 text-red-400 hover:text-red-600"
                     >
-                      <XMarkIcon className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -489,7 +489,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                     onClick={() => setShowOtherNameForm(true)}
                     className="p-0.5 text-gray-300 hover:text-gray-400 dark:text-gray-400 dark:hover:text-gray-200"
                   >
-                    <PlusIcon className="w-3 h-3" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
                 <PhoneEmailListEditor
@@ -518,7 +518,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                     onClick={() => setShowWatchLinkForm(true)}
                     className="p-0.5 text-gray-300 hover:text-gray-400 dark:text-gray-400 dark:hover:text-gray-200"
                   >
-                    <PlusIcon className="w-3 h-3" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
                 <PhoneEmailListEditor
@@ -555,7 +555,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                             <img src={ri.cover} alt={ri.title} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <FilmIcon className="w-4 h-4 text-gray-400" />
+                              <Film className="w-4 h-4 text-gray-400" />
                             </div>
                           )}
                         </div>
@@ -570,7 +570,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                           onClick={() => setFormData({ ...formData, relatedItemIds: formData.relatedItemIds.filter((id) => id !== ri.id) })}
                           className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-red-400"
                         >
-                          <XMarkIcon className="w-3 h-3" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -614,7 +614,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                           onClick={() => setFormData({ ...formData, linkedTaskIds: formData.linkedTaskIds.filter((id) => id !== task.id) })}
                           className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <XMarkIcon className="w-3 h-3" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -655,7 +655,7 @@ export default function MediaItemForm({ item, onClose }: MediaItemFormProps) {
                           onClick={() => setFormData({ ...formData, linkedNoteIds: formData.linkedNoteIds.filter((id) => id !== note.id) })}
                           className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <XMarkIcon className="w-3 h-3" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  StarIcon,
-  CheckCircleIcon,
-  TrashIcon as DeletedIcon,
-  ListBulletIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  CheckCircle,
+  Trash2 as DeletedIcon,
+  List,
+  AlertTriangle,
+} from 'lucide-react';
 import { useCountdownGroups, useCreateCountdownGroup, useUpdateCountdownGroup, useDeleteCountdownGroup } from '@/queries/useCountdownQueries';
 import type { CountdownGroupWithCount } from '@/types/countdown';
 import GroupFormPopup from '@/components/ui/GroupFormPopup';
@@ -17,11 +17,11 @@ import GroupFormPopup from '@/components/ui/GroupFormPopup';
 export type SmartGroupId = 'all' | 'favorites' | 'completed' | 'missed' | 'deleted';
 
 const SMART_GROUPS: { id: SmartGroupId | 'divider'; icon?: React.ComponentType<{ className?: string }>; labelKey?: string }[] = [
-  { id: 'all', icon: ListBulletIcon, labelKey: 'countdowns.smart_groups.all' },
-  { id: 'favorites', icon: StarIcon, labelKey: 'countdowns.smart_groups.favorites' },
+  { id: 'all', icon: List, labelKey: 'countdowns.smart_groups.all' },
+  { id: 'favorites', icon: Star, labelKey: 'countdowns.smart_groups.favorites' },
   { id: 'divider' },
-  { id: 'completed', icon: CheckCircleIcon, labelKey: 'countdowns.smart_groups.completed' },
-  { id: 'missed', icon: ExclamationTriangleIcon, labelKey: 'countdowns.smart_groups.missed' },
+  { id: 'completed', icon: CheckCircle, labelKey: 'countdowns.smart_groups.completed' },
+  { id: 'missed', icon: AlertTriangle, labelKey: 'countdowns.smart_groups.missed' },
   { id: 'deleted', icon: DeletedIcon, labelKey: 'countdowns.smart_groups.deleted' },
 ];
 
@@ -154,7 +154,7 @@ export default function CountdownSidebar({
             className="p-1 rounded"
             title={t('countdowns.new_group')}
           >
-            <PlusIcon className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
 
@@ -188,7 +188,7 @@ export default function CountdownSidebar({
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title={t('countdowns.edit_group')}
                       >
-                        <PencilIcon className="w-3 h-3" />
+                        <Pencil className="w-3 h-3" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -198,7 +198,7 @@ export default function CountdownSidebar({
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title={t('countdowns.delete_group')}
                       >
-                        <TrashIcon className="w-3 h-3 text-red-400" />
+                        <Trash2 className="w-3 h-3 text-red-400" />
                       </button>
                     </>
                   )}
@@ -239,7 +239,7 @@ export default function CountdownSidebar({
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <PencilIcon className="w-4 h-4" />
+                <Pencil className="w-4 h-4" />
                 {t('countdowns.edit_group')}
               </button>
               {!contextMenu.group.isPreset && (
@@ -252,7 +252,7 @@ export default function CountdownSidebar({
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                     {t('countdowns.delete_group')}
                   </button>
                 </>

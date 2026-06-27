@@ -4,12 +4,11 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
 import {
-  PlusIcon, PencilIcon, TrashIcon, XMarkIcon,
-  ClockIcon, ChevronLeftIcon, ChevronRightIcon,
-  CalendarIcon, Squares2X2Icon, StarIcon, CheckCircleIcon,
-  ArrowUturnLeftIcon, ListBulletIcon,
-} from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+  Plus, Pencil, Trash2, X,
+  Clock, ChevronLeft, ChevronRight,
+  Calendar, LayoutGrid, Star, CheckCircle,
+  Undo2, List,
+} from 'lucide-react';
 import {
   useCountdowns, useDeleteCountdown,
   useRestoreCountdown, useToggleCountdownFavorite, useToggleCountdownCompleted,
@@ -221,7 +220,7 @@ function CountdownListItem({
 
         {/* Favorite Star */}
         {countdown.isFavorite && (
-          <StarIconSolid className="w-2 h-2 flex-shrink-0" style={{
+          <Star className="w-2 h-2 flex-shrink-0" style={{
             color: `hsl(from ${countdown.color} h s 30)`
           }}/>
         )}
@@ -354,7 +353,7 @@ function CountdownCard({
           </div>
         </div>
         {countdown.isFavorite && (
-          <StarIconSolid className="w-5 h-5" style={{
+          <Star className="w-5 h-5" style={{
             color: `hsl(from ${countdown.color} h s 30)`
           }}/>
         )}
@@ -536,14 +535,14 @@ function CountdownCalendarView({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} aria-label={t('tasks.views.prev_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div className="min-w-[200px] text-center">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{monthLabel}</h2>
             <span className="text-xs text-gray-400 dark:text-gray-500">{lunarYearLabel}</span>
           </div>
           <button onClick={nextMonth} aria-label={t('tasks.views.next_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
         <button
@@ -692,7 +691,7 @@ function SelectedCountdownDetail({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('countdowns.detail')}</h3>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-          <XMarkIcon className="w-4 h-4 text-gray-400" />
+          <X className="w-4 h-4 text-gray-400" />
         </button>
       </div>
 
@@ -964,7 +963,7 @@ export default function CountdownsPage() {
                 }}
                 title={t('countdowns.view_grid')}
               >
-                <Squares2X2Icon className="w-4 h-4" />
+                <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -975,7 +974,7 @@ export default function CountdownsPage() {
                 }}
                 title={t('countdowns.view_list')}
               >
-                <ListBulletIcon className="w-4 h-4" />
+                <List className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('calendar')}
@@ -986,7 +985,7 @@ export default function CountdownsPage() {
                 }}
                 title={t('countdowns.view_calendar')}
               >
-                <CalendarIcon className="w-4 h-4" />
+                <Calendar className="w-4 h-4" />
               </button>
             </div>
             <button
@@ -997,7 +996,7 @@ export default function CountdownsPage() {
                 backgroundColor: `color-mix(in srgb, var(--theme-color) 40%, white)`
               }}
             >
-              <PlusIcon className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1005,7 +1004,7 @@ export default function CountdownsPage() {
         {/* Content area */}
         {countdowns.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-            <ClockIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
+            <Clock className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
             <p className="text-lg">
               {selectedSmartGroup === 'deleted'
                 ? t('countdowns.no_deleted')
@@ -1073,7 +1072,7 @@ export default function CountdownsPage() {
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                 >
-                  <ArrowUturnLeftIcon className="w-4 h-4" />
+                  <Undo2 className="w-4 h-4" />
                   {t('countdowns.restore')}
                 </button>
               ) : (
@@ -1085,7 +1084,7 @@ export default function CountdownsPage() {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <StarIcon className="w-4 h-4" />
+                    <Star className="w-4 h-4" />
                     {contextMenu.countdown.isFavorite ? t('countdowns.unfavorite') : t('countdowns.favorite')}
                   </button>
                   <button
@@ -1095,7 +1094,7 @@ export default function CountdownsPage() {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <CheckCircleIcon className="w-4 h-4" />
+                    <CheckCircle className="w-4 h-4" />
                     {contextMenu.countdown.isCompleted ? t('countdowns.mark_uncompleted') : t('countdowns.mark_completed')}
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
@@ -1106,7 +1105,7 @@ export default function CountdownsPage() {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <PencilIcon className="w-4 h-4" />
+                    <Pencil className="w-4 h-4" />
                     {t('common.edit')}
                   </button>
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
@@ -1117,7 +1116,7 @@ export default function CountdownsPage() {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                     {t('common.delete')}
                   </button>
                 </>

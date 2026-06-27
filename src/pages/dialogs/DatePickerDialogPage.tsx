@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getLunarDayStr } from "@/lib/lunar";
@@ -75,7 +75,7 @@ export default function DatePickerDialogPage() {
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1">
                         <button onClick={prevMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-                            <ChevronLeftIcon className="w-4 h-4 text-gray-500" />
+                            <ChevronLeft className="w-4 h-4 text-gray-500" />
                         </button>
                         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[128px] text-center">
                             {monthLabel}
@@ -87,7 +87,7 @@ export default function DatePickerDialogPage() {
                             {t("tasks.views.today")}
                         </button>
                         <button onClick={nextMonth} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-                            <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
                         </button>
                     </div>
                 </div>
@@ -166,7 +166,7 @@ export default function DatePickerDialogPage() {
                         onClick={handleConfirm}
                         className="flex-1 px-2 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-1"
                     >
-                        <CheckIcon className="w-4 h-4" />
+                        <Check className="w-4 h-4" />
                         {t("common.save")}
                     </button>
                 </div>

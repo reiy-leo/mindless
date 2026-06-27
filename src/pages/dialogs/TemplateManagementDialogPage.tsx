@@ -1,4 +1,4 @@
-import { DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { Copy, Plus, Trash2 } from 'lucide-react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -153,7 +153,7 @@ export default function TemplateManagementDialogPage() {
                 onClick={handleCreate}
                 className="p-0.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex-shrink-0"
               >
-                <PlusIcon className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function TemplateManagementDialogPage() {
           <div className="flex-1 overflow-auto p-1.5">
             {filteredTemplates.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-3">
-                <DocumentDuplicateIcon className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
+                <Copy className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
                 <p className="text-sm text-center">
                   {searchQuery ? t('template_mgmt.no_templates') : t('template_mgmt.no_templates')}
                 </p>
@@ -210,7 +210,7 @@ export default function TemplateManagementDialogPage() {
                       }}
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                     >
-                      <TrashIcon className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -290,7 +290,7 @@ export default function TemplateManagementDialogPage() {
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
               <div className="text-center">
-                <DocumentDuplicateIcon className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                <Copy className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                 <p className="text-sm">{t('template_mgmt.no_templates')}</p>
               </div>
             </div>

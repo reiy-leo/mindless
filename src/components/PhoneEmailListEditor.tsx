@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { PlusIcon, TrashIcon, PhoneIcon, EnvelopeIcon, UserIcon, ArrowUpRightIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { Plus, Trash2, Phone, Mail, User, ExternalLink, Check } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import DropdownWithCustom from './DropdownWithCustom';
 import type { PhoneEntry, EmailEntry } from '@/types/person';
@@ -30,7 +30,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const valueInputRef = useRef<HTMLInputElement>(null);
 
-  const Icon = type === 'phone' ? PhoneIcon : type === 'email' ? EnvelopeIcon : UserIcon;
+  const Icon = type === 'phone' ? Phone : type === 'email' ? Mail : User;
   const placeholder = type === 'phone' ? '输入手机号' : type === 'email' ? '输入邮箱地址' : type === 'watch_link' ? '输入观看链接' : '输入别名或昵称';
 
   const defaultLabel = type === 'phone' ? '手机' : type === 'email' ? '邮箱' : type === 'watch_link' ? '在线观看' : '别名';
@@ -142,7 +142,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
             disabled={!newValue.trim()}
             className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
-            <PlusIcon className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
@@ -161,7 +161,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
                   className="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex-1 truncate flex items-center gap-1 text-left min-w-0"
                 >
                   {entry.note || entry.value}
-                  <ArrowUpRightIcon className="w-3 h-3 flex-shrink-0" />
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
                 </button>
               ) : type === 'other_name' ? (
                 <button
@@ -171,7 +171,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
                 >
                   {entry.value}
                   {copiedId === entry.id ? (
-                    <CheckIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
+                    <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
                   ) : null}
                 </button>
               ) : (
@@ -189,7 +189,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
                 onClick={() => handleDelete(entry.id)}
                 className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
               >
-                <TrashIcon className="w-3 h-3" />
+                <Trash2 className="w-3 h-3" />
               </button>
             </div>
           ))}
@@ -211,7 +211,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
                   className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 truncate flex items-center gap-0.5 flex-shrink-0"
                 >
                   {entry.note ? '链接' : entry.value}
-                  <ArrowUpRightIcon className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
             ) : (
@@ -234,7 +234,7 @@ export default function PhoneEmailListEditor({ type, entries, onChange, showAddF
               onClick={() => handleDelete(entry.id)}
               className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <TrashIcon className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ))

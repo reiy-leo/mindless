@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ChevronDown } from 'lucide-react';
 
 interface DropdownWithSearchProps {
   value: string;
@@ -72,7 +72,7 @@ export default function DropdownWithSearch({
         <span className={value ? '' : 'text-gray-400 dark:text-gray-500'}>
           {value ? (renderSelected ? renderSelected(value) : value) : placeholder}
         </span>
-        <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+        <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-hidden">

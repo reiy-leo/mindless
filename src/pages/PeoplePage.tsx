@@ -2,19 +2,18 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-    PlusIcon,
-    PencilIcon,
-    ChevronDownIcon,
-    ChevronRightIcon,
-    ArchiveBoxIcon,
-    TrashIcon,
-    BookOpenIcon,
-    StarIcon,
-    UserIcon,
-    PhoneIcon,
-    EnvelopeIcon,
-} from "@heroicons/react/24/outline";
-import { Star } from "lucide-react";
+    Plus,
+    Pencil,
+    ChevronDown,
+    ChevronRight,
+    Archive,
+    Trash2,
+    BookOpen,
+    Star,
+    User,
+    Phone,
+    Mail,
+} from "lucide-react";
 import { AvatarImage } from "@/components/people/AvatarImage";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import {
@@ -101,9 +100,9 @@ const AVATAR_SEEDS = [
 type SmartGroupId = "favorites" | "all" | "archived";
 
 const SMART_GROUPS: { id: SmartGroupId; icon: React.ComponentType<{ className?: string }>; labelKey: string }[] = [
-    { id: "favorites", icon: StarIcon, labelKey: "people.smart_groups.favorites" },
-    { id: "all", icon: BookOpenIcon, labelKey: "people.smart_groups.all" },
-    { id: "archived", icon: ArchiveBoxIcon, labelKey: "people.smart_groups.archived" },
+    { id: "favorites", icon: Star, labelKey: "people.smart_groups.favorites" },
+    { id: "all", icon: BookOpen, labelKey: "people.smart_groups.all" },
+    { id: "archived", icon: Archive, labelKey: "people.smart_groups.archived" },
 ];
 
 // ==================== Avatar Picker ====================
@@ -255,7 +254,7 @@ function PersonCreateForm({
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         <div className="flex items-center gap-1">
-                            <UserIcon className="w-3.5 h-3.5" />
+                            <User className="w-3.5 h-3.5" />
                             {t("people.detail.other_names")}
                         </div>
                     </label>
@@ -306,7 +305,7 @@ function PersonCreateForm({
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         <div className="flex items-center gap-1">
-                            <PhoneIcon className="w-3.5 h-3.5" />
+                            <Phone className="w-3.5 h-3.5" />
                             手机号
                         </div>
                     </label>
@@ -321,7 +320,7 @@ function PersonCreateForm({
                 <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         <div className="flex items-center gap-1">
-                            <EnvelopeIcon className="w-3.5 h-3.5" />
+                            <Mail className="w-3.5 h-3.5" />
                             邮箱
                         </div>
                     </label>
@@ -928,9 +927,9 @@ export default function PeoplePage() {
                                 className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                             >
                                 {groupsExpanded ? (
-                                    <ChevronDownIcon className="w-3 h-3" />
+                                    <ChevronDown className="w-3 h-3" />
                                 ) : (
-                                    <ChevronRightIcon className="w-3 h-3" />
+                                    <ChevronRight className="w-3 h-3" />
                                 )}
                                 {t("people.groups.title")}
                             </button>
@@ -945,7 +944,7 @@ export default function PeoplePage() {
                                 }}
                                 className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             >
-                                <PlusIcon className="w-3.5 h-3.5" />
+                                <Plus className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
@@ -1022,7 +1021,7 @@ export default function PeoplePage() {
                                     onClick={handleCreatePerson}
                                     className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                 >
-                                    <PlusIcon className="w-4 h-4" />
+                                    <Plus className="w-4 h-4" />
                                 </button>
                             </>
                         )}
@@ -1033,7 +1032,7 @@ export default function PeoplePage() {
                 <div className="flex-1 overflow-y-auto">
                     {filteredPersons.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                            <UserIcon className="w-10 h-10 mb-2 opacity-50" />
+                            <User className="w-10 h-10 mb-2 opacity-50" />
                             <p className="text-sm">{t("people.no_people")}</p>
                         </div>
                     ) : (
@@ -1138,7 +1137,7 @@ export default function PeoplePage() {
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                                         <div className="flex items-center gap-1">
-                                            <UserIcon className="w-3.5 h-3.5" />
+                                            <User className="w-3.5 h-3.5" />
                                             {t("people.detail.other_names")}
                                         </div>
                                     </label>
@@ -1146,7 +1145,7 @@ export default function PeoplePage() {
                                         onClick={() => setShowOtherNamesAdd(!showOtherNamesAdd)}
                                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                                 <PhoneEmailListEditor
@@ -1232,7 +1231,7 @@ export default function PeoplePage() {
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                                         <div className="flex items-center gap-1">
-                                            <PhoneIcon className="w-3.5 h-3.5" />
+                                            <Phone className="w-3.5 h-3.5" />
                                             {t("people.detail.phones")}
                                         </div>
                                     </label>
@@ -1240,7 +1239,7 @@ export default function PeoplePage() {
                                         onClick={() => setShowPhonesAdd(!showPhonesAdd)}
                                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                                 <div className="group">
@@ -1292,7 +1291,7 @@ export default function PeoplePage() {
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                                         <div className="flex items-center gap-1">
-                                            <EnvelopeIcon className="w-3.5 h-3.5" />
+                                            <Mail className="w-3.5 h-3.5" />
                                             {t("people.detail.emails")}
                                         </div>
                                     </label>
@@ -1300,7 +1299,7 @@ export default function PeoplePage() {
                                         onClick={() => setShowEmailsAdd(!showEmailsAdd)}
                                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                                 <div className="group">
@@ -1355,7 +1354,7 @@ export default function PeoplePage() {
                                         onClick={() => setShowFoodTaboosAdd(!showFoodTaboosAdd)}
                                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                                 <SimpleListEditor
@@ -1386,7 +1385,7 @@ export default function PeoplePage() {
                                         onClick={() => setShowPreferencesAdd(!showPreferencesAdd)}
                                         className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <Plus className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                                 <SimpleListEditor
@@ -1479,7 +1478,7 @@ export default function PeoplePage() {
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                        <UserIcon className="w-10 h-10 mb-2 opacity-50" />
+                        <User className="w-10 h-10 mb-2 opacity-50" />
                         <p className="text-sm">{t("people.select_person")}</p>
                     </div>
                 )}
@@ -1501,14 +1500,14 @@ export default function PeoplePage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <PencilIcon className="w-4 h-4" />
+                            <Pencil className="w-4 h-4" />
                             {t("common.edit")}
                         </button>
                         <button
                             onClick={() => handleToggleGroupPin(contextMenu.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <StarIcon className="w-4 h-4" />
+                            <Star className="w-4 h-4" />
                             {personGroups.find((g) => g.id === contextMenu.id)?.isPinned
                                 ? t("people.unpin")
                                 : t("people.pin")}
@@ -1517,7 +1516,7 @@ export default function PeoplePage() {
                             onClick={() => handleArchiveGroup(contextMenu.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ArchiveBoxIcon className="w-4 h-4" />
+                            <Archive className="w-4 h-4" />
                             {personGroups.find((g) => g.id === contextMenu.id)?.isArchived
                                 ? t("people.groups.unarchive")
                                 : t("people.groups.archive")}
@@ -1527,7 +1526,7 @@ export default function PeoplePage() {
                             onClick={() => handleDeleteGroup(contextMenu.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                             {t("common.delete")}
                         </button>
                     </div>
@@ -1549,7 +1548,7 @@ export default function PeoplePage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <StarIcon className="w-4 h-4" />
+                            <Star className="w-4 h-4" />
                             {personContextMenu.person.isPinned ? t("people.unfavorite") : t("people.favorite")}
                         </button>
                         <button
@@ -1559,7 +1558,7 @@ export default function PeoplePage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ArchiveBoxIcon className="w-4 h-4" />
+                            <Archive className="w-4 h-4" />
                             {personContextMenu.person.isArchived
                                 ? t("people.groups.unarchive")
                                 : t("people.groups.archive")}
@@ -1571,7 +1570,7 @@ export default function PeoplePage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <BookOpenIcon className="w-4 h-4" />
+                            <BookOpen className="w-4 h-4" />
                             {t("people.copy")}
                         </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
@@ -1582,7 +1581,7 @@ export default function PeoplePage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                             {t("common.delete")}
                         </button>
                     </div>

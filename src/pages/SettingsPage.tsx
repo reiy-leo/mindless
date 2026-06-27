@@ -1,15 +1,8 @@
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
-import {
-  DocumentIcon,
-  FilmIcon,
-  IdentificationIcon,
-  PaperClipIcon,
-  QueueListIcon,
-  TableCellsIcon,
-} from '@heroicons/react/24/outline'
-import { Clock, Cloud, Command, Laptop, Layers, LayoutGrid, ListTodo, Moon, Palette, Settings, Sun, Type } from 'lucide-react'
+
+import { Clock, Cloud, Command, Contact, File, Film, Laptop, Layers, LayoutGrid, List, ListTodo, Moon, Palette, Paperclip, Settings, Sun, Table2, Type } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDisplayDate, formatTime, formatTimezoneOffset } from '@/lib/formatUtils'
@@ -161,6 +154,11 @@ export default function SettingsPage() {
     gitee: localStorage.getItem('mindless-sync-url-gitee') || '',
   }))
   const [syncPats, setSyncPats] = useState<Record<string, string>>({ github: '', gitlab: '', gitee: '' })
+  const [syncHasPat, setSyncHasPat] = useState<Record<string, boolean>>({
+    github: !!localStorage.getItem('mindless-sync-has-pat-github.com'),
+    gitlab: !!localStorage.getItem('mindless-sync-has-pat-gitlab.com'),
+    gitee: !!localStorage.getItem('mindless-sync-has-pat-gitee.com'),
+  })
   const [gitlabProjectId, setGitlabProjectId] = useState(() => localStorage.getItem('mindless-sync-gitlab-project-id') || '')
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
@@ -189,30 +187,34 @@ export default function SettingsPage() {
     localStorage.setItem('mindless-sync-provider', syncProvider)
   }, [syncProvider])
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { loadPat } = await import('@/lib/api')
-        const results: Record<string, string> = {}
-        for (const provider of ['github', 'gitlab', 'gitee']) {
-          const pat = await loadPat(domainMap[provider])
-          if (pat) results[provider] = pat
-        }
-        setSyncPats(prev => ({ ...prev, ...results }))
-      } catch {}
-    })()
-  }, [])
+  const loadPatIfNeeded = async (domain: string): Promise<string> => {
+    const existing = syncPats[Object.keys(domainMap).find(k => domainMap[k] === domain) || '']
+    if (existing) return existing
+    const { loadPat } = await import('@/lib/api')
+    const pat = await loadPat(domain)
+    if (pat) {
+      const key = Object.keys(domainMap).find(k => domainMap[k] === domain) || ''
+      setSyncPats(prev => ({ ...prev, [key]: pat }))
+    }
+    return pat || ''
+  }
 
   const handleSavePat = async () => {
     if (!syncUrl || !syncPat) return
     try {
       const { savePat } = await import('@/lib/api')
       await savePat(domainMap[syncProvider], syncPat)
+      localStorage.setItem(`mindless-sync-has-pat-${domainMap[syncProvider]}`, '1')
+      setSyncHasPat(prev => ({ ...prev, [syncProvider]: true }))
     } catch {}
   }
 
   const handleTest = async () => {
-    if (!syncUrl || !syncPat) {
+    let pat = syncPat
+    if (!pat && syncHasPat[syncProvider]) {
+      pat = await loadPatIfNeeded(domainMap[syncProvider])
+    }
+    if (!syncUrl || !pat) {
       setSyncStatus('empty_fields')
       return
     }
@@ -222,7 +224,7 @@ export default function SettingsPage() {
     setSyncError(null)
     try {
       const { testConnection } = await import('@/lib/sync')
-      const result = await testConnection(syncPat, syncUrl, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
+      const result = await testConnection(pat, syncUrl, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
       if (result.success) {
         setSyncStatus('test_success')
         setSyncError(null)
@@ -240,7 +242,11 @@ export default function SettingsPage() {
   }
 
   const handleSync = async () => {
-    if (!syncUrl || !syncPat) {
+    let pat = syncPat
+    if (!pat && syncHasPat[syncProvider]) {
+      pat = await loadPatIfNeeded(domainMap[syncProvider])
+    }
+    if (!syncUrl || !pat) {
       setSyncStatus('empty_fields')
       return
     }
@@ -251,7 +257,7 @@ export default function SettingsPage() {
       const { exportAllData, getDbBase64 } = await import('@/lib/api')
       const { syncToRepo } = await import('@/lib/sync')
       const [exportJson, dbBase64] = await Promise.all([exportAllData(), getDbBase64()])
-      const result = await syncToRepo(syncPat, syncUrl, exportJson, dbBase64, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
+      const result = await syncToRepo(pat, syncUrl, exportJson, dbBase64, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
       setSyncStatus(result.success ? 'sync_success' : 'sync_failed')
     } catch {
       setSyncStatus('sync_failed')
@@ -694,12 +700,12 @@ export default function SettingsPage() {
               </h2>
               <div className="relative flex items-center gap-1">
                 {[
-                  { icon: QueueListIcon, key: 'steps', label: t('tasks.steps.title') },
-                  { icon: TableCellsIcon, key: 'subtasks', label: t('tasks.subtasks.title') },
-                  { icon: PaperClipIcon, key: 'attachments', label: t('tasks.attachments') },
-                  { icon: DocumentIcon, key: 'notes', label: t('media.linkedNotes') },
-                  { icon: IdentificationIcon, key: 'persons', label: t('notes.linked_persons') },
-                  { icon: FilmIcon, key: 'media', label: t('notes.linked_media') },
+                  { icon: List, key: 'steps', label: t('tasks.steps.title') },
+                  { icon: Table2, key: 'subtasks', label: t('tasks.subtasks.title') },
+                  { icon: Paperclip, key: 'attachments', label: t('tasks.attachments') },
+                  { icon: File, key: 'notes', label: t('media.linkedNotes') },
+                  { icon: Contact, key: 'persons', label: t('notes.linked_persons') },
+                  { icon: Film, key: 'media', label: t('notes.linked_media') },
                 ].map(({ key, icon: Icon, label }) => (
                   <button
                     className={`relative group p-2 rounded-lg transition-colors ${
@@ -1148,7 +1154,12 @@ export default function SettingsPage() {
                   value={syncPat}
                   onChange={(e) => setSyncPat(e.target.value)}
                   onBlur={handleSavePat}
-                  placeholder={t('settings.sync.pat_placeholder')}
+                  onFocus={async () => {
+                    if (!syncPat && syncHasPat[syncProvider]) {
+                      await loadPatIfNeeded(domainMap[syncProvider])
+                    }
+                  }}
+                  placeholder={syncHasPat[syncProvider] && !syncPat ? '••••••••' : t('settings.sync.pat_placeholder')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('settings.sync.pat_help')}</p>

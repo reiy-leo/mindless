@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ClockIcon } from "@heroicons/react/24/outline";
-import { Moon, Sun, Sunrise, Rainbow, Calendar1, CalendarArrowDown, CalendarFold, CalendarDays } from "lucide-react";
+import { Moon, Sun, Sunrise, Rainbow, Calendar1, CalendarArrowDown, CalendarFold, CalendarDays, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { getLunarDayStr } from "@/lib/lunar";
 import { useAppStore } from "@/stores/useAppStore";
@@ -335,7 +334,7 @@ export default function DateTimeCalenderWithRangePicker({
                         borderBottom: activeTab === "date" ? `2px solid ${colorStyles.activeTab}` : undefined,
                     }}
                 >
-                    <CalendarIcon className="w-3.5 h-3.5" />
+                    <Calendar className="w-3.5 h-3.5" />
                     {t("tasks.date_tab")}
                 </button>
                 <button
@@ -347,7 +346,7 @@ export default function DateTimeCalenderWithRangePicker({
                         borderBottom: activeTab === "range" ? `2px solid ${colorStyles.activeTab}` : undefined,
                     }}
                 >
-                    <ClockIcon className="w-3.5 h-3.5" />
+                    <Clock className="w-3.5 h-3.5" />
                     {t("tasks.range_tab")}
                 </button>
             </div>
@@ -430,7 +429,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onClick={handlePrevMonth}
                             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {viewYear} / {String(viewMonth).padStart(2, "0")}
@@ -440,7 +439,7 @@ export default function DateTimeCalenderWithRangePicker({
                             onClick={handleNextMonth}
                             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronRightIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
                     </div>
 
@@ -695,7 +694,7 @@ export default function DateTimeCalenderWithRangePicker({
                                 onClick={handlePrevMonth}
                                 className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <ChevronLeftIcon className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                                <ChevronLeft className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                             </button>
                             <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">
                                 {viewYear}/{String(viewMonth).padStart(2, "0")}
@@ -705,7 +704,7 @@ export default function DateTimeCalenderWithRangePicker({
                                 onClick={handleNextMonth}
                                 className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <ChevronRightIcon className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                                <ChevronRight className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                             </button>
                         </div>
                         <div className="grid grid-cols-7 gap-0.5">

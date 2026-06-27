@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, Squares2X2Icon, ListBulletIcon, MagnifyingGlassIcon, StarIcon, PencilIcon, TrashIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { Plus, LayoutGrid, List, Search, Star, Pencil, Trash2, RefreshCw, CheckCircle } from 'lucide-react';
 import { useMediaItems, useUpdateMediaItem, useDeleteMediaItem } from '@/queries/useMediaQueries';
 import MediaCard from './MediaCard';
 import MediaListItem from './MediaListItem';
@@ -136,7 +136,7 @@ export default function MediaContent({
       <div className="flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700">
         {/* Search */}
         <div className="flex-1 relative">
-          <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             value={search}
@@ -157,7 +157,7 @@ export default function MediaContent({
             }`}
             title="Grid"
           >
-            <Squares2X2Icon className="w-4 h-4" />
+            <LayoutGrid className="w-4 h-4" />
           </button>
           <button
             onClick={() => onViewModeChange('list')}
@@ -168,7 +168,7 @@ export default function MediaContent({
             }`}
             title="List"
           >
-            <ListBulletIcon className="w-4 h-4" />
+            <List className="w-4 h-4" />
           </button>
         </div>
 
@@ -180,7 +180,7 @@ export default function MediaContent({
           }}
           className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600"
         >
-          <PlusIcon className="w-4 h-4" />
+          <Plus className="w-4 h-4" />
           {t('media.actions.new')}
         </button>
       </div>
@@ -223,7 +223,7 @@ export default function MediaContent({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => handleToggleFavorite(contextMenu.item)}
             >
-              <StarIcon className="w-4 h-4" />
+              <Star className="w-4 h-4" />
               {contextMenu.item.status === 'normal' ? t('media.status.watched') : t('media.status.normal')}
             </button>
 
@@ -232,7 +232,7 @@ export default function MediaContent({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => handleEdit(contextMenu.item)}
             >
-              <PencilIcon className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
               {t('media.actions.edit')}
             </button>
 
@@ -253,7 +253,7 @@ export default function MediaContent({
                 }`}
                 onClick={() => handleChangeStatus(contextMenu.item, option.value)}
               >
-                {contextMenu.item.status === option.value && <CheckCircleIcon className="w-4 h-4" />}
+                {contextMenu.item.status === option.value && <CheckCircle className="w-4 h-4" />}
                 <span className={contextMenu.item.status === option.value ? '' : 'ml-6'}>
                   {t(option.labelKey)}
                 </span>
@@ -268,7 +268,7 @@ export default function MediaContent({
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => handleRewatch(contextMenu.item)}
                 >
-                  <ArrowPathIcon className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" />
                   {t('media.actions.rewatch')}
                 </button>
               </>
@@ -282,7 +282,7 @@ export default function MediaContent({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
               onClick={() => handleDelete(contextMenu.item)}
             >
-              <TrashIcon className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" />
               {t('media.actions.delete')}
             </button>
           </div>

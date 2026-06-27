@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { X } from 'lucide-react';
 import { PRIORITY } from '@/lib/constants';
 import { useLists, useCalendarEvents } from '@/queries/useTaskQueries';
 import { useViewStore } from '@/stores/useViewStore';
@@ -183,7 +183,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             {isEditing ? t('tasks.edit_task') : t('tasks.new_task')}
           </h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <XMarkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 

@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  StarIcon,
-  BookOpenIcon,
-  ArchiveBoxIcon,
-  CheckCircleIcon,
-  FilmIcon,
-  EyeSlashIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline';
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  BookOpen,
+  Archive,
+  CheckCircle,
+  Film,
+  EyeOff,
+  Clock,
+} from 'lucide-react';
 import { useMediaGroupsWithCount, useCreateMediaGroup, useUpdateMediaGroup, useDeleteMediaGroup } from '@/queries/useMediaQueries';
 import type { MediaGroupWithCount } from '@/types/media';
 import GroupFormPopup from '@/components/ui/GroupFormPopup';
@@ -19,14 +19,14 @@ import GroupFormPopup from '@/components/ui/GroupFormPopup';
 type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
 
 const SMART_GROUPS: { id: SmartGroupId | 'divider'; icon?: React.ComponentType<{ className?: string }>; labelKey?: string }[] = [
-  { id: 'all', icon: BookOpenIcon, labelKey: 'media.smart_groups.all' },
-  { id: 'favorites', icon: StarIcon, labelKey: 'media.smart_groups.favorites' },
+  { id: 'all', icon: BookOpen, labelKey: 'media.smart_groups.all' },
+  { id: 'favorites', icon: Star, labelKey: 'media.smart_groups.favorites' },
   { id: 'divider' },
-  { id: 'unwatched', icon: EyeSlashIcon, labelKey: 'media.smart_groups.unwatched' },
-  { id: 'planned', icon: ClockIcon, labelKey: 'media.smart_groups.planned' },
-  { id: 'normal', icon: FilmIcon, labelKey: 'media.smart_groups.normal' },
-  { id: 'watched', icon: CheckCircleIcon, labelKey: 'media.smart_groups.watched' },
-  { id: 'archived', icon: ArchiveBoxIcon, labelKey: 'media.smart_groups.archived' },
+  { id: 'unwatched', icon: EyeOff, labelKey: 'media.smart_groups.unwatched' },
+  { id: 'planned', icon: Clock, labelKey: 'media.smart_groups.planned' },
+  { id: 'normal', icon: Film, labelKey: 'media.smart_groups.normal' },
+  { id: 'watched', icon: CheckCircle, labelKey: 'media.smart_groups.watched' },
+  { id: 'archived', icon: Archive, labelKey: 'media.smart_groups.archived' },
 ];
 
 interface MediaSidebarProps {
@@ -150,7 +150,7 @@ export default function MediaSidebar({
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             title={t('media.actions.new_group')}
           >
-            <PlusIcon className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
 
@@ -182,7 +182,7 @@ export default function MediaSidebar({
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                     title={t('media.actions.edit_group')}
                   >
-                    <PencilIcon className="w-3 h-3" />
+                    <Pencil className="w-3 h-3" />
                   </button>
                   {!group.isPreset && (
                     <button
@@ -193,7 +193,7 @@ export default function MediaSidebar({
                       className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                       title={t('media.actions.delete_group')}
                     >
-                      <TrashIcon className="w-3 h-3" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   )}
                 </div>

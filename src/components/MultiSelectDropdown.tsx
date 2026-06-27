@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronDown, X } from 'lucide-react';
 
 export interface MultiSelectOption {
   id: string;
@@ -65,12 +65,12 @@ export default function MultiSelectDropdown({ options, selected, onChange, place
                 onClick={(e) => remove(opt.id, e)}
                 className="ml-0.5 hover:text-red-500 cursor-pointer"
               >
-                <XMarkIcon className="w-3 h-3" />
+                <X className="w-3 h-3" />
               </span>
             </span>
           ))
         )}
-        <ChevronDownIcon className={`w-4 h-4 text-gray-400 ml-auto flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 ml-auto flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

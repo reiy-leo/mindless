@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Plus, X } from 'lucide-react';
 
 interface MultiValueInputProps {
   value: { name: string; label?: string }[];
@@ -60,7 +60,7 @@ export default function MultiValueInput({
           onClick={handleAdd}
           className="px-2 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          <PlusIcon className="w-4 h-4" />
+          <Plus className="w-4 h-4" />
         </button>
       </div>
 
@@ -83,7 +83,7 @@ export default function MultiValueInput({
               onClick={() => handleRemove(index)}
               className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             >
-              <XMarkIcon className="w-3 h-3" />
+              <X className="w-3 h-3" />
             </button>
           </div>
         ))}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon, StarIcon, PencilIcon, ArrowUpRightIcon, PlusIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { X, Star, Pencil, ExternalLink, Plus, Trash2, Calendar } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useMediaItemDetails, useMediaWatchHistory, useDeleteMediaWatchHistory } from '@/queries/useMediaQueries';
 import { useMediaGroups } from '@/queries/useMediaQueries';
@@ -86,13 +86,13 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
               className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               title={t('media.actions.edit')}
             >
-              <PencilIcon className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
               className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             >
-              <XMarkIcon className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
 
               {item.rating && (
                 <div className="flex items-center gap-1">
-                  <StarIcon className="w-4 h-4 text-yellow-400" />
+                  <Star className="w-4 h-4 text-yellow-400" />
                   <span className="text-sm font-medium">{item.rating.toFixed(1)}</span>
                 </div>
               )}
@@ -167,7 +167,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                     onClick={() => handleOpenLink(item.doubanUrl!)}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                   >
-                    豆瓣 <ArrowUpRightIcon className="w-3 h-3" />
+                    豆瓣 <ExternalLink className="w-3 h-3" />
                   </button>
                 )}
                 {item.imdbUrl && (
@@ -175,7 +175,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                     onClick={() => handleOpenLink(item.imdbUrl!)}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                   >
-                    IMDB <ArrowUpRightIcon className="w-3 h-3" />
+                    IMDB <ExternalLink className="w-3 h-3" />
                   </button>
                 )}
                 {item.rottenTomatoesUrl && (
@@ -183,7 +183,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                     onClick={() => handleOpenLink(item.rottenTomatoesUrl!)}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
                   >
-                    烂番茄 <ArrowUpRightIcon className="w-3 h-3" />
+                    烂番茄 <ExternalLink className="w-3 h-3" />
                   </button>
                 )}
               </div>
@@ -203,7 +203,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                     onClick={() => handleOpenLink(link.url)}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
                   >
-                    {link.platform || '观看'} <ArrowUpRightIcon className="w-3 h-3" />
+                    {link.platform || '观看'} <ExternalLink className="w-3 h-3" />
                   </button>
                 ))}
               </div>
@@ -271,7 +271,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                 }}
                 className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <PlusIcon className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
               </button>
             </div>
 
@@ -288,7 +288,7 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                        <Calendar className="w-4 h-4 text-gray-400" />
                         <span className="text-sm text-gray-700 dark:text-gray-300">
                           {formatDate(history.startDate)}
                           {history.endDate && ` - ${formatDate(history.endDate)}`}
@@ -302,13 +302,13 @@ export default function MediaItemPreview({ item, onClose, onEdit }: MediaItemPre
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         >
-                          <PencilIcon className="w-3 h-3" />
+                          <Pencil className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleDeleteHistory(history.id)}
                           className="p-1 text-gray-400 hover:text-red-500"
                         >
-                          <TrashIcon className="w-3 h-3" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>

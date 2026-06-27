@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { PhotoIcon, ArrowUpTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Image, Upload, Trash2 } from 'lucide-react';
 
 interface CoverUploaderProps {
   value: string | null;
@@ -34,7 +34,7 @@ export default function CoverUploader({ value, onChange }: CoverUploaderProps) {
           <img src={value} alt="Cover" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <PhotoIcon className="w-8 h-8" />
+            <Image className="w-8 h-8" />
           </div>
         )}
       </div>
@@ -44,7 +44,7 @@ export default function CoverUploader({ value, onChange }: CoverUploaderProps) {
           onClick={() => fileInputRef.current?.click()}
           className="p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
         >
-          <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+          <Upload className="w-3.5 h-3.5" />
         </button>
       </div>
       {value && (
@@ -54,7 +54,7 @@ export default function CoverUploader({ value, onChange }: CoverUploaderProps) {
             onClick={handleRemove}
             className="p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
           >
-            <TrashIcon className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       )}

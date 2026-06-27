@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDown } from "lucide-react";
 
 export interface SelectOption {
     value: string;
@@ -120,7 +120,7 @@ export default function Select({
                         <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>
                     )}
                 </span>
-                <ChevronDownIcon
+                <ChevronDown
                     className={`w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 transition-transform ${
                         open ? "rotate-180" : ""
                     }`}
