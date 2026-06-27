@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, TaskLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, TaskLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment, TaskTemplate } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -147,6 +147,41 @@ export async function moveTags(items: {
   id: string; parentId?: string | null; level?: number; sortOrder?: number;
 }[]): Promise<void> {
   return await invoke<void>('move_tags', { items });
+}
+
+// Task Template APIs
+export async function getTaskTemplates(): Promise<TaskTemplate[]> {
+  return await invoke<TaskTemplate[]>('get_task_templates');
+}
+
+export async function getTaskTemplateById(id: string): Promise<TaskTemplate | null> {
+  return await invoke<TaskTemplate | null>('get_task_template_by_id', { id });
+}
+
+export async function createTaskTemplate(params: {
+  name: string;
+  description?: string;
+  steps?: string;
+  tagIds?: string;
+}): Promise<TaskTemplate> {
+  return await invoke<TaskTemplate>('create_task_template', params);
+}
+
+export async function updateTaskTemplate(id: string, params: {
+  name?: string;
+  description?: string;
+  steps?: string;
+  tagIds?: string;
+}): Promise<TaskTemplate> {
+  return await invoke<TaskTemplate>('update_task_template', { id, ...params });
+}
+
+export async function deleteTaskTemplate(id: string): Promise<void> {
+  return await invoke<void>('delete_task_template', { id });
+}
+
+export async function incrementTemplateUsage(id: string): Promise<void> {
+  return await invoke<void>('increment_template_usage', { id });
 }
 
 // Subtask APIs (subtasks are now tasks with parentTaskId)
@@ -996,6 +1031,10 @@ export async function getAttachmentsByTask(taskId: string): Promise<Attachment[]
   return await invoke<Attachment[]>('get_attachments_by_task', { taskId });
 }
 
+export async function getAttachmentById(id: string): Promise<Attachment> {
+  return await invoke<Attachment>('get_attachment_by_id', { id });
+}
+
 export async function readFileBytes(path: string): Promise<number[]> {
   return await invoke<number[]>('read_file_bytes', { path });
 }
@@ -1031,6 +1070,17 @@ export async function deleteAttachmentLocalCache(id: string): Promise<void> {
   return await invoke('delete_attachment_local_cache', { id });
 }
 
+export async function updateAttachmentSyncStatus(params: {
+  id: string;
+  syncStatus: string;
+  syncProvider?: string;
+  syncError?: string;
+  uploadedTo?: string;
+  rawUrl?: string;
+}): Promise<void> {
+  return await invoke('update_attachment_sync_status', params);
+}
+
 export interface MenuLabels {
   appMenu: string;
   about: string;
@@ -1058,6 +1108,7 @@ export interface MenuLabels {
   navCountdowns: string;
   navNotes: string;
   manageTags: string;
+  manageTaskTemplates: string;
   manageAttachments: string;
   editMenu: string;
   windowMenu: string;

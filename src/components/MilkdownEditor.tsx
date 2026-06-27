@@ -9,61 +9,8 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/stores/useAppStore'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
+import '@milkdown/crepe/theme/frame-dark.css'
 
-function getSystemTheme(): 'light' | 'dark' {
-  const root = document.documentElement
-  if (root.classList.contains('dark')) return 'dark'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
-const lightVars: Record<string, string> = {
-  '--crepe-color-background': '#ffffff',
-  '--crepe-color-error': '#cf222e',
-  '--crepe-color-hover': '#f6f8fa',
-  '--crepe-color-inline-area': '#f6f8fa',
-  '--crepe-color-inline-code': '#cf222e',
-  '--crepe-color-inverse': '#1f2328',
-  '--crepe-color-on-background': '#1f2328',
-  '--crepe-color-on-inverse': '#ffffff',
-  '--crepe-color-on-secondary': '#1f2328',
-  '--crepe-color-on-surface': '#1f2328',
-  '--crepe-color-on-surface-variant': '#656d76',
-  '--crepe-color-outline': '#d0d7de',
-  '--crepe-color-primary': '#1f2328',
-  '--crepe-color-secondary': '#d0d7de',
-  '--crepe-color-selected': '#ddf4ff',
-  '--crepe-color-surface': '#ffffff',
-  '--crepe-color-surface-low': '#f6f8fa',
-}
-
-const darkVars: Record<string, string> = {
-  '--crepe-color-background': '#0d1117',
-  '--crepe-color-error': '#f85149',
-  '--crepe-color-hover': '#1c2128',
-  '--crepe-color-inline-area': '#1c2128',
-  '--crepe-color-inline-code': '#ff7b72',
-  '--crepe-color-inverse': '#e6edf3',
-  '--crepe-color-on-background': '#e6edf3',
-  '--crepe-color-on-inverse': '#0d1117',
-  '--crepe-color-on-secondary': '#e6edf3',
-  '--crepe-color-on-surface': '#e6edf3',
-  '--crepe-color-on-surface-variant': '#8b949e',
-  '--crepe-color-outline': '#30363d',
-  '--crepe-color-primary': '#e6edf3',
-  '--crepe-color-secondary': '#30363d',
-  '--crepe-color-selected': '#1f3a5f',
-  '--crepe-color-surface': '#161b22',
-  '--crepe-color-surface-low': '#0d1117',
-}
-
-function applyCrepeTheme(isDark: boolean) {
-  const root = document.querySelector('.milkdown') as HTMLElement
-  if (!root) return
-  const vars = isDark ? darkVars : lightVars
-  for (const [key, value] of Object.entries(vars)) {
-    root.style.setProperty(key, value)
-  }
-}
 
 interface MilkdownEditorInnerProps {
   isDark: boolean
@@ -114,17 +61,17 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
           extensions: [
             EditorView.lineWrapping,
             isDark ? githubDark : githubLight,
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                setTimeout(() => triggerChangeRef.current(), 0)
-              }
-            }),
+            // EditorView.updateListener.of((update) => {
+            //   if (update.docChanged) {
+            //     setTimeout(() => triggerChangeRef.current(), 0)
+            //   }
+            // }),
           ],
-          previewOnlyByDefault: true,
         },
       },
       features: {
         [Crepe.Feature.Latex]: true,
+        [Crepe.Feature.LinkTooltip]: true,
         [Crepe.Feature.AI]: false,
       },
       root,
@@ -134,11 +81,6 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
   useEffect(() => {
     getRef.current = get
   }, [get])
-
-  useEffect(() => {
-    if (loading) return
-    applyCrepeTheme(isDark)
-  }, [loading, isDark])
 
   useEffect(() => {
     if (loading) {
@@ -188,19 +130,25 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
       return
     }
 
-    const handleInput = () => {
-      triggerChangeRef.current()
-    }
+    // const handleInput = () => {
+    //   triggerChangeRef.current()
+    // }
 
     const handlePaste = () => {
       setTimeout(() => triggerChangeRef.current(), 50)
     }
 
-    view.dom.addEventListener('input', handleInput)
+    const handleBlur = () => {
+      view.dispatch(view.state.tr)
+    }
+
+    // view.dom.addEventListener('input', handleInput)
     view.dom.addEventListener('paste', handlePaste)
+    view.dom.addEventListener('blur', handleBlur)
     return () => {
-      view.dom.removeEventListener('input', handleInput)
+      // view.dom.removeEventListener('input', handleInput)
       view.dom.removeEventListener('paste', handlePaste)
+      view.dom.removeEventListener('blur', handleBlur)
     }
   }, [loading, get, onChange])
 
@@ -215,26 +163,19 @@ interface MilkdownEditorProps {
 
 export default function MilkdownEditor({ markdown, onChange, placeholder }: MilkdownEditorProps) {
   const theme = useAppStore((s) => s.theme)
-  const [isDark, setIsDark] = useState(() => getSystemTheme() === 'dark')
+  const [isDark, setIsDark] = useState(theme === 'dark')
 
   useEffect(() => {
     if (theme === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)')
-      setIsDark(mq.matches)
-      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
-      mq.addEventListener('change', handler)
-      return () => mq.removeEventListener('change', handler)
+      // 这段代码不要动，不是用prefers-color-scheme
+      setIsDark(document.documentElement.classList.contains('dark'))
     } else {
       setIsDark(theme === 'dark')
     }
   }, [theme])
 
-  useEffect(() => {
-    applyCrepeTheme(isDark)
-  }, [isDark])
-
   return (
-    <div className="text-sm">
+    <div className='text-sm text-theme-900 dark:text-theme-100'>
       <MilkdownProvider key={isDark ? 'dark' : 'light'}>
         <MilkdownEditorInner
           isDark={isDark}

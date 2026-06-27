@@ -216,6 +216,18 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_habit_groups_sort_order ON habit_groups(sort_order);
+
+        CREATE TABLE IF NOT EXISTS task_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            title TEXT,
+            description TEXT,
+            steps TEXT,
+            tag_ids TEXT,
+            usage_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
     "#;
 
     // Use rusqlite directly for migrations
@@ -697,7 +709,16 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
     ").map_err(|e| format!("Failed to migrate attachments table: {}", e))?;
 
-    let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN local_path TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN local_path TEXT;");
+
+            // Add sync status columns for attachment sync to Git services
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'none';");
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN sync_provider TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN sync_error TEXT;");
+
+            // Add uploaded_to, raw_url columns for tracking upload details
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN uploaded_to TEXT;");
+            let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN raw_url TEXT;");
 
     // Task linked items (bidirectional relations)
     conn.execute_batch("
@@ -710,6 +731,20 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_task_linked_items_task_id ON task_linked_items(task_id);
         CREATE INDEX IF NOT EXISTS idx_task_linked_items_linked_id ON task_linked_items(linked_id);
     ").map_err(|e| format!("Failed to migrate task linked items table: {}", e))?;
+
+    // Task templates
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS task_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            steps TEXT,
+            tag_ids TEXT,
+            usage_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+    ").map_err(|e| format!("Failed to migrate task_templates table: {}", e))?;
 
     Ok(())
 }

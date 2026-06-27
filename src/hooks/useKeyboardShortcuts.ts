@@ -17,8 +17,12 @@ async function openSettingsDialog() {
   try {
     const existing = await WebviewWindow.getByLabel('settings');
     if (existing) {
-      await existing.setFocus();
-      return;
+      try {
+        await existing.setFocus();
+        return;
+      } catch {
+        await existing.destroy().catch(() => {});
+      }
     }
   } catch {}
 
@@ -39,6 +43,7 @@ async function openSettingsDialog() {
     const y = Math.round(logicalY + (logicalH - winHeight) / 2);
 
     const win = new WebviewWindow('settings', {
+      alwaysOnTop: true,
       closable: false,
       decorations: true,
       height: winHeight,
@@ -66,8 +71,12 @@ async function openTagManagementDialog() {
   try {
     const existing = await WebviewWindow.getByLabel('tag-management');
     if (existing) {
-      await existing.setFocus();
-      return;
+      try {
+        await existing.setFocus();
+        return;
+      } catch {
+        await existing.destroy().catch(() => {});
+      }
     }
   } catch {}
 
@@ -103,8 +112,12 @@ async function openAttachmentManagementDialog() {
   try {
     const existing = await WebviewWindow.getByLabel('attachment-management');
     if (existing) {
-      await existing.setFocus();
-      return;
+      try {
+        await existing.setFocus();
+        return;
+      } catch {
+        await existing.destroy().catch(() => {});
+      }
     }
   } catch {}
 
@@ -133,6 +146,47 @@ async function openAttachmentManagementDialog() {
     });
   } catch (err) {
     console.error('Error creating attachment-management window:', err);
+  }
+}
+
+async function openTemplateManagementDialog() {
+  try {
+    const existing = await WebviewWindow.getByLabel('task-template-management');
+    if (existing) {
+      try {
+        await existing.setFocus();
+        return;
+      } catch {
+        await existing.destroy().catch(() => {});
+      }
+    }
+  } catch {}
+
+  try {
+    const mainWindow = getCurrentWindow();
+    const win = new WebviewWindow('task-template-management', {
+      alwaysOnTop: true,
+      closable: false,
+      decorations: true,
+      height: 500,
+      hiddenTitle: true,
+      maximizable: false,
+      minimizable: false,
+      parent: mainWindow,
+      resizable: false,
+      title: '',
+      titleBarStyle: 'overlay',
+      url: '/dialog/task-template-management',
+      width: 640,
+    });
+    win.once('tauri://error', (e) => {
+      console.error('Failed to create task-template-management window:', e);
+    });
+    win.once('tauri://focus', async () => {
+      await win.setShadow(true);
+    });
+  } catch (err) {
+    console.error('Error creating task-template-management window:', err);
   }
 }
 
@@ -188,8 +242,15 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Cmd+T: Tasks
+      // Cmd+T: Task template management dialog
       if (e.key === 't') {
+        e.preventDefault();
+        openTemplateManagementDialog();
+        return;
+      }
+
+      // Cmd+Shift+T: Tasks (changed from Cmd+T)
+      if (e.key === 'T' && e.shiftKey) {
         e.preventDefault();
         navigate('/tasks');
         return;

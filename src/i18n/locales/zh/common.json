@@ -62,7 +62,8 @@
     "settings": "设置",
     "people": "人员",
     "media": "影视",
-    "attachments": "附件管理"
+    "attachments": "附件管理",
+    "templates": "模板"
   },
   "search": {
     "placeholder": "搜索任务、习惯、倒数日...",
@@ -90,8 +91,13 @@
     "attachments": "附件",
     "no_attachments": "暂无附件",
     "delete_attachment": "删除附件",
+    "re_upload": "重新上传",
+    "attachment_cache_not_found": "缓存文件未找到",
     "copy_link": "复制链接",
     "download": "下载",
+    "save_as_template": "保存为模板",
+    "template_applied": "模板已应用",
+    "template": "模板",
     "settings": "设置",
     "settings_view": "视图",
     "settings_status": "状态",
@@ -658,6 +664,9 @@
       "repo_url_placeholder": "https://github.com/username/repo",
       "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
       "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
+      "gitlab_project_id": "GitLab 项目 ID",
+      "gitlab_project_id_placeholder": "输入 GitLab 项目 ID（数字）",
+      "gitlab_project_id_help": "在 GitLab 项目设置 → 通用 → 项目 ID 中获取",
       "pat": "访问令牌",
       "pat_placeholder": "输入 Personal Access Token",
       "pat_help": "GitHub: repo 权限; GitLab: api 或 read_repository + write_repository; Gitee: projects 权限",
@@ -889,7 +898,11 @@
     "rename": "重命名",
     "last_fetched": "上次获取",
     "added": "上传时间",
-    "search_placeholder": "搜索附件..."
+    "search_placeholder": "搜索附件...",
+    "syncing": "同步中",
+    "synced": "已同步",
+    "sync_failed": "同步失败",
+    "sync_failed_retry": "同步失败，点击重试"
   },
   "menu": {
     "quit": "退出 {{appName}}",
@@ -908,6 +921,7 @@
     "switch_notes": "切换到「笔记」",
     "manage_tags": "管理「标签」",
     "manage_attachments": "管理「附件」",
+    "manage_templates": "管理「任务模板」",
     "edit": "编辑",
     "file": "文件",
     "new_task": "新建任务",
@@ -927,5 +941,31 @@
     "services": "服务",
     "hide_app": "隐藏 {{appName}}",
     "hide_others": "隐藏其他"
+  },
+  "template_mgmt": {
+    "title": "任务模板管理",
+    "search_placeholder": "搜索模板...",
+    "no_results": "未找到匹配的模板",
+    "no_templates": "暂无模板",
+    "create_template": "创建模板",
+    "template_name": "模板名称",
+    "use_count": "使用次数",
+    "created_at": "创建日期",
+    "updated_at": "修改日期",
+    "delete_confirm": "确定删除模板\"{{name}}\"吗？",
+    "overwrite_confirm": "模板\"{{name}}\"已存在，是否覆盖？",
+    "name_placeholder": "输入模板名称",
+    "save_as_template_title": "保存为模板",
+    "save_as_template_name_label": "模板名称"
+  },
+  "templates": {
+    "name": "名称",
+    "created_at": "创建日期",
+    "updated_at": "修改日期",
+    "usage_count": "使用次数",
+    "no_templates": "暂无模板",
+    "no_results": "未找到匹配模板",
+    "new_name": "未命名模板",
+    "search_placeholder": "搜索模板..."
   }
 }

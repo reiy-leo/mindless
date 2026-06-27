@@ -1,44 +1,54 @@
-import { useState, useRef, useEffect } from "react";
-import Tw22ColorPicker from "./Tw22ColorPicker";
+import { useEffect, useRef } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { showOverlay, TW22_COLOR_PICKER_LABEL } from "@/lib/overlayManager";
 
 interface Tw22ColorPickerButtonProps {
   value: string;
-  isBadge: Boolean;
+  isBadge?: Boolean;
   onChange: (hex: string) => void;
   className?: string;
 }
 
 export default function Tw22ColorPickerButton({ isBadge = false, value, onChange, className = "" }: Tw22ColorPickerButtonProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const openingRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+    const unlisten = listen<{ hex: string }>('tw22-color-picker-overlay:result', (e) => {
+      onChange(e.payload.hex);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [onChange]);
+
+  const handleClick = async () => {
+    if (!buttonRef.current) return;
+    openingRef.current = true;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const win = getCurrentWindow();
+    const winPos = await win.outerPosition();
+    const scaleFactor = await win.scaleFactor();
+    const anchorX = winPos.x / scaleFactor + rect.left;
+    const anchorY = winPos.y / scaleFactor + rect.top;
+
+    await showOverlay(TW22_COLOR_PICKER_LABEL, anchorX, anchorY + rect.height + 4, {
+      value,
+      anchorX,
+      anchorY,
+      anchorH: rect.height,
+    });
+
+    setTimeout(() => { openingRef.current = false; }, 500);
+  };
 
   return (
-    <div ref={containerRef} className={`relative inline-block ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className={` border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition-colors ${isBadge ? 'w-3 h-3 rounded-full border-2': 'w-8 h-8 rounded-lg border-2'}`}
-        style={{ backgroundColor: value }}
-      />
-      {open && (
-        <div className="absolute z-50 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3">
-          <Tw22ColorPicker
-            value={value}
-            onChange={(hex) => { onChange(hex); setOpen(false); }}
-          />
-        </div>
-      )}
-    </div>
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={handleClick}
+      className={`border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition-colors ${isBadge ? 'w-3 h-3 rounded-full border-2' : 'w-8 h-8 rounded-lg border-2'} ${className}`}
+      style={{ backgroundColor: value }}
+    />
   );
 }

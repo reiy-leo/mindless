@@ -141,21 +141,19 @@ export default function AdvancedGroupFormDialogPage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-5 space-y-4 text-sm">
-          {/* Icon & Name */}
-          <div className="flex items-start gap-2">
-            <EmojiPickerButton value={icon} onChange={setIcon} />
-            <div className="flex-1">
-              <input
-                type="text" value={name} onChange={(e) => setName(e.target.value)}
-                required autoFocus placeholder={t('advanced_groups.name')}
-                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {/* Name & Icon */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text" value={name} onChange={(e) => setName(e.target.value)}
+              required autoFocus placeholder={t('advanced_groups.name')}
+              className="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="relative">
+              <EmojiPickerButton value={icon} onChange={setIcon} />
+              <div className="absolute -top-1 -right-1 z-10">
+                <Tw22ColorPickerButton value={color} onChange={setColor} />
+              </div>
             </div>
-          </div>
-
-          {/* Color */}
-          <div>
-            <Tw22ColorPickerButton value={color} onChange={setColor} />
           </div>
 
           {userLists.length > 0 && (

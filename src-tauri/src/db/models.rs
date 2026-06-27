@@ -62,6 +62,21 @@ pub struct Tag {
     pub updated_at: String,
 }
 
+// TaskTemplate model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskTemplate {
+    pub id: String,
+    pub name: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub steps: Option<String>,
+    pub tag_ids: Option<String>,
+    pub usage_count: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 // Step model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -464,4 +479,9 @@ pub struct Attachment {
     pub added_datetime: String,
     pub sha256: String,
     pub local_path: Option<String>,
+    pub sync_status: String,
+    pub sync_provider: Option<String>,
+    pub sync_error: Option<String>,
+    pub uploaded_to: Option<String>,
+    pub raw_url: Option<String>,
 }

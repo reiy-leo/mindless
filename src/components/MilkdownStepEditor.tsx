@@ -6,6 +6,7 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import { useEffect, useRef } from 'react'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
+import '@milkdown/crepe/theme/frame-dark.css'
 
 interface MilkdownStepEditorInnerProps {
   markdown: string
@@ -179,7 +180,7 @@ export default function MilkdownStepEditor({
   placeholder,
 }: MilkdownStepEditorProps) {
   return (
-    <div className="text-sm">
+    <div className="text-sm text-theme-800 dark:text-theme-100">
       <MilkdownProvider>
         <MilkdownStepEditorInner
           markdown={markdown}

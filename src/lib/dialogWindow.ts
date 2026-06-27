@@ -31,8 +31,12 @@ export async function openDialogWindow(options: OpenDialogOptions): Promise<Webv
 
   const existingWindow = await WebviewWindow.getByLabel(label);
   if (existingWindow) {
-    await existingWindow.setFocus();
-    return existingWindow;
+    try {
+      await existingWindow.setFocus();
+      return existingWindow;
+    } catch {
+      await existingWindow.destroy().catch(() => {});
+    }
   }
 
   // Build URL with anchor position params

@@ -8,7 +8,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useAllAttachments, useUpdateAttachmentFilename, useDeleteAttachmentLocalCache } from '@/queries/useTaskQueries';
 import type { Attachment } from '@/types/attachment';
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
-import { parseRepoUrl, createOctokit, getFileSha } from '@/lib/syncService';
+import { getActiveProvider } from '@/lib/sync';
 import * as api from '@/lib/api';
 
 // ==================== Context Menu ====================
@@ -78,12 +78,14 @@ function AttachmentRow({
   githubChecking,
   onContextMenu,
   onRename,
+  onRetrySync,
 }: {
   attachment: Attachment;
   githubExists: boolean | null;
   githubChecking: boolean;
   onContextMenu: (e: React.MouseEvent, att: Attachment) => void;
   onRename: (id: string, newName: string) => void;
+  onRetrySync: (att: Attachment) => void;
 }) {
   const { t } = useTranslation('common');
   const [editing, setEditing] = useState(false);
@@ -182,6 +184,29 @@ function AttachmentRow({
           />
         )}
       </div>
+
+      {/* Sync Status */}
+      <div className="flex-shrink-0 flex items-center gap-1">
+        {attachment.syncStatus === 'syncing' && (
+          <div className="w-4 h-4 border border-gray-300 border-t-blue-500 rounded-full animate-spin" title={t('attachment_mgmt.syncing')} />
+        )}
+        {attachment.syncStatus === 'synced' && (
+          <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+        )}
+        {attachment.syncStatus === 'failed' && (
+          <button
+            onClick={() => onRetrySync(attachment)}
+            className="w-4 h-4 text-red-500 hover:text-red-700 dark:hover:text-red-400"
+            title={t('attachment_mgmt.sync_failed_retry')}
+          >
+            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -209,19 +234,13 @@ export default function AttachmentManagementDialogPage() {
   useEffect(() => {
     if (attachments.length === 0) return;
 
-    const syncUrl = localStorage.getItem('mindless-sync-url');
-    if (!syncUrl) return;
-
-    const info = parseRepoUrl(syncUrl);
-    if (!info) return;
-
     let cancelled = false;
 
     (async () => {
-      const pat = await api.loadPat(info!.domain);
-      if (!pat || cancelled) return;
+      const activeProvider = await getActiveProvider();
+      if (!activeProvider || cancelled) return;
 
-      const octokit = createOctokit(pat, info!.domain);
+      const { provider, info } = activeProvider;
 
       setGithubChecking(new Map(attachments.map((a) => [a.id, true])));
 
@@ -231,7 +250,7 @@ export default function AttachmentManagementDialogPage() {
         const batch = attachments.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map(async (att) => {
-            const sha = await getFileSha(octokit, info!.owner, info!.repo, `attachments/${att.filename}`);
+            const sha = await provider.getFileSha(info!.owner, info!.repo, `attachments/${att.filename}`);
             return { id: att.id, exists: !!sha };
           })
         );
@@ -270,42 +289,113 @@ export default function AttachmentManagementDialogPage() {
   }, [deleteLocalCache]);
 
   const handleFetchFromGithub = useCallback(async (att: Attachment) => {
-    const syncUrl = localStorage.getItem('mindless-sync-url');
-    if (!syncUrl) return;
+    const activeProvider = await getActiveProvider();
+    if (!activeProvider) return;
 
-    const info = parseRepoUrl(syncUrl);
-    if (!info) return;
-
-    const pat = await api.loadPat(info.domain);
-    if (!pat) return;
+    const { provider, info } = activeProvider;
 
     try {
-      const octokit = createOctokit(pat, info.domain);
-      const res = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-        owner: info.owner,
-        repo: info.repo,
-        path: `attachments/${att.filename}`,
-      });
-      if (!Array.isArray(res.data) && res.data.type === 'file' && 'content' in res.data) {
-        const fileContent = (res.data as { content?: string }).content;
-        if (fileContent) {
-          const bytes = Uint8Array.from(atob(fileContent), (c) => c.charCodeAt(0));
-          await api.cacheAttachmentImage({
-            fileBytes: Array.from(bytes),
-            filename: att.filename,
-            id: att.id,
-          });
-          queryClient.invalidateQueries({ queryKey: ['all-attachments'] });
-        }
+      const content = await provider.getFileContent(info.owner, info.repo, `attachments/${att.filename}`);
+      if (content) {
+        const bytes = Uint8Array.from(atob(content), (c) => c.charCodeAt(0));
+        await api.cacheAttachmentImage({
+          fileBytes: Array.from(bytes),
+          filename: att.filename,
+          id: att.id,
+        });
+        queryClient.invalidateQueries({ queryKey: ['all-attachments'] });
       }
     } catch (err) {
-      console.error('Failed to fetch attachment from GitHub:', err);
+      console.error('Failed to fetch attachment from Git:', err);
     }
   }, [queryClient]);
 
   const handleRename = useCallback((id: string, newName: string) => {
     updateFilename.mutate({ id, originalFilename: newName });
   }, [updateFilename]);
+
+  const getAttachmentRawUrl = (filename: string) => {
+    const syncProvider = localStorage.getItem('mindless-sync-provider')
+    if (!syncProvider) return null
+    const syncUrl = localStorage.getItem(`mindless-sync-url-${syncProvider}`)
+    if (!syncUrl) return null
+    const match = syncUrl.trim().match(/^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/)?$/)
+    if (!match) return null
+    const domain = match[1]
+    const owner = match[2]
+    const repo = match[3]
+    if (domain === 'github.com') {
+      return `https://raw.githubusercontent.com/${owner}/${repo}/main/attachments/${filename}`
+    } else if (domain === 'gitlab.com' || domain.includes('gitlab.')) {
+      return `https://${domain}/${owner}/${repo}/-/raw/main/attachments/${filename}`
+    } else if (domain === 'gitee.com') {
+      return `https://${domain}/${owner}/${repo}/raw/main/attachments/${filename}`
+    }
+    return null
+  }
+
+  const handleRetrySync = useCallback(async (att: Attachment) => {
+    const { getActiveProvider } = await import('@/lib/sync');
+    const activeProvider = await getActiveProvider();
+    if (!activeProvider) return;
+
+    const { provider, info } = activeProvider;
+    await api.updateAttachmentSyncStatus({
+      id: att.id,
+      syncStatus: 'syncing',
+      syncProvider: info.provider,
+    });
+
+    try {
+      // Read file bytes from local cache or fetch from Git
+      let fileBytes: number[] | null = null;
+
+      if (att.localPath) {
+        fileBytes = await api.readFileBytes(att.localPath);
+      } else {
+        // Try to fetch from Git service
+        const content = await provider.getFileContent(info.owner, info.repo, `attachments/${att.filename}`);
+        if (content) {
+          fileBytes = Array.from(atob(content), c => c.charCodeAt(0));
+        }
+      }
+
+      if (fileBytes) {
+        const chunks: string[] = [];
+        for (let i = 0; i < fileBytes.length; i += 8192) {
+          chunks.push(String.fromCharCode(...fileBytes.slice(i, i + 8192)));
+        }
+        const base64Content = btoa(chunks.join(''));
+        await provider.uploadBinaryFile(
+          info.owner,
+          info.repo,
+          `attachments/${att.filename}`,
+          base64Content,
+          `Mindless: sync attachment ${att.originalFilename}`,
+        );
+
+        const uploadedPath = `attachments/${att.filename}`
+        const rawUrl = getAttachmentRawUrl(att.filename)
+        await api.updateAttachmentSyncStatus({
+          id: att.id,
+          syncStatus: 'synced',
+          syncProvider: info.provider,
+          uploadedTo: uploadedPath,
+          rawUrl: rawUrl || undefined,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['all-attachments'] });
+      }
+    } catch (err) {
+      console.error('Failed to retry sync:', err);
+      await api.updateAttachmentSyncStatus({
+        id: att.id,
+        syncStatus: 'failed',
+        syncProvider: info.provider,
+        syncError: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+  }, [queryClient]);
 
   if (isLoading) {
     return (
@@ -363,6 +453,7 @@ export default function AttachmentManagementDialogPage() {
                   githubChecking={githubChecking.get(att.id) ?? false}
                   onContextMenu={handleContextMenu}
                   onRename={handleRename}
+                  onRetrySync={handleRetrySync}
                 />
               ))}
             </div>

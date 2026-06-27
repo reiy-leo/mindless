@@ -1,18 +1,19 @@
-import { useRef } from 'react'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   BookmarkIcon,
   CheckSquareIcon,
+  ClipboardListIcon,
   CogIcon,
   Film,
   HomeIcon,
-  PaperclipIcon,
   HourglassIcon,
+  PaperclipIcon,
   RepeatIcon,
   StickyNote,
   UsersIcon,
 } from 'lucide-react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/useAppStore'
@@ -30,6 +31,7 @@ const navItems = [
   { icon: Film, labelKey: 'navigation.media', path: '/media' },
   { path: null },
   { icon: BookmarkIcon, labelKey: 'navigation.tags', path: '/tags' },
+  { icon: ClipboardListIcon, labelKey: 'navigation.templates', path: '/templates' },
   { icon: PaperclipIcon, labelKey: 'navigation.attachments', path: '/attachments' },
   { icon: CogIcon, labelKey: 'navigation.settings', path: '/settings' },
 ]
@@ -41,6 +43,7 @@ export default function Sidebar() {
   const sidebarMode = useAppStore((s) => s.sidebarMode)
 
   const tagWinRef = useRef<WebviewWindow | null>(null)
+  const templateWinRef = useRef<WebviewWindow | null>(null)
   const attachmentWinRef = useRef<WebviewWindow | null>(null)
   const settingsWinRef = useRef<WebviewWindow | null>(null)
 
@@ -72,10 +75,53 @@ export default function Sidebar() {
         width: 640,
       })
       tagWinRef.current = win
-      win.once('tauri://error', () => { tagWinRef.current = null })
-      win.once('tauri://destroyed', () => { tagWinRef.current = null })
+      win.once('tauri://error', () => {
+        tagWinRef.current = null
+      })
+      win.once('tauri://destroyed', () => {
+        tagWinRef.current = null
+      })
     } catch (err) {
       console.error('Error creating tag-management window:', err)
+    }
+  }
+
+  const handleOpenTemplateManagement = async () => {
+    if (templateWinRef.current) {
+      try {
+        await templateWinRef.current.setFocus()
+        return
+      } catch {
+        templateWinRef.current = null
+      }
+    }
+
+    try {
+      const mainWindow = getCurrentWindow()
+      const win = new WebviewWindow('task-template-management', {
+        alwaysOnTop: true,
+        closable: false,
+        decorations: true,
+        height: 500,
+        hiddenTitle: true,
+        maximizable: false,
+        minimizable: false,
+        parent: mainWindow,
+        resizable: false,
+        title: '',
+        titleBarStyle: 'overlay',
+        url: '/dialog/task-template-management',
+        width: 640,
+      })
+      templateWinRef.current = win
+      win.once('tauri://error', () => {
+        templateWinRef.current = null
+      })
+      win.once('tauri://destroyed', () => {
+        templateWinRef.current = null
+      })
+    } catch (err) {
+      console.error('Error creating task-template-management window:', err)
     }
   }
 
@@ -107,8 +153,12 @@ export default function Sidebar() {
         width: 720,
       })
       attachmentWinRef.current = win
-      win.once('tauri://error', () => { attachmentWinRef.current = null })
-      win.once('tauri://destroyed', () => { attachmentWinRef.current = null })
+      win.once('tauri://error', () => {
+        attachmentWinRef.current = null
+      })
+      win.once('tauri://destroyed', () => {
+        attachmentWinRef.current = null
+      })
     } catch (err) {
       console.error('Error creating attachment-management window:', err)
     }
@@ -157,8 +207,12 @@ export default function Sidebar() {
         y,
       })
       settingsWinRef.current = win
-      win.once('tauri://error', () => { settingsWinRef.current = null })
-      win.once('tauri://destroyed', () => { settingsWinRef.current = null })
+      win.once('tauri://error', () => {
+        settingsWinRef.current = null
+      })
+      win.once('tauri://destroyed', () => {
+        settingsWinRef.current = null
+      })
     } catch (err) {
       console.error('Error creating settings window:', err)
     }
@@ -166,10 +220,10 @@ export default function Sidebar() {
 
   return (
     <div
-      className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white"
-      style={{
-        background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))',
-      }}
+      className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white bg-theme-500 dark:bg-theme-800"
+      // style={{
+      //   background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))',
+      // }}
     >
       {isMac && <div className="h-8" data-tauri-drag-region />}
       <nav className="flex flex-col px-1.5 space-y-2 flex-1" style={{ position: 'relative', zIndex: 1 }}>
@@ -189,7 +243,7 @@ export default function Sidebar() {
           const showIcon = sidebarMode === 'icon' || sidebarMode === 'both'
           const showText = sidebarMode === 'text' || sidebarMode === 'both'
 
-          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm text-white cursor-pointer aspect-square ${isActive ? 'bg-white/25' : 'hover:bg-white/15'}`
+          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm cursor-pointer py-3 ${isActive ? 'text-theme-700 dark:text-theme-200 bg-theme-700/30 dark:bg-theme-200/30' : 'hover:text-theme-200 hover:bg-theme-200/20 text-theme-900 dark:text-theme-700'}`
 
           if (item.path === '/tags') {
             return (
@@ -198,6 +252,30 @@ export default function Sidebar() {
                 className={buttonClass}
                 key={item.path}
                 onClick={handleOpenTagManagement}
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                }}
+              >
+                {showIcon && <Icon className="w-5 h-5" />}
+                {showText && (
+                  <p
+                    className={sidebarMode === 'both' ? 'text-[10px]' : sidebarMode === 'text' ? 'text-lg' : 'text-xs'}
+                  >
+                    {t(item.labelKey)}
+                  </p>
+                )}
+              </button>
+            )
+          }
+
+          if (item.path === '/templates') {
+            return (
+              <button
+                type="button"
+                className={buttonClass}
+                key={item.path}
+                onClick={handleOpenTemplateManagement}
                 style={{
                   color: isActive ? `hsl(from var(--theme-color) h s 80)` : `hsl(from var(--theme-color) h s 30)`,
                   position: 'relative',
@@ -277,9 +355,6 @@ export default function Sidebar() {
                 if (item.path !== '/tasks') {
                   setSelectedListId(null)
                 }
-              }}
-              style={{
-                color: isActive ? `hsl(from var(--theme-color) h s 150%)` : `hsl(from var(--theme-color) h s 30)`,
               }}
               to={item.path}
             >

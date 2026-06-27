@@ -106,7 +106,7 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
 
     // --- Navigation submenu ---
     let nav_tasks = MenuItemBuilder::with_id("nav:tasks", &l.nav_tasks)
-        .accelerator("CmdOrCtrl+T")
+        .accelerator("CmdOrCtrl+Shift+T")
         .build(app)
         .map_err(|e| e.to_string())?;
     let nav_habits = MenuItemBuilder::with_id("nav:habits", &l.nav_habits)
@@ -124,6 +124,10 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .accelerator("CmdOrCtrl+B")
         .build(app)
         .map_err(|e| e.to_string())?;
+    let manage_task_templates = MenuItemBuilder::with_id("nav:manage_task_templates", &l.manage_task_templates)
+        .accelerator("CmdOrCtrl+T")
+        .build(app)
+        .map_err(|e| e.to_string())?;
     let manage_attachments = MenuItemBuilder::with_id("nav:manage_attachments", &l.manage_attachments)
         .accelerator("CmdOrCtrl+Shift+B")
         .build(app)
@@ -136,6 +140,7 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .item(&nav_notes)
         .separator()
         .item(&manage_tags)
+        .item(&manage_task_templates)
         .item(&manage_attachments)
         .build()
         .map_err(|e| e.to_string())?;
@@ -227,6 +232,7 @@ fn setup_menu_handler(app: &AppHandle) {
             "nav:countdowns" => { let _ = app_handle.emit("menu:navigate", "/countdowns"); }
             "nav:notes" => { let _ = app_handle.emit("menu:navigate", "/notes"); }
             "nav:manage_tags" => { let _ = app_handle.emit("menu:navigate", "manage_tags"); }
+            "nav:manage_task_templates" => { let _ = app_handle.emit("menu:navigate", "manage_task_templates"); }
             "nav:manage_attachments" => { let _ = app_handle.emit("menu:navigate", "manage_attachments"); }
             // Window
             "window:main_window" => { let _ = app_handle.emit("menu:navigate", "main_window"); }
@@ -266,6 +272,7 @@ pub struct MenuLabels {
     pub nav_countdowns: String,
     pub nav_notes: String,
     pub manage_tags: String,
+    pub manage_task_templates: String,
     pub manage_attachments: String,
     pub edit_menu: String,
     pub window_menu: String,
@@ -307,6 +314,7 @@ impl MenuLabels {
             nav_countdowns: "切换到「倒数日」".into(),
             nav_notes: "切换到「笔记」".into(),
             manage_tags: "管理「标签」".into(),
+            manage_task_templates: "管理「任务模板」".into(),
             manage_attachments: "管理「附件」".into(),
             edit_menu: "编辑".into(),
             window_menu: "窗口".into(),

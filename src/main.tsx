@@ -7,6 +7,8 @@ import i18n from "./i18n";
 import "./styles/globals.css";
 import "./styles/milkdown.css";
 
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -1,14 +1,18 @@
 import {
   ArchiveBoxIcon,
+  ArrowPathIcon,
   ArrowTurnDownRightIcon,
   ArrowTurnUpLeftIcon,
   BookOpenIcon,
   CalendarIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
   ClockIcon,
   DocumentIcon,
   EllipsisVerticalIcon,
+  ExclamationCircleIcon,
   EyeIcon,
   EyeSlashIcon,
   FilmIcon,
@@ -33,6 +37,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { Pin } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import CheckNow from '@/components/common/CheckNow'
 import MilkdownEditor from '@/components/MilkdownEditor'
 import LinkedItemSelector from '@/components/media/LinkedItemSelector'
 import { AvatarImage } from '@/components/people/AvatarImage'
@@ -47,7 +52,7 @@ import TaskForm from '@/components/tasks/TaskForm'
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls'
 import { TaskSortControls } from '@/components/tasks/TaskSortControls'
 import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants'
-import { DATE_RANGE_PICKER_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
+import { DATE_RANGE_PICKER_LABEL, GROUP_FORM_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
 import { useMediaItems } from '@/queries/useMediaQueries'
@@ -60,15 +65,18 @@ import {
   useAttachments,
   useCompleteRecurringTask,
   useCreateAttachment,
+  useCreateList,
   useCreateStep,
   useCreateSubtask,
   useCreateTag,
   useCreateTask,
+  useCreateTaskTemplate,
   useDeleteAttachment,
   useDeleteList,
   useDeleteStep,
   useDeleteSubtask,
   useDeleteTask,
+  useIncrementTemplateUsage,
   useLinkTaskItem,
   useLists,
   useReorderSteps,
@@ -79,12 +87,14 @@ import {
   useTags,
   useTaskLinkedItems,
   useTasks,
+  useTaskTemplates,
   useToggleTaskCompletion,
   useUnlinkTaskItem,
   useUpdateList,
   useUpdateStep,
   useUpdateSubtask,
   useUpdateTask,
+  useUpdateTaskTemplate,
 } from '@/queries/useTaskQueries'
 import { useAppStore } from '@/stores/useAppStore'
 import { useViewStore } from '@/stores/useViewStore'
@@ -117,7 +127,6 @@ function resolveIcon(icon?: string): string {
   return ICON_KEY_TO_EMOJI[icon] || '📁'
 }
 
-import type { Octokit } from '@octokit/rest'
 import type { AdvancedGroup } from '@/stores/useAppStore'
 import type { Tag } from '@/types/tag'
 
@@ -194,6 +203,7 @@ function TaskDetailPanel({
   inlineDateOpenedRef?: React.RefObject<boolean>
 }) {
   const { t } = useTranslation('common')
+  const queryClient = useQueryClient()
 
   // When a subtask is selected, treat it as the active task
   const { data: flatSubtasks = [] } = useSubtasks(task.id)
@@ -237,6 +247,11 @@ function TaskDetailPanel({
   const { data: attachments = [] } = useAttachments(activeTask.id)
   const createAttachmentMutation = useCreateAttachment()
   const deleteAttachmentMutation = useDeleteAttachment()
+
+  // Track uploading attachments with their sync status
+  const [uploadingAttachments, setUploadingAttachments] = useState<
+    Map<string, { attachment: Attachment; status: 'uploading' | 'syncing' | 'synced' | 'failed'; error?: string }>
+  >(new Map())
 
   const { data: linkedItemsData = [] } = useTaskLinkedItems(activeTask.id)
   const linkTaskItem = useLinkTaskItem()
@@ -316,6 +331,9 @@ function TaskDetailPanel({
   useEffect(() => {
     ;(async () => {
       const api = await import('@/lib/api')
+      const { getActiveProvider } = await import('@/lib/sync')
+      const activeProvider = await getActiveProvider()
+
       for (const att of attachments) {
         if (imageUrls[att.id]) {
           continue
@@ -328,39 +346,19 @@ function TaskDetailPanel({
             const dataUrl = await api.readImageDataUrl(att.localPath)
             setImageUrls((prev) => ({ ...prev, [att.id]: dataUrl }))
           } catch {}
-        } else {
-          const syncUrl = localStorage.getItem('mindless-sync-url')
-          if (!syncUrl) {
-            continue
-          }
-          const { parseRepoUrl, createOctokit } = await import('@/lib/syncService')
-          const info = parseRepoUrl(syncUrl)
-          if (!info) {
-            continue
-          }
-          const pat = await api.loadPat(info.domain)
-          if (!pat) {
-            continue
-          }
+        } else if (activeProvider) {
+          const { provider, info } = activeProvider
           try {
-            const octokit = createOctokit(pat, info.domain)
-            const res = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-              owner: info.owner,
-              path: `attachments/${att.filename}`,
-              repo: info.repo,
-            })
-            if (!Array.isArray(res.data) && res.data.type === 'file' && 'content' in res.data) {
-              const fileContent = (res.data as { content?: string }).content
-              if (fileContent) {
-                const bytes = Uint8Array.from(atob(fileContent), (c) => c.charCodeAt(0))
-                const localPath = await api.cacheAttachmentImage({
-                  fileBytes: Array.from(bytes),
-                  filename: att.filename,
-                  id: att.id,
-                })
-                const dataUrl = await api.readImageDataUrl(localPath)
-                setImageUrls((prev) => ({ ...prev, [att.id]: dataUrl }))
-              }
+            const content = await provider.getFileContent(info.owner, info.repo, `attachments/${att.filename}`)
+            if (content) {
+              const bytes = Uint8Array.from(atob(content), (c) => c.charCodeAt(0))
+              const localPath = await api.cacheAttachmentImage({
+                fileBytes: Array.from(bytes),
+                filename: att.filename,
+                id: att.id,
+              })
+              const dataUrl = await api.readImageDataUrl(localPath)
+              setImageUrls((prev) => ({ ...prev, [att.id]: dataUrl }))
             }
           } catch {}
         }
@@ -384,94 +382,339 @@ function TaskDetailPanel({
       await message(t('tasks.attachment_too_large'), { kind: 'error' })
       return
     }
+
+    // Create a temporary ID for immediate display
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const tempAttachment: Attachment = {
+      addedDatetime: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      filename: '',
+      id: tempId,
+      localPath: null,
+      originalFilename: fileName,
+      rawUrl: null,
+      sha256: '',
+      syncError: null,
+      syncProvider: null,
+      syncStatus: 'none',
+      taskId: activeTask.id,
+      uploadedTo: null,
+    }
+
+    // Add to uploading list immediately
+    setUploadingAttachments((prev) => new Map(prev).set(tempId, { attachment: tempAttachment, status: 'uploading' }))
+
     try {
       const attachment = await createAttachmentMutation.mutateAsync({
         fileBytes: bytes,
         originalFilename: fileName,
         taskId: activeTask.id,
       })
-      const syncUrl = localStorage.getItem('mindless-sync-url')
-      if (syncUrl) {
+
+      // Update with real attachment, now syncing
+      setUploadingAttachments((prev) => {
+        const next = new Map(prev)
+        next.delete(tempId)
+        next.set(attachment.id, { attachment, status: 'syncing' })
+        return next
+      })
+
+      // Sync to Git service
+      const { getActiveProvider } = await import('@/lib/sync')
+      const activeProvider = await getActiveProvider()
+      if (activeProvider) {
+        const { provider, info } = activeProvider
         const api = await import('@/lib/api')
-        const { parseRepoUrl, createOctokit, uploadBinaryFile } = await import('@/lib/syncService')
-        const info = parseRepoUrl(syncUrl)
-        if (info) {
-          const pat = await api.loadPat(info.domain)
-          if (pat) {
-            const octokit = createOctokit(pat, info.domain)
-            const chunks: string[] = []
-            for (let i = 0; i < bytes.length; i += 8192) {
-              chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)))
-            }
-            const base64Content = btoa(chunks.join(''))
-            await uploadBinaryFile(
-              octokit,
+
+        try {
+          const chunks: string[] = []
+          for (let i = 0; i < bytes.length; i += 8192) {
+            chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)))
+          }
+          const base64Content = btoa(chunks.join(''))
+          const uploadTimeout = 30000
+          await Promise.race([
+            provider.uploadBinaryFile(
               info.owner,
               info.repo,
               `attachments/${attachment.filename}`,
               base64Content,
               `Mindless: add attachment ${attachment.originalFilename}`,
-            )
-            if (isImageFile(attachment.originalFilename) && attachment.localPath) {
-              const api2 = await import('@/lib/api')
-              const dataUrl = await api2.readImageDataUrl(attachment.localPath)
-              setImageUrls((prev) => ({ ...prev, [attachment.id]: dataUrl }))
-            }
+            ),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), uploadTimeout)),
+          ])
+
+          const uploadedPath = `attachments/${attachment.filename}`
+          const rawUrl = getAttachmentRawUrl(attachment.filename)
+          await api.updateAttachmentSyncStatus({
+            id: attachment.id,
+            rawUrl: rawUrl || undefined,
+            syncProvider: info.provider,
+            syncStatus: 'synced',
+            uploadedTo: uploadedPath,
+          })
+
+          // Update status to synced, then remove after delay
+          setUploadingAttachments((prev) => {
+            const next = new Map(prev)
+            next.set(attachment.id, { attachment, status: 'synced' })
+            return next
+          })
+
+          if (isImageFile(attachment.originalFilename) && attachment.localPath) {
+            const dataUrl = await api.readImageDataUrl(attachment.localPath)
+            setImageUrls((prev) => ({ ...prev, [attachment.id]: dataUrl }))
           }
+
+          // Remove from uploading list after 500ms
+          setTimeout(() => {
+            setUploadingAttachments((prev) => {
+              const next = new Map(prev)
+              next.delete(attachment.id)
+              return next
+            })
+          }, 500)
+        } catch (syncErr) {
+          console.error('Failed to sync attachment:', syncErr)
+
+          // Cache file locally for retry
+          try {
+            await api.cacheAttachmentImage({
+              fileBytes: bytes,
+              filename: attachment.filename,
+              id: attachment.id,
+            })
+          } catch (cacheErr) {
+            console.error('Failed to cache attachment locally:', cacheErr)
+          }
+
+          await api.updateAttachmentSyncStatus({
+            id: attachment.id,
+            syncError: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+            syncProvider: info.provider,
+            syncStatus: 'failed',
+          })
+
+          // Invalidate query to refresh attachment data
+          queryClient.invalidateQueries({ queryKey: ['attachments', activeTask.id] })
+
+          // Update status to failed
+          setUploadingAttachments((prev) => {
+            const next = new Map(prev)
+            next.set(attachment.id, {
+              attachment,
+              error: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+              status: 'failed',
+            })
+            return next
+          })
         }
+      } else {
+        // No sync provider, remove from uploading list
+        setUploadingAttachments((prev) => {
+          const next = new Map(prev)
+          next.delete(tempId)
+          return next
+        })
       }
     } catch (err) {
       console.error('Failed to add attachment:', err)
+      // Remove from uploading list on error
+      setUploadingAttachments((prev) => {
+        const next = new Map(prev)
+        next.delete(tempId)
+        return next
+      })
     }
   }
 
   const handleDeleteAttachment = async (att: Attachment) => {
-    try {
-      await deleteAttachmentMutation.mutateAsync(att.id)
-      const syncUrl = localStorage.getItem('mindless-sync-url')
-      if (syncUrl) {
-        const { parseRepoUrl, createOctokit, getFileSha, deleteFile } = await import('@/lib/syncService')
-        const info = parseRepoUrl(syncUrl)
-        if (info) {
-          const api = await import('@/lib/api')
-          const pat = await api.loadPat(info.domain)
-          if (pat) {
-            const octokit = createOctokit(pat, info.domain)
-            const path = `attachments/${att.filename}`
-            const sha = await getFileSha(octokit, info.owner, info.repo, path)
-            if (sha) {
-              await deleteFile(
-                octokit,
-                info.owner,
-                info.repo,
-                path,
-                sha,
-                `Mindless: delete attachment ${att.originalFilename}`,
-              )
-            }
+    setAttachContextMenu(null)
+
+    // If synced, delete from Git first
+    if (att.syncStatus === 'synced') {
+      try {
+        const { getActiveProvider } = await import('@/lib/sync')
+        const activeProvider = await getActiveProvider()
+        if (activeProvider) {
+          const { provider, info } = activeProvider
+          const path = `attachments/${att.filename}`
+          const sha = await provider.getFileSha(info.owner, info.repo, path)
+          if (sha) {
+            await provider.deleteFile(
+              info.owner,
+              info.repo,
+              path,
+              sha,
+              `Mindless: delete attachment ${att.originalFilename}`,
+            )
           }
         }
+      } catch (syncErr) {
+        console.error('Failed to delete attachment from Git:', syncErr)
       }
-      setImageUrls((prev) => {
-        const next = { ...prev }
-        delete next[att.id]
-        return next
-      })
+    }
+
+    // Delete DB entry
+    try {
+      await deleteAttachmentMutation.mutateAsync(att.id)
     } catch (err) {
       console.error('Failed to delete attachment:', err)
+    }
+
+    // Clean up state
+    setUploadingAttachments((prev) => {
+      const next = new Map(prev)
+      next.delete(att.id)
+      return next
+    })
+    setImageUrls((prev) => {
+      const next = { ...prev }
+      delete next[att.id]
+      return next
+    })
+  }
+
+  const handleRetryUpload = async (att: Attachment) => {
+    setAttachContextMenu(null)
+
+    // Try to get localPath from DB if not on the object
+    let localPath = att.localPath
+    if (!localPath) {
+      try {
+        const api = await import('@/lib/api')
+        const fresh = await api.getAttachmentById(att.id)
+        localPath = fresh.localPath
+      } catch {}
+    }
+
+    if (!localPath) {
+      // No cached file found - show error
+      setUploadingAttachments((prev) => {
+        const next = new Map(prev)
+        next.set(att.id, { attachment: att, error: t('tasks.attachment_cache_not_found'), status: 'failed' })
+        return next
+      })
+      return
+    }
+
+    // Update status to syncing
+    setUploadingAttachments((prev) => {
+      const next = new Map(prev)
+      next.set(att.id, { attachment: { ...att, localPath }, status: 'syncing' })
+      return next
+    })
+
+    try {
+      const { getActiveProvider } = await import('@/lib/sync')
+      const api = await import('@/lib/api')
+      const activeProvider = await getActiveProvider()
+      if (!activeProvider) {
+        setUploadingAttachments((prev) => {
+          const next = new Map(prev)
+          next.delete(att.id)
+          return next
+        })
+        return
+      }
+
+      const { provider, info } = activeProvider
+      const bytes = await api.readFileBytes(localPath)
+
+      const chunks: string[] = []
+      for (let i = 0; i < bytes.length; i += 8192) {
+        chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)))
+      }
+      const base64Content = btoa(chunks.join(''))
+      const uploadTimeout = 30000
+      await Promise.race([
+        provider.uploadBinaryFile(
+          info.owner,
+          info.repo,
+          `attachments/${att.filename}`,
+          base64Content,
+          `Mindless: add attachment ${att.originalFilename}`,
+        ),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), uploadTimeout)),
+      ])
+
+      const uploadedPath = `attachments/${att.filename}`
+      const rawUrl = getAttachmentRawUrl(att.filename)
+      await api.updateAttachmentSyncStatus({
+        id: att.id,
+        rawUrl: rawUrl || undefined,
+        syncProvider: info.provider,
+        syncStatus: 'synced',
+        uploadedTo: uploadedPath,
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['attachments', activeTask.id] })
+
+      setUploadingAttachments((prev) => {
+        const next = new Map(prev)
+        next.set(att.id, { attachment: { ...att, localPath }, status: 'synced' })
+        return next
+      })
+
+      if (isImageFile(att.originalFilename)) {
+        const dataUrl = await api.readImageDataUrl(localPath)
+        setImageUrls((prev) => ({ ...prev, [att.id]: dataUrl }))
+      }
+
+      setTimeout(() => {
+        setUploadingAttachments((prev) => {
+          const next = new Map(prev)
+          next.delete(att.id)
+          return next
+        })
+      }, 500)
+    } catch (syncErr) {
+      console.error('Failed to retry sync attachment:', syncErr)
+      const api = await import('@/lib/api')
+      const syncProvider = localStorage.getItem('mindless-sync-provider') || undefined
+      await api.updateAttachmentSyncStatus({
+        id: att.id,
+        syncError: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+        syncProvider: syncProvider,
+        syncStatus: 'failed',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['attachments', activeTask.id] })
+
+      setUploadingAttachments((prev) => {
+        const next = new Map(prev)
+        next.set(att.id, {
+          attachment: { ...att, localPath },
+          error: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+          status: 'failed',
+        })
+        return next
+      })
     }
   }
 
   const getAttachmentRawUrl = (filename: string) => {
-    const syncUrl = localStorage.getItem('mindless-sync-url')
-    if (!syncUrl) {
-      return null
+    const syncProvider = localStorage.getItem('mindless-sync-provider')
+    if (!syncProvider) return null
+
+    const syncUrl = localStorage.getItem(`mindless-sync-url-${syncProvider}`)
+    if (!syncUrl) return null
+
+    const match = syncUrl.trim().match(/^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/)?$/)
+    if (!match) return null
+
+    const domain = match[1]
+    const owner = match[2]
+    const repo = match[3]
+
+    if (domain === 'github.com') {
+      return `https://raw.githubusercontent.com/${owner}/${repo}/main/attachments/${filename}`
+    } else if (domain === 'gitlab.com' || domain.includes('gitlab.')) {
+      return `https://${domain}/${owner}/${repo}/-/raw/main/attachments/${filename}`
+    } else if (domain === 'gitee.com') {
+      return `https://${domain}/${owner}/${repo}/raw/main/attachments/${filename}`
     }
-    const match = syncUrl.trim().match(/^https?:\/\/(github\.com|gitlab\.com)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/)?$/)
-    if (!match) {
-      return null
-    }
-    return `https://raw.githubusercontent.com/${match[2]}/${match[3]}/main/attachments/${filename}`
+
+    return null
   }
 
   const handleCopyAttachmentLink = (att: Attachment) => {
@@ -669,7 +912,11 @@ function TaskDetailPanel({
       <div className="px-4 pt-2 pb-2">
         <div className="relative flex" data-date-picker>
           <button
-            className={`flex flex-1 items-center gap-2 px-2 pl-0 rounded-lg text-sm transition-colors`}
+            className={`flex items-center gap-2 px-2 rounded-md text-sm transition-colors ${
+              activeTask.dueDate
+                ? 'bg-theme-100 dark:bg-theme-800 text-theme-600 dark:text-theme-100'
+                : 'text-theme-200 dark:text-theme-700 hover:bg-theme-100 dark:hover:bg-theme-700'
+            }`}
             onClick={async (e) => {
               const rect = await getScreenRect(e.currentTarget)
               await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
@@ -685,9 +932,6 @@ function TaskDetailPanel({
                 time: activeTask.dueTime || undefined,
               })
             }}
-            style={{
-              color: `${activeTask.dueDate ? 'hsl(from var(--theme-color) h s 30)' : 'hsl(from var(--theme-color) h s 80)'}`,
-            }}
             type="button"
           >
             <CalendarIcon className="w-4 h-4 flex-shrink-0" strokeWidth={`2`} />
@@ -701,6 +945,7 @@ function TaskDetailPanel({
                 : t('tasks.date_placeholder')}
             </span>
           </button>
+          <div className="grow" data-tauri-drag-region></div>
           {/* Section toggle drawer */}
           <div className="relative flex-shrink-0 flex items-center gap-0.5">
             {[
@@ -809,11 +1054,12 @@ function TaskDetailPanel({
       {/* Progress bar - tightly below header */}
       {progress && progress.total > 0 && (
         <div className="group relative px-4 pb-2">
-          <div className="w-full h-0.5 bg-theme-100 dark:bg-theme-700">
+          <div className="w-full h-[2px] bg-theme-200 dark:bg-theme-800">
             <div
-              className="h-full transition-all duration-300"
+              className={`h-full transition-all duration-300 ${
+                progress.completed === progress.total ? 'bg-theme-300 dark:bg-theme-700' : 'dark:bg-theme-700 bg-theme-300'
+              }`}
               style={{
-                backgroundColor: progress.completed === progress.total ? 'var(--theme-color)' : 'var(--theme-color)',
                 width: `${(progress.completed / progress.total) * 100}%`,
               }}
             />
@@ -893,46 +1139,100 @@ function TaskDetailPanel({
                 <PlusIcon className="w-4 h-4" />
               </button>
             </div>
-            {attachments.length === 0 ? (
+            {attachments.length === 0 && uploadingAttachments.size === 0 ? (
               <p className="text-xs text-theme-400 dark:text-theme-500 italic">{t('tasks.no_attachments')}</p>
             ) : (
               (() => {
-                const imageAttachments = attachments.filter((a) => isImageFile(a.originalFilename) && imageUrls[a.id])
-                const fileAttachments = attachments.filter((a) => !isImageFile(a.originalFilename) || !imageUrls[a.id])
+                // Merge server attachments with uploading attachments
+                const allAttachments = [
+                  ...attachments,
+                  ...Array.from(uploadingAttachments.values())
+                    .filter((ua) => !attachments.some((a) => a.id === ua.attachment.id))
+                    .map((ua) => ua.attachment),
+                ]
+
+                const imageAttachments = allAttachments.filter(
+                  (a) => isImageFile(a.originalFilename) && imageUrls[a.id],
+                )
+                const fileAttachments = allAttachments.filter(
+                  (a) => !isImageFile(a.originalFilename) || !imageUrls[a.id],
+                )
+
+                const getAttachmentStatus = (att: Attachment) => {
+                  const uploading = uploadingAttachments.get(att.id)
+                  if (uploading) return uploading.status
+                  if (att.syncStatus === 'syncing') return 'syncing'
+                  if (att.syncStatus === 'failed') return 'failed'
+                  return 'normal'
+                }
+
                 return (
                   <>
                     {imageAttachments.length > 0 && (
                       <div className="grid grid-cols-5 gap-2 mb-2">
-                        {imageAttachments.map((att) => (
-                          <div
-                            className="relative group aspect-square"
-                            key={att.id}
-                            onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
-                          >
-                            <img
-                              alt={att.originalFilename}
-                              className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
-                              onKeyUp={() => setPreviewImage(imageUrls[att.id])}
-                              src={imageUrls[att.id]}
-                            />
-                          </div>
-                        ))}
+                        {imageAttachments.map((att) => {
+                          const status = getAttachmentStatus(att)
+                          return (
+                            <div
+                              className="relative group aspect-square"
+                              key={att.id}
+                              onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
+                            >
+                              {status === 'uploading' || status === 'syncing' ? (
+                                <div className="w-full h-full rounded-sm border border-theme-100 flex items-center justify-center bg-theme-50">
+                                  <ArrowPathIcon className="w-6 h-6 text-theme-400 animate-spin" />
+                                </div>
+                              ) : status === 'failed' ? (
+                                <div className="w-full h-full rounded-sm border border-red-200 flex items-center justify-center bg-red-50 relative">
+                                  <ExclamationCircleIcon className="w-6 h-6 text-red-400" />
+                                  {uploadingAttachments.get(att.id)?.error && (
+                                    <span className="absolute -bottom-5 left-0 right-0 text-[10px] text-red-400 text-center truncate px-0.5">
+                                      {uploadingAttachments.get(att.id)?.error}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <img
+                                  alt={att.originalFilename}
+                                  className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
+                                  onClick={() => setPreviewImage(imageUrls[att.id])}
+                                  src={imageUrls[att.id]}
+                                />
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                     {fileAttachments.length > 0 && (
                       <div className="space-y-0.5">
-                        {fileAttachments.map((att) => (
-                          <div
-                            className="cursor-pointer flex items-center gap-2 group px-1 py-0.5 bg-theme-50 rounded hover:bg-theme-100 dark:hover:bg-theme-800"
-                            key={att.id}
-                            onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
-                          >
-                            <DocumentIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
-                            <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
-                              {att.originalFilename}
-                            </span>
-                          </div>
-                        ))}
+                        {fileAttachments.map((att) => {
+                          const status = getAttachmentStatus(att)
+                          const uploading = uploadingAttachments.get(att.id)
+                          return (
+                            <div
+                              className="cursor-pointer flex items-center gap-2 group px-1 py-0.5 bg-theme-50 rounded hover:bg-theme-100 dark:hover:bg-theme-800"
+                              key={att.id}
+                              onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
+                            >
+                              {status === 'uploading' || status === 'syncing' ? (
+                                <ArrowPathIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0 animate-spin" />
+                              ) : status === 'failed' ? (
+                                <ExclamationCircleIcon className="w-4 h-4 text-red-400 dark:text-red-500 flex-shrink-0" />
+                              ) : (
+                                <DocumentIcon className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
+                              )}
+                              <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
+                                {att.originalFilename}
+                              </span>
+                              {status === 'failed' && (uploading?.error || att.syncError) && (
+                                <span className="text-xs text-red-400 dark:text-red-500 truncate">
+                                  {uploading?.error || att.syncError}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </>
@@ -1132,12 +1432,19 @@ function TaskDetailPanel({
             >
               {t('tasks.download')}
             </button>
+            {(attachContextMenu.att.syncStatus === 'failed' ||
+              uploadingAttachments.get(attachContextMenu.att.id)?.status === 'failed') && (
+              <button
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+                onClick={() => handleRetryUpload(attachContextMenu.att)}
+                type="button"
+              >
+                {t('tasks.re_upload')}
+              </button>
+            )}
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
-              onClick={() => {
-                handleDeleteAttachment(attachContextMenu.att)
-                setAttachContextMenu(null)
-              }}
+              onClick={() => handleDeleteAttachment(attachContextMenu.att)}
               type="button"
             >
               {t('tasks.delete_attachment')}
@@ -1166,8 +1473,13 @@ function TaskRow({
   progressStyle?: 'bar' | 'circle' | 'pie'
 }) {
   const { t } = useTranslation('common')
+  const { data: allLists = [] } = useLists()
   const { data: taskSteps = [] } = useSteps(task.id)
   const rowProgress = useMemo(() => calcStepsProgress(taskSteps), [taskSteps])
+  const listColor = useMemo(() => {
+    if (!task.listId) return undefined
+    return allLists.find((l) => l.id === task.listId)?.color
+  }, [allLists, task.listId])
 
   const percent = rowProgress ? Math.round((rowProgress.completed / rowProgress.total) * 100) : 0
   const isComplete = rowProgress && rowProgress.completed === rowProgress.total
@@ -1277,32 +1589,29 @@ function TaskRow({
 
   return (
     <div
-      className={`group flex items-center gap-3 px-2 py-2 bg-white dark:bg-theme-800 rounded-lg transition-shadow cursor-pointer`}
+      className={`group flex items-center gap-3 px-2 py-2 rounded-md transition-shadow cursor-pointer ${
+        isSelected ? 'bg-theme-700/30 dark:bg-theme-200/30' : ''
+      }`}
       onContextMenu={(e) => {
         e.preventDefault()
         onContextMenu?.(e)
       }}
       onMouseDown={onSelect}
-      style={{
-        backgroundColor: isSelected ? `color-mix(in srgb, var(--theme-bg-20) 80%, white)` : `inherit`,
-      }}
     >
-      <input
+      <CheckNow
         checked={task.isCompleted}
-        className="after:skew-y-10 w-4 h-4 rounded border-theme-300 dark:border-theme-600 flex-shrink-0"
-        onChange={(e) => {
+        className="flex-shrink-0"
+        color1={listColor || 'var(--theme-color)'}
+        color2={task.priority > 0 ? PRIORITY_COLORS[task.priority] : undefined}
+        hasSteps={!!(rowProgress && rowProgress.total > 0)}
+        onClick={(e) => {
           e.stopPropagation()
           onToggle()
         }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          accentColor: `var(--theme-color)`,
-        }}
-        type="checkbox"
       />
       <span
-        className={`flex-1 min-w-0 truncate text-sm ${
-          task.isCompleted ? 'line-through text-theme-400 dark:text-theme-500' : 'text-theme-900 dark:text-theme-100'
+        className={`flex-1 truncate text-sm ${
+          task.isCompleted ? 'line-through text-theme-700 dark:text-theme-200' : 'text-theme-900 dark:text-theme-100'
         }`}
       >
         {task.title}
@@ -1326,7 +1635,7 @@ function TaskRow({
           const unit = t('dashboard.days_left')
           const label = diffDays === 0 ? t('tasks.today') : isOverdue ? `-${absDays}${unit}` : `+${absDays}${unit}`
           return (
-            <span className={`text-xs font-medium flex-shrink-0 ${isOverdue ? 'text-red-500' : 'text-green-500'}`}>
+            <span className={`text-xs font-medium flex-shrink-0 ${isOverdue ? 'text-red-500 dark:text-red-500' : 'text-green-500 dark:text-green-500'}`}>
               {label}
             </span>
           )
@@ -1405,6 +1714,7 @@ export default function TasksPage() {
     import('@/lib/api').then(({ getListSettings }) => {
       getListSettings(selectedListId)
         .then((settings) => {
+          console.log('list', settings)
           if (settings) {
             setTaskSortBy(settings.sortBy)
             setTaskSortOrder(settings.sortOrder)
@@ -1473,13 +1783,13 @@ export default function TasksPage() {
   const [selectedSubtaskId, setSelectedSubtaskId] = useState<string | null>(null)
   const [listsExpanded, setListsExpanded] = useState(true)
   const [advListsExpanded, setAdvListsExpanded] = useState(true)
-  const [showGroupSettings, setShowGroupSettings] = useState(false)
   const [editingAdvGroup, setEditingAdvGroup] = useState<AdvancedGroup | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDescription, setNewTaskDescription] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0)
   const [showPriorityPicker, setShowPriorityPicker] = useState(false)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([])
   const tagButtonRef = useRef<HTMLButtonElement>(null)
   const [newTaskDueDate, setNewTaskDueDate] = useState(() => getLocalToday())
@@ -1530,12 +1840,17 @@ export default function TasksPage() {
   const { data: allTags = [] } = useTags()
   const { data: allLists = [] } = useLists()
   const { data: todayAtomTag } = useAtomTag('today')
+  const { data: allTemplates = [] } = useTaskTemplates()
+  const createTemplate = useCreateTaskTemplate()
+  const updateTaskTemplate = useUpdateTaskTemplate()
+  const incrementTemplateUsage = useIncrementTemplateUsage()
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const toggleTask = useToggleTaskCompletion()
   const completeRecurring = useCompleteRecurringTask()
   const updateSubtask = useUpdateSubtask()
+  const createList = useCreateList()
   const updateList = useUpdateList()
   const deleteList = useDeleteList()
 
@@ -1657,9 +1972,34 @@ export default function TasksPage() {
       }
     })
 
+    const unlistListOverlay = listen<{
+      action: string
+      name?: string
+      icon?: string
+      color?: string
+      _source?: string
+      _listId?: string
+    }>('group-form-overlay:result', (event) => {
+      const { action, _source, _listId, name, icon, color } = event.payload
+      if (_source !== 'list') return
+      if (action === 'submit' && name && icon && color) {
+        if (_listId) {
+          updateList.mutate({ color, icon, id: _listId, name })
+        } else {
+          createList.mutate({ color, icon, name })
+        }
+      } else if (action === 'delete' && _listId) {
+        deleteList.mutate(_listId)
+      }
+      if (action !== 'cancel') {
+        queryClient.invalidateQueries({ queryKey: ['lists'] })
+      }
+    })
+
     return () => {
       unlistenAdvGroup.then((fn) => fn())
       unlistList.then((fn) => fn())
+      unlistListOverlay.then((fn) => fn())
     }
   }, [editingAdvGroup, addAdvancedGroup, updateAdvancedGroup, queryClient])
 
@@ -1977,22 +2317,9 @@ export default function TasksPage() {
               return btoa(chunks.join(''))
             }
             const api = await import('@/lib/api')
-            const syncUrl = localStorage.getItem('mindless-sync-url')
-            let octokit: Octokit | null = null
-            let owner = ''
-            let repo = ''
-            if (syncUrl) {
-              const { parseRepoUrl, createOctokit } = await import('@/lib/syncService')
-              const info = parseRepoUrl(syncUrl)
-              if (info) {
-                const pat = await api.loadPat(info.domain)
-                if (pat) {
-                  octokit = createOctokit(pat, info.domain)
-                  owner = info.owner
-                  repo = info.repo
-                }
-              }
-            }
+            const { getActiveProvider } = await import('@/lib/sync')
+            const activeProvider = await getActiveProvider()
+
             for (const att of currentAttachments) {
               try {
                 const attachment = await api.createAttachment({
@@ -2000,21 +2327,62 @@ export default function TasksPage() {
                   originalFilename: att.originalFilename,
                   taskId: newTask.id,
                 })
-                if (octokit) {
-                  const { uploadBinaryFile } = await import('@/lib/syncService')
-                  const base64Content = bytesToBase64(att.fileBytes)
-                  const path = `attachments/${attachment.filename}`
-                  await uploadBinaryFile(
-                    octokit,
-                    owner,
-                    repo,
-                    path,
-                    base64Content,
-                    `Mindless: add attachment ${attachment.originalFilename}`,
-                  )
+
+                if (activeProvider) {
+                  const { provider, info } = activeProvider
+                  await api.updateAttachmentSyncStatus({
+                    id: attachment.id,
+                    syncProvider: info.provider,
+                    syncStatus: 'syncing',
+                  })
+
+                  try {
+                    const base64Content = bytesToBase64(att.fileBytes)
+                    const path = `attachments/${attachment.filename}`
+                    await provider.uploadBinaryFile(
+                      info.owner,
+                      info.repo,
+                      path,
+                      base64Content,
+                      `Mindless: add attachment ${attachment.originalFilename}`,
+                    )
+
+                    const syncUrl = localStorage.getItem(`mindless-sync-url-${info.provider}`)
+                    let rawUrl: string | null = null
+                    if (syncUrl) {
+                      const m = syncUrl.trim().match(/^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/)?$/)
+                      if (m) {
+                        const domain = m[1]
+                        const owner = m[2]
+                        const repo = m[3]
+                        if (domain === 'github.com') {
+                          rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/attachments/${attachment.filename}`
+                        } else if (domain === 'gitlab.com' || domain.includes('gitlab.')) {
+                          rawUrl = `https://${domain}/${owner}/${repo}/-/raw/main/attachments/${attachment.filename}`
+                        } else if (domain === 'gitee.com') {
+                          rawUrl = `https://${domain}/${owner}/${repo}/raw/main/attachments/${attachment.filename}`
+                        }
+                      }
+                    }
+                    await api.updateAttachmentSyncStatus({
+                      id: attachment.id,
+                      rawUrl: rawUrl || undefined,
+                      syncProvider: info.provider,
+                      syncStatus: 'synced',
+                      uploadedTo: path,
+                    })
+                  } catch (syncErr) {
+                    console.error(`Failed to sync attachment "${att.originalFilename}":`, syncErr)
+                    await api.updateAttachmentSyncStatus({
+                      id: attachment.id,
+                      syncError: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+                      syncProvider: info.provider,
+                      syncStatus: 'failed',
+                    })
+                  }
                 }
               } catch (err) {
-                console.error(`Failed to upload attachment "${att.originalFilename}":`, err)
+                console.error(`Failed to create attachment "${att.originalFilename}":`, err)
               }
             }
           }
@@ -2332,50 +2700,36 @@ export default function TasksPage() {
     setSelectedListId(selectedListId === listId ? null : listId)
   }
 
-  const handleCreateList = async () => {
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('list-form')
-      if (existingWindow) {
-        await existingWindow.setFocus()
-        return
-      }
-    } catch {}
-
-    new WebviewWindow('list-form', {
-      alwaysOnTop: true,
-      center: true,
-      decorations: false,
-      height: 500,
-      resizable: false,
-      title: t('lists.create_list'),
-      transparent: true,
-      url: '/dialog/list-form',
-      width: 480,
-      // shadow: true,
+  const handleCreateList = async (e?: React.MouseEvent) => {
+    const el = e?.currentTarget as HTMLElement | undefined
+    const rect = el ? await getScreenRect(el) : null
+    await showOverlay(GROUP_FORM_LABEL, rect?.x ?? 0, rect?.y ?? 0, {
+      _source: 'list',
+      anchorH: rect?.height ?? 0,
+      anchorX: rect?.x ?? 0,
+      anchorY: rect?.y ?? 0,
+      color: '#3B82F6',
+      icon: '📁',
+      isEditing: false,
+      name: '',
+      showDelete: false,
     })
   }
 
   const handleEditList = async (e: React.MouseEvent, list: List) => {
     e.stopPropagation()
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('list-form')
-      if (existingWindow) {
-        await existingWindow.setFocus()
-        return
-      }
-    } catch {}
-
-    new WebviewWindow('list-form', {
-      alwaysOnTop: true,
-      center: true,
-      decorations: false,
-      height: 500,
-      resizable: false,
-      title: t('lists.edit_list'),
-      transparent: true,
-      url: `/dialog/list-form?listId=${encodeURIComponent(list.id)}`,
-      width: 480,
-      // shadow: true,
+    const rect = await getScreenRect(e.currentTarget as HTMLElement)
+    await showOverlay(GROUP_FORM_LABEL, rect.x, rect.y + rect.height + 4, {
+      _listId: list.id,
+      _source: 'list',
+      anchorH: rect.height,
+      anchorX: rect.x,
+      anchorY: rect.y,
+      color: list.color || '#3B82F6',
+      icon: resolveIcon(list.icon),
+      isEditing: true,
+      name: list.name,
+      showDelete: true,
     })
   }
 
@@ -2419,7 +2773,7 @@ export default function TasksPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-theme-500 dark:text-theme-400">{t('common.loading')}</div>
+        <div className="text-theme-500 dark:text-theme-800">{t('common.loading')}</div>
       </div>
     )
   }
@@ -2427,9 +2781,8 @@ export default function TasksPage() {
     <div className="flex-1 flex overflow-hidden" ref={containerRef}>
       {/* Task Groups Panel */}
       <div
-        className="border-r border-theme-200 dark:border-theme-700 flex flex-col overflow-hidden"
+        className="border-r bg-theme-600/30 border-theme-200 dark:border-theme-900 flex flex-col overflow-hidden"
         style={{
-          backgroundColor: 'var(--theme-bg-20)',
           flexShrink: 0,
           maxWidth: 315,
           minWidth: 215,
@@ -2445,8 +2798,10 @@ export default function TasksPage() {
                 return (
                   <div className="relative group" key={list.id}>
                     <button
-                      className={`p-1.5 rounded-lg transition-colors text-sm ${
-                        isActive ? 'bg-black/10 dark:bg-white/15' : 'hover:bg-black/5 dark:hover:bg-white/10'
+                      className={`border text-sm p-1 rounded-md transition-colors ${
+                        isActive
+                          ? 'border-theme-300 bg-theme-100 dark:bg-theme-200/30 dark:border-theme-400'
+                          : 'border-transparent hover:bg-black/5 dark:hover:bg-theme-200/30 dark:hover:border-theme-600'
                       }`}
                       onClick={() => handleListClick(list.id)}
                       onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
@@ -2464,8 +2819,10 @@ export default function TasksPage() {
                 return (
                   <div className="relative group" key={group.id}>
                     <button
-                      className={`p-1.5 rounded-lg transition-colors text-sm ${
-                        isActive ? 'bg-black/10 dark:bg-white/15' : 'hover:bg-black/5 dark:hover:bg-white/10'
+                      className={`border text-sm p-1 rounded-md transition-colors ${
+                        isActive
+                          ? 'border-theme-300 bg-theme-100 dark:bg-theme-200/30 dark:border-theme-400'
+                          : 'border-transparent hover:bg-black/5 dark:hover:bg-theme-200/30 dark:hover:border-theme-600'
                       }`}
                       onClick={() => handleAdvGroupClick(group.id)}
                       onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
@@ -2494,10 +2851,10 @@ export default function TasksPage() {
               return (
                 <div className="relative group" key={smartList.id}>
                   <button
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left text-sm ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-left text-sm ${
                       isActive
-                        ? 'bg-black/10 dark:bg-white/15'
-                        : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
+                        ? 'bg-theme-700/30 dark:bg-theme-200/30'
+                        : 'text-theme-700 dark:text-theme-300 hover:bg-theme-700/20 dark:hover:bg-theme-200/20'
                     }`}
                     onClick={() => handleListClick(smartList.id)}
                     style={isActive ? { color: 'var(--theme-text-70)' } : {}}
@@ -2505,9 +2862,9 @@ export default function TasksPage() {
                   >
                     {getGroupIcon(smartList.iconKey)}
                     <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
-                    {count > 0 && <span className="text-xs text-theme-400 dark:text-theme-500">{count}</span>}
+                    {count > 0 && <span className="text-xs text-theme-600 dark:text-theme-400">{count}</span>}
                   </button>
-                  {showGroupSettings && isToggleable && (
+                  {isToggleable && (
                     <button
                       className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600 opacity-70 hover:opacity-100"
                       onClick={() => setSmartGroupVisibility(groupKey, !smartGroupVisibility[groupKey])}
@@ -2526,41 +2883,24 @@ export default function TasksPage() {
           </div>
 
           {/* Separator line */}
-          <hr
-            className="mt-2"
-            style={{
-              borderColor: `color-mix(in srgb, ${themeColor} 30%, white)`,
-            }}
-          />
+          <hr className="mt-2 border-theme-200 dark:border-theme-800"/>
         </div>
 
         {/* Advanced groups */}
         <div className="overflow-auto px-2 py-2">
           {/* Section header */}
-          <div className="flex items-center justify-between mb-1 px-1.5">
+          <div className="flex items-center justify-between mb-1 px-1.5 rounded-md dark:hover:text-theme-200 invisible hover:visible">
             <button
-              className="flex items-center gap-1 text-[11px] font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
+              className="flex items-center gap-1 -ms-3 text-xs font-semibold text-theme-700 dark:text-theme-300 tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
               onClick={() => setAdvListsExpanded(!advListsExpanded)}
               type="button"
             >
               {advListsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
-              {t('advanced_groups.title')}
+              <p className='visible'>{t('advanced_groups.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
               <button
-                className={`p-0.5 rounded transition-colors ${
-                  showGroupSettings
-                    ? 'bg-theme-100 dark:bg-theme-900/30 text-theme-500'
-                    : 'hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500'
-                }`}
-                onClick={() => setShowGroupSettings(!showGroupSettings)}
-                title={t('lists.manage')}
-                type="button"
-              >
-                <EyeIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                className="p-0.5 rounded hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+                className="p-0.5 rounded hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors transition-150"
                 onClick={async () => {
                   setEditingAdvGroup(null)
                   try {
@@ -2587,7 +2927,7 @@ export default function TasksPage() {
                 title={t('lists.create_list')}
                 type="button"
               >
-                <PlusIcon className="w-3.5 h-3.5 text-theme-400 dark:text-theme-500" />
+                <PlusIcon className="w-3.5 h-3.5 text-theme-700 dark:text-theme-500" />
               </button>
             </div>
           </div>
@@ -2610,7 +2950,7 @@ export default function TasksPage() {
                   return (
                     <div className="relative group" key={group.id}>
                       <button
-                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-left group/item text-sm ${
                           isActive
                             ? 'bg-black/10 dark:bg-white/15'
                             : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
@@ -2644,28 +2984,16 @@ export default function TasksPage() {
         {/* Scrollable: groups */}
         <div className="overflow-auto px-2 py-2">
           {/* Section header */}
-          <div className="flex items-center justify-between mb-1 px-1.5">
+          <div className="flex items-center justify-between mb-1 px-1.5 invisible hover:visible">
             <button
-              className="flex items-center gap-1 text-[11px] font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
+              className="flex items-center gap-1 -ms-3 text-xs font-semibold text-theme-700 dark:text-theme-300 uppercase tracking-wider hover:text-theme-700 dark:hover:text-theme-200 transition-colors"
               onClick={() => setListsExpanded(!listsExpanded)}
               type="button"
             >
               {listsExpanded ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
-              {t('lists.title')}
+              <p className='visible'>{t('lists.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
-              <button
-                className={`p-0.5 rounded transition-colors ${
-                  showGroupSettings
-                    ? 'bg-theme-100 dark:bg-theme-900/30 text-theme-500'
-                    : 'hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500'
-                }`}
-                onClick={() => setShowGroupSettings(!showGroupSettings)}
-                title={t('lists.manage')}
-                type="button"
-              >
-                <EyeIcon className="w-3.5 h-3.5" />
-              </button>
               <button
                 className="p-0.5 rounded hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
                 onClick={handleCreateList}
@@ -2689,12 +3017,12 @@ export default function TasksPage() {
                     <button
                       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
                         isActive
-                          ? 'bg-black/10 dark:bg-white/15'
-                          : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
+                          ? 'bg-white/30 dark:bg-black/30'
+                          : 'text-theme-700 dark:text-theme-300 hover:bg-white/30 dark:hover:bg-black/30'
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
                       onMouseDown={() => handleListClick(list.id)}
-                      style={isActive ? { color: 'var(--theme-text-70)' } : {}}
+                      style={isActive ? { color: 'var(--theme-text-700)' } : {}}
                       type="button"
                     >
                       <span className="flex-shrink-0 text-sm">{resolveIcon(list.icon)}</span>
@@ -2730,7 +3058,7 @@ export default function TasksPage() {
         {/* Header */}
         <div className="px-2 py-1">
           <div className="flex items-center justify-between" data-tauri-drag-region>
-            <h1 className="text-lg font-bold text-theme-900 dark:text-theme-100">{headerTitle}</h1>
+            <h1 className="text-lg font-bold text-theme-900 dark:text-theme-200">{headerTitle}</h1>
             <div className="flex items-center gap-2">
               <div
                 className="relative"
@@ -2870,7 +3198,7 @@ export default function TasksPage() {
         ) : (
           <div className="flex-1 overflow-auto p-1">
             {/* Inline new task form */}
-            <div className="mb-1 bg-white dark:bg-theme-800 rounded-lg shadow-sm border border-theme-100 dark:border-theme-800 overflow-hidden">
+            <div className="mb-1 bg-theme-200/30 dark:bg-theme-800/30 rounded-lg shadow-sm border border-theme-100 dark:border-theme-800 overflow-hidden">
               <input
                 className="w-full px-4 py-3 text-sm text-theme-900 dark:text-theme-100 bg-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -2993,6 +3321,41 @@ export default function TasksPage() {
                     <PaperClipIcon className="w-4 h-4" />
                     {pendingAttachments.length > 0 && <span className="text-xs">{pendingAttachments.length}</span>}
                   </button>
+                  {/* Template */}
+                  <div className="relative">
+                    <button
+                      className="p-1.5 rounded transition-colors hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500"
+                      onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                      title={t('tasks.template')}
+                      type="button"
+                    >
+                      <ClipboardDocumentListIcon className="w-4 h-4" />
+                    </button>
+                    {showTemplatePicker && allTemplates.length > 0 && (
+                      <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 py-1 min-w-[180px] max-h-[200px] overflow-y-auto z-50">
+                        {allTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            className="w-full text-left px-3 py-1.5 text-xs text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors truncate"
+                            onClick={() => {
+                              setNewTaskTitle(template.name)
+                              if (template.description) {
+                                setNewTaskDescription(template.description)
+                              }
+                              if (template.tagIds) {
+                                setNewTaskTagIds(template.tagIds.split(',').filter(Boolean))
+                              }
+                              incrementTemplateUsage.mutate(template.id)
+                              setShowTemplatePicker(false)
+                            }}
+                            type="button"
+                          >
+                            {template.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               {pendingAttachments.length > 0 && (
@@ -3401,7 +3764,48 @@ export default function TasksPage() {
 
               <div className="border-t border-theme-200 dark:border-theme-700 my-1" />
 
-              {/* 8. 删除 */}
+              {/* 8. 保存为模板 */}
+              <button
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+                onClick={() => {
+                  const task = tasks.find((tk) => tk.id === taskContextMenu.taskId)
+                  if (task) {
+                    const stepsJson =
+                      task.steps && task.steps.length > 0
+                        ? JSON.stringify(task.steps.map((s) => s.description))
+                        : undefined
+                    const existing = allTemplates.find((tpl) => tpl.name === task.title)
+                    if (existing) {
+                      if (!window.confirm(t('template_mgmt.overwrite_confirm', { name: task.title }))) {
+                        setTaskContextMenu(null)
+                        setTaskMenuPanel(null)
+                        return
+                      }
+                      updateTaskTemplate.mutate({
+                        description: task.description || undefined,
+                        id: existing.id,
+                        steps: stepsJson,
+                        tagIds: task.tagIds || undefined,
+                      })
+                    } else {
+                      createTemplate.mutate({
+                        description: task.description || undefined,
+                        name: task.title,
+                        steps: stepsJson,
+                        tagIds: task.tagIds || undefined,
+                      })
+                    }
+                  }
+                  setTaskContextMenu(null)
+                  setTaskMenuPanel(null)
+                }}
+                type="button"
+              >
+                <ClipboardDocumentCheckIcon className="w-4 h-4" />
+                {t('tasks.save_as_template')}
+              </button>
+
+              {/* 9. 删除 */}
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 onClick={() => {

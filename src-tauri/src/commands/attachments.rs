@@ -20,6 +20,8 @@ fn is_image_file(filename: &str) -> bool {
     matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp")
 }
 
+const ATTACHMENT_COLUMNS: &str = "id, task_id, original_filename, filename, added_datetime, sha256, local_path, sync_status, sync_provider, sync_error, uploaded_to, raw_url";
+
 fn row_to_attachment(row: &rusqlite::Row) -> rusqlite::Result<Attachment> {
     Ok(Attachment {
         id: row.get(0)?,
@@ -29,6 +31,11 @@ fn row_to_attachment(row: &rusqlite::Row) -> rusqlite::Result<Attachment> {
         added_datetime: row.get(4)?,
         sha256: row.get(5)?,
         local_path: row.get(6)?,
+        sync_status: row.get(7)?,
+        sync_provider: row.get(8)?,
+        sync_error: row.get(9)?,
+        uploaded_to: row.get(10)?,
+        raw_url: row.get(11)?,
     })
 }
 
@@ -64,7 +71,7 @@ pub async fn create_attachment(
     };
 
     conn.execute(
-        "INSERT INTO attachments (id, task_id, original_filename, filename, sha256, local_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        "INSERT INTO attachments (id, task_id, original_filename, filename, sha256, local_path, sync_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'none')",
         rusqlite::params![&id, &task_id, &original_filename, &filename, &sha256, &local_path],
     ).map_err(|e| format!("Failed to create attachment: {}", e))?;
 
@@ -76,7 +83,25 @@ pub async fn create_attachment(
         added_datetime: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         sha256,
         local_path,
+        sync_status: "none".to_string(),
+        sync_provider: None,
+        sync_error: None,
+        uploaded_to: None,
+        raw_url: None,
     })
+}
+
+#[tauri::command]
+pub async fn get_attachment_by_id(
+    app: AppHandle,
+    id: String,
+) -> Result<Attachment, String> {
+    let conn = get_db(&app)?;
+    conn.query_row(
+        &format!("SELECT {} FROM attachments WHERE id = ?1", ATTACHMENT_COLUMNS),
+        [&id],
+        row_to_attachment,
+    ).map_err(|e| format!("Attachment not found: {}", e))
 }
 
 #[tauri::command]
@@ -86,7 +111,7 @@ pub async fn get_attachments_by_task(
 ) -> Result<Vec<Attachment>, String> {
     let conn = get_db(&app)?;
     let mut stmt = conn
-        .prepare("SELECT id, task_id, original_filename, filename, added_datetime, sha256, local_path FROM attachments WHERE task_id = ?1 ORDER BY added_datetime")
+        .prepare(&format!("SELECT {} FROM attachments WHERE task_id = ?1 ORDER BY added_datetime", ATTACHMENT_COLUMNS))
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     let rows = stmt
@@ -112,7 +137,7 @@ pub async fn delete_attachment(
 ) -> Result<Attachment, String> {
     let conn = get_db(&app)?;
     let attachment: Attachment = conn.query_row(
-        "SELECT id, task_id, original_filename, filename, added_datetime, sha256, local_path FROM attachments WHERE id = ?1",
+        &format!("SELECT {} FROM attachments WHERE id = ?1", ATTACHMENT_COLUMNS),
         [&id],
         row_to_attachment,
     ).map_err(|e| format!("Attachment not found: {}", e))?;
@@ -153,7 +178,7 @@ pub async fn cache_attachment_image(
 pub async fn get_all_attachments(app: AppHandle) -> Result<Vec<Attachment>, String> {
     let conn = get_db(&app)?;
     let mut stmt = conn
-        .prepare("SELECT id, task_id, original_filename, filename, added_datetime, sha256, local_path FROM attachments ORDER BY added_datetime DESC")
+        .prepare(&format!("SELECT {} FROM attachments ORDER BY added_datetime DESC", ATTACHMENT_COLUMNS))
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     let rows = stmt
@@ -196,6 +221,24 @@ pub async fn delete_attachment_local_cache(app: AppHandle, id: String) -> Result
         [&id],
     ).map_err(|e| format!("Failed to update attachment: {}", e))?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_attachment_sync_status(
+    app: AppHandle,
+    id: String,
+    sync_status: String,
+    sync_provider: Option<String>,
+    sync_error: Option<String>,
+    uploaded_to: Option<String>,
+    raw_url: Option<String>,
+) -> Result<(), String> {
+    let conn = get_db(&app)?;
+    conn.execute(
+        "UPDATE attachments SET sync_status = ?1, sync_provider = ?2, sync_error = ?3, uploaded_to = ?4, raw_url = ?5 WHERE id = ?6",
+        rusqlite::params![&sync_status, &sync_provider, &sync_error, &uploaded_to, &raw_url, &id],
+    ).map_err(|e| format!("Failed to update attachment sync status: {}", e))?;
     Ok(())
 }
 

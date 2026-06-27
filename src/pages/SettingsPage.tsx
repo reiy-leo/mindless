@@ -161,6 +161,7 @@ export default function SettingsPage() {
     gitee: localStorage.getItem('mindless-sync-url-gitee') || '',
   }))
   const [syncPats, setSyncPats] = useState<Record<string, string>>({ github: '', gitlab: '', gitee: '' })
+  const [gitlabProjectId, setGitlabProjectId] = useState(() => localStorage.getItem('mindless-sync-gitlab-project-id') || '')
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [syncLoading, setSyncLoading] = useState(false)
@@ -221,7 +222,7 @@ export default function SettingsPage() {
     setSyncError(null)
     try {
       const { testConnection } = await import('@/lib/sync')
-      const result = await testConnection(syncPat, syncUrl)
+      const result = await testConnection(syncPat, syncUrl, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
       if (result.success) {
         setSyncStatus('test_success')
         setSyncError(null)
@@ -250,7 +251,7 @@ export default function SettingsPage() {
       const { exportAllData, getDbBase64 } = await import('@/lib/api')
       const { syncToRepo } = await import('@/lib/sync')
       const [exportJson, dbBase64] = await Promise.all([exportAllData(), getDbBase64()])
-      const result = await syncToRepo(syncPat, syncUrl, exportJson, dbBase64)
+      const result = await syncToRepo(syncPat, syncUrl, exportJson, dbBase64, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
       setSyncStatus(result.success ? 'sync_success' : 'sync_failed')
     } catch {
       setSyncStatus('sync_failed')
@@ -1119,6 +1120,25 @@ export default function SettingsPage() {
                   placeholder={t(`settings.sync.repo_url_placeholder${syncProvider !== 'github' ? `_${syncProvider}` : ''}`)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
+
+                {syncProvider === 'gitlab' && (
+                  <>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-4">
+                      {t('settings.sync.gitlab_project_id')}
+                    </h3>
+                    <input
+                      type="text"
+                      value={gitlabProjectId}
+                      onChange={(e) => {
+                        setGitlabProjectId(e.target.value)
+                        localStorage.setItem('mindless-sync-gitlab-project-id', e.target.value)
+                      }}
+                      placeholder={t('settings.sync.gitlab_project_id_placeholder')}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('settings.sync.gitlab_project_id_help')}</p>
+                  </>
+                )}
 
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-4">
                   {t('settings.sync.pat')}

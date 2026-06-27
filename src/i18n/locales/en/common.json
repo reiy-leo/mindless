@@ -62,7 +62,8 @@
     "settings": "Settings",
     "people": "People",
     "media": "Media",
-    "attachments": "Attachments"
+    "attachments": "Attachments",
+    "templates": "Templates"
   },
   "search": {
     "placeholder": "Search tasks, habits, countdowns...",
@@ -90,8 +91,13 @@
     "attachments": "Attachments",
     "no_attachments": "No attachments",
     "delete_attachment": "Delete attachment",
+    "re_upload": "Re-upload",
+    "attachment_cache_not_found": "Cached file not found",
     "copy_link": "Copy Link",
     "download": "Download",
+    "save_as_template": "Save as Template",
+    "template_applied": "Template applied",
+    "template": "Template",
     "settings": "Settings",
     "settings_view": "View",
     "settings_status": "Status",
@@ -658,6 +664,9 @@
       "repo_url_placeholder": "https://github.com/username/repo",
       "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
       "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
+      "gitlab_project_id": "GitLab Project ID",
+      "gitlab_project_id_placeholder": "Enter GitLab Project ID (numeric)",
+      "gitlab_project_id_help": "Found in GitLab project Settings → General → Project ID",
       "pat": "Personal Access Token",
       "pat_placeholder": "Enter Personal Access Token",
       "pat_help": "GitHub: repo scope; GitLab: api or read_repository + write_repository; Gitee: projects scope",
@@ -889,7 +898,11 @@
     "rename": "Rename",
     "last_fetched": "Last fetched",
     "added": "Added",
-    "search_placeholder": "Search attachments..."
+    "search_placeholder": "Search attachments...",
+    "syncing": "Syncing",
+    "synced": "Synced",
+    "sync_failed": "Sync failed",
+    "sync_failed_retry": "Sync failed, click to retry"
   },
   "menu": {
     "quit": "Quit {{appName}}",
@@ -908,6 +921,7 @@
     "switch_notes": "Switch to Notes",
     "manage_tags": "Manage Tags",
     "manage_attachments": "Manage Attachments",
+    "manage_templates": "Manage Task Templates",
     "edit": "Edit",
     "file": "File",
     "new_task": "New Task",
@@ -927,5 +941,30 @@
     "services": "Services",
     "hide_app": "Hide {{appName}}",
     "hide_others": "Hide Others"
+  },
+  "template_mgmt": {
+    "title": "Task Template Management",
+    "search_placeholder": "Search templates...",
+    "no_templates": "No templates yet",
+    "create_template": "Create Template",
+    "template_name": "Template Name",
+    "use_count": "Use Count",
+    "created_at": "Created",
+    "updated_at": "Modified",
+    "delete_confirm": "Delete template \"{{name}}\"?",
+    "overwrite_confirm": "Template \"{{name}}\" already exists. Overwrite?",
+    "name_placeholder": "Enter template name",
+    "save_as_template_title": "Save as Template",
+    "save_as_template_name_label": "Template Name"
+  },
+  "templates": {
+    "name": "Name",
+    "created_at": "Created",
+    "updated_at": "Modified",
+    "usage_count": "Usage Count",
+    "no_templates": "No templates yet",
+    "no_results": "No matching templates",
+    "new_name": "Untitled Template",
+    "search_placeholder": "Search templates..."
   }
 }

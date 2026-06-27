@@ -7,3 +7,4 @@ export * from './person';
 export * from './media';
 export * from './common';
 export * from './attachment';
+export * from './taskTemplate';

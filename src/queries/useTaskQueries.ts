@@ -364,6 +364,61 @@ export function useMoveTags() {
   });
 }
 
+// ==================== Task Template Queries ====================
+
+export function useTaskTemplates() {
+  return useQuery({
+    queryKey: ['task-templates'],
+    queryFn: () => api.getTaskTemplates(),
+  });
+}
+
+export function useCreateTaskTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { name: string; description?: string; steps?: string; tagIds?: string }) =>
+      api.createTaskTemplate(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-templates'] });
+    },
+  });
+}
+
+export function useUpdateTaskTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...params }: { id: string; name?: string; description?: string; steps?: string; tagIds?: string }) =>
+      api.updateTaskTemplate(id, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-templates'] });
+    },
+  });
+}
+
+export function useDeleteTaskTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteTaskTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-templates'] });
+    },
+  });
+}
+
+export function useIncrementTemplateUsage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.incrementTemplateUsage(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-templates'] });
+    },
+  });
+}
+
 // ==================== Calendar Event Queries ====================
 
 export function useCalendarEvents() {

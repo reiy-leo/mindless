@@ -436,20 +436,17 @@ export default function NotesPage() {
     }, [handleUpdateNoteField]);
 
     // Note Group CRUD
-    const handleCreateGroup = useCallback(() => {
-        if (!newGroupName.trim()) return;
+    const handleCreateGroup = useCallback((result: { name: string; icon: string; color: string }) => {
+        if (!result.name.trim()) return;
         createNoteGroup.mutate(
-            { name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
+            { name: result.name.trim(), color: result.color, icon: result.icon },
             {
                 onSuccess: () => {
-                    setNewGroupName("");
-                    setNewGroupColor("#3B82F6");
-                    setNewGroupIcon("📁");
                     setShowGroupForm(false);
                 },
             },
         );
-    }, [newGroupName, newGroupColor, newGroupIcon, createNoteGroup]);
+    }, [createNoteGroup]);
 
     const handleEditGroup = useCallback((e: React.MouseEvent, group: NoteGroup) => {
         e.stopPropagation();
@@ -463,19 +460,18 @@ export default function NotesPage() {
         setShowGroupForm(true);
     }, []);
 
-    const handleUpdateGroup = useCallback(() => {
-        if (!editingGroup || !newGroupName.trim()) return;
+    const handleUpdateGroup = useCallback((result: { name: string; icon: string; color: string }) => {
+        if (!editingGroup || !result.name.trim()) return;
         updateNoteGroup.mutate(
-            { id: editingGroup.id, name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
+            { id: editingGroup.id, name: result.name.trim(), color: result.color, icon: result.icon },
             {
                 onSuccess: () => {
                     setEditingGroup(null);
-                    setNewGroupName("");
                     setShowGroupForm(false);
                 },
             },
         );
-    }, [editingGroup, newGroupName, newGroupColor, newGroupIcon, updateNoteGroup]);
+    }, [editingGroup, updateNoteGroup]);
 
     const handleArchiveGroup = useCallback(
         (id: string) => {
@@ -654,11 +650,8 @@ export default function NotesPage() {
                             onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
                             triggerRect={groupFormTriggerRect}
                             name={newGroupName}
-                            onNameChange={setNewGroupName}
                             icon={newGroupIcon}
-                            onIconChange={setNewGroupIcon}
                             color={newGroupColor}
-                            onColorChange={setNewGroupColor}
                             namePlaceholder={t("notes.groups.name_placeholder")}
                             isEditing={!!editingGroup}
                         />

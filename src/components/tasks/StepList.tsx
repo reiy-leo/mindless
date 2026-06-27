@@ -13,6 +13,7 @@ import { Bars3Icon, CalendarIcon, PlusIcon, TrashIcon } from '@heroicons/react/2
 import { listen } from '@tauri-apps/api/event'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import CheckNow from '@/components/common/CheckNow'
 import MilkdownStepEditor from '@/components/MilkdownStepEditor'
 import { DATE_PICKER_LABEL, showOverlay } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
@@ -93,12 +94,12 @@ function InlineAddInput({
   return (
     <div className="flex gap-0">
       <div className="flex items-start justify-center pe-2 py-1">
-        <input
-          className="mt-2 w-4 h-4 rounded text-blue-500 focus:ring-blue-500 flex-shrink-0"
-          style={{
-            accentColor: `var(--theme-color)`,
-          }}
-          type="checkbox"
+        <CheckNow
+          checked={false}
+          hasSteps={false}
+          color1="var(--theme-color)"
+          color2="var(--theme-bg-70)"
+          className="mt-2 flex-shrink-0"
         />
       </div>
       <div className="flex-1 px-1 py-1">
@@ -172,14 +173,13 @@ function StepItem({
   return (
     <div className="flex items-start justify-center gap-2 py-1.5 group">
       {/* Checkbox */}
-      <input
+      <CheckNow
         checked={step.isCompleted}
-        className="mt-2 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
-        onChange={onToggle}
-        style={{
-          accentColor: `var(--theme-color)`,
-        }}
-        type="checkbox"
+        hasSteps={false}
+        color1="var(--theme-color)"
+        color2="var(--theme-bg-70)"
+        className="mt-2 flex-shrink-0"
+        onClick={onToggle}
       />
 
       {/* Description - always editable */}

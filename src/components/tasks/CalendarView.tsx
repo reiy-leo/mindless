@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import CheckNow from '@/components/common/CheckNow';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
 import { getLocalToday } from '@/lib/taskHelpers';
 import { getLunarDayStr, getLunarInfo } from '@/lib/lunar';
@@ -265,13 +266,14 @@ export default function CalendarView({
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                     } ${task.isCompleted ? 'opacity-50' : ''}`}
                   >
-                    <input
-                      type="checkbox"
+                    <CheckNow
                       checked={task.isCompleted}
-                      onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={t('tasks.views.toggle_complete', { title: task.title })}
-                      className="w-3 h-3 rounded border-gray-300 dark:border-gray-600 text-blue-500 flex-shrink-0"
+                      hasSteps={!!(task.steps && task.steps.length > 0)}
+                      color1="var(--theme-color)"
+                      color2="var(--theme-bg-70)"
+                      size={12}
+                      className="flex-shrink-0"
+                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
                     />
                     <div
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -326,13 +328,12 @@ export default function CalendarView({
                   selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
                 } ${task.isCompleted ? 'opacity-50' : ''}`}
               >
-                <input
-                  type="checkbox"
+                <CheckNow
                   checked={task.isCompleted}
-                  onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={t('tasks.views.toggle_complete', { title: task.title })}
-                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500"
+                  hasSteps={!!(task.steps && task.steps.length > 0)}
+                  color1="var(--theme-color)"
+                  color2="var(--theme-bg-70)"
+                  onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
                 />
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }} />
                 <span className={`text-sm truncate max-w-[200px] ${task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>

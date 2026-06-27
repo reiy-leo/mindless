@@ -6,6 +6,11 @@ export interface Attachment {
   addedDatetime: string;
   sha256: string;
   localPath: string | null;
+  syncStatus: 'none' | 'syncing' | 'synced' | 'failed';
+  syncProvider: string | null;
+  syncError: string | null;
+  uploadedTo: string | null;
+  rawUrl: string | null;
 }
 
 export interface PendingAttachment {

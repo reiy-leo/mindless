@@ -179,6 +179,7 @@ pub fn run() {
             // Attachments
             commands::create_attachment,
             commands::get_attachments_by_task,
+            commands::get_attachment_by_id,
             commands::read_file_bytes,
             commands::delete_attachment,
             commands::cache_attachment_image,
@@ -186,6 +187,14 @@ pub fn run() {
             commands::get_all_attachments,
             commands::update_attachment_filename,
             commands::delete_attachment_local_cache,
+            commands::update_attachment_sync_status,
+            // Task Templates
+            commands::get_task_templates,
+            commands::get_task_template_by_id,
+            commands::create_task_template,
+            commands::update_task_template,
+            commands::delete_task_template,
+            commands::increment_template_usage,
             menu::update_menu_language,
         ])
         .run(tauri::generate_context!())

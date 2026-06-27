@@ -6,17 +6,18 @@ import ErrorBoundary from './components/ErrorBoundary'
 import GlobalSearchDialog from './components/GlobalSearchDialog'
 import AppLayout from './components/layout/AppLayout'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { syncMenuLanguage, useMenuEvents, useMenuLanguageSync } from './hooks/useMenuEvents'
 import * as api from './lib/api'
 import { initOverlayWebviews } from './lib/overlayManager'
 import CountdownsPage from './pages/CountdownsPage'
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage'
+import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
 import CountdownFormDialogPage from './pages/dialogs/CountdownFormDialogPage'
 import EmojiPickerDialogPage from './pages/dialogs/EmojiPickerDialogPage'
 import ListFormDialogPage from './pages/dialogs/ListFormDialogPage'
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage'
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage'
-import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
-import { useMenuEvents, useMenuLanguageSync, syncMenuLanguage } from './hooks/useMenuEvents'
+import TaskTemplateManagementDialogPage from './pages/dialogs/TaskTemplateManagementDialogPage'
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage'
 import HabitsPage from './pages/HabitsPage'
 import HomePage from './pages/HomePage'
@@ -24,8 +25,10 @@ import MediaPage from './pages/MediaPage'
 import NotesPage from './pages/NotesPage'
 import DatePickerOverlayPage from './pages/overlays/DatePickerOverlayPage'
 import DateRangePickerOverlayPage from './pages/overlays/DateRangePickerOverlayPage'
+import GroupFormOverlayPage from './pages/overlays/GroupFormOverlayPage'
 import TagListPickerOverlayPage from './pages/overlays/TagListPickerOverlayPage'
 import TimezonePickerOverlayPage from './pages/overlays/TimezonePickerOverlayPage'
+import Tw22ColorPickerOverlayPage from './pages/overlays/Tw22ColorPickerOverlayPage'
 import PeoplePage from './pages/PeoplePage'
 import SettingsPage from './pages/SettingsPage'
 import TagsPage from './pages/TagsPage'
@@ -471,9 +474,9 @@ function App() {
         <Routes>
           <Route path="/dialog/list-form" element={<ListFormDialogPage />} />
           <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
-          {/* <Route path="/dialog/date-picker" element={<DatePickerDialogPage />} /> */}
           <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route path="/dialog/tag-management" element={<TagManagementDialogPage />} />
+          <Route path="/dialog/task-template-management" element={<TaskTemplateManagementDialogPage />} />
           <Route path="/dialog/attachment-management" element={<AttachmentManagementDialogPage />} />
           <Route path="/dialog/settings" element={<SettingsDialogPage />} />
           <Route path="/dialog/emoji-picker" element={<EmojiPickerDialogPage />} />
@@ -482,6 +485,8 @@ function App() {
           <Route path="/overlay/date-range-picker" element={<DateRangePickerOverlayPage />} />
           <Route path="/overlay/timezone-picker" element={<TimezonePickerOverlayPage />} />
           <Route path="/overlay/tag-list-picker" element={<TagListPickerOverlayPage />} />
+          <Route path="/overlay/group-form" element={<GroupFormOverlayPage />} />
+          <Route path="/overlay/tw22-color-picker" element={<Tw22ColorPickerOverlayPage />} />
           <Route
             path="*"
             element={

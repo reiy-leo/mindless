@@ -747,21 +747,18 @@ export default function PeoplePage() {
     }, []);
 
     // Person Group CRUD
-    const handleCreateGroup = useCallback(() => {
-        if (!newGroupName.trim()) return;
+    const handleCreateGroup = useCallback((result: { name: string; icon: string; color: string }) => {
+        if (!result.name.trim()) return;
         createPersonGroup.mutate(
-            { name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
+            { name: result.name.trim(), color: result.color, icon: result.icon },
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: ["personGroups"] });
-                    setNewGroupName("");
-                    setNewGroupColor("#3B82F6");
-                    setNewGroupIcon("👥");
                     setShowGroupForm(false);
                 },
             },
         );
-    }, [newGroupName, newGroupColor, newGroupIcon, createPersonGroup, queryClient]);
+    }, [createPersonGroup, queryClient]);
 
     const handleEditGroup = useCallback((e: React.MouseEvent, group: PersonGroup) => {
         e.stopPropagation();
@@ -775,20 +772,19 @@ export default function PeoplePage() {
         setShowGroupForm(true);
     }, []);
 
-    const handleUpdateGroup = useCallback(() => {
-        if (!editingGroup || !newGroupName.trim()) return;
+    const handleUpdateGroup = useCallback((result: { name: string; icon: string; color: string }) => {
+        if (!editingGroup || !result.name.trim()) return;
         updatePersonGroup.mutate(
-            { id: editingGroup.id, name: newGroupName.trim(), color: newGroupColor, icon: newGroupIcon },
+            { id: editingGroup.id, name: result.name.trim(), color: result.color, icon: result.icon },
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: ["personGroups"] });
                     setEditingGroup(null);
-                    setNewGroupName("");
                     setShowGroupForm(false);
                 },
             },
         );
-    }, [editingGroup, newGroupName, newGroupColor, newGroupIcon, updatePersonGroup, queryClient]);
+    }, [editingGroup, updatePersonGroup, queryClient]);
 
     const handleToggleGroupPin = useCallback(
         (id: string) => {
@@ -1001,11 +997,8 @@ export default function PeoplePage() {
                             onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
                             triggerRect={groupFormTriggerRect}
                             name={newGroupName}
-                            onNameChange={setNewGroupName}
                             icon={newGroupIcon}
-                            onIconChange={setNewGroupIcon}
                             color={newGroupColor}
-                            onColorChange={setNewGroupColor}
                             namePlaceholder={t("people.groups.name_placeholder")}
                             isEditing={!!editingGroup}
                         />

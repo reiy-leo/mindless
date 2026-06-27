@@ -2,11 +2,21 @@ import { type ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface OverlayWebviewWindowProps {
-  closable: Boolean;
+  closable?: Boolean;
+  overlay?: Boolean;
   children: ReactNode;
 }
 
-export default function OverlayWebviewWindow({ closable, children }: OverlayWebviewWindowProps) {
+export default function OverlayWebviewWindow({ closable = false, overlay = false, children }: OverlayWebviewWindowProps) {
+  const handleClose = async () => {
+    const win = getCurrentWindow();
+    if (overlay) {
+      await win.hide();
+    } else {
+      await win.close();
+    }
+  };
+
   return (
     <div className="h-screen w-screen bg-transparent">
       <div className="h-full w-full bg-white">
@@ -14,7 +24,7 @@ export default function OverlayWebviewWindow({ closable, children }: OverlayWebv
         {closable && (
           <div data-tauri-drag-region className='p-3 flex items-center gap-1.5 h-8' aria-label='window-controls'>
             <button
-              onClick={async () => { await getCurrentWindow().close() }}
+              onClick={handleClose}
               className="w-3 h-3 rounded-full bg-[#898989] hover:bg-[#FF3B30] transition-colors group relative"
               title="Close"
             >

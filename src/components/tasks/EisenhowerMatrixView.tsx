@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import CheckNow from '@/components/common/CheckNow';
 import { getTaskTags, parseLocalDate, getLocalToday } from '@/lib/taskHelpers';
 import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
 import { useAppStore } from '@/stores/useAppStore';
@@ -272,13 +273,13 @@ export default function EisenhowerMatrixView({
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <input
-                          type="checkbox"
+                        <CheckNow
                           checked={false}
-                          onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={t('tasks.views.toggle_complete', { title: task.title })}
-                          className="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-500 flex-shrink-0"
+                          hasSteps={!!(task.steps && task.steps.length > 0)}
+                          color1="var(--theme-color)"
+                          color2="var(--theme-bg-70)"
+                          className="mt-0.5 flex-shrink-0"
+                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
                         />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm text-gray-900 dark:text-gray-100 truncate">

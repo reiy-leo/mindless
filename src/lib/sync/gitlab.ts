@@ -3,110 +3,100 @@ import type { SyncProvider } from './types'
 
 export class GitLabProvider implements SyncProvider {
   private api: InstanceType<typeof Gitlab>
+  private projectId: string
 
-  constructor(pat: string, host = 'https://gitlab.com') {
+  constructor(pat: string, projectId: string, host = 'https://gitlab.com') {
     this.api = new Gitlab({
       host,
       token: pat,
     })
+    this.projectId = projectId
   }
 
-  private getProjectPath(owner: string, repo: string): string {
-    return `${owner}/${repo}`
-  }
-
-  private async detectBranch(projectPath: string): Promise<string> {
+  private async detectBranch(): Promise<string> {
     try {
-      const project = await this.api.Projects.show(projectPath)
+      const project = await this.api.Projects.show(this.projectId)
       return (project.default_branch as string) || 'main'
     } catch {
       return 'main'
     }
   }
 
-  async getFileSha(owner: string, repo: string, path: string): Promise<string | undefined> {
+  async getFileSha(_owner: string, _repo: string, path: string): Promise<string | undefined> {
     try {
-      const projectPath = this.getProjectPath(owner, repo)
-      const branch = await this.detectBranch(projectPath)
-      const file = await this.api.RepositoryFiles.show(projectPath, path, branch)
+      const branch = await this.detectBranch()
+      const file = await this.api.RepositoryFiles.show(this.projectId, path, branch)
       return (file as any).content_sha256 || (file as any).blob_id || undefined
     } catch {
       return undefined
     }
   }
 
-  async uploadFile(owner: string, repo: string, path: string, content: string, message: string): Promise<void> {
-    const projectPath = this.getProjectPath(owner, repo)
-    const branch = await this.detectBranch(projectPath)
-    const sha = await this.getFileSha(owner, repo, path)
+  async uploadFile(_owner: string, _repo: string, path: string, content: string, message: string): Promise<void> {
+    const branch = await this.detectBranch()
+    const sha = await this.getFileSha(_owner, _repo, path)
 
     if (sha) {
-      await this.api.RepositoryFiles.edit(projectPath, path, branch, content, message)
+      await this.api.RepositoryFiles.edit(this.projectId, path, branch, content, message)
     } else {
-      await this.api.RepositoryFiles.create(projectPath, path, branch, content, message)
+      await this.api.RepositoryFiles.create(this.projectId, path, branch, content, message)
     }
   }
 
   async uploadBinaryFile(
-    owner: string,
-    repo: string,
+    _owner: string,
+    _repo: string,
     path: string,
     base64Content: string,
     message: string,
   ): Promise<void> {
-    const projectPath = this.getProjectPath(owner, repo)
-    const branch = await this.detectBranch(projectPath)
-    const sha = await this.getFileSha(owner, repo, path)
-    const content = atob(base64Content)
+    const branch = await this.detectBranch()
+    const sha = await this.getFileSha(_owner, _repo, path)
 
     if (sha) {
-      await this.api.RepositoryFiles.edit(projectPath, path, branch, content, message)
+      await this.api.RepositoryFiles.edit(this.projectId, path, branch, base64Content, message, { encoding: 'base64' })
     } else {
-      await this.api.RepositoryFiles.create(projectPath, path, branch, content, message)
+      await this.api.RepositoryFiles.create(this.projectId, path, branch, base64Content, message, { encoding: 'base64' })
     }
   }
 
-  async deleteFile(owner: string, repo: string, path: string, _sha: string, message: string): Promise<void> {
-    const projectPath = this.getProjectPath(owner, repo)
-    const branch = await this.detectBranch(projectPath)
-    await this.api.RepositoryFiles.remove(projectPath, path, branch, message)
+  async deleteFile(_owner: string, _repo: string, path: string, _sha: string, message: string): Promise<void> {
+    const branch = await this.detectBranch()
+    await this.api.RepositoryFiles.remove(this.projectId, path, branch, message)
   }
 
-  async getFileContent(owner: string, repo: string, path: string): Promise<string | null> {
+  async getFileContent(_owner: string, _repo: string, path: string): Promise<string | null> {
     try {
-      const projectPath = this.getProjectPath(owner, repo)
-      const branch = await this.detectBranch(projectPath)
-      const file = await this.api.RepositoryFiles.show(projectPath, path, branch)
+      const branch = await this.detectBranch()
+      const file = await this.api.RepositoryFiles.show(this.projectId, path, branch)
       return decodeURIComponent(escape(atob(file.content)))
     } catch {
       return null
     }
   }
 
-  async testConnection(owner: string, repo: string): Promise<{ success: boolean; error?: string }> {
+  async testConnection(_owner: string, _repo: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const projectPath = this.getProjectPath(owner, repo)
-      await this.api.Projects.show(projectPath)
+      await this.api.Projects.show(this.projectId)
 
       const testFile = 'mindless-test.txt'
       const testContent = 'This is a attempt to upload mindless data'
-      // warning: 此处testPath不要修改
       const testPath = `${testFile}`
 
-      const existingSha = await this.getFileSha(owner, repo, testPath)
+      const existingSha = await this.getFileSha(_owner, _repo, testPath)
       if (existingSha) {
-        await this.deleteFile(owner, repo, testPath, existingSha, 'Mindless: clean up existing test file')
+        await this.deleteFile(_owner, _repo, testPath, existingSha, 'Mindless: clean up existing test file')
       }
 
-      await this.uploadFile(owner, repo, testPath, testContent, 'Mindless: test write permission')
+      await this.uploadFile(_owner, _repo, testPath, testContent, 'Mindless: test write permission')
 
-      const readBack = await this.getFileContent(owner, repo, testPath)
+      const readBack = await this.getFileContent(_owner, _repo, testPath)
       if (readBack?.trim() !== testContent.trim()) {
         console.warn('content_mismatch', readBack?.trim(), testContent.trim())
         return { error: 'content_mismatch', success: false }
       }
 
-      await this.deleteFile(owner, repo, testPath, '', 'Mindless: clean up test file')
+      await this.deleteFile(_owner, _repo, testPath, '', 'Mindless: clean up test file')
 
       return { success: true }
     } catch (err: any) {

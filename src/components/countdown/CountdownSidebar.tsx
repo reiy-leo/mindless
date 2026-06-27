@@ -55,27 +55,25 @@ export default function CountdownSidebar({
   const [groupFormTriggerRect, setGroupFormTriggerRect] = useState<DOMRect | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: CountdownGroupWithCount } | null>(null);
 
-  const handleCreateGroup = async () => {
-    if (!newGroupName.trim()) return;
+  const handleCreateGroup = async (result: { name: string; icon: string; color: string }) => {
+    if (!result.name.trim()) return;
     await createGroup.mutateAsync({
-      name: newGroupName,
-      color: newGroupColor,
-      icon: newGroupIcon,
+      name: result.name,
+      color: result.color,
+      icon: result.icon,
     });
-    setNewGroupName('');
     setShowGroupForm(false);
   };
 
-  const handleUpdateGroup = async () => {
-    if (!editingGroup || !newGroupName.trim()) return;
+  const handleUpdateGroup = async (result: { name: string; icon: string; color: string }) => {
+    if (!editingGroup || !result.name.trim()) return;
     await updateGroup.mutateAsync({
       id: editingGroup.id,
-      name: newGroupName,
-      color: newGroupColor,
-      icon: newGroupIcon,
+      name: result.name,
+      color: result.color,
+      icon: result.icon,
     });
     setEditingGroup(null);
-    setNewGroupName('');
     setShowGroupForm(false);
   };
 
@@ -220,11 +218,8 @@ export default function CountdownSidebar({
           onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
           triggerRect={groupFormTriggerRect}
           name={newGroupName}
-          onNameChange={setNewGroupName}
           icon={newGroupIcon}
-          onIconChange={setNewGroupIcon}
           color={newGroupColor}
-          onColorChange={setNewGroupColor}
           namePlaceholder={t('countdowns.group_name_placeholder')}
           isEditing={!!editingGroup}
         />

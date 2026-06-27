@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { PlusIcon, TrashIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import CheckNow from "@/components/common/CheckNow";
 import {
     DndContext,
     closestCenter,
@@ -147,15 +148,13 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
                 onClick={() => (onSubtaskClick ? onSubtaskClick(subtask.id) : undefined)}
             >
                 {/* Checkbox */}
-                <input
-                    type="checkbox"
+                <CheckNow
                     checked={subtask.isCompleted}
-                    onChange={(e) => {
-                        e.stopPropagation();
-                        onToggle(subtask.id);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+                    hasSteps={!!hasChildren}
+                    color1="var(--theme-color)"
+                    color2="var(--theme-bg-70)"
+                    className="flex-shrink-0"
+                    onClick={() => onToggle(subtask.id)}
                 />
 
                 {/* Title */}

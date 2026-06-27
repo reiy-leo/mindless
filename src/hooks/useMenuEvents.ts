@@ -10,8 +10,12 @@ async function openDialog(label: string, url: string, width: number, height: num
   try {
     const existing = await WebviewWindow.getByLabel(label);
     if (existing) {
-      await existing.setFocus();
-      return;
+      try {
+        await existing.setFocus();
+        return;
+      } catch {
+        await existing.destroy().catch(() => {});
+      }
     }
   } catch {}
 
@@ -60,6 +64,9 @@ export function useMenuEvents() {
             break;
           case 'manage_tags':
             openDialog('tag-management', '/dialog/tag-management', 640, 640);
+            break;
+          case 'manage_task_templates':
+            openDialog('task-template-management', '/dialog/task-template-management', 640, 500);
             break;
           case 'manage_attachments':
             openDialog('attachment-management', '/dialog/attachment-management', 720, 560);
@@ -142,6 +149,7 @@ function buildMenuLabels(): api.MenuLabels {
     navCountdowns: t('menu.switch_countdowns'),
     navNotes: t('menu.switch_notes'),
     manageTags: t('menu.manage_tags'),
+    manageTaskTemplates: t('menu.manage_templates'),
     manageAttachments: t('menu.manage_attachments'),
     editMenu: t('menu.edit'),
     windowMenu: t('menu.window'),

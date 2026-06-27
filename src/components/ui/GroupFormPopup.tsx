@@ -1,153 +1,86 @@
-import { useState, useEffect, useRef } from 'react';
-import EmojiPickerButton from '@/components/EmojiPickerButton';
-import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton';
+import { useEffect, useRef } from 'react';
+import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { showOverlay, GROUP_FORM_LABEL } from '@/lib/overlayManager';
 
 interface GroupFormPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (result: { name: string; icon: string; color: string }) => void;
+  onDelete?: () => void;
   triggerRect: DOMRect | null;
   name: string;
-  onNameChange: (name: string) => void;
   icon: string;
-  onIconChange: (icon: string) => void;
   color: string;
-  onColorChange: (color: string) => void;
   namePlaceholder?: string;
   isEditing?: boolean;
-  children?: React.ReactNode;
+  showDelete?: boolean;
 }
 
 export default function GroupFormPopup({
   isOpen,
   onClose,
   onSubmit,
+  onDelete,
   triggerRect,
   name,
-  onNameChange,
   icon,
-  onIconChange,
   color,
-  onColorChange,
   namePlaceholder = '',
   isEditing = false,
-  children,
+  showDelete = false,
 }: GroupFormPopupProps) {
-  const popupRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const shownRef = useRef(false);
 
   useEffect(() => {
-    if (!isOpen || !triggerRect || !popupRef.current) return;
+    if (!isOpen || !triggerRect) return;
 
-    const popupRect = popupRef.current.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const gap = 4;
-    const popupW = popupRect.width || 280;
-    const popupH = popupRect.height || 300;
+    const show = async () => {
+      const win = getCurrentWindow();
+      const winPos = await win.outerPosition();
+      const scaleFactor = await win.scaleFactor();
+      const logicalWinX = winPos.x / scaleFactor;
+      const logicalWinY = winPos.y / scaleFactor;
 
-    let top: number;
-    let left: number;
+      const anchorX = logicalWinX + triggerRect.left;
+      const anchorY = logicalWinY + triggerRect.top;
 
-    // Try right side, tightly attached
-    if (triggerRect.right + gap + popupW <= vw) {
-      left = triggerRect.right + gap;
-      top = Math.max(gap, Math.min(triggerRect.top, vh - popupH - gap));
-    }
-    // Try below, tightly attached
-    else if (triggerRect.bottom + gap + popupH <= vh) {
-      top = triggerRect.bottom + gap;
-      left = Math.max(gap, Math.min(triggerRect.left, vw - popupW - gap));
-    }
-    // Try above, tightly attached
-    else if (triggerRect.top - gap - popupH >= 0) {
-      top = triggerRect.top - gap - popupH;
-      left = Math.max(gap, Math.min(triggerRect.left, vw - popupW - gap));
-    }
-    // Fallback: below with whatever space
-    else {
-      top = triggerRect.bottom + gap;
-      left = Math.max(gap, Math.min(triggerRect.left, vw - popupW - gap));
-    }
+      await showOverlay(GROUP_FORM_LABEL, anchorX, anchorY + triggerRect.height + 4, {
+        name,
+        icon,
+        color,
+        namePlaceholder,
+        isEditing,
+        showDelete,
+        anchorX,
+        anchorY: anchorY,
+        anchorH: triggerRect.height,
+      });
+      shownRef.current = true;
+    };
 
-    setPosition({ top, left });
+    show();
   }, [isOpen, triggerRect]);
 
-  // Close on click outside
   useEffect(() => {
     if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
-        onClose();
+
+    const unlisten = listen<{ action: string; name?: string; icon?: string; color?: string }>(
+      'group-form-overlay:result',
+      (e) => {
+        if (e.payload.action === 'submit' && e.payload.name && e.payload.icon && e.payload.color) {
+          onSubmit({ name: e.payload.name, icon: e.payload.icon, color: e.payload.color });
+        } else if (e.payload.action === 'delete' && onDelete) {
+          onDelete();
+        } else {
+          onClose();
+        }
+        shownRef.current = false;
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
+    );
 
-  // Close on escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    return () => { unlisten.then((fn) => fn()); };
+  }, [isOpen, onSubmit, onClose]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSubmit();
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      ref={popupRef}
-      className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700"
-      style={{ top: position.top, left: position.left, width: 280 }}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="p-3 space-y-3">
-        <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-2.5 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!name.trim()}
-            className="px-2.5 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            {isEditing ? 'Save' : 'Create'}
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <EmojiPickerButton value={icon} onChange={onIconChange} />
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder={namePlaceholder}
-            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            autoFocus
-          />
-        </div>
-
-        <div>
-          <Tw22ColorPickerButton value={color} onChange={onColorChange} />
-        </div>
-
-        {children}
-      </div>
-    </div>
-  );
+  return null;
 }

@@ -61,7 +61,8 @@
     "settings": "設定",
     "people": "人物",
     "media": "メディア",
-    "attachments": "添付ファイル管理"
+    "attachments": "添付ファイル管理",
+    "templates": "テンプレート"
   },
   "search": {
     "placeholder": "タスク、習慣、カウントダウンを検索...",
@@ -89,8 +90,13 @@
     "attachments": "添付ファイル",
     "no_attachments": "添付ファイルなし",
     "delete_attachment": "添付ファイルを削除",
+    "re_upload": "再アップロード",
+    "attachment_cache_not_found": "キャッシュファイルが見つかりません",
     "copy_link": "リンクをコピー",
     "download": "ダウンロード",
+    "save_as_template": "テンプレートとして保存",
+    "template_applied": "テンプレートを適用しました",
+    "template": "テンプレート",
     "settings": "設定",
     "settings_view": "ビュー",
     "settings_status": "ステータス",
@@ -657,6 +663,9 @@
       "repo_url_placeholder": "https://github.com/username/repo",
       "repo_url_placeholder_gitlab": "https://gitlab.com/username/repo",
       "repo_url_placeholder_gitee": "https://gitee.com/username/repo",
+      "gitlab_project_id": "GitLab プロジェクト ID",
+      "gitlab_project_id_placeholder": "GitLab プロジェクト ID を入力（数字）",
+      "gitlab_project_id_help": "GitLab プロジェクト設定 → 一般 → プロジェクト ID で確認できます",
       "pat": "アクセストークン",
       "pat_placeholder": "Personal Access Tokenを入力",
       "pat_help": "GitHub: repoスコープ; GitLab: apiまたはread_repository + write_repository; Gitee: projectsスコープ",
@@ -888,7 +897,11 @@
     "rename": "名前を変更",
     "last_fetched": "最終取得",
     "added": "追加日時",
-    "search_placeholder": "添付ファイルを検索..."
+    "search_placeholder": "添付ファイルを検索...",
+    "syncing": "同期中",
+    "synced": "同期済み",
+    "sync_failed": "同期失敗",
+    "sync_failed_retry": "同期失敗、クリックして再試行"
   },
   "menu": {
     "quit": "{{appName}} を終了",
@@ -907,6 +920,7 @@
     "switch_notes": "ノートに切替",
     "manage_tags": "タグを管理",
     "manage_attachments": "添付ファイルを管理",
+    "manage_templates": "タスクテンプレートを管理",
     "edit": "編集",
     "file": "ファイル",
     "new_task": "新しいタスク",
@@ -926,5 +940,31 @@
     "services": "サービス",
     "hide_app": "{{appName}}を隠す",
     "hide_others": "ほかを隠す"
+  },
+  "template_mgmt": {
+    "title": "タスクテンプレート管理",
+    "search_placeholder": "テンプレートを検索...",
+    "no_results": "一致するテンプレートがありません",
+    "no_templates": "テンプレートがありません",
+    "create_template": "テンプレートを作成",
+    "template_name": "テンプレート名",
+    "use_count": "使用回数",
+    "created_at": "作成日",
+    "updated_at": "更新日",
+    "delete_confirm": "テンプレート「{{name}}」を削除しますか？",
+    "overwrite_confirm": "テンプレート「{{name}}」は既に存在します。上書きしますか？",
+    "name_placeholder": "テンプレート名を入力",
+    "save_as_template_title": "テンプレートとして保存",
+    "save_as_template_name_label": "テンプレート名"
+  },
+  "templates": {
+    "name": "名前",
+    "created_at": "作成日",
+    "updated_at": "更新日",
+    "usage_count": "使用回数",
+    "no_templates": "テンプレートがありません",
+    "no_results": "一致するテンプレートがありません",
+    "new_name": "無題のテンプレート",
+    "search_placeholder": "テンプレートを検索..."
   }
 }
