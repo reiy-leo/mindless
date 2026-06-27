@@ -1,4 +1,5 @@
 import { emit } from '@tauri-apps/api/event'
+import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface OverlayDef {
@@ -16,6 +17,15 @@ const OVERLAYS: OverlayDef[] = [
   { height: 140, label: 'group-form-overlay', route: '/overlay/group-form', width: 280 },
   { height: 230, label: 'tw22-color-picker-overlay', route: '/overlay/tw22-color-picker', width: 310 },
 ]
+
+const OVERLAY_SIZES: Record<string, { w: number; h: number }> = {
+  'date-picker-overlay': { w: 240, h: 440 },
+  'date-range-picker-overlay': { w: 250, h: 490 },
+  'timezone-picker-overlay': { w: 240, h: 400 },
+  'tag-list-picker-overlay': { w: 200, h: 0 },
+  'group-form-overlay': { w: 280, h: 140 },
+  'tw22-color-picker-overlay': { w: 310, h: 230 },
+}
 
 const overlays = new Map<string, WebviewWindow>()
 
@@ -53,14 +63,48 @@ export async function initOverlayWebviews(baseUrl: string) {
   }
 }
 
+function computeOverlayPosition(
+  anchorX: number,
+  anchorY: number,
+  anchorH: number,
+  overlayW: number,
+  overlayH: number,
+) {
+  const screenW = window.screen.width
+  const screenH = window.screen.height
+  let finalY = anchorY + anchorH + 4
+  if (finalY + overlayH > screenH) finalY = anchorY - overlayH - 4
+  if (finalY < 0) finalY = 4
+  let finalX = anchorX
+  if (finalX + overlayW > screenW) finalX = screenW - overlayW - 8
+  if (finalX < 0) finalX = 8
+  return { x: Math.round(finalX), y: Math.round(finalY) }
+}
+
 export async function showOverlay(label: string, _x: number, _y: number, payload: Record<string, unknown>) {
   const wv = overlays.get(label)
   if (!wv) return
 
   try {
+    const size = OVERLAY_SIZES[label]
+    const anchorX = (payload.anchorX as number) ?? 0
+    const anchorY = (payload.anchorY as number) ?? 0
+    const anchorH = (payload.anchorH as number) ?? 0
+    let overlayW = size?.w ?? 240
+    let overlayH = size?.h ?? 400
+
+    if (label === 'tag-list-picker-overlay' && Array.isArray(payload.tags)) {
+      overlayH = Math.min(300, (payload.tags as unknown[]).length * 36 + 16)
+    }
+
+    const pos = computeOverlayPosition(anchorX, anchorY, anchorH, overlayW, overlayH)
+    await wv.setPosition(new LogicalPosition(pos.x, pos.y))
+    if (label === 'tag-list-picker-overlay') {
+      await wv.setSize(new LogicalSize(overlayW, overlayH))
+    }
+    await emit(`${label}:show`, payload)
     await wv.show()
     await wv.setFocus()
-    await emit(`${label}:show`, payload)
   } catch (e) {
     console.error(`Failed to show overlay ${label}:`, e)
   }

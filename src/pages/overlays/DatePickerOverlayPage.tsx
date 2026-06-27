@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { useAppStore } from "@/stores/useAppStore";
 import { showOverlay, TIMEZONE_PICKER_LABEL } from "@/lib/overlayManager";
 import { getScreenRect } from "@/lib/screenRect";
@@ -62,29 +61,13 @@ export default function DatePickerOverlayPage() {
             color?: string;
             hideTime?: boolean;
             events?: CalendarEvent[];
-            anchorX: number;
-            anchorY: number;
-            anchorH: number;
-        }>("date-picker-overlay:show", async (e) => {
-            const { date, time, color: c, hideTime: ht, events: evs, anchorX, anchorY, anchorH } = e.payload;
+        }>("date-picker-overlay:show", (e) => {
+            const { date, time, color: c, hideTime: ht, events: evs } = e.payload;
             setLocalDate(date || "");
             setLocalTime(time || "");
             if (c) setColor(c);
             setHideTime(ht || false);
             setEvents(evs || []);
-
-            const win = getCurrentWindow();
-            const screenW = window.screen.width;
-            const screenH = window.screen.height;
-            const OVERLAY_W = 240;
-            const OVERLAY_H = 440;
-            let finalY = anchorY + anchorH + 4;
-            if (finalY + OVERLAY_H > screenH) finalY = anchorY - OVERLAY_H - 4;
-            if (finalY < 0) finalY = 4;
-            let finalX = anchorX;
-            if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8;
-            if (finalX < 0) finalX = 8;
-            await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)));
         });
 
         return () => { unlisten.then((fn) => fn()); };

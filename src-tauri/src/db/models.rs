@@ -29,6 +29,7 @@ pub struct Task {
     pub end_date: Option<String>,
     pub end_time: Option<String>,
     pub status: String,
+    pub visible_sections: Option<String>,
 }
 
 // List model

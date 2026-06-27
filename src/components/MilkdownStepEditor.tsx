@@ -1,12 +1,28 @@
 import { Crepe } from '@milkdown/crepe'
-import { editorViewCtx } from '@milkdown/kit/core'
-import { getMarkdown, replaceAll } from '@milkdown/kit/utils'
+import { editorViewCtx, schemaCtx } from '@milkdown/kit/core'
+import { InputRule } from '@milkdown/kit/prose/inputrules'
+import { $inputRule, getMarkdown, replaceAll } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useEffect, useRef } from 'react'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
 import '@milkdown/crepe/theme/frame-dark.css'
+
+const linkInputRule = $inputRule((ctx) => {
+  const linkMarkType = ctx.get(schemaCtx).marks.link
+  return new InputRule(
+    /\[([^\]]+)\]\(([^)]+)\)$/,
+    (state, match, start, end) => {
+      const [, text, href] = match
+      if (!text || !href) return null
+      const { tr } = state
+      const linkMark = linkMarkType.create({ href, title: null })
+      tr.replaceWith(start, end, state.schema.text(text, [linkMark]))
+      return tr
+    },
+  )
+})
 
 interface MilkdownStepEditorInnerProps {
   markdown: string
@@ -22,7 +38,7 @@ function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeh
   const initializedRef = useRef(false)
 
   const { loading, get } = useEditor((root) => {
-    return new Crepe({
+    const crepe = new Crepe({
       defaultValue: markdown,
       featureConfigs: {
         [Crepe.Feature.Placeholder]: {
@@ -44,6 +60,8 @@ function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeh
       },
       root,
     })
+    crepe.editor.use(linkInputRule)
+    return crepe
   }, [])
 
   useEffect(() => {

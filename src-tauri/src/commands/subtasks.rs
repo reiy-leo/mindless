@@ -33,6 +33,7 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         parent_task_id: row.get(22)?,
         level: row.get(23)?,
         status: row.get(24)?,
+        visible_sections: row.get(25)?,
     })
 }
 
@@ -131,7 +132,7 @@ pub async fn update_subtask(
     if let Some(is_completed) = is_completed {
         let completed_int: i32 = if is_completed { 1 } else { 0 };
         conn.execute(
-            "UPDATE tasks SET is_completed = ?1, completed_at = CASE WHEN ?1 = 1 THEN datetime('now') ELSE NULL END, updated_at = datetime('now') WHERE id = ?2",
+            "UPDATE tasks SET is_completed = ?1, status = CASE WHEN ?1 = 1 THEN 'completed' ELSE 'pending' END, completed_at = CASE WHEN ?1 = 1 THEN datetime('now') ELSE NULL END, updated_at = datetime('now') WHERE id = ?2",
             (completed_int, &id)
         ).map_err(|e| format!("Failed to update subtask completion: {}", e))?;
     }

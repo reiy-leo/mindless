@@ -1,4 +1,3 @@
-import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
@@ -22,23 +21,10 @@ export default function Tw22ColorPickerOverlayPage() {
       anchorX: number
       anchorY: number
       anchorH: number
-    }>('tw22-color-picker-overlay:show', async (e) => {
-      const { value: v, anchorX, anchorY, anchorH } = e.payload
+    }>('tw22-color-picker-overlay:show', (e) => {
+      const { value: v } = e.payload
       setValue(v)
       setVisible(true)
-
-      const win = getCurrentWindow()
-      const screenW = window.screen.width
-      const screenH = window.screen.height
-      const OVERLAY_W = 310
-      const OVERLAY_H = 230
-      let finalY = anchorY + anchorH + 4
-      if (finalY + OVERLAY_H > screenH) finalY = anchorY - OVERLAY_H - 4
-      if (finalY < 0) finalY = 4
-      let finalX = anchorX
-      if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8
-      if (finalX < 0) finalX = 8
-      await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)))
     })
 
     return () => {

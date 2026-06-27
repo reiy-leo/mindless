@@ -92,7 +92,7 @@ function InlineAddInput({
   }
 
   return (
-    <div className="flex gap-0">
+    <div className="flex gap-1 mb-1">
       <div className="flex items-start justify-center pe-2 py-1">
         <CheckNow
           checked={false}
@@ -184,7 +184,7 @@ function StepItem({
 
       {/* Description - always editable */}
       <div
-        className={`flex-1 px-1 py-0.5 ${step.isCompleted ? 'opacity-30 text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}
+        className={`flex-1 px-1 py-0.5 ${step.isCompleted ? 'opacity-30 text-theme-800 dark:text-theme-100' : 'text-theme-800 dark:text-theme-100'}`}
       >
         <MilkdownStepEditor
           markdown={description}
@@ -199,8 +199,8 @@ function StepItem({
         <button
           className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs transition-colors ${
             dateDisplay
-              ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-              : 'text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? 'text-theme-500 dark:text-theme-400 hover:bg-theme-200 dark:hover:bg-theme-600'
+              : 'text-theme-300 dark:text-theme-600 opacity-0 group-hover:opacity-100 hover:bg-theme-200 dark:hover:bg-theme-600'
           }`}
           onClick={onDateClick}
           type="button"
@@ -249,7 +249,7 @@ function SortableStepItem({
   }
 
   return (
-    <div className="flex items-start gap-1 group/sort" ref={setNodeRef} style={style}>
+    <div className="flex items-start gap-none group/sort" ref={setNodeRef} style={style}>
       <button
         {...attributes}
         {...listeners}

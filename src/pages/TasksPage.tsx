@@ -8,13 +8,12 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   ClipboardDocumentCheckIcon,
+  ClipboardDocumentIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
   DocumentIcon,
   EllipsisVerticalIcon,
   ExclamationCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
   FilmIcon,
   FlagIcon,
   IdentificationIcon,
@@ -34,8 +33,9 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { Pin } from 'lucide-react'
+import { Pin, Send } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import CheckNow from '@/components/common/CheckNow'
 import MilkdownEditor from '@/components/MilkdownEditor'
@@ -191,6 +191,8 @@ function TaskDetailPanel({
   onSubtaskClick,
   onSubtaskBack,
   inlineDateOpenedRef,
+  focusTitleOnMount,
+  onFocusTitleDone,
 }: {
   task: Task
   allTags: Tag[]
@@ -201,6 +203,8 @@ function TaskDetailPanel({
   onSubtaskClick?: (id: string) => void
   onSubtaskBack?: () => void
   inlineDateOpenedRef?: React.RefObject<boolean>
+  focusTitleOnMount?: boolean
+  onFocusTitleDone?: () => void
 }) {
   const { t } = useTranslation('common')
   const queryClient = useQueryClient()
@@ -216,12 +220,33 @@ function TaskDetailPanel({
 
   const activeTask = selectedSubtask || task
   const [editTitle, setEditTitle] = useState(activeTask.title)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const activeTaskIdRef = useRef(activeTask.id)
+
+  useLayoutEffect(() => {
+    if (activeTaskIdRef.current !== activeTask.id) {
+      activeTaskIdRef.current = activeTask.id
+      setEditTitle(activeTask.title)
+    }
+  }, [activeTask.id, activeTask.title])
 
   useEffect(() => {
     setEditTitle(activeTask.title)
-  }, [activeTask.title])
+  }, [activeTask.title, activeTask.id])
+
+  useEffect(() => {
+    if (focusTitleOnMount) {
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus()
+        titleInputRef.current?.select()
+        onFocusTitleDone?.()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [focusTitleOnMount, onFocusTitleDone])
 
   const handleTitleBlur = () => {
+    if (activeTaskIdRef.current !== activeTask.id) return
     const trimmed = editTitle.trim()
     if (trimmed && trimmed !== activeTask.title) {
       onUpdateTask({ title: trimmed })
@@ -298,16 +323,31 @@ function TaskDetailPanel({
   )
 
   const toggleSection = useCallback((key: string) => {
-    setVisibleSections((prev) => ({ ...prev, [key]: !prev[key] }))
-  }, [])
+    setVisibleSections((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      onUpdateTask({ visibleSections: JSON.stringify(next) })
+      return next
+    })
+  }, [onUpdateTask])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const defaultTaskSections = useAppStore((s) => s.defaultTaskSections)
-  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>({ ...defaultTaskSections })
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
+    if (task.visibleSections) {
+      try { return JSON.parse(task.visibleSections) } catch {}
+    }
+    return { ...defaultTaskSections }
+  })
 
   useEffect(() => {
+    if (activeTask.visibleSections) {
+      try {
+        setVisibleSections(JSON.parse(activeTask.visibleSections))
+        return
+      } catch {}
+    }
     setVisibleSections({ ...defaultTaskSections })
-  }, [defaultTaskSections])
+  }, [activeTask.id, activeTask.visibleSections, defaultTaskSections])
   const [attachContextMenu, setAttachContextMenu] = useState<{ x: number; y: number; att: Attachment } | null>(null)
   const attachContextMenuRef = useRef<HTMLDivElement>(null)
   const [attachContextMenuFlipY, setAttachContextMenuFlipY] = useState(false)
@@ -366,24 +406,58 @@ function TaskDetailPanel({
     })()
   }, [attachments])
 
-  const handleAddAttachment = async () => {
-    const { open } = await import('@tauri-apps/plugin-dialog')
-    const selected = await open({
-      multiple: false,
-    })
-    if (!selected) {
+  const [isDragging, setIsDragging] = useState(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const unlistenRef = useRef<(() => void) | undefined>(undefined)
+
+  useEffect(() => {
+    const setup = async () => {
+      const { getCurrentWebview } = await import('@tauri-apps/api/webview')
+      unlistenRef.current = await getCurrentWebview().onDragDropEvent((event) => {
+        const panel = panelRef.current
+        if (!panel) return
+
+        if (event.payload.type === 'enter' || event.payload.type === 'over') {
+          const { x, y } = event.payload.position
+          const rect = panel.getBoundingClientRect()
+          const inPanel = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+          setIsDragging(inPanel)
+        } else if (event.payload.type === 'drop') {
+          setIsDragging(false)
+          const { paths, position } = event.payload
+          const rect = panel.getBoundingClientRect()
+          const inPanel = position.x >= rect.left && position.x <= rect.right && position.y >= rect.top && position.y <= rect.bottom
+          if (inPanel && paths.length > 0) {
+            const filePath = paths[0]
+            const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown'
+            import('@/lib/api').then((api) => api.readFileBytes(filePath)).then((bytes) => {
+              uploadAttachmentBytes(fileName, bytes)
+            })
+          }
+        } else {
+          setIsDragging(false)
+        }
+      })
+    }
+    setup()
+    return () => { unlistenRef.current?.() }
+  }, [activeTask.id])
+
+  const lastUploadRef = useRef<{ name: string; time: number } | null>(null)
+
+  const uploadAttachmentBytes = async (fileName: string, bytes: number[]) => {
+    const now = Date.now()
+    if (lastUploadRef.current && lastUploadRef.current.name === fileName && now - lastUploadRef.current.time < 1000) {
       return
     }
-    const filePath = typeof selected === 'string' ? selected : selected
-    const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown'
-    const bytes = await import('@/lib/api').then((a) => a.readFileBytes(filePath))
+    lastUploadRef.current = { name: fileName, time: now }
+
     if (bytes.length > 30 * 1024 * 1024) {
       const { message } = await import('@tauri-apps/plugin-dialog')
       await message(t('tasks.attachment_too_large'), { kind: 'error' })
       return
     }
 
-    // Create a temporary ID for immediate display
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const tempAttachment: Attachment = {
       addedDatetime: new Date().toISOString().replace('T', ' ').slice(0, 19),
@@ -400,7 +474,6 @@ function TaskDetailPanel({
       uploadedTo: null,
     }
 
-    // Add to uploading list immediately
     setUploadingAttachments((prev) => new Map(prev).set(tempId, { attachment: tempAttachment, status: 'uploading' }))
 
     try {
@@ -410,7 +483,6 @@ function TaskDetailPanel({
         taskId: activeTask.id,
       })
 
-      // Update with real attachment, now syncing
       setUploadingAttachments((prev) => {
         const next = new Map(prev)
         next.delete(tempId)
@@ -418,7 +490,6 @@ function TaskDetailPanel({
         return next
       })
 
-      // Sync to Git service
       const { getActiveProvider } = await import('@/lib/sync')
       const activeProvider = await getActiveProvider()
       if (activeProvider) {
@@ -453,7 +524,6 @@ function TaskDetailPanel({
             uploadedTo: uploadedPath,
           })
 
-          // Update status to synced, then remove after delay
           setUploadingAttachments((prev) => {
             const next = new Map(prev)
             next.set(attachment.id, { attachment, status: 'synced' })
@@ -465,7 +535,6 @@ function TaskDetailPanel({
             setImageUrls((prev) => ({ ...prev, [attachment.id]: dataUrl }))
           }
 
-          // Remove from uploading list after 500ms
           setTimeout(() => {
             setUploadingAttachments((prev) => {
               const next = new Map(prev)
@@ -476,7 +545,6 @@ function TaskDetailPanel({
         } catch (syncErr) {
           console.error('Failed to sync attachment:', syncErr)
 
-          // Cache file locally for retry
           try {
             await api.cacheAttachmentImage({
               fileBytes: bytes,
@@ -494,10 +562,8 @@ function TaskDetailPanel({
             syncStatus: 'failed',
           })
 
-          // Invalidate query to refresh attachment data
           queryClient.invalidateQueries({ queryKey: ['attachments', activeTask.id] })
 
-          // Update status to failed
           setUploadingAttachments((prev) => {
             const next = new Map(prev)
             next.set(attachment.id, {
@@ -509,7 +575,6 @@ function TaskDetailPanel({
           })
         }
       } else {
-        // No sync provider, remove from uploading list
         setUploadingAttachments((prev) => {
           const next = new Map(prev)
           next.delete(tempId)
@@ -518,12 +583,173 @@ function TaskDetailPanel({
       }
     } catch (err) {
       console.error('Failed to add attachment:', err)
-      // Remove from uploading list on error
       setUploadingAttachments((prev) => {
         const next = new Map(prev)
         next.delete(tempId)
         return next
       })
+    }
+  }
+
+  const handleAddAttachment = async () => {
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const selected = await open({
+      multiple: false,
+    })
+    if (!selected) {
+      return
+    }
+    const filePath = typeof selected === 'string' ? selected : selected
+    const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown'
+    const bytes = await import('@/lib/api').then((a) => a.readFileBytes(filePath))
+    await uploadAttachmentBytes(fileName, bytes)
+  }
+
+  const handleClipboardPaste = async () => {
+    try {
+      const bytes = await import('@/lib/api').then((a) => a.readClipboardImage())
+      if (!bytes) {
+        const { message } = await import('@tauri-apps/plugin-dialog')
+        await message(t('tasks.clipboard_no_image'), { kind: 'warning' })
+        return
+      }
+      const now = new Date()
+      const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+      const fileName = `剪贴板-${ts}.png`
+
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      const tempAttachment: Attachment = {
+        addedDatetime: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        filename: '',
+        id: tempId,
+        localPath: null,
+        originalFilename: fileName,
+        rawUrl: null,
+        sha256: '',
+        syncError: null,
+        syncProvider: null,
+        syncStatus: 'none',
+        taskId: activeTask.id,
+        uploadedTo: null,
+      }
+
+      setUploadingAttachments((prev) => new Map(prev).set(tempId, { attachment: tempAttachment, status: 'uploading' }))
+
+      try {
+        const attachment = await createAttachmentMutation.mutateAsync({
+          fileBytes: bytes,
+          originalFilename: fileName,
+          taskId: activeTask.id,
+        })
+
+        setUploadingAttachments((prev) => {
+          const next = new Map(prev)
+          next.delete(tempId)
+          next.set(attachment.id, { attachment, status: 'syncing' })
+          return next
+        })
+
+        const { getActiveProvider } = await import('@/lib/sync')
+        const activeProvider = await getActiveProvider()
+        if (activeProvider) {
+          const { provider, info } = activeProvider
+          const api = await import('@/lib/api')
+
+          try {
+            const chunks: string[] = []
+            for (let i = 0; i < bytes.length; i += 8192) {
+              chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)))
+            }
+            const base64Content = btoa(chunks.join(''))
+            const uploadTimeout = 30000
+            await Promise.race([
+              provider.uploadBinaryFile(
+                info.owner,
+                info.repo,
+                `attachments/${attachment.filename}`,
+                base64Content,
+                `Mindless: add attachment ${attachment.originalFilename}`,
+              ),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), uploadTimeout)),
+            ])
+
+            const uploadedPath = `attachments/${attachment.filename}`
+            const rawUrl = getAttachmentRawUrl(attachment.filename)
+            await api.updateAttachmentSyncStatus({
+              id: attachment.id,
+              rawUrl: rawUrl || undefined,
+              syncProvider: info.provider,
+              syncStatus: 'synced',
+              uploadedTo: uploadedPath,
+            })
+
+            setUploadingAttachments((prev) => {
+              const next = new Map(prev)
+              next.set(attachment.id, { attachment, status: 'synced' })
+              return next
+            })
+
+            if (isImageFile(attachment.originalFilename) && attachment.localPath) {
+              const dataUrl = await api.readImageDataUrl(attachment.localPath)
+              setImageUrls((prev) => ({ ...prev, [attachment.id]: dataUrl }))
+            }
+
+            setTimeout(() => {
+              setUploadingAttachments((prev) => {
+                const next = new Map(prev)
+                next.delete(attachment.id)
+                return next
+              })
+            }, 500)
+          } catch (syncErr) {
+            console.error('Failed to sync attachment:', syncErr)
+
+            try {
+              await api.cacheAttachmentImage({
+                fileBytes: bytes,
+                filename: attachment.filename,
+                id: attachment.id,
+              })
+            } catch (cacheErr) {
+              console.error('Failed to cache attachment locally:', cacheErr)
+            }
+
+            await api.updateAttachmentSyncStatus({
+              id: attachment.id,
+              syncError: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+              syncProvider: info.provider,
+              syncStatus: 'failed',
+            })
+
+            queryClient.invalidateQueries({ queryKey: ['attachments', activeTask.id] })
+
+            setUploadingAttachments((prev) => {
+              const next = new Map(prev)
+              next.set(attachment.id, {
+                attachment,
+                error: syncErr instanceof Error ? syncErr.message : 'Unknown error',
+                status: 'failed',
+              })
+              return next
+            })
+          }
+        } else {
+          setUploadingAttachments((prev) => {
+            const next = new Map(prev)
+            next.delete(tempId)
+            return next
+          })
+        }
+      } catch (err) {
+        console.error('Failed to add attachment:', err)
+        setUploadingAttachments((prev) => {
+          const next = new Map(prev)
+          next.delete(tempId)
+          return next
+        })
+      }
+    } catch (e) {
+      console.error('Clipboard paste failed:', e)
     }
   }
 
@@ -856,10 +1082,10 @@ function TaskDetailPanel({
   const [showPriorityPicker, setShowPriorityPicker] = useState(false)
   const [localDesc, setLocalDesc] = useState(activeTask.description || '')
 
-  // Sync local description when active task changes
+  // Sync local description only when switching tasks
   useEffect(() => {
     setLocalDesc(activeTask.description || '')
-  }, [activeTask.id, activeTask.description])
+  }, [activeTask.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for date picker overlay results
   useEffect(() => {
@@ -878,13 +1104,13 @@ function TaskDetailPanel({
       }
       const p = e.payload
       if (p.type === 'single') {
-        onUpdateTask({ dueDate: p.date || undefined, dueTime: p.time || undefined })
+        onUpdateTask({ dueDate: p.date ?? '', dueTime: p.time ?? '' })
       } else {
         onUpdateTask({
-          dueDate: p.startDate || undefined,
-          dueTime: p.startTime || undefined,
-          endDate: p.endDate || undefined,
-          endTime: p.endTime || undefined,
+          dueDate: p.startDate ?? '',
+          dueTime: p.startTime ?? '',
+          endDate: p.endDate ?? '',
+          endTime: p.endTime ?? '',
         })
       }
     })
@@ -905,9 +1131,15 @@ function TaskDetailPanel({
 
   return (
     <div
-      className="flex flex-col h-full border-l border-theme-200 dark:border-theme-700"
+      ref={panelRef}
+      className="relative flex flex-col h-full border-l border-theme-200 dark:border-theme-700"
       style={{ backgroundColor: 'var(--theme-bg-2)' }}
     >
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-theme-100/80 dark:bg-theme-800/80 border-2 border-dashed border-theme-400 dark:border-theme-500 rounded-lg m-2 pointer-events-none">
+          <span className="text-sm text-theme-500 dark:text-theme-400">{t('tasks.drop_to_upload')}</span>
+        </div>
+      )}
       {/* Date button above header */}
       <div className="px-4 pt-2 pb-2">
         <div className="relative flex" data-date-picker>
@@ -993,6 +1225,7 @@ function TaskDetailPanel({
                 ;(e.target as HTMLInputElement).blur()
               }
             }}
+            ref={titleInputRef}
             type="text"
             value={editTitle}
           />
@@ -1052,7 +1285,7 @@ function TaskDetailPanel({
       </div>
 
       {/* Progress bar - tightly below header */}
-      {progress && progress.total > 0 && (
+      {progress && (
         <div className="group relative px-4 pb-2">
           <div className="w-full h-[2px] bg-theme-200 dark:bg-theme-800">
             <div
@@ -1063,7 +1296,7 @@ function TaskDetailPanel({
                 width: `${(progress.completed / progress.total) * 100}%`,
               }}
             />
-          </div>
+         </div>
           <div className="absolute left-1/2 -translate-x-1/2 -top-7 hidden group-hover:block bg-theme-900 dark:bg-theme-100 text-white dark:text-theme-900 text-xs px-2 py-0.5 rounded whitespace-nowrap">
             {Math.round((progress.completed / progress.total) * 100)}%
           </div>
@@ -1131,13 +1364,23 @@ function TaskDetailPanel({
           <div className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-theme-800 dark:text-theme-200">{t('tasks.attachments')}</h3>
-              <button
-                className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
-                onClick={handleAddAttachment}
-                type="button"
-              >
-                <PlusIcon className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
+                  onClick={handleClipboardPaste}
+                  type="button"
+                  title={t('tasks.clipboard_paste')}
+                >
+                  <ClipboardDocumentIcon className="w-4 h-4" />
+                </button>
+                <button
+                  className="text-xs text-theme-800 dark:text-theme-200 transition-colors"
+                  onClick={handleAddAttachment}
+                  type="button"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             {attachments.length === 0 && uploadingAttachments.size === 0 ? (
               <p className="text-xs text-theme-400 dark:text-theme-500 italic">{t('tasks.no_attachments')}</p>
@@ -1590,7 +1833,7 @@ function TaskRow({
   return (
     <div
       className={`group flex items-center gap-3 px-2 py-2 rounded-md transition-shadow cursor-pointer ${
-        isSelected ? 'bg-theme-700/30 dark:bg-theme-200/30' : ''
+        isSelected ? 'bg-theme-200/30 dark:bg-theme-700/30' : ''
       }`}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -1650,7 +1893,6 @@ export default function TasksPage() {
   const { t } = useTranslation('common')
   const { viewMode, filterStatus, selectedListId, setViewMode, setFilterStatus, setSelectedListId } = useViewStore()
   const {
-    themeColor,
     taskSortBy,
     taskSortOrder,
     taskGroupBy,
@@ -1790,7 +2032,9 @@ export default function TasksPage() {
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>(0)
   const [showPriorityPicker, setShowPriorityPicker] = useState(false)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const templateButtonRef = useRef<HTMLButtonElement>(null)
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([])
+  const [focusTitleOnMount, setFocusTitleOnMount] = useState(false)
   const tagButtonRef = useRef<HTMLButtonElement>(null)
   const [newTaskDueDate, setNewTaskDueDate] = useState(() => getLocalToday())
   const [newTaskDueTime, setNewTaskDueTime] = useState('')
@@ -1845,6 +2089,7 @@ export default function TasksPage() {
   const updateTaskTemplate = useUpdateTaskTemplate()
   const incrementTemplateUsage = useIncrementTemplateUsage()
   const createTask = useCreateTask()
+  const createStep = useCreateStep()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const toggleTask = useToggleTaskCompletion()
@@ -1941,8 +2186,6 @@ export default function TasksPage() {
 
   // Advanced group matching
   const {
-    smartGroupVisibility,
-    setSmartGroupVisibility,
     advancedGroups,
     addAdvancedGroup,
     updateAdvancedGroup,
@@ -2248,12 +2491,17 @@ export default function TasksPage() {
       items.push({ task, type: 'task' })
       const subs = subtasksByTask.get(task.id) || []
       subs.sort((a, b) => a.sortOrder - b.sortOrder)
-      subs.forEach((sub) => {
+      const filteredSubs = filterStatus === 'active'
+        ? subs.filter((s) => !s.isCompleted)
+        : filterStatus === 'completed'
+          ? subs.filter((s) => s.isCompleted)
+          : subs
+      filteredSubs.forEach((sub) => {
         items.push({ parentTask: task, subtask: sub, type: 'subtask' })
       })
     })
     return items
-  }, [filteredTasks, allSubtasks])
+  }, [filteredTasks, allSubtasks, filterStatus])
 
   const handleAttachmentClick = async () => {
     const { open } = await import('@tauri-apps/plugin-dialog')
@@ -2277,6 +2525,30 @@ export default function TasksPage() {
     }
 
     setPendingAttachments((prev) => [...prev, { fileBytes: bytes, originalFilename: fileName, size: bytes.length }])
+  }
+
+  const handleInlineClipboardPaste = async () => {
+    try {
+      const bytes = await import('@/lib/api').then((a) => a.readClipboardImage())
+      if (!bytes) {
+        const { message } = await import('@tauri-apps/plugin-dialog')
+        await message(t('tasks.clipboard_no_image'), { kind: 'warning' })
+        return
+      }
+      const now = new Date()
+      const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+      const fileName = `剪贴板-${ts}.png`
+
+      if (bytes.length > 30 * 1024 * 1024) {
+        const { message } = await import('@tauri-apps/plugin-dialog')
+        await message(t('tasks.attachment_too_large'), { kind: 'error' })
+        return
+      }
+
+      setPendingAttachments((prev) => [...prev, { fileBytes: bytes, originalFilename: fileName, size: bytes.length }])
+    } catch (e) {
+      console.error('Clipboard paste failed:', e)
+    }
   }
 
   const handleCreateInline = (onSuccess?: (task: Task) => void) => {
@@ -2396,10 +2668,6 @@ export default function TasksPage() {
   }
 
   const handleInlineKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleCreateInline((task) => setSelectedTaskId(task.id))
-    }
     if (e.key === 'Escape') {
       setNewTaskTitle('')
       setNewTaskDescription('')
@@ -2521,13 +2789,7 @@ export default function TasksPage() {
     thisMonth: CalendarIcon,
   }
 
-  const visibleSmartLists = useMemo(
-    () =>
-      SMART_LISTS.filter(
-        (sl) => sl.required || smartGroupVisibility[sl.id.replace('smart:', '') as keyof typeof smartGroupVisibility],
-      ),
-    [smartGroupVisibility],
-  )
+  const visibleSmartLists = SMART_LISTS
 
   const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent'])
   const pinnedLists = useMemo(
@@ -2594,6 +2856,7 @@ export default function TasksPage() {
     ).padStart(2, '0')}`
 
     allTasksForCount.forEach((task) => {
+      if (task.isCompleted) return
       const lid = task.listId || 'inbox'
       counts[lid] = (counts[lid] || 0) + 1
       if (
@@ -2623,7 +2886,7 @@ export default function TasksPage() {
   const advGroupCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     advancedGroups.forEach((group) => {
-      counts[group.id] = allTasksForCount.filter((task) => matchAdvancedGroup(task, group)).length
+      counts[group.id] = allTasksForCount.filter((task) => !task.isCompleted && matchAdvancedGroup(task, group)).length
     })
     return counts
   }, [allTasksForCount, advancedGroups, matchAdvancedGroup])
@@ -2781,7 +3044,7 @@ export default function TasksPage() {
     <div className="flex-1 flex overflow-hidden" ref={containerRef}>
       {/* Task Groups Panel */}
       <div
-        className="border-r bg-theme-600/30 border-theme-200 dark:border-theme-900 flex flex-col overflow-hidden"
+        className="border-r bg-theme-300/30 dark:bg-theme-600/30 border-theme-200 dark:border-theme-900 flex flex-col overflow-hidden"
         style={{
           flexShrink: 0,
           maxWidth: 315,
@@ -2845,8 +3108,6 @@ export default function TasksPage() {
             {visibleSmartLists.map((smartList) => {
               const isActive = selectedListId === smartList.id
               const count = listTaskCounts[smartList.id] || 0
-              const groupKey = smartList.id.replace('smart:', '') as keyof typeof smartGroupVisibility
-              const isToggleable = !smartList.required
 
               return (
                 <div className="relative group" key={smartList.id}>
@@ -2864,19 +3125,6 @@ export default function TasksPage() {
                     <span className="flex-1 truncate">{t(smartList.labelKey)}</span>
                     {count > 0 && <span className="text-xs text-theme-600 dark:text-theme-400">{count}</span>}
                   </button>
-                  {isToggleable && (
-                    <button
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600 opacity-70 hover:opacity-100"
-                      onClick={() => setSmartGroupVisibility(groupKey, !smartGroupVisibility[groupKey])}
-                      type="button"
-                    >
-                      {smartGroupVisibility[groupKey] ? (
-                        <EyeIcon className="w-3 h-3 text-theme-400" />
-                      ) : (
-                        <EyeSlashIcon className="w-3 h-3 text-theme-400" />
-                      )}
-                    </button>
-                  )}
                 </div>
               )
             })}
@@ -3198,7 +3446,7 @@ export default function TasksPage() {
         ) : (
           <div className="flex-1 overflow-auto p-1">
             {/* Inline new task form */}
-            <div className="mb-1 bg-theme-200/30 dark:bg-theme-800/30 rounded-lg shadow-sm border border-theme-100 dark:border-theme-800 overflow-hidden">
+            <div className="mb-1 bg-theme-100/30 dark:bg-theme-800/30 rounded-lg shadow-sm border border-theme-200 dark:border-theme-800">
               <input
                 className="w-full px-4 py-3 text-sm text-theme-900 dark:text-theme-100 bg-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -3307,6 +3555,15 @@ export default function TasksPage() {
                       </span>
                     )}
                   </button>
+                  {/* Clipboard Paste */}
+                  <button
+                    className="p-1.5 rounded transition-colors hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500"
+                    onClick={handleInlineClipboardPaste}
+                    title={t('tasks.clipboard_paste')}
+                    type="button"
+                  >
+                    <ClipboardDocumentIcon className="w-4 h-4" />
+                  </button>
                   {/* Attachment */}
                   <button
                     className={`flex items-center gap-1 p-1.5 rounded transition-colors ${
@@ -3326,37 +3583,83 @@ export default function TasksPage() {
                     <button
                       className="p-1.5 rounded transition-colors hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500"
                       onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                      ref={templateButtonRef}
                       title={t('tasks.template')}
                       type="button"
                     >
                       <ClipboardDocumentListIcon className="w-4 h-4" />
                     </button>
-                    {showTemplatePicker && allTemplates.length > 0 && (
-                      <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 py-1 min-w-[180px] max-h-[200px] overflow-y-auto z-50">
-                        {allTemplates.map((template) => (
-                          <button
-                            key={template.id}
-                            className="w-full text-left px-3 py-1.5 text-xs text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors truncate"
-                            onClick={() => {
-                              setNewTaskTitle(template.name)
-                              if (template.description) {
-                                setNewTaskDescription(template.description)
-                              }
-                              if (template.tagIds) {
-                                setNewTaskTagIds(template.tagIds.split(',').filter(Boolean))
-                              }
-                              incrementTemplateUsage.mutate(template.id)
-                              setShowTemplatePicker(false)
-                            }}
-                            type="button"
-                          >
-                            {template.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {showTemplatePicker && allTemplates.length > 0 &&
+                      createPortal(
+                        <div
+                          className="bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 py-1 min-w-[180px] max-h-[120px] overflow-y-auto"
+                          style={{
+                            position: 'fixed',
+                            left: templateButtonRef.current?.getBoundingClientRect().left ?? 0,
+                            top: (templateButtonRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+                            zIndex: 99999,
+                          }}
+                        >
+                          {allTemplates.map((template) => (
+                            <button
+                              key={template.id}
+                              className="w-full text-left px-3 py-1.5 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors truncate"
+                              onClick={() => {
+                                createTask.mutate(
+                                  {
+                                    title: template.title || template.name,
+                                    description: template.description || undefined,
+                                    tagIds: template.tagIds || undefined,
+                                    priority: 0,
+                                    dueDate: newTaskDueDate || undefined,
+                                    dueTime: newTaskDueTime || undefined,
+                                    listId:
+                                      selectedListId &&
+                                      !selectedListId.startsWith('smart:') &&
+                                      !selectedListId.startsWith('adv:')
+                                        ? selectedListId
+                                        : undefined,
+                                  },
+                                  {
+                                    onSuccess: (newTask) => {
+                                      if (newTask) {
+                                        if (template.steps) {
+                                          try {
+                                            const stepDescriptions: string[] = JSON.parse(template.steps)
+                                            for (const desc of stepDescriptions) {
+                                              if (desc && desc.trim()) {
+                                                createStep.mutate({ taskId: newTask.id, description: desc })
+                                              }
+                                            }
+                                          } catch {}
+                                        }
+                                        setSelectedTaskId(newTask.id)
+                                        setFocusTitleOnMount(true)
+                                      }
+                                    },
+                                  },
+                                )
+                                incrementTemplateUsage.mutate(template.id)
+                                setShowTemplatePicker(false)
+                              }}
+                              type="button"
+                            >
+                              {template.name}
+                            </button>
+                          ))}
+                        </div>,
+                        document.body,
+                      )}
                   </div>
                 </div>
+                <button
+                  className="p-1.5 rounded transition-colors hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-400 dark:text-theme-500"
+                  onClick={() => handleCreateInline((task) => setSelectedTaskId(task.id))}
+                  title={t('tasks.add')}
+                  type="button"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
               </div>
               {pendingAttachments.length > 0 && (
                 <div className="flex gap-1 flex-col px-2 pb-1.5 w-full">
@@ -3457,12 +3760,14 @@ export default function TasksPage() {
             {selectedTask ? (
               <TaskDetailPanel
                 allTags={allTags}
+                focusTitleOnMount={focusTitleOnMount}
                 inlineDateOpenedRef={inlineDateOpenedRef}
                 onClose={() => {
                   setSelectedTaskId(null)
                   setSelectedSubtaskId(null)
                 }}
                 onDelete={() => handleDeleteTask(selectedSubtaskId || selectedTask.id)}
+                onFocusTitleDone={() => setFocusTitleOnMount(false)}
                 onSubtaskBack={() => setSelectedSubtaskId(null)}
                 onSubtaskClick={(id) => setSelectedSubtaskId(id)}
                 onUpdateTask={handleUpdateTaskField}
@@ -3687,14 +3992,14 @@ export default function TasksPage() {
                     const p = e.payload
                     if (p.type === 'single') {
                       updateTask.mutate({
-                        dueDate: p.date || undefined,
-                        dueTime: p.time || undefined,
+                        dueDate: p.date ?? '',
+                        dueTime: p.time ?? '',
                         id: taskContextMenu.taskId,
                       })
                     } else {
                       updateTask.mutate({
-                        dueDate: p.startDate || undefined,
-                        dueTime: p.startTime || undefined,
+                        dueDate: p.startDate ?? '',
+                        dueTime: p.startTime ?? '',
                         id: taskContextMenu.taskId,
                       })
                     }
@@ -3767,13 +4072,17 @@ export default function TasksPage() {
               {/* 8. 保存为模板 */}
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
-                onClick={() => {
+                onClick={async () => {
                   const task = tasks.find((tk) => tk.id === taskContextMenu.taskId)
                   if (task) {
-                    const stepsJson =
-                      task.steps && task.steps.length > 0
-                        ? JSON.stringify(task.steps.map((s) => s.description))
-                        : undefined
+                    let stepsJson: string | undefined
+                    try {
+                      const { getSteps } = await import('@/lib/api')
+                      const taskSteps = await getSteps(task.id)
+                      if (taskSteps && taskSteps.length > 0) {
+                        stepsJson = JSON.stringify(taskSteps.map((s) => s.description))
+                      }
+                    } catch {}
                     const existing = allTemplates.find((tpl) => tpl.name === task.title)
                     if (existing) {
                       if (!window.confirm(t('template_mgmt.overwrite_confirm', { name: task.title }))) {
@@ -3786,11 +4095,13 @@ export default function TasksPage() {
                         id: existing.id,
                         steps: stepsJson,
                         tagIds: task.tagIds || undefined,
+                        title: task.title,
                       })
                     } else {
                       createTemplate.mutate({
                         description: task.description || undefined,
                         name: task.title,
+                        title: task.title,
                         steps: stepsJson,
                         tagIds: task.tagIds || undefined,
                       })

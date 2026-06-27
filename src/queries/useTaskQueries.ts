@@ -80,6 +80,7 @@ export function useCreateTask() {
     mutationFn: (params: CreateTaskParams) => api.createTask(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     },
     onError: (error) => {
       console.error('Failed to create task:', error);
@@ -95,6 +96,7 @@ export function useUpdateTask() {
       api.updateTask(id, params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
     },
   });
@@ -107,6 +109,7 @@ export function useDeleteTask() {
     mutationFn: (id: string) => api.deleteTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     },
   });
 }
@@ -119,6 +122,7 @@ export function useToggleTaskCompletion() {
       api.updateTask(id, { isCompleted }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
     },
   });
@@ -131,6 +135,7 @@ export function useCompleteRecurringTask() {
     mutationFn: (id: string) => api.completeRecurringTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     },
   });
 }
@@ -160,6 +165,7 @@ export function useReorderTasks() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     },
   });
 }
@@ -377,7 +383,7 @@ export function useCreateTaskTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: { name: string; description?: string; steps?: string; tagIds?: string }) =>
+    mutationFn: (params: { name: string; title?: string; description?: string; steps?: string; tagIds?: string }) =>
       api.createTaskTemplate(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-templates'] });
@@ -389,7 +395,7 @@ export function useUpdateTaskTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, ...params }: { id: string; name?: string; description?: string; steps?: string; tagIds?: string }) =>
+    mutationFn: ({ id, ...params }: { id: string; name?: string; title?: string; description?: string; steps?: string; tagIds?: string }) =>
       api.updateTaskTemplate(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-templates'] });

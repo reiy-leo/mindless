@@ -13,6 +13,7 @@ import {
   StickyNote,
   UsersIcon,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const { t } = useTranslation('common')
   const location = useLocation()
   const { selectedListId, setSelectedListId } = useViewStore()
+  const queryClient = useQueryClient()
   const sidebarMode = useAppStore((s) => s.sidebarMode)
 
   const tagWinRef = useRef<WebviewWindow | null>(null)
@@ -119,6 +121,7 @@ export default function Sidebar() {
       })
       win.once('tauri://destroyed', () => {
         templateWinRef.current = null
+        queryClient.invalidateQueries({ queryKey: ['task-templates'] })
       })
     } catch (err) {
       console.error('Error creating task-template-management window:', err)
@@ -243,7 +246,7 @@ export default function Sidebar() {
           const showIcon = sidebarMode === 'icon' || sidebarMode === 'both'
           const showText = sidebarMode === 'text' || sidebarMode === 'both'
 
-          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm cursor-pointer py-3 ${isActive ? 'text-theme-700 dark:text-theme-200 bg-theme-700/30 dark:bg-theme-200/30' : 'hover:text-theme-200 hover:bg-theme-200/20 text-theme-900 dark:text-theme-700'}`
+          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm cursor-pointer py-3 ${isActive ? 'text-theme-700 dark:text-theme-200 bg-theme-700/30 dark:bg-theme-200/30' : 'hover:text-theme-200 hover:bg-theme-200/20 text-theme-800 dark:text-theme-700'}`
 
           if (item.path === '/tags') {
             return (

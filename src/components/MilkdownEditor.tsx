@@ -1,7 +1,8 @@
 import { EditorView } from '@codemirror/view'
 import { Crepe } from '@milkdown/crepe'
-import { editorViewCtx } from '@milkdown/kit/core'
-import { getMarkdown, replaceAll } from '@milkdown/kit/utils'
+import { editorViewCtx, schemaCtx } from '@milkdown/kit/core'
+import { InputRule } from '@milkdown/kit/prose/inputrules'
+import { $inputRule, getMarkdown, replaceAll } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { githubDark, githubLight } from '@uiw/codemirror-theme-github'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -10,6 +11,21 @@ import { useAppStore } from '@/stores/useAppStore'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
 import '@milkdown/crepe/theme/frame-dark.css'
+
+const linkInputRule = $inputRule((ctx) => {
+  const linkMarkType = ctx.get(schemaCtx).marks.link
+  return new InputRule(
+    /\[([^\]]+)\]\(([^)]+)\)$/,
+    (state, match, start, end) => {
+      const [, text, href] = match
+      if (!text || !href) return null
+      const { tr } = state
+      const linkMark = linkMarkType.create({ href, title: null })
+      tr.replaceWith(start, end, state.schema.text(text, [linkMark]))
+      return tr
+    },
+  )
+})
 
 
 interface MilkdownEditorInnerProps {
@@ -41,7 +57,7 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
   })
 
   const { loading, get } = useEditor((root) => {
-    return new Crepe({
+    const crepe = new Crepe({
       defaultValue: markdown,
       featureConfigs: {
         [Crepe.Feature.Placeholder]: {
@@ -61,11 +77,6 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
           extensions: [
             EditorView.lineWrapping,
             isDark ? githubDark : githubLight,
-            // EditorView.updateListener.of((update) => {
-            //   if (update.docChanged) {
-            //     setTimeout(() => triggerChangeRef.current(), 0)
-            //   }
-            // }),
           ],
         },
       },
@@ -76,6 +87,18 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
       },
       root,
     })
+    crepe.editor.use(linkInputRule)
+    crepe.on((listener) => {
+      listener.markdownUpdated((_ctx, md) => {
+        if (updatingRef.current) return
+        const trimmed = md.trim()
+        if (trimmed !== prevMarkdownRef.current) {
+          prevMarkdownRef.current = trimmed
+          onChangeRef.current(trimmed)
+        }
+      })
+    })
+    return crepe
   }, [])
 
   useEffect(() => {
@@ -130,10 +153,6 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
       return
     }
 
-    // const handleInput = () => {
-    //   triggerChangeRef.current()
-    // }
-
     const handlePaste = () => {
       setTimeout(() => triggerChangeRef.current(), 50)
     }
@@ -142,11 +161,9 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
       view.dispatch(view.state.tr)
     }
 
-    // view.dom.addEventListener('input', handleInput)
     view.dom.addEventListener('paste', handlePaste)
     view.dom.addEventListener('blur', handleBlur)
     return () => {
-      // view.dom.removeEventListener('input', handleInput)
       view.dom.removeEventListener('paste', handlePaste)
       view.dom.removeEventListener('blur', handleBlur)
     }
@@ -163,7 +180,7 @@ interface MilkdownEditorProps {
 
 export default function MilkdownEditor({ markdown, onChange, placeholder }: MilkdownEditorProps) {
   const theme = useAppStore((s) => s.theme)
-  const [isDark, setIsDark] = useState(theme === 'dark')
+  const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
     if (theme === 'system') {

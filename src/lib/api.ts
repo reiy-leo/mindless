@@ -51,6 +51,7 @@ export async function updateTask(id: string, params: {
   status?: string;
   recurrenceRule?: string;
   recurrenceEndDate?: string;
+  visibleSections?: string;
 }): Promise<Task> {
   return await invoke<Task>('update_task', { id, ...params });
 }
@@ -160,6 +161,7 @@ export async function getTaskTemplateById(id: string): Promise<TaskTemplate | nu
 
 export async function createTaskTemplate(params: {
   name: string;
+  title?: string;
   description?: string;
   steps?: string;
   tagIds?: string;
@@ -169,6 +171,7 @@ export async function createTaskTemplate(params: {
 
 export async function updateTaskTemplate(id: string, params: {
   name?: string;
+  title?: string;
   description?: string;
   steps?: string;
   tagIds?: string;
@@ -1053,6 +1056,10 @@ export async function cacheAttachmentImage(params: {
 
 export async function readImageDataUrl(path: string): Promise<string> {
   return await invoke<string>('read_image_data_url', { path });
+}
+
+export async function readClipboardImage(): Promise<number[] | null> {
+  return await invoke<number[] | null>('read_clipboard_image');
 }
 
 export async function getAllAttachments(): Promise<Attachment[]> {

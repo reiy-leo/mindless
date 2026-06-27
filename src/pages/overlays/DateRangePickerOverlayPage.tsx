@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalPosition } from "@tauri-apps/api/dpi";
 import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
 import type { CalendarEvent } from "@/types";
 
@@ -46,7 +45,7 @@ export default function DateRangePickerOverlayPage() {
             anchorX: number;
             anchorY: number;
             anchorH: number;
-        }>("date-range-picker-overlay:show", async (e) => {
+        }>("date-range-picker-overlay:show", (e) => {
             const p = e.payload;
             setLocalDate(p.date);
             setLocalTime(p.time);
@@ -59,19 +58,6 @@ export default function DateRangePickerOverlayPage() {
             setEvents(p.events || []);
             setColor(p.color);
             setHideTime(p.hideTime || false);
-
-            const win = getCurrentWindow();
-            const screenW = window.screen.width;
-            const screenH = window.screen.height;
-            const OVERLAY_W = 250;
-            const OVERLAY_H = 490;
-            let finalY = p.anchorY + p.anchorH + 4;
-            if (finalY + OVERLAY_H > screenH) finalY = p.anchorY - OVERLAY_H - 4;
-            if (finalY < 0) finalY = 4;
-            let finalX = p.anchorX;
-            if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8;
-            if (finalX < 0) finalX = 8;
-            await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)));
         });
 
         return () => { unlisten.then((fn) => fn()); };

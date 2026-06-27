@@ -262,3 +262,32 @@ pub async fn read_image_data_url(
     let b64 = super::data::base64_encode(&bytes);
     Ok(format!("data:{};base64,{}", mime, b64))
 }
+
+#[tauri::command]
+pub async fn read_clipboard_image() -> Result<Option<Vec<u8>>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        use objc::runtime::{Class, Object};
+        use objc::{msg_send, sel, sel_impl};
+
+        unsafe {
+            let pasteboard: *mut Object = msg_send![Class::get("NSPasteboard").unwrap(), generalPasteboard];
+            let png_type: *mut Object = msg_send![Class::get("NSString").unwrap(), stringWithUTF8String: b"public.png\0".as_ptr()];
+            let data: *mut Object = msg_send![pasteboard, dataForType: png_type];
+            if data.is_null() {
+                return Ok(None);
+            }
+            let length: usize = msg_send![data, length];
+            if length == 0 {
+                return Ok(None);
+            }
+            let bytes_ptr: *const u8 = msg_send![data, bytes];
+            let bytes = std::slice::from_raw_parts(bytes_ptr, length).to_vec();
+            Ok(Some(bytes))
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("Clipboard image reading is not supported on this platform".to_string())
+    }
+}

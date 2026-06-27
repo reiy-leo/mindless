@@ -32,4 +32,3 @@ pub use data::*;
 pub use sync::*;
 pub use attachments::*;
 pub use task_templates::*;
-pub use task_templates::*;

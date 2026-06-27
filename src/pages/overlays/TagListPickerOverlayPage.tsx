@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalPosition, LogicalSize } from "@tauri-apps/api/dpi";
 import type { Tag } from "@/types/tag";
 
 export default function TagListPickerOverlayPage() {
@@ -23,24 +22,10 @@ export default function TagListPickerOverlayPage() {
             anchorX: number;
             anchorY: number;
             anchorH: number;
-        }>("tag-list-picker-overlay:show", async (e) => {
-            const { tags: t, selectedIds: s, anchorX, anchorY, anchorH } = e.payload;
+        }>("tag-list-picker-overlay:show", (e) => {
+            const { tags: t, selectedIds: s } = e.payload;
             setTags(t);
             setSelectedIds(s);
-
-            const win = getCurrentWindow();
-            const screenW = window.screen.width;
-            const screenH = window.screen.height;
-            const OVERLAY_W = 200;
-            const OVERLAY_H = Math.min(300, t.length * 36 + 16);
-            let finalY = anchorY + anchorH + 4;
-            if (finalY + OVERLAY_H > screenH) finalY = anchorY - OVERLAY_H - 4;
-            if (finalY < 0) finalY = 4;
-            let finalX = anchorX;
-            if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8;
-            if (finalX < 0) finalX = 8;
-            await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)));
-            await win.setSize(new LogicalSize(OVERLAY_W, OVERLAY_H));
         });
 
         return () => { unlisten.then((fn) => fn()); };

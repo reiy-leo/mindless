@@ -35,6 +35,7 @@ export interface Task {
   tags?: Tag[] // 关联的标签对象 (可选)
   title: string
   updatedAt: string
+  visibleSections?: string
 }
 
 export interface CreateTaskParams {
@@ -69,6 +70,7 @@ export interface UpdateTaskParams {
   status?: TaskStatus
   tagIds?: string
   title?: string
+  visibleSections?: string
 }
 
 // Subtask is now just a Task with parentTaskId set

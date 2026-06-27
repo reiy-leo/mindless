@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { formatTimezoneOffset } from "@/lib/formatUtils";
 import { useAppStore } from "@/stores/useAppStore";
 import timezoneNames from "@/i18n/timezoneNames.json";
@@ -71,23 +70,10 @@ export default function TimezonePickerOverlayPage() {
       anchorX: number;
       anchorY: number;
       anchorH: number;
-    }>("timezone-picker-overlay:show", async (e) => {
-      const { timezone, anchorX, anchorY, anchorH } = e.payload;
+    }>("timezone-picker-overlay:show", (e) => {
+      const { timezone } = e.payload;
       setSelectedTimezone(timezone || "");
       setSearch("");
-
-      const win = getCurrentWindow();
-      const screenW = window.screen.width;
-      const screenH = window.screen.height;
-      const OVERLAY_W = 320;
-      const OVERLAY_H = 400;
-      let finalY = anchorY + anchorH + 4;
-      if (finalY + OVERLAY_H > screenH) finalY = anchorY - OVERLAY_H - 4;
-      if (finalY < 0) finalY = 4;
-      let finalX = anchorX;
-      if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8;
-      if (finalX < 0) finalX = 8;
-      await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)));
 
       setTimeout(() => searchInputRef.current?.focus(), 50);
     });

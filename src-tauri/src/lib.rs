@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 mod commands;
 mod db;
 mod menu;
@@ -188,6 +190,7 @@ pub fn run() {
             commands::update_attachment_filename,
             commands::delete_attachment_local_cache,
             commands::update_attachment_sync_status,
+            commands::read_clipboard_image,
             // Task Templates
             commands::get_task_templates,
             commands::get_task_template_by_id,

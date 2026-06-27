@@ -41,6 +41,7 @@ fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         parent_task_id: row.get(22)?,
         level: row.get(23)?,
         status: row.get(24)?,
+        visible_sections: row.get(25)?,
     })
 }
 
@@ -183,20 +184,18 @@ pub async fn update_task(
     end_date: Option<String>,
     end_time: Option<String>,
     status: Option<String>,
+    visible_sections: Option<String>,
 ) -> Result<Task, String> {
     let conn = get_db(&app)?;
 
     // Normalize empty strings to None for FK-safe optional fields
     let list_id = list_id.filter(|s| !s.is_empty());
-    let due_date = due_date.filter(|s| !s.is_empty());
-    let due_time = due_time.filter(|s| !s.is_empty());
     let start_date = start_date.filter(|s| !s.is_empty());
     let tag_ids = tag_ids; // keep empty string to allow clearing
     let mut parent_task_id = parent_task_id.filter(|s| !s.is_empty());
     let recurrence_rule = recurrence_rule.filter(|s| !s.is_empty());
     let recurrence_end_date = recurrence_end_date.filter(|s| !s.is_empty());
-    let end_date = end_date.filter(|s| !s.is_empty());
-    let end_time = end_time.filter(|s| !s.is_empty());
+    // due_date, due_time, end_date, end_time: keep empty string for clearing to NULL
 
     let mut updates: Vec<String> = Vec::new();
     let mut param_idx = 1;
@@ -228,15 +227,29 @@ pub async fn update_task(
         updates.push("priority".to_string());
         param_idx += 1;
     }
-    if due_date.is_some() {
-        sql.push_str(&format!(", due_date = ?{}", param_idx));
-        updates.push("due_date".to_string());
-        param_idx += 1;
+    match due_date {
+        Some(ref v) if !v.is_empty() => {
+            sql.push_str(&format!(", due_date = ?{}", param_idx));
+            updates.push("due_date".to_string());
+            param_idx += 1;
+        }
+        Some(_) => {
+            sql.push_str(", due_date = NULL");
+            updates.push("due_date".to_string());
+        }
+        None => {}
     }
-    if due_time.is_some() {
-        sql.push_str(&format!(", due_time = ?{}", param_idx));
-        updates.push("due_time".to_string());
-        param_idx += 1;
+    match due_time {
+        Some(ref v) if !v.is_empty() => {
+            sql.push_str(&format!(", due_time = ?{}", param_idx));
+            updates.push("due_time".to_string());
+            param_idx += 1;
+        }
+        Some(_) => {
+            sql.push_str(", due_time = NULL");
+            updates.push("due_time".to_string());
+        }
+        None => {}
     }
     if start_date.is_some() {
         sql.push_str(&format!(", start_date = ?{}", param_idx));
@@ -287,15 +300,29 @@ pub async fn update_task(
         updates.push("recurrence_end_date".to_string());
         param_idx += 1;
     }
-    if end_date.is_some() {
-        sql.push_str(&format!(", end_date = ?{}", param_idx));
-        updates.push("end_date".to_string());
-        param_idx += 1;
+    match end_date {
+        Some(ref v) if !v.is_empty() => {
+            sql.push_str(&format!(", end_date = ?{}", param_idx));
+            updates.push("end_date".to_string());
+            param_idx += 1;
+        }
+        Some(_) => {
+            sql.push_str(", end_date = NULL");
+            updates.push("end_date".to_string());
+        }
+        None => {}
     }
-    if end_time.is_some() {
-        sql.push_str(&format!(", end_time = ?{}", param_idx));
-        updates.push("end_time".to_string());
-        param_idx += 1;
+    match end_time {
+        Some(ref v) if !v.is_empty() => {
+            sql.push_str(&format!(", end_time = ?{}", param_idx));
+            updates.push("end_time".to_string());
+            param_idx += 1;
+        }
+        Some(_) => {
+            sql.push_str(", end_time = NULL");
+            updates.push("end_time".to_string());
+        }
+        None => {}
     }
     if status.is_some() {
         let s = status.as_ref().unwrap();
@@ -303,6 +330,11 @@ pub async fn update_task(
         let completed_at_sql = if is_done == 1 { "datetime('now')" } else { "NULL" };
         sql.push_str(&format!(", status = ?{}, is_completed = {}, completed_at = {}", param_idx, is_done, completed_at_sql));
         updates.push("status".to_string());
+        param_idx += 1;
+    }
+    if visible_sections.is_some() {
+        sql.push_str(&format!(", visible_sections = ?{}", param_idx));
+        updates.push("visible_sections".to_string());
         param_idx += 1;
     }
 
@@ -316,8 +348,8 @@ pub async fn update_task(
     if let Some(ref v) = title { params.push(Box::new(v.clone())); }
     if let Some(ref v) = description { params.push(Box::new(v.clone())); }
     if let Some(v) = priority { params.push(Box::new(v)); }
-    if let Some(ref v) = due_date { params.push(Box::new(v.clone())); }
-    if let Some(ref v) = due_time { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = due_date { if !v.is_empty() { params.push(Box::new(v.clone())); } }
+    if let Some(ref v) = due_time { if !v.is_empty() { params.push(Box::new(v.clone())); } }
     if let Some(ref v) = start_date { params.push(Box::new(v.clone())); }
     if let Some(ref v) = list_id { params.push(Box::new(v.clone())); }
     if let Some(ref v) = tag_ids { if !v.is_empty() { params.push(Box::new(v.clone())); } }
@@ -326,9 +358,10 @@ pub async fn update_task(
     if let Some(v) = sort_order { params.push(Box::new(v)); }
     if let Some(ref v) = recurrence_rule { params.push(Box::new(v.clone())); }
     if let Some(ref v) = recurrence_end_date { params.push(Box::new(v.clone())); }
-    if let Some(ref v) = end_date { params.push(Box::new(v.clone())); }
-    if let Some(ref v) = end_time { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = end_date { if !v.is_empty() { params.push(Box::new(v.clone())); } }
+    if let Some(ref v) = end_time { if !v.is_empty() { params.push(Box::new(v.clone())); } }
     if let Some(ref v) = status { params.push(Box::new(v.clone())); }
+    if let Some(ref v) = visible_sections { params.push(Box::new(v.clone())); }
     params.push(Box::new(id.clone()));
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();

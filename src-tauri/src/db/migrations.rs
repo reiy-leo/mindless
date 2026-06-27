@@ -696,6 +696,8 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             .map_err(|e| format!("Failed to backfill task status: {}", e))?;
     }
 
+    let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN visible_sections TEXT;");
+
     conn.execute_batch("
         CREATE TABLE IF NOT EXISTS attachments (
             id TEXT PRIMARY KEY,

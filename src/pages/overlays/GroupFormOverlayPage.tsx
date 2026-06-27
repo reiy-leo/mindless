@@ -1,4 +1,3 @@
-import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emit, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -40,7 +39,7 @@ export default function GroupFormOverlayPage() {
       anchorX: number
       anchorY: number
       anchorH: number
-    }>('group-form-overlay:show', async (e) => {
+    }>('group-form-overlay:show', (e) => {
       const {
         name: n,
         icon: ic,
@@ -48,9 +47,6 @@ export default function GroupFormOverlayPage() {
         namePlaceholder: np,
         isEditing: ie,
         showDelete: sd,
-        anchorX,
-        anchorY,
-        anchorH,
         ...rest
       } = e.payload
       setName(n)
@@ -63,19 +59,6 @@ export default function GroupFormOverlayPage() {
       setVisible(true)
 
       setTimeout(() => inputRef.current?.focus(), 50)
-
-      const win = getCurrentWindow()
-      const screenW = window.screen.width
-      const screenH = window.screen.height
-      const OVERLAY_W = 280
-      const OVERLAY_H = 140
-      let finalY = anchorY + anchorH + 4
-      if (finalY + OVERLAY_H > screenH) finalY = anchorY - OVERLAY_H - 4
-      if (finalY < 0) finalY = 4
-      let finalX = anchorX
-      if (finalX + OVERLAY_W > screenW) finalX = screenW - OVERLAY_W - 8
-      if (finalX < 0) finalX = 8
-      await win.setPosition(new LogicalPosition(Math.round(finalX), Math.round(finalY)))
     })
 
     return () => {
