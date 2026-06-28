@@ -1,7 +1,130 @@
 use tauri::{
     menu::{Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
-    AppHandle, Emitter, Wry,
+    AppHandle, Emitter, Manager, PhysicalPosition, PhysicalRect, PhysicalSize, State, WebviewUrl,
+    WebviewWindow, WebviewWindowBuilder, Wry,
 };
+
+use crate::LastMainRoute;
+
+const MAIN_WINDOW_LABEL: &str = "main";
+
+const MAIN_ROUTES: &[&str] = &[
+    "/",
+    "/tasks",
+    "/habits",
+    "/countdowns",
+    "/tags",
+    "/notes",
+    "/people",
+    "/media",
+    "/settings",
+];
+
+fn normalize_main_route(route: &str) -> Result<String, String> {
+    let normalized = if route.starts_with('/') {
+        route.to_string()
+    } else {
+        format!("/{route}")
+    };
+
+    if MAIN_ROUTES.contains(&normalized.as_str()) {
+        Ok(normalized)
+    } else {
+        Err(format!("invalid main route: {normalized}"))
+    }
+}
+
+fn focused_window(app: &AppHandle) -> Option<WebviewWindow<Wry>> {
+    app.webview_windows()
+        .values()
+        .find(|window| window.is_focused().unwrap_or(false))
+        .cloned()
+        .or_else(|| app.get_webview_window(MAIN_WINDOW_LABEL))
+}
+
+fn centered_position(
+    work_area: PhysicalRect<i32, u32>,
+    window_size: PhysicalSize<u32>,
+) -> PhysicalPosition<i32> {
+    PhysicalPosition::new(
+        work_area.position.x
+            + ((work_area.size.width.saturating_sub(window_size.width) / 2) as i32),
+        work_area.position.y
+            + ((work_area.size.height.saturating_sub(window_size.height) / 2) as i32),
+    )
+}
+
+fn fill_current_monitor(window: &WebviewWindow<Wry>) -> Result<(), String> {
+    let monitor = window
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "window has no current monitor".to_string())?;
+    let work_area = *monitor.work_area();
+
+    window
+        .set_position(work_area.position)
+        .map_err(|e| e.to_string())?;
+    window.set_size(work_area.size).map_err(|e| e.to_string())
+}
+
+fn center_in_current_monitor(window: &WebviewWindow<Wry>) -> Result<(), String> {
+    let monitor = window
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "window has no current monitor".to_string())?;
+    let position = centered_position(
+        *monitor.work_area(),
+        window.outer_size().map_err(|e| e.to_string())?,
+    );
+
+    window.set_position(position).map_err(|e| e.to_string())
+}
+
+fn show_existing_window(window: &WebviewWindow<Wry>) -> Result<(), String> {
+    let _ = window.unminimize();
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn main_window_restore_url(route: &str) -> WebviewUrl {
+    if route == "/" {
+        WebviewUrl::default()
+    } else {
+        WebviewUrl::App(
+            format!("index.html?restorePath={}", urlencoding::encode(route)).into(),
+        )
+    }
+}
+
+fn build_main_window(app: &AppHandle, route: &str) -> Result<WebviewWindow<Wry>, String> {
+    WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, main_window_restore_url(route))
+        .title("Mindless")
+        .inner_size(1200.0, 800.0)
+        .min_inner_size(800.0, 600.0)
+        .resizable(true)
+        .fullscreen(false)
+        .decorations(true)
+        .hidden_title(true)
+        .title_bar_style(tauri::TitleBarStyle::Overlay)
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+fn show_or_create_main_window(app: &AppHandle, state: &State<'_, LastMainRoute>) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        return show_existing_window(&window);
+    }
+
+    let route = state
+        .0
+        .lock()
+        .map_err(|_| "failed to lock last route state".to_string())?
+        .clone();
+
+    let window = build_main_window(app, &route)?;
+    show_existing_window(&window)
+}
 
 fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, String> {
     let l = labels.unwrap_or_else(|| MenuLabels::default_zh());
@@ -161,7 +284,19 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
     let minimize = PredefinedMenuItem::minimize(app, Some(&l.minimize)).map_err(|e| e.to_string())?;
     let close_window = PredefinedMenuItem::close_window(app, Some(&l.close_window)).map_err(|e| e.to_string())?;
     let fullscreen = PredefinedMenuItem::fullscreen(app, Some(&l.fullscreen)).map_err(|e| e.to_string())?;
-    let main_window = MenuItemBuilder::with_id("window:main_window", &l.main_window)
+    let fill_window = MenuItemBuilder::with_id("window:fill", &l.fill_window)
+        .accelerator("Ctrl+Fn+F")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let center_window = MenuItemBuilder::with_id("window:center", &l.center_window)
+        .accelerator("Ctrl+Fn+C")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let reload_window = MenuItemBuilder::with_id("window:reload", &l.reload_window)
+        .accelerator("CmdOrCtrl+Shift+R")
+        .build(app)
+        .map_err(|e| e.to_string())?;
+    let show_main_window = MenuItemBuilder::with_id("window:show_main", &l.show_main_window)
         .build(app)
         .map_err(|e| e.to_string())?;
     let bring_all_front = PredefinedMenuItem::bring_all_to_front(app, Some(&l.bring_all_front)).map_err(|e| e.to_string())?;
@@ -170,11 +305,20 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .item(&minimize)
         .item(&close_window)
         .separator()
-        .item(&main_window)
+        .item(&fill_window)
+        .item(&center_window)
+        .item(&reload_window)
+        .separator()
+        .item(&show_main_window)
         .item(&bring_all_front)
         .separator()
         .item(&fullscreen)
         .build()
+        .map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    window_submenu
+        .set_as_windows_menu_for_nsapp()
         .map_err(|e| e.to_string())?;
 
     // --- Help menu ---
@@ -206,6 +350,59 @@ pub fn init_menu(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub async fn set_last_main_route(route: String, state: State<'_, LastMainRoute>) -> Result<(), String> {
+    let normalized = normalize_main_route(&route)?;
+    let mut last_route = state
+        .0
+        .lock()
+        .map_err(|_| "failed to lock last route state".to_string())?;
+    *last_route = normalized;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{centered_position, main_window_restore_url, normalize_main_route};
+    use tauri::{PhysicalPosition, PhysicalRect, PhysicalSize, WebviewUrl};
+
+    #[test]
+    fn accepts_known_main_routes() {
+        assert_eq!(normalize_main_route("/tasks").unwrap(), "/tasks");
+        assert_eq!(normalize_main_route("settings").unwrap(), "/settings");
+    }
+
+    #[test]
+    fn rejects_unknown_routes() {
+        assert!(normalize_main_route("/settings/profile").is_err());
+        assert!(normalize_main_route("unknown").is_err());
+    }
+
+    #[test]
+    fn builds_restore_url_for_main_window() {
+        assert!(matches!(main_window_restore_url("/"), WebviewUrl::App(_)));
+
+        match main_window_restore_url("/notes") {
+            WebviewUrl::App(path) => assert_eq!(path.to_string_lossy(), "index.html?restorePath=%2Fnotes"),
+            _ => panic!("expected app url"),
+        }
+    }
+
+    #[test]
+    fn centers_window_inside_current_monitor_work_area() {
+        let work_area = PhysicalRect {
+            position: PhysicalPosition::new(-1728, 25),
+            size: PhysicalSize::new(1728, 1080),
+        };
+        let window_size = PhysicalSize::new(1200, 800);
+
+        assert_eq!(
+            centered_position(work_area, window_size),
+            PhysicalPosition::new(-1464, 165)
+        );
+    }
+}
+
 fn setup_menu_handler(app: &AppHandle) {
     let app_handle = app.clone();
     app.on_menu_event(move |_app, event| {
@@ -235,7 +432,25 @@ fn setup_menu_handler(app: &AppHandle) {
             "nav:manage_task_templates" => { let _ = app_handle.emit("menu:navigate", "manage_task_templates"); }
             "nav:manage_attachments" => { let _ = app_handle.emit("menu:navigate", "manage_attachments"); }
             // Window
-            "window:main_window" => { let _ = app_handle.emit("menu:navigate", "main_window"); }
+            "window:fill" => {
+                if let Some(window) = focused_window(&app_handle) {
+                    let _ = fill_current_monitor(&window);
+                }
+            }
+            "window:center" => {
+                if let Some(window) = focused_window(&app_handle) {
+                    let _ = center_in_current_monitor(&window);
+                }
+            }
+            "window:reload" => {
+                if let Some(window) = focused_window(&app_handle) {
+                    let _ = window.reload();
+                }
+            }
+            "window:show_main" | "window:main_window" => {
+                let state = app_handle.state::<LastMainRoute>();
+                let _ = show_or_create_main_window(&app_handle, &state);
+            }
             // Help
             "help:center" => { let _ = app_handle.emit("menu:navigate", "help_center"); }
             _ => {}
@@ -278,7 +493,10 @@ pub struct MenuLabels {
     pub window_menu: String,
     pub minimize: String,
     pub close_window: String,
-    pub main_window: String,
+    pub fill_window: String,
+    pub center_window: String,
+    pub reload_window: String,
+    pub show_main_window: String,
     pub bring_all_front: String,
     pub fullscreen: String,
     pub help_menu: String,
@@ -320,7 +538,10 @@ impl MenuLabels {
             window_menu: "窗口".into(),
             minimize: "最小化".into(),
             close_window: "关闭窗口".into(),
-            main_window: "主窗口".into(),
+            fill_window: "填充".into(),
+            center_window: "居中".into(),
+            reload_window: "重新载入".into(),
+            show_main_window: "显示主窗口".into(),
             bring_all_front: "前置全部窗口".into(),
             fullscreen: "进入全屏".into(),
             help_menu: "帮助".into(),
@@ -333,6 +554,5 @@ impl MenuLabels {
 pub async fn update_menu_language(app: AppHandle, labels: MenuLabels) -> Result<(), String> {
     let menu = build_menu(&app, Some(labels))?;
     app.set_menu(menu).map_err(|e| e.to_string())?;
-    setup_menu_handler(&app);
     Ok(())
 }

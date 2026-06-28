@@ -13,6 +13,8 @@ const VIEW_KEYS: Record<string, ViewMode> = {
   '4': 'matrix',
 };
 
+let isOpeningSettingsDialog = false;
+
 async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -26,8 +28,13 @@ async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void
 }
 
 async function openSettingsDialog() {
+  if (isOpeningSettingsDialog) {
+    return;
+  }
+  isOpeningSettingsDialog = true;
+
   try {
-    const existing = await WebviewWindow.getByLabel('settings');
+    const existing = await WebviewWindow.getByLabel('settings').catch(() => null);
     if (existing) {
       try {
         await existing.setFocus();
@@ -37,9 +44,7 @@ async function openSettingsDialog() {
         await waitForWindowClose('settings');
       }
     }
-  } catch {}
 
-  try {
     const mainWindow = getCurrentWindow();
     const mainPos = await mainWindow.outerPosition();
     const mainSize = await mainWindow.outerSize();
@@ -74,9 +79,11 @@ async function openSettingsDialog() {
     });
     win.once('tauri://error', (e) => {
       console.error('Failed to create settings window:', e);
-    });
+    }).catch(() => {});
   } catch (err) {
     console.error('Error creating settings window:', err);
+  } finally {
+    isOpeningSettingsDialog = false;
   }
 }
 

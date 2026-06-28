@@ -18,7 +18,6 @@ import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/stores/useAppStore'
-import { useViewStore } from '@/stores/useViewStore'
 
 const isMac = navigator.userAgent.includes('Mac')
 
@@ -40,7 +39,6 @@ const navItems = [
 export default function Sidebar() {
   const { t } = useTranslation('common')
   const location = useLocation()
-  const { selectedListId, setSelectedListId } = useViewStore()
   const queryClient = useQueryClient()
   const sidebarMode = useAppStore((s) => s.sidebarMode)
 
@@ -177,6 +175,13 @@ export default function Sidebar() {
       }
     }
 
+    const existing = await WebviewWindow.getByLabel('settings').catch(() => null)
+    if (existing) {
+      settingsWinRef.current = existing
+      await existing.setFocus().catch(() => {})
+      return
+    }
+
     try {
       const mainWindow = getCurrentWindow()
       const mainPos = await mainWindow.outerPosition()
@@ -212,10 +217,10 @@ export default function Sidebar() {
       settingsWinRef.current = win
       win.once('tauri://error', () => {
         settingsWinRef.current = null
-      })
+      }).catch(() => {})
       win.once('tauri://destroyed', () => {
         settingsWinRef.current = null
-      })
+      }).catch(() => {})
     } catch (err) {
       console.error('Error creating settings window:', err)
     }
@@ -232,8 +237,7 @@ export default function Sidebar() {
       <nav className="flex flex-col px-1.5 space-y-2 flex-1" style={{ position: 'relative', zIndex: 1 }}>
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive =
-            item.path === '/tasks' ? location.pathname === '/tasks' : location.pathname === item.path && !selectedListId
+          const isActive = location.pathname === item.path
 
           if (item.path === null) {
             return <div className="flex-1" data-tauri-drag-region key="spacer"></div>
@@ -354,11 +358,6 @@ export default function Sidebar() {
               aria-current={isActive ? 'page' : undefined}
               className={buttonClass}
               key={item.path}
-              onClick={() => {
-                if (item.path !== '/tasks') {
-                  setSelectedListId(null)
-                }
-              }}
               to={item.path}
             >
               {showIcon && <Icon className="w-5 h-5" />}

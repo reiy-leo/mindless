@@ -2,6 +2,36 @@
   display: none !important;
 }
 
+[data-step-toolbar-active="false"] .milkdown-toolbar {
+  display: none !important;
+}
+
+[data-milkdown-theme="light"] .milkdown {
+  --crepe-color-surface: #f7f7f7;
+  --crepe-color-surface-low: #ededed;
+  --crepe-color-on-surface: #1c1c1c;
+  --crepe-color-on-surface-variant: #4d4d4d;
+  --crepe-color-outline: #a8a8a8;
+  --crepe-color-primary: #333333;
+  --crepe-color-secondary: #cfcfcf;
+  --crepe-color-on-secondary: #000000;
+  --crepe-color-hover: #e0e0e0;
+  --crepe-color-inline-area: #cacaca;
+}
+
+[data-milkdown-theme="dark"] .milkdown {
+  --crepe-color-surface: #121212;
+  --crepe-color-surface-low: #1c1c1c;
+  --crepe-color-on-surface: #d1d1d1;
+  --crepe-color-on-surface-variant: #a9a9a9;
+  --crepe-color-outline: #757575;
+  --crepe-color-primary: #b5b5b5;
+  --crepe-color-secondary: #4d4d4d;
+  --crepe-color-on-secondary: #d6d6d6;
+  --crepe-color-hover: #232323;
+  --crepe-color-inline-area: #2b2b2b;
+}
+
 .milkdown {
   --crepe-color-background: inherit;
   --crepe-color-on-background: inherit;
@@ -31,22 +61,20 @@
     "Noto Sans Mono CJK SC",
     /* 5. 兜底 */
     monospace;
-  --crepe-color-selected: hsl(from var(--theme-color) h s 80% / 70%);
+  --crepe-color-selected: hsl(from var(--theme-color) h s 40% / 70%);
+  --crepe-color-highlight: hsl(from var(--theme-color) h s 60% / 70%);
 
   .dark & {
     --crepe-color-background: inherit;
     --crepe-color-on-background: inherit;
-    --crepe-color-selected: hsl(from var(--theme-color) h s 30% / 70%);
+    --crepe-color-selected: hsl(from var(--theme-color) h s 60% / 70%);
+    --crepe-color-highlight: hsl(from var(--theme-color) h s 40% / 70%);
   }
 
   .ProseMirror {
     caret-color: hsl(from var(--theme-color) h s calc(l - 10));
     caret-shape: bar;
     caret: 5px;
-
-    /* *::selection {
-      background: hsl(from var(--theme-color) h s 70% / 30%) !important;
-    } */
 
     a {
       text-decoration-thickness: 2px;
@@ -55,6 +83,11 @@
       text-decoration-skip-ink: none;
       text-underline-offset: 0.25rem;
       cursor: pointer;
+    }
+
+    span[data-highlight="true"] {
+      padding: 0 0.15rem;
+      background: var(--crepe-color-highlight);
     }
 
     p {
@@ -86,7 +119,7 @@
       }
     }
 
-    .milkdown-code-block:nth-of-type(2) {
+    /* .milkdown-code-block:nth-of-type(2) {
       .tools {
         position: absolute;
         bottom: -26px;
@@ -99,9 +132,9 @@
           margin: 0;
         }
       }
-    }
+    } */
 
-    .milkdown-code-block:not(:nth-of-type(2)) {
+    /* .milkdown-code-block:not(:nth-of-type(2)) {
       .tools {
         position: absolute;
         top: -24px;
@@ -110,7 +143,7 @@
         width: 100%;
         background: transparent;
       }
-    }
+    } */
 
     .milkdown-code-block {
       position: relative;
@@ -224,11 +257,19 @@
       transform: skewX(-10deg);
     }
 
+    .milkdown-highlight {
+      padding: 0 0.15em;
+      background-color: var(--crepe-color-highlight);
+    }
+
     .milkdown-list-item-block li {
+      /* padding: 0 0.15em; */
       .label-wrapper {
         width: 20px;
-        height: 20px;
-        margin: 4px 0;
+
+        .label {
+          height: inherit;
+        }
 
         svg {
           width: 20px;

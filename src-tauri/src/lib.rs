@@ -4,11 +4,15 @@ mod commands;
 mod db;
 mod menu;
 
+use std::sync::Mutex;
 use tauri::Builder;
+
+pub struct LastMainRoute(pub Mutex<String>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     Builder::default()
+        .manage(LastMainRoute(Mutex::new("/".to_string())))
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
@@ -199,6 +203,7 @@ pub fn run() {
             commands::delete_task_template,
             commands::increment_template_usage,
             menu::update_menu_language,
+            menu::set_last_main_route,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

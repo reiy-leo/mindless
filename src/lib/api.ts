@@ -1121,6 +1121,10 @@ export interface MenuLabels {
   windowMenu: string;
   minimize: string;
   closeWindow: string;
+  fillWindow: string;
+  centerWindow: string;
+  reloadWindow: string;
+  showMainWindow: string;
   mainWindow: string;
   bringAllFront: string;
   fullscreen: string;
@@ -1130,4 +1134,8 @@ export interface MenuLabels {
 
 export async function updateMenuLanguage(labels: MenuLabels): Promise<void> {
   return await invoke('update_menu_language', { labels });
+}
+
+export async function setLastMainRoute(route: string): Promise<void> {
+  return await invoke('set_last_main_route', { route })
 }

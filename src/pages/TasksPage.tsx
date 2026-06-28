@@ -2407,6 +2407,15 @@ export default function TasksPage() {
   // Sort tasks
   const filteredTasks = useMemo(() => {
     const sorted = [...filteredTasksBase].sort((a, b) => {
+      if (filterStatus === 'completed') {
+        const aCompletedAt = a.completedAt || a.updatedAt || a.createdAt
+        const bCompletedAt = b.completedAt || b.updatedAt || b.createdAt
+        if (aCompletedAt !== bCompletedAt) {
+          return bCompletedAt.localeCompare(aCompletedAt)
+        }
+        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+      }
+
       let aVal: number | string, bVal: number | string
       switch (taskSortBy) {
         case 'sortOrder':
@@ -2467,7 +2476,7 @@ export default function TasksPage() {
     }
 
     return sorted
-  }, [filteredTasksBase, taskSortBy, taskSortOrder, taskGroupBy])
+  }, [filteredTasksBase, filterStatus, taskSortBy, taskSortOrder, taskGroupBy])
 
   // Load subtasks for all visible tasks and flatten
   const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks])

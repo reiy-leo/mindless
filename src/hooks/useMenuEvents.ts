@@ -6,6 +6,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import i18n from '@/i18n/config';
 import * as api from '@/lib/api';
 
+const openingDialogLabels = new Set<string>();
+
 async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -19,8 +21,13 @@ async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void
 }
 
 async function openDialog(label: string, url: string, width: number, height: number) {
+  if (openingDialogLabels.has(label)) {
+    return;
+  }
+  openingDialogLabels.add(label);
+
   try {
-    const existing = await WebviewWindow.getByLabel(label);
+    const existing = await WebviewWindow.getByLabel(label).catch(() => null);
     if (existing) {
       try {
         await existing.setFocus();
@@ -30,9 +37,7 @@ async function openDialog(label: string, url: string, width: number, height: num
         await waitForWindowClose(label);
       }
     }
-  } catch {}
 
-  try {
     const mainWindow = getCurrentWindow();
     const win = new WebviewWindow(label, {
       alwaysOnTop: true,
@@ -51,12 +56,14 @@ async function openDialog(label: string, url: string, width: number, height: num
     });
     win.once('tauri://error', (e) => {
       console.error(`Failed to create ${label} window:`, e);
-    });
+    }).catch(() => {});
     win.once('tauri://focus', async () => {
-      await win.setShadow(true);
-    });
+      await win.setShadow(true).catch(() => {});
+    }).catch(() => {});
   } catch (err) {
     console.error(`Error creating ${label} window:`, err);
+  } finally {
+    openingDialogLabels.delete(label);
   }
 }
 
@@ -95,9 +102,6 @@ export function useMenuEvents() {
           case 'global_search':
             window.dispatchEvent(new CustomEvent('mindless:global-search'));
             break;
-          case 'main_window':
-            getCurrentWindow().setFocus().catch(console.error);
-            break;
           case 'preferences':
             openDialog('settings', '/dialog/settings', 800, 600);
             break;
@@ -123,7 +127,7 @@ export function useMenuEvents() {
     );
 
     return () => {
-      unlisteners.forEach((p) => p.then((fn) => fn()));
+      unlisteners.forEach((p) => p.then((fn) => fn()).catch(() => {}));
     };
   }, [navigate]);
 }
@@ -168,6 +172,10 @@ function buildMenuLabels(): api.MenuLabels {
     windowMenu: t('menu.window'),
     minimize: t('menu.minimize'),
     closeWindow: t('menu.close_window'),
+    fillWindow: t('menu.fill_window'),
+    centerWindow: t('menu.center_window'),
+    reloadWindow: t('menu.reload_window'),
+    showMainWindow: t('menu.show_main_window'),
     mainWindow: t('menu.main_window'),
     bringAllFront: t('menu.bring_all_front'),
     fullscreen: t('menu.fullscreen'),

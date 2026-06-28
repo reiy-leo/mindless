@@ -27,6 +27,7 @@ tauri-plugin-opener = "2"
 window-shadows-v2 = "0.1.1"
 keyring = "4"
 sha2 = "0.10"
+urlencoding = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.26"

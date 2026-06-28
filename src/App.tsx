@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlobalSearchDialog from './components/GlobalSearchDialog'
 import AppLayout from './components/layout/AppLayout'
@@ -37,6 +37,49 @@ import { ensurePermission, startNotificationService, stopNotificationService } f
 import { type DateFormat, type FontSize, type TimeFormat, type TimezoneFormat, useAppStore } from './stores/useAppStore'
 import { useViewStore } from './stores/useViewStore'
 import type { Language, PriorityMode, Theme } from './types'
+
+const MAIN_ROUTE_PAGES = [
+  { component: HomePage, path: '/' },
+  { component: TasksPage, path: '/tasks' },
+  { component: HabitsPage, path: '/habits' },
+  { component: CountdownsPage, path: '/countdowns' },
+  { component: TagsPage, path: '/tags' },
+  { component: NotesPage, path: '/notes' },
+  { component: PeoplePage, path: '/people' },
+  { component: MediaPage, path: '/media' },
+  { component: SettingsPage, path: '/settings' },
+] as const
+
+const MAIN_ROUTES: ReadonlySet<string> = new Set(MAIN_ROUTE_PAGES.map(({ path }) => path))
+
+function RouteSyncManager() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const restorePath = new URLSearchParams(location.search).get('restorePath')
+
+  useEffect(() => {
+    if (location.pathname === '/' && restorePath && MAIN_ROUTES.has(restorePath)) {
+      navigate(restorePath, { replace: true })
+    }
+  }, [location.pathname, navigate, restorePath])
+
+  useEffect(() => {
+    if (!MAIN_ROUTES.has(location.pathname)) {
+      return
+    }
+
+    if (location.pathname === '/' && restorePath && MAIN_ROUTES.has(restorePath)) {
+      return
+    }
+
+    localStorage.setItem('mindless:last-route', location.pathname)
+    api.setLastMainRoute(location.pathname).catch((err) => {
+      console.warn('Failed to sync last main route:', err)
+    })
+  }, [location.pathname, restorePath])
+
+  return null
+}
 
 function ThemeManager() {
   const theme = useAppStore((s) => s.theme)
@@ -463,6 +506,7 @@ function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
+        <RouteSyncManager />
         <ThemeManager />
         <ThemeColorManager />
         <FontSizeManager />
@@ -492,78 +536,17 @@ function App() {
             element={
               <AppLayout>
                 <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <ErrorBoundary>
-                        <HomePage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/tasks"
-                    element={
-                      <ErrorBoundary>
-                        <TasksPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/habits"
-                    element={
-                      <ErrorBoundary>
-                        <HabitsPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/countdowns"
-                    element={
-                      <ErrorBoundary>
-                        <CountdownsPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/tags"
-                    element={
-                      <ErrorBoundary>
-                        <TagsPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/notes"
-                    element={
-                      <ErrorBoundary>
-                        <NotesPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/people"
-                    element={
-                      <ErrorBoundary>
-                        <PeoplePage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/media"
-                    element={
-                      <ErrorBoundary>
-                        <MediaPage />
-                      </ErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/settings"
-                    element={
-                      <ErrorBoundary>
-                        <SettingsPage />
-                      </ErrorBoundary>
-                    }
-                  />
+                  {MAIN_ROUTE_PAGES.map(({ component: Page, path }) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={
+                        <ErrorBoundary>
+                          <Page />
+                        </ErrorBoundary>
+                      }
+                    />
+                  ))}
                 </Routes>
               </AppLayout>
             }

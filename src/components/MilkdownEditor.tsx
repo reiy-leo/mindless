@@ -1,12 +1,15 @@
 import { EditorView } from '@codemirror/view'
 import { Crepe } from '@milkdown/crepe'
-import { editorViewCtx, schemaCtx } from '@milkdown/kit/core'
+import { editorViewCtx, remarkStringifyOptionsCtx, schemaCtx } from '@milkdown/kit/core'
 import { InputRule } from '@milkdown/kit/prose/inputrules'
-import { $inputRule, getMarkdown, replaceAll } from '@milkdown/kit/utils'
+import { $inputRule, $markSchema, $remark, getMarkdown, replaceAll } from '@milkdown/kit/utils'
+import { markRule } from '@milkdown/prose'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { githubDark, githubLight } from '@uiw/codemirror-theme-github'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { visit } from 'unist-util-visit'
+import { serializeHighlightText, toHighlightMarkdownNodes } from '@/components/milkdownHighlight'
 import { useAppStore } from '@/stores/useAppStore'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
@@ -24,17 +27,51 @@ const linkInputRule = $inputRule((ctx) => {
   })
 })
 
-const highlightInputRule = $inputRule((ctx) => {
-  const linkMarkType = ctx.get(schemaCtx).marks.link
-  return new InputRule(/::((?!::).)+::/, (state, match, start, end) => {
-    const [, text] = match
-    if (!text) return null
-    const { tr } = state
-    tr.addMark(start, end, state.schema.text(text, []))
-    const linkMark = linkMarkType.create({ href, title: null })
-    tr.replaceWith(start, end, state.schema.text(text, [<span></span>]))
-    return tr
+const highlightSchema = $markSchema('highlight', () => ({
+  parseDOM: [{ tag: 'span[data-highlight="true"]' }],
+  parseMarkdown: {
+    match: (node) => node.type === 'highlight',
+    runner: (state, node, markType) => {
+      state.openMark(markType)
+      state.next(node.children ?? [])
+      state.closeMark(markType)
+    },
+  },
+  toDOM: () => ['span', { class: 'milkdown-highlight', 'data-highlight': 'true' }, 0],
+  toMarkdown: {
+    match: (mark) => mark.type.name === 'highlight',
+    runner: (state, mark) => {
+      state.withMark(mark, 'highlight')
+      return false
+    },
+  },
+}))
+
+const highlightRemarkPlugin = $remark('highlightRemark', () => () => (tree) => {
+  visit(tree, 'text', (node: { type: 'text'; value: string }, index, parent) => {
+    if (!parent || typeof index !== 'number') return
+    const nextNodes = toHighlightMarkdownNodes(node.value)
+    if (nextNodes.length === 1 && nextNodes[0]?.type === 'text') return
+    ;(parent.children as any[]).splice(index, 1, ...nextNodes)
+    return index + nextNodes.length
   })
+})
+
+const highlightStringifyPlugin = (ctx: any) => {
+  ctx.update(remarkStringifyOptionsCtx, (prev: any) => ({
+    ...prev,
+    handlers: {
+      ...prev.handlers,
+      highlight: (node: any, _: any, state: any, info: any) => {
+        const text = state.containerPhrasing(node, info)
+        return serializeHighlightText(text)
+      },
+    },
+  }))
+}
+
+const highlightInputRule = $inputRule((ctx) => {
+  return markRule(/::([^:\n][\s\S]*?)::$/, highlightSchema.type(ctx))
 })
 
 interface MilkdownEditorInnerProps {
@@ -93,7 +130,12 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
       },
       root,
     })
-    crepe.editor.use(linkInputRule)
+    crepe.editor
+      .config(highlightStringifyPlugin)
+      .use(linkInputRule)
+      .use(highlightRemarkPlugin)
+      .use(highlightSchema)
+      .use(highlightInputRule)
     crepe.on((listener) => {
       listener.markdownUpdated((_ctx, md) => {
         if (updatingRef.current) return
@@ -198,7 +240,7 @@ export default function MilkdownEditor({ markdown, onChange, placeholder }: Milk
   }, [theme])
 
   return (
-    <div className="text-sm text-theme-900 dark:text-theme-100">
+    <div className="text-sm text-theme-900 dark:text-theme-100" data-milkdown-theme={isDark ? 'dark' : 'light'}>
       <MilkdownProvider key={isDark ? 'dark' : 'light'}>
         <MilkdownEditorInner
           isDark={isDark}

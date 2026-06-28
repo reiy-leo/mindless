@@ -28,11 +28,19 @@ interface MilkdownStepEditorInnerProps {
   markdown: string
   onBlur?: () => void
   onChange: (markdown: string) => void
+  onFocus?: () => void
   onKeyDown?: (e: KeyboardEvent) => void
   placeholder?: string
 }
 
-function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeholder }: MilkdownStepEditorInnerProps) {
+function MilkdownStepEditorInner({
+  markdown,
+  onChange,
+  onKeyDown,
+  onBlur,
+  onFocus,
+  placeholder,
+}: MilkdownStepEditorInnerProps) {
   const prevMarkdownRef = useRef<string>(markdown)
   const updatingRef = useRef(false)
   const initializedRef = useRef(false)
@@ -136,6 +144,10 @@ function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeh
       }
     }
 
+    const handleFocus = () => {
+      onFocus?.()
+    }
+
     const handlePaste = () => {
       setTimeout(() => {
         if (updatingRef.current) {
@@ -154,6 +166,7 @@ function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeh
     view.dom.addEventListener('paste', handlePaste)
     view.dom.addEventListener('keydown', handleKeyDown)
     view.dom.addEventListener('blur', handleBlur)
+    view.dom.addEventListener('focus', handleFocus)
 
     const handleClick = async (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -175,36 +188,57 @@ function MilkdownStepEditorInner({ markdown, onChange, onKeyDown, onBlur, placeh
       view.dom.removeEventListener('paste', handlePaste)
       view.dom.removeEventListener('keydown', handleKeyDown)
       view.dom.removeEventListener('blur', handleBlur)
+      view.dom.removeEventListener('focus', handleFocus)
       view.dom.removeEventListener('click', handleClick)
     }
-  }, [loading, get, onChange, onKeyDown, onBlur])
+  }, [loading, get, onChange, onKeyDown, onBlur, onFocus])
 
   return <Milkdown />
 }
 
 interface MilkdownStepEditorProps {
+  isToolbarActive?: boolean
   markdown: string
   onBlur?: () => void
   onChange: (markdown: string) => void
+  onFocus?: () => void
   onKeyDown?: (e: KeyboardEvent) => void
   placeholder?: string
 }
 
 export default function MilkdownStepEditor({
+  isToolbarActive = false,
   markdown,
   onChange,
+  onFocus,
   onKeyDown,
   onBlur,
   placeholder,
 }: MilkdownStepEditorProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      if (rootRef.current?.contains(document.activeElement)) {
+        return
+      }
+      onBlur?.()
+    }, 0)
+  }
+
   return (
-    <div className="text-sm text-theme-800 dark:text-theme-100">
+    <div
+      className="text-sm text-theme-800 dark:text-theme-100"
+      data-step-toolbar-active={isToolbarActive ? 'true' : 'false'}
+      onBlurCapture={handleBlur}
+      ref={rootRef}
+    >
       <MilkdownProvider>
         <MilkdownStepEditorInner
           markdown={markdown}
           onChange={onChange}
+          onFocus={onFocus}
           onKeyDown={onKeyDown}
-          onBlur={onBlur}
           placeholder={placeholder}
         />
       </MilkdownProvider>

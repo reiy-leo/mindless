@@ -57,10 +57,14 @@ function formatStepDate(date?: string, time?: string, taskDueDate?: string): str
 }
 
 function InlineAddInput({
+  isToolbarActive,
+  onFocus,
   placeholder,
   onCancel,
   onSubmit,
 }: {
+  isToolbarActive: boolean
+  onFocus: () => void
   placeholder: string
   onCancel: () => void
   onSubmit: (description: string) => void
@@ -104,9 +108,11 @@ function InlineAddInput({
       </div>
       <div className="flex-1 px-1 py-1">
         <MilkdownStepEditor
+          isToolbarActive={isToolbarActive}
           markdown={value}
           onBlur={handleBlur}
           onChange={setValue}
+          onFocus={onFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
         />
@@ -116,16 +122,22 @@ function InlineAddInput({
 }
 
 function StepItem({
+  isToolbarActive,
   step,
   taskDueDate,
   onToggle,
   onDelete,
   onUpdateDescription,
+  onFocus,
+  onBlur,
   onDateClick,
   onInsertBelow,
   onInsertAbove,
 }: StepItemProps & {
+  isToolbarActive: boolean
   taskDueDate?: string
+  onFocus: () => void
+  onBlur: () => void
   onDateClick: (e: React.MouseEvent) => void
   onInsertBelow?: () => void
   onInsertAbove?: () => void
@@ -168,6 +180,11 @@ function StepItem({
     }
   }
 
+  const handleEditorBlur = () => {
+    handleSave()
+    onBlur()
+  }
+
   const dateDisplay = formatStepDate(step.dueDate, step.dueTime, taskDueDate)
 
   return (
@@ -187,9 +204,11 @@ function StepItem({
         className={`flex-1 px-1 py-0.5 ${step.isCompleted ? 'opacity-30 text-theme-800 dark:text-theme-100' : 'text-theme-800 dark:text-theme-100'}`}
       >
         <MilkdownStepEditor
+          isToolbarActive={isToolbarActive}
           markdown={description}
-          onBlur={handleSave}
+          onBlur={handleEditorBlur}
           onChange={setDescription}
+          onFocus={onFocus}
           onKeyDown={handleKeyDown}
         />
       </div>
@@ -224,16 +243,22 @@ function StepItem({
 }
 
 function SortableStepItem({
+  isToolbarActive,
   step,
   taskDueDate,
   onToggle,
   onDelete,
   onUpdateDescription,
+  onFocus,
+  onBlur,
   onDateClick,
   onInsertBelow,
   onInsertAbove,
 }: StepItemProps & {
+  isToolbarActive: boolean
   taskDueDate?: string
+  onFocus: () => void
+  onBlur: () => void
   onDateClick: (e: React.MouseEvent) => void
   onInsertBelow?: () => void
   onInsertAbove?: () => void
@@ -261,8 +286,11 @@ function SortableStepItem({
       </button>
       <div className="flex-1">
         <StepItem
+          isToolbarActive={isToolbarActive}
           onDateClick={onDateClick}
           onDelete={onDelete}
+          onBlur={onBlur}
+          onFocus={onFocus}
           onInsertAbove={onInsertAbove}
           onInsertBelow={onInsertBelow}
           onToggle={onToggle}
@@ -289,6 +317,7 @@ export default function StepList({
 }: Omit<StepListProps, 'taskId'>) {
   const { t } = useTranslation('common')
   const [showAddInput, setShowAddInput] = useState(false)
+  const [activeToolbarId, setActiveToolbarId] = useState<string | null>(null)
   const editingStepIdRef = useRef<string | null>(null)
   const { data: calendarEvents = [] } = useCalendarEvents()
 
@@ -390,10 +419,16 @@ export default function StepList({
 
       {showAddInput && (
         <InlineAddInput
-          onCancel={() => setShowAddInput(false)}
+          isToolbarActive={activeToolbarId === 'new'}
+          onCancel={() => {
+            setShowAddInput(false)
+            setActiveToolbarId(null)
+          }}
+          onFocus={() => setActiveToolbarId('new')}
           onSubmit={(desc) => {
             onAdd(desc)
             setShowAddInput(false)
+            setActiveToolbarId(null)
           }}
           placeholder={t('tasks.steps.description_placeholder')}
         />
@@ -410,9 +445,12 @@ export default function StepList({
             <div className="relative">
               {reversedSteps.map((step) => (
                 <SortableStepItem
+                  isToolbarActive={activeToolbarId === step.id}
                   key={step.id}
                   onDateClick={(e) => handleStepDateClick(step.id, e)}
                   onDelete={() => onDelete(step.id)}
+                  onBlur={() => setActiveToolbarId(null)}
+                  onFocus={() => setActiveToolbarId(step.id)}
                   onInsertAbove={makeInsertAbove(step.id)}
                   onInsertBelow={makeInsertBelow(step.id)}
                   onToggle={() => onToggle(step.id)}
@@ -427,9 +465,12 @@ export default function StepList({
       ) : (
         reversedSteps.map((step) => (
           <StepItem
+            isToolbarActive={activeToolbarId === step.id}
             key={step.id}
             onDateClick={(e) => handleStepDateClick(step.id, e)}
             onDelete={() => onDelete(step.id)}
+            onBlur={() => setActiveToolbarId(null)}
+            onFocus={() => setActiveToolbarId(step.id)}
             onInsertAbove={makeInsertAbove(step.id)}
             onInsertBelow={makeInsertBelow(step.id)}
             onToggle={() => onToggle(step.id)}

@@ -696,6 +696,23 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             .map_err(|e| format!("Failed to backfill task status: {}", e))?;
     }
 
+    // Add completed_at column to tasks table if not exists
+    let has_completed_at: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('tasks') WHERE name = 'completed_at'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+
+    if !has_completed_at {
+        conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT", [])
+            .map_err(|e| format!("Failed to add completed_at column to tasks: {}", e))?;
+    }
+
+    conn.execute(
+        "UPDATE tasks SET completed_at = COALESCE(updated_at, created_at) WHERE is_completed = 1 AND completed_at IS NULL",
+        [],
+    ).map_err(|e| format!("Failed to backfill task completed_at: {}", e))?;
+
     let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN visible_sections TEXT;");
 
     conn.execute_batch("
