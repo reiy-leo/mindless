@@ -36,6 +36,13 @@ export async function openDialogWindow(options: OpenDialogOptions): Promise<Webv
       return existingWindow;
     } catch {
       await existingWindow.destroy().catch(() => {});
+      const start = Date.now();
+      while (Date.now() - start < 2000) {
+        const win = await WebviewWindow.getByLabel(label).catch(() => null);
+        if (!win) break;
+        try { await win.close(); } catch {}
+        await new Promise(r => setTimeout(r, 50));
+      }
     }
   }
 

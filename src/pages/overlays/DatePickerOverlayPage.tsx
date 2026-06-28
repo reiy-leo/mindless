@@ -38,8 +38,8 @@ export default function DatePickerOverlayPage() {
                 setSelectedTimezone(e.payload.timezone);
             }
         });
-        return () => { unlisten.then((fn) => fn()); };
-    }, [setSelectedTimezone]);
+        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
+    }, [setSelectedTimezone])
 
     const handleOpenTimezonePicker = async () => {
         const button = timezoneButtonRef.current;
@@ -70,7 +70,14 @@ export default function DatePickerOverlayPage() {
             setEvents(evs || []);
         });
 
-        return () => { unlisten.then((fn) => fn()); };
+        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
+    }, []);
+
+    useEffect(() => {
+        const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+            if (!focused && !openingTimezoneRef.current) hide();
+        });
+        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
     }, []);
 
     useEffect(() => {

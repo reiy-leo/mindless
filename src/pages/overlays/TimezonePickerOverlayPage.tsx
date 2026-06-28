@@ -78,14 +78,14 @@ export default function TimezonePickerOverlayPage() {
       setTimeout(() => searchInputRef.current?.focus(), 50);
     });
 
-    return () => { unlisten.then((fn) => fn()); };
+    return () => { unlisten.then((fn) => fn()).catch(() => {}); };
   }, []);
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
       if (!focused) hide();
     });
-    return () => { unlisten.then((fn) => fn()); };
+    return () => { unlisten.then((fn) => fn()).catch(() => {}); };
   }, []);
 
   const hide = async () => {

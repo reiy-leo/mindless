@@ -28,39 +28,47 @@ const OVERLAY_SIZES: Record<string, { w: number; h: number }> = {
 }
 
 const overlays = new Map<string, WebviewWindow>()
+let baseUrl = ''
 
-export async function initOverlayWebviews(baseUrl: string) {
-  for (const def of OVERLAYS) {
-    if (overlays.has(def.label)) continue
+export function initOverlayWebviews(base: string) {
+  baseUrl = base
+}
 
-    const existing = await WebviewWindow.getByLabel(def.label)
-    if (existing) {
-      overlays.set(def.label, existing)
-      continue
-    }
+async function getOrCreateOverlay(label: string): Promise<WebviewWindow | null> {
+  const cached = overlays.get(label)
+  if (cached) return cached
 
-    const wv = new WebviewWindow(def.label, {
-      alwaysOnTop: true,
-      closable: false,
-      decorations: true,
-      height: def.height,
-      hiddenTitle: true,
-      maximizable: false,
-      minimizable: false,
-      resizable: false,
-      shadow: true,
-      titleBarStyle: 'overlay',
-      url: `${baseUrl}${def.route}`,
-      visible: false,
-      width: def.width,
-    })
-
-    wv.once('tauri://error', (e) => {
-      console.error(`Failed to create overlay ${def.label}:`, e)
-    })
-
-    overlays.set(def.label, wv)
+  const existing = await WebviewWindow.getByLabel(label).catch(() => null)
+  if (existing) {
+    overlays.set(label, existing)
+    return existing
   }
+
+  const def = OVERLAYS.find(d => d.label === label)
+  if (!def) return null
+
+  const wv = new WebviewWindow(def.label, {
+    alwaysOnTop: true,
+    closable: false,
+    decorations: true,
+    height: def.height,
+    hiddenTitle: true,
+    maximizable: false,
+    minimizable: false,
+    resizable: false,
+    shadow: true,
+    titleBarStyle: 'overlay',
+    url: `${baseUrl}${def.route}`,
+    visible: false,
+    width: def.width,
+  })
+
+  wv.once('tauri://error', (e) => {
+    console.error(`Failed to create overlay ${def.label}:`, e)
+  })
+
+  overlays.set(def.label, wv)
+  return wv
 }
 
 function computeOverlayPosition(
@@ -82,7 +90,7 @@ function computeOverlayPosition(
 }
 
 export async function showOverlay(label: string, _x: number, _y: number, payload: Record<string, unknown>) {
-  const wv = overlays.get(label)
+  const wv = await getOrCreateOverlay(label)
   if (!wv) return
 
   try {
@@ -115,9 +123,7 @@ export async function hideOverlay(label: string) {
   if (!wv) return
   try {
     await wv.hide()
-  } catch {
-    // already closed
-  }
+  } catch {}
 }
 
 export const DATE_PICKER_LABEL = 'date-picker-overlay'

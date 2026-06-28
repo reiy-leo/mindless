@@ -62,7 +62,7 @@ export default function GroupFormOverlayPage() {
     })
 
     return () => {
-      unlisten.then((fn) => fn())
+      unlisten.then((fn) => fn()).catch(() => {})
     }
   }, [])
 
@@ -71,7 +71,7 @@ export default function GroupFormOverlayPage() {
       if (!focused && !openingChildRef.current) hide()
     })
     return () => {
-      unlisten.then((fn) => fn())
+      unlisten.then((fn) => fn()).catch(() => {})
     }
   }, [])
 

@@ -14,19 +14,28 @@ import '@milkdown/crepe/theme/frame-dark.css'
 
 const linkInputRule = $inputRule((ctx) => {
   const linkMarkType = ctx.get(schemaCtx).marks.link
-  return new InputRule(
-    /\[([^\]]+)\]\(([^)]+)\)$/,
-    (state, match, start, end) => {
-      const [, text, href] = match
-      if (!text || !href) return null
-      const { tr } = state
-      const linkMark = linkMarkType.create({ href, title: null })
-      tr.replaceWith(start, end, state.schema.text(text, [linkMark]))
-      return tr
-    },
-  )
+  return new InputRule(/\[([^\]]+)\]\(([^)]+)\)/, (state, match, start, end) => {
+    const [, text, href] = match
+    if (!text || !href) return null
+    const { tr } = state
+    const linkMark = linkMarkType.create({ href, title: null })
+    tr.replaceWith(start, end, state.schema.text(text, [linkMark]))
+    return tr
+  })
 })
 
+const highlightInputRule = $inputRule((ctx) => {
+  const linkMarkType = ctx.get(schemaCtx).marks.link
+  return new InputRule(/::((?!::).)+::/, (state, match, start, end) => {
+    const [, text] = match
+    if (!text) return null
+    const { tr } = state
+    tr.addMark(start, end, state.schema.text(text, []))
+    const linkMark = linkMarkType.create({ href, title: null })
+    tr.replaceWith(start, end, state.schema.text(text, [<span></span>]))
+    return tr
+  })
+})
 
 interface MilkdownEditorInnerProps {
   isDark: boolean
@@ -74,10 +83,7 @@ function MilkdownEditorInner({ markdown, onChange, placeholder, isDark }: Milkdo
         },
         [Crepe.Feature.CodeMirror]: {
           copyText: ' ',
-          extensions: [
-            EditorView.lineWrapping,
-            isDark ? githubDark : githubLight,
-          ],
+          extensions: [EditorView.lineWrapping, isDark ? githubDark : githubLight],
         },
       },
       features: {
@@ -192,7 +198,7 @@ export default function MilkdownEditor({ markdown, onChange, placeholder }: Milk
   }, [theme])
 
   return (
-    <div className='text-sm text-theme-900 dark:text-theme-100'>
+    <div className="text-sm text-theme-900 dark:text-theme-100">
       <MilkdownProvider key={isDark ? 'dark' : 'light'}>
         <MilkdownEditorInner
           isDark={isDark}

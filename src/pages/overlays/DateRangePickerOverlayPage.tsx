@@ -60,14 +60,14 @@ export default function DateRangePickerOverlayPage() {
             setHideTime(p.hideTime || false);
         });
 
-        return () => { unlisten.then((fn) => fn()); };
+        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
     }, []);
 
     useEffect(() => {
         const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
             if (!focused && !openingTimezoneRef.current) hide();
         });
-        return () => { unlisten.then((fn) => fn()); };
+        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
     }, []);
 
     const hide = async () => {

@@ -28,7 +28,7 @@ export default function Tw22ColorPickerOverlayPage() {
     })
 
     return () => {
-      unlisten.then((fn) => fn())
+      unlisten.then((fn) => fn()).catch(() => {})
     }
   }, [])
 
@@ -37,7 +37,7 @@ export default function Tw22ColorPickerOverlayPage() {
       if (!focused) hide()
     })
     return () => {
-      unlisten.then((fn) => fn())
+      unlisten.then((fn) => fn()).catch(() => {})
     }
   }, [])
 

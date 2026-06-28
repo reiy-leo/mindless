@@ -6,6 +6,18 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import i18n from '@/i18n/config';
 import * as api from '@/lib/api';
 
+async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const win = await WebviewWindow.getByLabel(label).catch(() => null);
+    if (!win) return;
+    try {
+      await win.close();
+    } catch {}
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
 async function openDialog(label: string, url: string, width: number, height: number) {
   try {
     const existing = await WebviewWindow.getByLabel(label);
@@ -15,6 +27,7 @@ async function openDialog(label: string, url: string, width: number, height: num
         return;
       } catch {
         await existing.destroy().catch(() => {});
+        await waitForWindowClose(label);
       }
     }
   } catch {}

@@ -13,6 +13,18 @@ const VIEW_KEYS: Record<string, ViewMode> = {
   '4': 'matrix',
 };
 
+async function waitForWindowClose(label: string, timeoutMs = 2000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const win = await WebviewWindow.getByLabel(label).catch(() => null);
+    if (!win) return;
+    try {
+      await win.close();
+    } catch {}
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
 async function openSettingsDialog() {
   try {
     const existing = await WebviewWindow.getByLabel('settings');
@@ -22,6 +34,7 @@ async function openSettingsDialog() {
         return;
       } catch {
         await existing.destroy().catch(() => {});
+        await waitForWindowClose('settings');
       }
     }
   } catch {}
@@ -76,6 +89,7 @@ async function openTagManagementDialog() {
         return;
       } catch {
         await existing.destroy().catch(() => {});
+        await waitForWindowClose('tag-management');
       }
     }
   } catch {}
@@ -117,6 +131,7 @@ async function openAttachmentManagementDialog() {
         return;
       } catch {
         await existing.destroy().catch(() => {});
+        await waitForWindowClose('attachment-management');
       }
     }
   } catch {}
@@ -158,6 +173,7 @@ async function openTemplateManagementDialog() {
         return;
       } catch {
         await existing.destroy().catch(() => {});
+        await waitForWindowClose('task-template-management');
       }
     }
   } catch {}

@@ -6,34 +6,29 @@
   --crepe-color-background: inherit;
   --crepe-color-on-background: inherit;
   --crepe-font-default:
-      /* 1. 纯英文优先：不干扰中日文，各平台调用最现代的英文形体 */
+/* 1. 纯英文优先：不干扰中日文，各平台调用最现代的英文形体 */
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial,
-      
       /* 2. 日文字体优先：因为日文包含假名，且日文汉字对字形细节要求极高 */
       "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo",
-      
       /* 3. 中文字体：紧随其后，承接简体与繁体 */
       "PingFang SC", "Microsoft YaHei",
-      
       /* 4. Linux / 开源全能降级：思源黑体（涵盖中、日、韩所有现代字形） */
       "Noto Sans CJK JP", "Noto Sans CJK SC", "Source Han Sans JP", "Source Han Sans CN",
-      
       /* 5. 通用兜底 */
       sans-serif;
   --crepe-font-title: var(--crepe-font-default);
   --crepe-font-code:
-    /* 1. 现代全能代码字体 */
+/* 1. 现代全能代码字体 */
     "JetBrains Mono", "SF Mono", "Fira Code", "Consolas",
-    
     /* 2. 日文等宽 */
-    "Osaka-mono", "MS Gothic", "Yu Gothic UI",
-    
+    "Osaka-mono",
+    "MS Gothic", "Yu Gothic UI",
     /* 3. 中文等宽 */
-    "PingFang SC", "Microsoft YaHei",
-    
+    "PingFang SC",
+    "Microsoft YaHei",
     /* 4. Linux 开源等宽 */
-    "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC",
-    
+    "Noto Sans Mono CJK JP",
+    "Noto Sans Mono CJK SC",
     /* 5. 兜底 */
     monospace;
   --crepe-color-selected: hsl(from var(--theme-color) h s 80% / 70%);
