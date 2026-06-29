@@ -1,44 +1,57 @@
-import { useTranslation } from 'react-i18next';
-import { useAppStore } from '@/stores/useAppStore';
-import Select from '@/components/Select';
-import type { SortBy } from '@/types/task';
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import WheelPicker from '@/components/WheelPicker'
+import { useAppStore } from '@/stores/useAppStore'
+import type { SortBy } from '@/types/task'
 
-export function TaskSortControls({ onChange }: { onChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void } = {}) {
-  const { t } = useTranslation('common');
-  const { taskSortBy, taskSortOrder, setTaskSortBy, setTaskSortOrder } = useAppStore();
+export function TaskSortControls({
+  onChange,
+}: {
+  onChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void
+} = {}) {
+  const { t } = useTranslation('common')
+  const { taskSortBy, taskSortOrder, setTaskSortBy, setTaskSortOrder } = useAppStore()
+  const options = useMemo(() => {
+    const fields: { label: string; value: SortBy }[] = [
+      { label: t('tasks.sort.manual'), value: 'sortOrder' },
+      { label: t('tasks.sort.due_date'), value: 'dueDate' },
+      { label: t('tasks.sort.start_date'), value: 'startDate' },
+      { label: t('tasks.sort.priority'), value: 'priority' },
+      { label: t('tasks.sort.created_at'), value: 'createdAt' },
+      { label: t('tasks.sort.completed_at'), value: 'completedAt' },
+    ]
+    const orders: { label: string; value: 'asc' | 'desc' }[] = [
+      { label: t('tasks.sort.asc'), value: 'asc' },
+      { label: t('tasks.sort.desc'), value: 'desc' },
+    ]
+
+    return fields.flatMap((field) =>
+      orders.map((order) => ({
+        label: `${field.label} · ${order.label}`,
+        sortBy: field.value,
+        sortOrder: order.value,
+      })),
+    )
+  }, [t])
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.sortBy === taskSortBy && option.sortOrder === taskSortOrder),
+  )
 
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={taskSortBy}
-        onChange={(val) => {
-          setTaskSortBy(val as SortBy);
-          onChange?.(val, taskSortOrder);
-        }}
-        options={[
-          { value: 'sortOrder', label: t('tasks.sort.manual') },
-          { value: 'dueDate', label: t('tasks.sort.due_date') },
-          { value: 'startDate', label: t('tasks.sort.start_date') },
-          { value: 'priority', label: t('tasks.sort.priority') },
-          { value: 'createdAt', label: t('tasks.sort.created_at') },
-          { value: 'completedAt', label: t('tasks.sort.completed_at') },
-        ]}
-        className="w-36"
-        aria-label={t('tasks.sort.by')}
-      />
-      <Select
-        value={taskSortOrder}
-        onChange={(val) => {
-          setTaskSortOrder(val as 'asc' | 'desc');
-          onChange?.(taskSortBy, val as 'asc' | 'desc');
-        }}
-        options={[
-          { value: 'asc', label: t('tasks.sort.asc') },
-          { value: 'desc', label: t('tasks.sort.desc') },
-        ]}
-        className="w-28"
-        aria-label={t('tasks.sort.order')}
-      />
-    </div>
-  );
+    <WheelPicker
+      className="bg-white dark:bg-theme-800 text-xs text-theme-800 dark:text-theme-200"
+      itemHeight={32}
+      onChange={(index) => {
+        const option = options[index]
+        if (!option) return
+        setTaskSortBy(option.sortBy)
+        setTaskSortOrder(option.sortOrder)
+        onChange?.(option.sortBy, option.sortOrder)
+      }}
+      options={options.map((option, index) => ({ label: option.label, value: index }))}
+      value={selectedIndex}
+      visibleCount={3}
+    />
+  )
 }

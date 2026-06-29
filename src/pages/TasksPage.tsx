@@ -34,6 +34,7 @@ import {
   Tag as TagIconLucide,
   Trash2,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -137,6 +138,19 @@ function getStatusViewSettings(settings: ListSettings | null, status: TaskStatus
   }
   return DEFAULT_STATUS_VIEW_SETTINGS[status]
 }
+
+const TASK_VIEW_OPTIONS: { icon: LucideIcon; labelKey: (typeof VIEW_MODES)[keyof typeof VIEW_MODES]; value: keyof typeof VIEW_MODES }[] = [
+  { icon: Calendar, labelKey: VIEW_MODES.calendar, value: 'calendar' },
+  { icon: Columns, labelKey: VIEW_MODES.kanban, value: 'kanban' },
+  { icon: ListIcon, labelKey: VIEW_MODES.list, value: 'list' },
+  { icon: Table2, labelKey: VIEW_MODES.matrix, value: 'matrix' },
+]
+
+const TASK_STATUS_OPTIONS: { icon: LucideIcon; labelKey: string; value: TaskStatus3 }[] = [
+  { icon: ClipboardList, labelKey: 'tasks.status.all', value: 'all' },
+  { icon: Clock, labelKey: 'tasks.status.active', value: 'active' },
+  { icon: ClipboardCheck, labelKey: 'tasks.status.completed', value: 'completed' },
+]
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   book: '📖',
@@ -3502,24 +3516,28 @@ export default function TasksPage() {
                       <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_view')}
                       </div>
-                      <div className="flex gap-1">
-                        {Object.entries(VIEW_MODES).map(([key, label]) => (
-                          <button
-                            className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
-                              viewMode === key
-                                ? 'bg-theme-500 text-white'
-                                : 'bg-theme-100 dark:bg-theme-700 text-theme-700 dark:text-theme-300 hover:bg-theme-200 dark:hover:bg-theme-600'
-                            }`}
-                            key={key}
-                            onClick={() => {
-                              handleSetViewMode(key as keyof typeof VIEW_MODES)
-                              setShowSettings(false)
-                            }}
-                            type="button"
-                          >
-                            {t(label)}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-4 gap-1">
+                        {TASK_VIEW_OPTIONS.map((opt) => {
+                          const Icon = opt.icon
+                          return (
+                            <button
+                              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded px-1.5 py-1.5 text-xs transition-colors ${
+                                viewMode === opt.value
+                                  ? 'bg-theme-500 text-white'
+                                  : 'bg-theme-100 text-theme-700 hover:bg-theme-200 dark:bg-theme-700 dark:text-theme-300 dark:hover:bg-theme-600'
+                              }`}
+                              key={opt.value}
+                              onClick={() => {
+                                handleSetViewMode(opt.value)
+                                setShowSettings(false)
+                              }}
+                              type="button"
+                            >
+                              <Icon className="h-4 w-4" />
+                              <span className="max-w-full truncate text-[10px] leading-none">{t(opt.labelKey)}</span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -3528,25 +3546,25 @@ export default function TasksPage() {
                       <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_status')}
                       </div>
-                      <div className="flex gap-1">
-                        {[
-                          { label: t('tasks.status.all'), value: 'all' },
-                          { label: t('tasks.status.active'), value: 'active' },
-                          { label: t('tasks.status.completed'), value: 'completed' },
-                        ].map((opt) => (
-                          <button
-                            className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
-                              filterStatus === opt.value
-                                ? 'bg-theme-500 text-white'
-                                : 'bg-theme-100 dark:bg-theme-700 text-theme-700 dark:text-theme-300 hover:bg-theme-200 dark:hover:bg-theme-600'
-                            }`}
-                            key={opt.value}
-                            onClick={() => handleSetFilterStatus(opt.value as TaskStatus3)}
-                            type="button"
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-3 gap-1">
+                        {TASK_STATUS_OPTIONS.map((opt) => {
+                          const Icon = opt.icon
+                          return (
+                            <button
+                              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded px-1.5 py-1.5 text-xs transition-colors ${
+                                filterStatus === opt.value
+                                  ? 'bg-theme-500 text-white'
+                                  : 'bg-theme-100 text-theme-700 hover:bg-theme-200 dark:bg-theme-700 dark:text-theme-300 dark:hover:bg-theme-600'
+                              }`}
+                              key={opt.value}
+                              onClick={() => handleSetFilterStatus(opt.value)}
+                              type="button"
+                            >
+                              <Icon className="h-4 w-4" />
+                              <span className="max-w-full truncate text-[10px] leading-none">{t(opt.labelKey)}</span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 

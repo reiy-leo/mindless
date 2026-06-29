@@ -1,17 +1,17 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface WheelPickerOption {
-  value: number;
-  label: string;
+  label: string
+  value: number
 }
 
 interface WheelPickerProps {
-  options: WheelPickerOption[];
-  value: number;
-  onChange: (value: number) => void;
-  className?: string;
-  itemHeight?: number;
-  visibleCount?: number;
+  className?: string
+  itemHeight?: number
+  onChange: (value: number) => void
+  options: WheelPickerOption[]
+  value: number
+  visibleCount?: number
 }
 
 export default function WheelPicker({
@@ -22,110 +22,111 @@ export default function WheelPicker({
   itemHeight = 36,
   visibleCount = 5,
 }: WheelPickerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [scrollTop, setScrollTop] = useState(0);
-  const animationFrameRef = useRef<number>();
-  const isProgrammaticScroll = useRef(false);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startY, setStartY] = useState(0)
+  const [scrollTop, setScrollTop] = useState(0)
+  const animationFrameRef = useRef<number>()
+  const isProgrammaticScroll = useRef(false)
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
-  const selectedIndex = options.findIndex((opt) => opt.value === value);
-  const containerHeight = itemHeight * visibleCount;
-  const paddingHeight = (containerHeight - itemHeight) / 2;
+  const selectedIndex = options.findIndex((opt) => opt.value === value)
+  const containerHeight = itemHeight * visibleCount
+  const paddingHeight = (containerHeight - itemHeight) / 2
 
-  const scrollToIndex = useCallback((index: number) => {
-    if (containerRef.current) {
-      isProgrammaticScroll.current = true;
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      const targetScrollTop = index * itemHeight;
-      containerRef.current.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth',
-      });
-      scrollTimeoutRef.current = setTimeout(() => {
-        isProgrammaticScroll.current = false;
-      }, 500);
-    }
-  }, [itemHeight]);
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      if (containerRef.current) {
+        isProgrammaticScroll.current = true
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current)
+        const targetScrollTop = index * itemHeight
+        containerRef.current.scrollTo({
+          behavior: 'smooth',
+          top: targetScrollTop,
+        })
+        scrollTimeoutRef.current = setTimeout(() => {
+          isProgrammaticScroll.current = false
+        }, 500)
+      }
+    },
+    [itemHeight],
+  )
 
   useEffect(() => {
     if (selectedIndex >= 0) {
-      scrollToIndex(selectedIndex);
+      scrollToIndex(selectedIndex)
     }
-  }, [selectedIndex, scrollToIndex]);
+  }, [selectedIndex, scrollToIndex])
 
   const handleScroll = useCallback(() => {
     if (containerRef.current) {
-      const newScrollTop = containerRef.current.scrollTop;
-      setScrollTop(newScrollTop);
+      const newScrollTop = containerRef.current.scrollTop
+      setScrollTop(newScrollTop)
 
-      if (isProgrammaticScroll.current) return;
+      if (isProgrammaticScroll.current) return
 
-      const newIndex = Math.round(newScrollTop / itemHeight);
+      const newIndex = Math.round(newScrollTop / itemHeight)
       if (newIndex >= 0 && newIndex < options.length && options[newIndex].value !== value) {
-        onChange(options[newIndex].value);
+        onChange(options[newIndex].value)
       }
     }
-  }, [itemHeight, options, value, onChange]);
+  }, [itemHeight, options, value, onChange])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartY(e.clientY);
-    setScrollTop(containerRef.current?.scrollTop || 0);
-  }, []);
+    setIsDragging(true)
+    setStartY(e.clientY)
+    setScrollTop(containerRef.current?.scrollTop || 0)
+  }, [])
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !containerRef.current) return
 
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
 
-    animationFrameRef.current = requestAnimationFrame(() => {
-      const deltaY = startY - e.clientY;
-      containerRef.current!.scrollTop = scrollTop + deltaY;
-    });
-  }, [isDragging, startY, scrollTop]);
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const deltaY = startY - e.clientY
+        containerRef.current!.scrollTop = scrollTop + deltaY
+      })
+    },
+    [isDragging, startY, scrollTop],
+  )
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
+    setIsDragging(false)
     if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+      cancelAnimationFrame(animationFrameRef.current)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+      }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={{ height: containerHeight }}
-    >
+    <div className={`relative overflow-hidden scrollbar-thin ${className}`} style={{ height: containerHeight }}>
       {/* Gradient overlay top */}
       <div
-        className="absolute top-0 left-0 right-0 z-10 pointer-events-none"
+        className="absolute top-0 left-0 right-0 z-10 pointer-events-none bg-linear-to-b from-white to-transparent dark:from-theme-800"
         style={{
           height: paddingHeight,
-          background: 'linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)',
         }}
       />
 
       {/* Gradient overlay bottom */}
       <div
-        className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none bg-linear-to-t from-white to-transparent dark:from-theme-800"
         style={{
           height: paddingHeight,
-          background: 'linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)',
         }}
       />
 
@@ -133,8 +134,8 @@ export default function WheelPicker({
       <div
         className="absolute left-0 right-0 z-10 pointer-events-none border-t border-b border-gray-200 dark:border-gray-600"
         style={{
-          top: paddingHeight,
           height: itemHeight,
+          top: paddingHeight,
         }}
       />
 
@@ -150,29 +151,27 @@ export default function WheelPicker({
         <div style={{ height: paddingHeight }} />
 
         {options.map((option) => {
-          const isSelected = option.value === value;
+          const isSelected = option.value === value
           return (
             <div
               key={option.value}
               className={`flex items-center justify-center transition-colors cursor-pointer select-none ${
-                isSelected
-                  ? 'text-gray-900 dark:text-gray-100 font-semibold'
-                  : 'text-gray-400 dark:text-gray-500'
+                isSelected ? 'font-semibold' : 'text-gray-400 dark:text-gray-500'
               }`}
               style={{
                 height: itemHeight,
                 scrollSnapAlign: 'center',
               }}
-              onClick={() => onChange(option.value)}
+              onMouseDown={() => onChange(option.value)}
             >
               {option.label}
             </div>
-          );
+          )
         })}
 
         {/* Bottom padding */}
         <div style={{ height: paddingHeight }} />
       </div>
     </div>
-  );
+  )
 }
