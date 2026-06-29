@@ -1,38 +1,38 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface LinkedItem {
-  id: string;
-  title: string;
-  date?: string;
-  time?: string;
+  date?: string
+  id: string
+  time?: string
+  title: string
 }
 
 interface LinkedItemSelectorProps {
-  value: string[];
-  onChange: (value: string[]) => void;
-  items: LinkedItem[];
-  placeholder?: string;
+  items: LinkedItem[]
+  onChange: (value: string[]) => void
+  placeholder?: string
+  value: string[]
 }
 
 export default function LinkedItemSelector({ value, onChange, items, placeholder }: LinkedItemSelectorProps) {
-  const { t } = useTranslation('common');
-  const [search, setSearch] = useState('');
+  const { t } = useTranslation('common')
+  const [search, setSearch] = useState('')
 
   const filteredItems = items.filter(
-    (item) => !value.includes(item.id) && item.title.toLowerCase().includes(search.toLowerCase())
-  );
+    (item) => !value.includes(item.id) && item.title.toLowerCase().includes(search.toLowerCase()),
+  )
 
   const handleAdd = (item: LinkedItem) => {
-    onChange([...value, item.id]);
-    setSearch('');
-  };
+    onChange([...value, item.id])
+    setSearch('')
+  }
 
   const formatDate = (date?: string, time?: string) => {
-    if (!date) return null;
-    const d = date.slice(5);
-    return time ? `${d} ${time}` : d;
-  };
+    if (!date) return null
+    const d = date.slice(5)
+    return time ? `${d} ${time}` : d
+  }
 
   return (
     <div className="relative min-w-0">
@@ -50,13 +50,11 @@ export default function LinkedItemSelector({ value, onChange, items, placeholder
             <div
               key={item.id}
               className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-              onClick={() => handleAdd(item)}
+              onMouseDown={() => handleAdd(item)}
             >
-              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                {item.title}
-              </span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{item.title}</span>
               {item.date && (
-                <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
+                <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">
                   {formatDate(item.date, item.time)}
                 </span>
               )}
@@ -65,5 +63,5 @@ export default function LinkedItemSelector({ value, onChange, items, placeholder
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -124,7 +124,7 @@ pub async fn delete_list(app: AppHandle, id: String) -> Result<(), String> {
     let conn = get_db(&app)?;
 
     // Prevent deleting seed lists
-    let seed_ids = ["inbox", "today", "next7days", "eisenhower"];
+    let seed_ids = ["inbox", "today", "next7days"];
     if seed_ids.contains(&id.as_str()) {
         return Err("Cannot delete a built-in list".to_string());
     }

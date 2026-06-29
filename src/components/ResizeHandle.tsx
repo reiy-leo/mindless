@@ -26,7 +26,7 @@ export function ResizeHandle({ onResize }: { onResize: (delta: number) => void }
 
   return (
     <div
-      className="w-1 flex-shrink-0 cursor-col-resize hover:bg-theme-400 dark:hover:bg-theme-500 transition-colors"
+      className="w-1 shrink-0 cursor-col-resize hover:bg-theme-400 dark:hover:bg-theme-500 transition-colors"
       onMouseDown={handleMouseDown}
     />
   )

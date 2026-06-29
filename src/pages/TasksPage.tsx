@@ -1,39 +1,40 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { listen } from '@tauri-apps/api/event'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import {
+  AlertCircle,
   Archive,
-  RefreshCw,
-  CornerDownRight,
-  CornerUpLeft,
   BookOpen,
   Calendar,
   ChevronDown,
   ChevronRight,
-  ClipboardCheck,
   Clipboard,
+  ClipboardCheck,
   ClipboardList,
   Clock,
+  Columns,
+  Contact,
+  CornerDownRight,
+  CornerUpLeft,
   File,
-  MoreVertical,
-  AlertCircle,
   Film,
   Flag,
-  Contact,
   Inbox,
-  Search,
+  List as ListIcon,
+  MoreVertical,
   Paperclip,
   Pencil,
+  Pin,
   Plus,
-  List as ListIcon,
+  RefreshCw,
+  Search,
+  Send,
   Sun,
   Table2,
   Tag as TagIconLucide,
   Trash2,
-  Columns,
   X,
 } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
-import { listen } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { Pin, Send } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
@@ -46,6 +47,7 @@ import TagCombobox from '@/components/TagCombobox'
 import CalendarView from '@/components/tasks/CalendarView'
 import EisenhowerMatrixView from '@/components/tasks/EisenhowerMatrixView'
 import KanbanView from '@/components/tasks/KanbanView'
+import OxygenNotIncludedPriorityPicker from '@/components/tasks/OxygenNotIncludedPriorityPicker'
 import StepList from '@/components/tasks/StepList'
 import SubtaskList from '@/components/tasks/SubtaskList'
 import TaskForm from '@/components/tasks/TaskForm'
@@ -53,6 +55,7 @@ import { TaskGroupControls } from '@/components/tasks/TaskGroupControls'
 import { TaskSortControls } from '@/components/tasks/TaskSortControls'
 import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants'
 import { DATE_RANGE_PICKER_LABEL, GROUP_FORM_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
+import { getPriorityOptions } from '@/lib/priorityOptions'
 import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
 import { useMediaItems } from '@/queries/useMediaQueries'
@@ -99,9 +102,41 @@ import {
 import { useAppStore } from '@/stores/useAppStore'
 import { useViewStore } from '@/stores/useViewStore'
 import type { Attachment, PendingAttachment } from '@/types/attachment'
-import type { GroupBy, List, ListSettings, Priority, SortBy, Step as StepType, Task, TaskStatus } from '@/types/task'
+import type {
+  GroupBy,
+  List,
+  ListSettings,
+  Priority,
+  SortBy,
+  Step as StepType,
+  Task,
+  TaskFilterStatus,
+  TaskStatus,
+  TaskStatusViewSettings,
+} from '@/types/task'
 
-type TaskStatus3 = 'all' | 'active' | 'completed'
+type TaskStatus3 = TaskFilterStatus
+
+const DEFAULT_STATUS_VIEW_SETTINGS: Record<TaskStatus3, TaskStatusViewSettings> = {
+  active: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc' },
+  all: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc' },
+  completed: { groupBy: 'none', sortBy: 'completedAt', sortOrder: 'desc' },
+}
+
+function getStatusViewSettings(settings: ListSettings | null, status: TaskStatus3): TaskStatusViewSettings {
+  const explicit = settings?.statusSettings?.[status]
+  if (explicit) {
+    return explicit
+  }
+  if (settings && status === 'all') {
+    return {
+      groupBy: settings.groupBy,
+      sortBy: settings.sortBy,
+      sortOrder: settings.sortOrder,
+    }
+  }
+  return DEFAULT_STATUS_VIEW_SETTINGS[status]
+}
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   book: '📖',
@@ -121,10 +156,7 @@ function resolveIcon(icon?: string): string {
   if (!icon) {
     return '📁'
   }
-  if (icon.length <= 2) {
-    return icon
-  }
-  return ICON_KEY_TO_EMOJI[icon] || '📁'
+  return ICON_KEY_TO_EMOJI[icon] || icon
 }
 
 import type { AdvancedGroup } from '@/stores/useAppStore'
@@ -199,6 +231,7 @@ function TaskDetailPanel({
   selectedSubtaskId?: string | null
   onClose: () => void
   onDelete: () => void
+  // biome-ignore lint:noExplicitAny
   onUpdateTask: (params: any) => void
   onSubtaskClick?: (id: string) => void
   onSubtaskBack?: () => void
@@ -208,6 +241,8 @@ function TaskDetailPanel({
 }) {
   const { t } = useTranslation('common')
   const queryClient = useQueryClient()
+  const priorityMode = useAppStore((s) => s.priorityMode)
+  const priorityOptions = useMemo(() => getPriorityOptions(priorityMode, t), [priorityMode, t])
 
   // When a subtask is selected, treat it as the active task
   const { data: flatSubtasks = [] } = useSubtasks(task.id)
@@ -219,6 +254,7 @@ function TaskDetailPanel({
   }, [flatSubtasks, selectedSubtaskId])
 
   const activeTask = selectedSubtask || task
+  const activePriorityColor = priorityOptions.find((option) => option.value === activeTask.priority)?.color
   const [editTitle, setEditTitle] = useState(activeTask.title)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const activeTaskIdRef = useRef(activeTask.id)
@@ -322,19 +358,24 @@ function TaskDetailPanel({
     [unlinkTaskItem],
   )
 
-  const toggleSection = useCallback((key: string) => {
-    setVisibleSections((prev) => {
-      const next = { ...prev, [key]: !prev[key] }
-      onUpdateTask({ visibleSections: JSON.stringify(next) })
-      return next
-    })
-  }, [onUpdateTask])
+  const toggleSection = useCallback(
+    (key: string) => {
+      setVisibleSections((prev) => {
+        const next = { ...prev, [key]: !prev[key] }
+        onUpdateTask({ visibleSections: JSON.stringify(next) })
+        return next
+      })
+    },
+    [onUpdateTask],
+  )
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const defaultTaskSections = useAppStore((s) => s.defaultTaskSections)
   const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
     if (task.visibleSections) {
-      try { return JSON.parse(task.visibleSections) } catch {}
+      try {
+        return JSON.parse(task.visibleSections)
+      } catch {}
     }
     return { ...defaultTaskSections }
   })
@@ -426,13 +467,16 @@ function TaskDetailPanel({
           setIsDragging(false)
           const { paths, position } = event.payload
           const rect = panel.getBoundingClientRect()
-          const inPanel = position.x >= rect.left && position.x <= rect.right && position.y >= rect.top && position.y <= rect.bottom
+          const inPanel =
+            position.x >= rect.left && position.x <= rect.right && position.y >= rect.top && position.y <= rect.bottom
           if (inPanel && paths.length > 0) {
             const filePath = paths[0]
             const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown'
-            import('@/lib/api').then((api) => api.readFileBytes(filePath)).then((bytes) => {
-              uploadAttachmentBytes(fileName, bytes)
-            })
+            import('@/lib/api')
+              .then((api) => api.readFileBytes(filePath))
+              .then((bytes) => {
+                uploadAttachmentBytes(fileName, bytes)
+              })
           }
         } else {
           setIsDragging(false)
@@ -440,7 +484,9 @@ function TaskDetailPanel({
       })
     }
     setup()
-    return () => { unlistenRef.current?.() }
+    return () => {
+      unlistenRef.current?.()
+    }
   }, [activeTask.id])
 
   const lastUploadRef = useRef<{ name: string; time: number } | null>(null)
@@ -1166,7 +1212,7 @@ function TaskDetailPanel({
             }}
             type="button"
           >
-            <Calendar className="w-4 h-4 flex-shrink-0" strokeWidth={`2`} />
+            <Calendar className="w-4 h-4 shrink-0" strokeWidth={`2`} />
             <span className="truncate">
               {activeTask.dueDate
                 ? activeTask.endDate
@@ -1179,7 +1225,7 @@ function TaskDetailPanel({
           </button>
           <div className="grow" data-tauri-drag-region></div>
           {/* Section toggle drawer */}
-          <div className="relative flex-shrink-0 flex items-center gap-0.5">
+          <div className="relative shrink-0 flex items-center gap-0.5">
             {[
               { icon: ListIcon, key: 'steps', label: t('tasks.steps.title') },
               { icon: Table2, key: 'subtasks', label: t('tasks.subtasks.title') },
@@ -1230,7 +1276,7 @@ function TaskDetailPanel({
             value={editTitle}
           />
           <div
-            className="relative flex-shrink-0"
+            className="relative shrink-0"
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                 setShowPriorityPicker(false)
@@ -1244,29 +1290,37 @@ function TaskDetailPanel({
               title={t('tasks.priority.label')}
               type="button"
             >
-              <Flag className="w-4 h-4" style={{ color: PRIORITY_COLORS[activeTask.priority] || undefined }} />
+              <Flag className="w-4 h-4" style={{ color: activePriorityColor?.bg }} />
             </button>
             {showPriorityPicker && (
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 z-50 py-1 w-32">
-                {[0, 3, 6, 9].map((p) => (
-                  <button
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
-                    key={p}
-                    onClick={() => {
-                      onUpdateTask({ priority: p })
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 z-50 py-1 max-h-64 overflow-y-auto">
+                {priorityMode === 'OxygenNotIncluded' ? (
+                  <OxygenNotIncludedPriorityPicker
+                    onSelect={(priority) => {
+                      onUpdateTask({ priority })
                       setShowPriorityPicker(false)
                     }}
-                    type="button"
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: PRIORITY_COLORS[p] }}
-                    />
-                    <span className="text-theme-700 dark:text-theme-300">
-                      {t(`tasks.priority.${{ 0: 'none', 3: 'low', 6: 'medium', 9: 'high' }[p]}`)}
-                    </span>
-                  </button>
-                ))}
+                    options={priorityOptions}
+                    selectedPriority={activeTask.priority}
+                  />
+                ) : (
+                  <div className="w-32">
+                    {priorityOptions.map((p) => (
+                      <button
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+                        key={p.value}
+                        onClick={() => {
+                          onUpdateTask({ priority: p.value })
+                          setShowPriorityPicker(false)
+                        }}
+                        type="button"
+                      >
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.color.bg }} />
+                        <span className="text-theme-700 dark:text-theme-300">{p.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1278,7 +1332,7 @@ function TaskDetailPanel({
             onClick={onSubtaskBack}
             type="button"
           >
-            <ChevronRight className="w-3 h-3 rotate-180 flex-shrink-0" />
+            <ChevronRight className="w-3 h-3 rotate-180 shrink-0" />
             <span className="truncate">{task.title}</span>
           </button>
         )}
@@ -1287,16 +1341,18 @@ function TaskDetailPanel({
       {/* Progress bar - tightly below header */}
       {progress && (
         <div className="group relative px-4 pb-2">
-          <div className="w-full h-[2px] bg-theme-200 dark:bg-theme-800">
+          <div className="w-full h-0.5 bg-theme-200 dark:bg-theme-800">
             <div
               className={`h-full transition-all duration-300 ${
-                progress.completed === progress.total ? 'bg-theme-300 dark:bg-theme-700' : 'dark:bg-theme-700 bg-theme-300'
+                progress.completed === progress.total
+                  ? 'bg-theme-300 dark:bg-theme-700'
+                  : 'dark:bg-theme-700 bg-theme-300'
               }`}
               style={{
                 width: `${(progress.completed / progress.total) * 100}%`,
               }}
             />
-         </div>
+          </div>
           <div className="absolute left-1/2 -translate-x-1/2 -top-7 hidden group-hover:block bg-theme-900 dark:bg-theme-100 text-white dark:text-theme-900 text-xs px-2 py-0.5 rounded whitespace-nowrap">
             {Math.round((progress.completed / progress.total) * 100)}%
           </div>
@@ -1438,7 +1494,7 @@ function TaskDetailPanel({
                                 <img
                                   alt={att.originalFilename}
                                   className="w-full h-full rounded-sm border border-theme-100 object-cover cursor-pointer"
-                                  onClick={() => setPreviewImage(imageUrls[att.id])}
+                                  onMouseDown={() => setPreviewImage(imageUrls[att.id])}
                                   src={imageUrls[att.id]}
                                 />
                               )}
@@ -1459,11 +1515,11 @@ function TaskDetailPanel({
                               onContextMenu={(e) => handleAttachmentContextMenu(e, att)}
                             >
                               {status === 'uploading' || status === 'syncing' ? (
-                                <RefreshCw className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0 animate-spin" />
+                                <RefreshCw className="w-4 h-4 text-theme-400 dark:text-theme-500 shrink-0 animate-spin" />
                               ) : status === 'failed' ? (
-                                <AlertCircle className="w-4 h-4 text-red-400 dark:text-red-500 flex-shrink-0" />
+                                <AlertCircle className="w-4 h-4 text-red-400 dark:text-red-500 shrink-0" />
                               ) : (
-                                <File className="w-4 h-4 text-theme-400 dark:text-theme-500 flex-shrink-0" />
+                                <File className="w-4 h-4 text-theme-400 dark:text-theme-500 shrink-0" />
                               )}
                               <span className="text-sm text-theme-700 dark:text-theme-300 truncate">
                                 {att.originalFilename}
@@ -1513,7 +1569,7 @@ function TaskDetailPanel({
                         <span className="flex-1 text-theme-700 dark:text-theme-300 truncate">{note.title}</span>
                         {linkItem && (
                           <button
-                            className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-theme-400 flex-shrink-0"
+                            className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-theme-400 shrink-0"
                             onClick={() => handleUnlinkItem(linkItem.id)}
                             type="button"
                           >
@@ -1613,9 +1669,9 @@ function TaskDetailPanel({
                           </button>
                         )}
                         {media.cover ? (
-                          <img alt={media.title} className="w-14 aspect-[2/3] object-cover" src={media.cover} />
+                          <img alt={media.title} className="w-14 aspect-2/3 object-cover" src={media.cover} />
                         ) : (
-                          <div className="w-14 aspect-[2/3] bg-theme-200 dark:bg-theme-700 flex items-center justify-center text-theme-400 dark:text-theme-500">
+                          <div className="w-14 aspect-2/3 bg-theme-200 dark:bg-theme-700 flex items-center justify-center text-theme-400 dark:text-theme-500">
                             <BookOpen className="w-5 h-5" />
                           </div>
                         )}
@@ -1652,7 +1708,7 @@ function TaskDetailPanel({
             }}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 py-1 min-w-[160px]"
+            className="fixed z-50 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 py-1 min-w-40"
             ref={attachContextMenuRef}
             style={{
               left: attachContextMenu.x,
@@ -1737,7 +1793,7 @@ function TaskRow({
       const circumference = 2 * Math.PI * r
       const offset = circumference - (percent / 100) * circumference
       return (
-        <svg className="flex-shrink-0" height="18" width="18">
+        <svg className="shrink-0" height="18" width="18">
           <title>progress circle</title>
           <circle
             className="text-theme-200 dark:text-theme-600"
@@ -1771,7 +1827,7 @@ function TaskRow({
         cy = 9
       if (percent >= 100) {
         return (
-          <svg className="flex-shrink-0" height="18" width="18">
+          <svg className="shrink-0" height="18" width="18">
             <title>progress pie</title>
             <circle cx={cx} cy={cy} fill="var(--theme-color)" r={r} />
           </svg>
@@ -1779,7 +1835,7 @@ function TaskRow({
       }
       if (percent <= 0) {
         return (
-          <svg className="flex-shrink-0" height="18" width="18">
+          <svg className="shrink-0" height="18" width="18">
             <title>progress bar</title>
             <circle
               className="text-theme-200 dark:text-theme-600"
@@ -1800,7 +1856,7 @@ function TaskRow({
       const largeArc = angle > 180 ? 1 : 0
       const pathD = `M${cx},${cy} L${cx},${cy - r} A${r},${r} 0 ${largeArc},1 ${endX},${endY} Z`
       return (
-        <svg className="flex-shrink-0" height="18" width="18">
+        <svg className="shrink-0" height="18" width="18">
           <title>progress empty</title>
           <circle
             className="text-theme-200 dark:text-theme-600"
@@ -1843,7 +1899,7 @@ function TaskRow({
     >
       <CheckNow
         checked={task.isCompleted}
-        className="flex-shrink-0"
+        className="shrink-0"
         color1={listColor || 'var(--theme-color)'}
         color2={task.priority > 0 ? PRIORITY_COLORS[task.priority] : undefined}
         hasSteps={!!(rowProgress && rowProgress.total > 0)}
@@ -1861,7 +1917,7 @@ function TaskRow({
       </span>
       {/* Step progress badge */}
       <div
-        className="flex items-center gap-1 flex-shrink-0"
+        className="flex items-center gap-1 shrink-0"
         title={`${rowProgress?.completed ?? 0}/${rowProgress?.total ?? 0}`}
       >
         {renderProgress()}
@@ -1878,7 +1934,9 @@ function TaskRow({
           const unit = t('dashboard.days_left')
           const label = diffDays === 0 ? t('tasks.today') : isOverdue ? `-${absDays}${unit}` : `+${absDays}${unit}`
           return (
-            <span className={`text-xs font-medium flex-shrink-0 ${isOverdue ? 'text-red-500 dark:text-red-500' : 'text-green-500 dark:text-green-500'}`}>
+            <span
+              className={`text-xs font-medium shrink-0 ${isOverdue ? 'text-red-500 dark:text-red-500' : 'text-green-500 dark:text-green-500'}`}
+            >
               {label}
             </span>
           )
@@ -1901,11 +1959,14 @@ export default function TasksPage() {
     setTaskGroupBy,
     groupsPanelWidth,
     detailPanelWidth,
+    priorityMode,
     setGroupsPanelWidth,
     setDetailPanelWidth,
   } = useAppStore()
+  const priorityOptions = useMemo(() => getPriorityOptions(priorityMode, t), [priorityMode, t])
   const saveListSettings = useSaveListSettings()
   const isLoadingSettings = useRef(false)
+  const currentListSettingsRef = useRef<ListSettings | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
@@ -1957,11 +2018,14 @@ export default function TasksPage() {
       getListSettings(selectedListId)
         .then((settings) => {
           console.log('list', settings)
+          currentListSettingsRef.current = settings ?? null
           if (settings) {
-            setTaskSortBy(settings.sortBy)
-            setTaskSortOrder(settings.sortOrder)
-            setTaskGroupBy(settings.groupBy)
-            setFilterStatus(settings.filterStatus)
+            const status = settings.filterStatus
+            const statusViewSettings = getStatusViewSettings(settings, status)
+            setTaskSortBy(statusViewSettings.sortBy)
+            setTaskSortOrder(statusViewSettings.sortOrder)
+            setTaskGroupBy(statusViewSettings.groupBy)
+            setFilterStatus(status)
             setViewMode(settings.viewMode)
           }
           // Use setTimeout to ensure stores have been updated before we allow saving
@@ -1981,14 +2045,34 @@ export default function TasksPage() {
       if (isLoadingSettings.current || !selectedListId) {
         return
       }
+      const previous = currentListSettingsRef.current
+      const status = overrides?.filterStatus ?? filterStatus
+      const previousStatusSettings = previous?.statusSettings ?? {}
+      const statusSettings: ListSettings['statusSettings'] = {
+        ...previousStatusSettings,
+        all:
+          previousStatusSettings.all ??
+          (previous
+            ? { groupBy: previous.groupBy, sortBy: previous.sortBy, sortOrder: previous.sortOrder }
+            : DEFAULT_STATUS_VIEW_SETTINGS.all),
+      }
+      const previousCurrentStatus = getStatusViewSettings(previous, status)
+      const currentStatusSettings: TaskStatusViewSettings = {
+        groupBy: overrides?.groupBy ?? (status === filterStatus ? taskGroupBy : previousCurrentStatus.groupBy),
+        sortBy: overrides?.sortBy ?? (status === filterStatus ? taskSortBy : previousCurrentStatus.sortBy),
+        sortOrder: overrides?.sortOrder ?? (status === filterStatus ? taskSortOrder : previousCurrentStatus.sortOrder),
+      }
+      statusSettings[status] = currentStatusSettings
       const current: ListSettings = {
         filterStatus: overrides?.filterStatus ?? filterStatus,
-        groupBy: overrides?.groupBy ?? taskGroupBy,
+        groupBy: currentStatusSettings.groupBy,
         listId: selectedListId,
-        sortBy: overrides?.sortBy ?? taskSortBy,
-        sortOrder: overrides?.sortOrder ?? taskSortOrder,
+        sortBy: currentStatusSettings.sortBy,
+        sortOrder: currentStatusSettings.sortOrder,
+        statusSettings,
         viewMode: overrides?.viewMode ?? viewMode,
       }
+      currentListSettingsRef.current = current
       saveListSettings.mutate(current)
     },
     [selectedListId, taskSortBy, taskSortOrder, taskGroupBy, filterStatus, viewMode, saveListSettings],
@@ -2005,10 +2089,19 @@ export default function TasksPage() {
 
   const handleSetFilterStatus = useCallback(
     (status: TaskStatus3) => {
+      const statusViewSettings = getStatusViewSettings(currentListSettingsRef.current, status)
+      setTaskSortBy(statusViewSettings.sortBy)
+      setTaskSortOrder(statusViewSettings.sortOrder)
+      setTaskGroupBy(statusViewSettings.groupBy)
       setFilterStatus(status)
-      persistSettings({ filterStatus: status })
+      persistSettings({
+        filterStatus: status,
+        groupBy: statusViewSettings.groupBy,
+        sortBy: statusViewSettings.sortBy,
+        sortOrder: statusViewSettings.sortOrder,
+      })
     },
-    [setFilterStatus, persistSettings],
+    [setFilterStatus, setTaskGroupBy, setTaskSortBy, setTaskSortOrder, persistSettings],
   )
 
   const handleSetTaskGroupBy = useCallback(
@@ -2018,6 +2111,13 @@ export default function TasksPage() {
     },
     [setTaskGroupBy, persistSettings],
   )
+  const isTaskGroupGroupingDisabled = !selectedListId || selectedListId === 'inbox'
+
+  useEffect(() => {
+    if (isTaskGroupGroupingDisabled && taskGroupBy === 'list') {
+      handleSetTaskGroupBy('none')
+    }
+  }, [handleSetTaskGroupBy, isTaskGroupGroupingDisabled, taskGroupBy])
 
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -2025,6 +2125,7 @@ export default function TasksPage() {
   const [selectedSubtaskId, setSelectedSubtaskId] = useState<string | null>(null)
   const [listsExpanded, setListsExpanded] = useState(true)
   const [advListsExpanded, setAdvListsExpanded] = useState(true)
+  const [collapsedTaskGroups, setCollapsedTaskGroups] = useState<Record<string, boolean>>({})
   const [editingAdvGroup, setEditingAdvGroup] = useState<AdvancedGroup | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -2185,13 +2286,18 @@ export default function TasksPage() {
   const selectedTask = useMemo(() => tasks.find((task) => task.id === selectedTaskId) || null, [tasks, selectedTaskId])
 
   // Advanced group matching
-  const {
-    advancedGroups,
-    addAdvancedGroup,
-    updateAdvancedGroup,
-    deleteAdvancedGroup,
-  } = useAppStore()
+  const { advancedGroups, addAdvancedGroup, updateAdvancedGroup, deleteAdvancedGroup } = useAppStore()
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const unlisten = listen('tags:changed', () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] })
+    })
+
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [queryClient])
 
   // Listen for dialog results from WebviewWindow
   useEffect(() => {
@@ -2405,17 +2511,8 @@ export default function TasksPage() {
   )
 
   // Sort tasks
-  const filteredTasks = useMemo(() => {
+  const sortedTasks = useMemo(() => {
     const sorted = [...filteredTasksBase].sort((a, b) => {
-      if (filterStatus === 'completed') {
-        const aCompletedAt = a.completedAt || a.updatedAt || a.createdAt
-        const bCompletedAt = b.completedAt || b.updatedAt || b.createdAt
-        if (aCompletedAt !== bCompletedAt) {
-          return bCompletedAt.localeCompare(aCompletedAt)
-        }
-        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
-      }
-
       let aVal: number | string, bVal: number | string
       switch (taskSortBy) {
         case 'sortOrder':
@@ -2438,6 +2535,10 @@ export default function TasksPage() {
           aVal = a.createdAt
           bVal = b.createdAt
           break
+        case 'completedAt':
+          aVal = a.completedAt || ''
+          bVal = b.completedAt || ''
+          break
       }
       if (aVal < bVal) {
         return taskSortOrder === 'asc' ? -1 : 1
@@ -2449,34 +2550,84 @@ export default function TasksPage() {
       return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
     })
 
-    // Group tasks
-    if (taskGroupBy === 'priority') {
-      const groups: Record<number, typeof sorted> = {}
-      sorted.forEach((task) => {
-        const priority = task.priority || 0
-        if (!groups[priority]) {
-          groups[priority] = []
-        }
-        groups[priority].push(task)
-      })
-      return Object.entries(groups)
-        .sort(([a], [b]) => Number(b) - Number(a))
-        .flatMap(([, groupTasks]) => groupTasks)
-    }
-    if (taskGroupBy === 'list') {
-      const groups: Record<string, typeof sorted> = {}
-      sorted.forEach((task) => {
-        const listId = task.listId || 'inbox'
-        if (!groups[listId]) {
-          groups[listId] = []
-        }
-        groups[listId].push(task)
-      })
-      return Object.values(groups).flat()
+    return sorted
+  }, [filteredTasksBase, taskSortBy, taskSortOrder])
+
+  const taskGroups = useMemo(() => {
+    if (taskGroupBy === 'none') {
+      return [{ id: 'all', tasks: sortedTasks, title: '' }]
     }
 
-    return sorted
-  }, [filteredTasksBase, filterStatus, taskSortBy, taskSortOrder, taskGroupBy])
+    if (taskGroupBy === 'priority') {
+      const groups = new Map<number, Task[]>()
+      sortedTasks.forEach((task) => {
+        const priority = task.priority || 0
+        groups.set(priority, [...(groups.get(priority) || []), task])
+      })
+      return [...groups.entries()]
+        .sort(([a], [b]) => b - a)
+        .map(([priority, tasks]) => ({
+          id: `priority:${priority}`,
+          tasks,
+          title:
+            priorityOptions.find((option) => option.value === priority)?.label ||
+            `${t('tasks.priority.label')} ${priority}`,
+        }))
+    }
+
+    if (taskGroupBy === 'time') {
+      const today = getLocalToday()
+      const future7 = new Date(`${today}T00:00:00`)
+      future7.setDate(future7.getDate() + 7)
+      const future7Str = `${future7.getFullYear()}-${String(future7.getMonth() + 1).padStart(2, '0')}-${String(
+        future7.getDate(),
+      ).padStart(2, '0')}`
+      const groups = [
+        { id: 'time:today', tasks: [] as Task[], title: t('tasks.group_time.today') },
+        { id: 'time:future7', tasks: [] as Task[], title: t('tasks.group_time.future7') },
+        { id: 'time:later', tasks: [] as Task[], title: t('tasks.group_time.later') },
+        { id: 'time:overdue', tasks: [] as Task[], title: t('tasks.group_time.overdue') },
+      ]
+      const groupById = new Map(groups.map((group) => [group.id, group]))
+
+      sortedTasks.forEach((task) => {
+        const rangeIncludesToday =
+          !!task.startDate && !!task.endDate && task.startDate <= today && task.endDate >= today
+        const date = task.dueDate || task.startDate || ''
+        const groupId = rangeIncludesToday
+          ? 'time:today'
+          : task.endDate && task.endDate < today
+            ? 'time:overdue'
+            : task.dueDate && task.dueDate < today
+              ? 'time:overdue'
+              : date === today
+                ? 'time:today'
+                : date && date <= future7Str
+                  ? 'time:future7'
+                  : 'time:later'
+        groupById.get(groupId)?.tasks.push(task)
+      })
+
+      return groups.filter((group) => group.tasks.length > 0)
+    }
+
+    if (taskGroupBy === 'list') {
+      const groups = new Map<string, Task[]>()
+      sortedTasks.forEach((task) => {
+        const listId = task.listId || 'inbox'
+        groups.set(listId, [...(groups.get(listId) || []), task])
+      })
+      return [...groups.entries()].map(([listId, tasks]) => ({
+        id: `list:${listId}`,
+        tasks,
+        title: listId === 'inbox' ? t('lists.inbox') : allLists.find((list) => list.id === listId)?.name || listId,
+      }))
+    }
+
+    return [{ id: 'all', tasks: sortedTasks, title: '' }]
+  }, [allLists, priorityOptions, sortedTasks, taskGroupBy, t])
+
+  const filteredTasks = useMemo(() => taskGroups.flatMap((group) => group.tasks), [taskGroups])
 
   // Load subtasks for all visible tasks and flatten
   const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks])
@@ -2485,8 +2636,7 @@ export default function TasksPage() {
 
   // Build flattened list: task followed by its subtasks
   type FlatItem = { type: 'task'; task: Task } | { type: 'subtask'; subtask: Task; parentTask: Task }
-  const flatItems = useMemo<FlatItem[]>(() => {
-    const items: FlatItem[] = []
+  const flatItemGroups = useMemo(() => {
     // allSubtasks are direct children of filteredTasks (parent_task_id = task.id)
     const subtasksByTask = new Map<string, Task[]>()
     allSubtasks.forEach((s) => {
@@ -2496,21 +2646,26 @@ export default function TasksPage() {
         subtasksByTask.set(s.parentTaskId, list)
       }
     })
-    filteredTasks.forEach((task) => {
-      items.push({ task, type: 'task' })
-      const subs = subtasksByTask.get(task.id) || []
-      subs.sort((a, b) => a.sortOrder - b.sortOrder)
-      const filteredSubs = filterStatus === 'active'
-        ? subs.filter((s) => !s.isCompleted)
-        : filterStatus === 'completed'
-          ? subs.filter((s) => s.isCompleted)
-          : subs
-      filteredSubs.forEach((sub) => {
-        items.push({ parentTask: task, subtask: sub, type: 'subtask' })
+
+    return taskGroups.map((group) => {
+      const items: FlatItem[] = []
+      group.tasks.forEach((task) => {
+        items.push({ task, type: 'task' })
+        const subs = subtasksByTask.get(task.id) || []
+        subs.sort((a, b) => a.sortOrder - b.sortOrder)
+        const filteredSubs =
+          filterStatus === 'active'
+            ? subs.filter((s) => !s.isCompleted)
+            : filterStatus === 'completed'
+              ? subs.filter((s) => s.isCompleted)
+              : subs
+        filteredSubs.forEach((sub) => {
+          items.push({ parentTask: task, subtask: sub, type: 'subtask' })
+        })
       })
+      return { ...group, items }
     })
-    return items
-  }, [filteredTasks, allSubtasks, filterStatus])
+  }, [taskGroups, allSubtasks, filterStatus])
 
   const handleAttachmentClick = async () => {
     const { open } = await import('@tauri-apps/plugin-dialog')
@@ -2762,7 +2917,7 @@ export default function TasksPage() {
   )
 
   const handleUpdateTaskField = useCallback(
-    // biome-lint-ignore: noExplictAny
+    // biome-ignore lint:noExplicitAny
     (params: any) => {
       const targetId = selectedSubtaskId || selectedTask?.id
       if (targetId) {
@@ -2773,6 +2928,7 @@ export default function TasksPage() {
   )
 
   const handleUpdateTaskInline = useCallback(
+    // biome-ignore lint:noExplicitAny
     (id: string, params: any) => {
       updateTask.mutate({ id, ...params })
     },
@@ -3063,7 +3219,7 @@ export default function TasksPage() {
       >
         {/* Pinned items - icon only */}
         {(pinnedLists.length > 0 || pinnedAdvGroups.length > 0) && (
-          <div className="px-2 pt-2 pb-1">
+          <div className="w-full px-2 pt-2 pb-1" data-tauri-drag-region>
             <div className="flex flex-wrap gap-1">
               {pinnedLists.map((list) => {
                 const isActive = selectedListId === list.id
@@ -3140,7 +3296,7 @@ export default function TasksPage() {
           </div>
 
           {/* Separator line */}
-          <hr className="mt-2 border-theme-200 dark:border-theme-800"/>
+          <hr className="mt-2 border-theme-200 dark:border-theme-800" />
         </div>
 
         {/* Advanced groups */}
@@ -3153,7 +3309,7 @@ export default function TasksPage() {
               type="button"
             >
               {advListsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              <p className='visible'>{t('advanced_groups.title')}</p>
+              <p className="visible">{t('advanced_groups.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
               <button
@@ -3217,7 +3373,7 @@ export default function TasksPage() {
                         style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                         type="button"
                       >
-                        <span className="flex-shrink-0 text-sm">{resolveIcon(group.icon)}</span>
+                        <span className="shrink-0 text-sm">{resolveIcon(group.icon)}</span>
                         <span className="flex-1 truncate">{group.name}</span>
                         {count > 0 && (
                           <span className="text-xs text-theme-400 dark:text-theme-500 group-hover/item:hidden">
@@ -3248,7 +3404,7 @@ export default function TasksPage() {
               type="button"
             >
               {listsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              <p className='visible'>{t('lists.title')}</p>
+              <p className="visible">{t('lists.title')}</p>
             </button>
             <div className="flex items-center gap-0.5">
               <button
@@ -3282,7 +3438,7 @@ export default function TasksPage() {
                       style={isActive ? { color: 'var(--theme-text-700)' } : {}}
                       type="button"
                     >
-                      <span className="flex-shrink-0 text-sm">{resolveIcon(list.icon)}</span>
+                      <span className="shrink-0 text-sm">{resolveIcon(list.icon)}</span>
                       <span className="flex-1 truncate">{list.name}</span>
                       {count > 0 && (
                         <span className="text-xs text-theme-400 dark:text-theme-500 group-hover/item:hidden">
@@ -3309,7 +3465,7 @@ export default function TasksPage() {
 
       {/* Task List Panel */}
       <div
-        className={`flex flex-col overflow-hidden ${viewMode === 'list' ? 'min-w-[300px] max-w-[400px]' : 'flex-1 min-w-0'}`}
+        className={`flex flex-col overflow-hidden ${viewMode === 'list' ? 'min-w-75 max-w-100' : 'flex-1 min-w-0'}`}
         style={{ backgroundColor: 'var(--theme-bg-2)', ...(viewMode === 'list' ? { width: detailPanelWidth } : {}) }}
       >
         {/* Header */}
@@ -3416,7 +3572,10 @@ export default function TasksPage() {
                       <div className="text-xs font-semibold text-theme-500 dark:text-theme-400 uppercase tracking-wider mb-1.5 block">
                         {t('tasks.settings_group')}
                       </div>
-                      <TaskGroupControls onChange={(groupBy) => handleSetTaskGroupBy(groupBy)} />
+                      <TaskGroupControls
+                        disableTaskGroup={isTaskGroupGroupingDisabled}
+                        onChange={(groupBy) => handleSetTaskGroupBy(groupBy)}
+                      />
                     </div>
                   </div>
                 )}
@@ -3481,24 +3640,37 @@ export default function TasksPage() {
                       <Flag className="w-4 h-4" />
                     </button>
                     {showPriorityPicker && (
-                      <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 p-1.5 flex gap-1 z-50">
-                        {[0, 1, 2, 3].map((p) => (
-                          <button
-                            className={`px-2 py-1 rounded text-xs transition-colors ${
-                              newTaskPriority === p
-                                ? 'bg-theme-500 text-white'
-                                : 'hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-600 dark:text-theme-400'
-                            }`}
-                            key={p}
-                            onClick={() => {
-                              setNewTaskPriority(p as Priority)
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 z-50">
+                        {priorityMode === 'OxygenNotIncluded' ? (
+                          <OxygenNotIncludedPriorityPicker
+                            onSelect={(priority) => {
+                              setNewTaskPriority(priority)
                               setShowPriorityPicker(false)
                             }}
-                            type="button"
-                          >
-                            {t(`tasks.priority.${['none', 'low', 'medium', 'high'][p]}`)}
-                          </button>
-                        ))}
+                            options={priorityOptions}
+                            selectedPriority={newTaskPriority}
+                          />
+                        ) : (
+                          <div className="p-1.5 flex gap-1">
+                            {priorityOptions.map((p) => (
+                              <button
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                  newTaskPriority === p.value
+                                    ? 'bg-theme-500 text-white'
+                                    : 'hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-600 dark:text-theme-400'
+                                }`}
+                                key={p.value}
+                                onClick={() => {
+                                  setNewTaskPriority(p.value)
+                                  setShowPriorityPicker(false)
+                                }}
+                                type="button"
+                              >
+                                {p.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -3598,13 +3770,14 @@ export default function TasksPage() {
                     >
                       <ClipboardList className="w-4 h-4" />
                     </button>
-                    {showTemplatePicker && allTemplates.length > 0 &&
+                    {showTemplatePicker &&
+                      allTemplates.length > 0 &&
                       createPortal(
                         <div
-                          className="bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 py-1 min-w-[180px] max-h-[120px] overflow-y-auto"
+                          className="bg-white dark:bg-theme-800 rounded-lg shadow-lg border border-theme-200 dark:border-theme-700 py-1 min-w-45 max-h-30 overflow-y-auto"
                           style={{
-                            position: 'fixed',
                             left: templateButtonRef.current?.getBoundingClientRect().left ?? 0,
+                            position: 'fixed',
                             top: (templateButtonRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
                             zIndex: 99999,
                           }}
@@ -3616,10 +3789,7 @@ export default function TasksPage() {
                               onClick={() => {
                                 createTask.mutate(
                                   {
-                                    title: template.title || template.name,
                                     description: template.description || undefined,
-                                    tagIds: template.tagIds || undefined,
-                                    priority: 0,
                                     dueDate: newTaskDueDate || undefined,
                                     dueTime: newTaskDueTime || undefined,
                                     listId:
@@ -3628,6 +3798,9 @@ export default function TasksPage() {
                                       !selectedListId.startsWith('adv:')
                                         ? selectedListId
                                         : undefined,
+                                    priority: 0,
+                                    tagIds: template.tagIds || undefined,
+                                    title: template.title || template.name,
                                   },
                                   {
                                     onSuccess: (newTask) => {
@@ -3636,8 +3809,8 @@ export default function TasksPage() {
                                           try {
                                             const stepDescriptions: string[] = JSON.parse(template.steps)
                                             for (const desc of stepDescriptions) {
-                                              if (desc && desc.trim()) {
-                                                createStep.mutate({ taskId: newTask.id, description: desc })
+                                              if (desc?.trim()) {
+                                                createStep.mutate({ description: desc, taskId: newTask.id })
                                               }
                                             }
                                           } catch {}
@@ -3697,56 +3870,80 @@ export default function TasksPage() {
               </div>
             ) : (
               <div className="space-y-1">
-                {flatItems.map((item) => {
-                  const isSubtask = item.type === 'subtask'
-                  const displayTask = isSubtask
-                    ? {
-                        ...item.subtask,
-                        createdAt: item.subtask.createdAt || '',
-                        description: '',
-                        groupBy: 'none' as const,
-                        priority: 0 as Priority,
-                        sortBy: 'sortOrder' as const,
-                        sortOrder: item.subtask.sortOrder,
-                        updatedAt: item.subtask.updatedAt || '',
-                      }
-                    : item.task
+                {flatItemGroups.map((group) => {
+                  const isCollapsed = collapsedTaskGroups[group.id] ?? false
 
                   return (
-                    <TaskRow
-                      isSelected={
-                        isSubtask
-                          ? selectedSubtaskId === displayTask.id
-                          : selectedTaskId === displayTask.id && !selectedSubtaskId
-                      }
-                      key={displayTask.id}
-                      onContextMenu={(e) => {
-                        setTaskContextMenu({ taskId: displayTask.id, x: e.clientX, y: e.clientY })
-                        setTaskMenuPanel(null)
-                      }}
-                      onSelect={() => {
-                        if (isSubtask) {
-                          setSelectedTaskId(item.parentTask.id)
-                          setSelectedSubtaskId(item.subtask.id)
-                        } else {
-                          setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id)
-                          setSelectedSubtaskId(null)
-                        }
-                      }}
-                      onToggle={() => {
-                        if (isSubtask) {
-                          updateSubtask.mutate({
-                            id: item.subtask.id,
-                            isCompleted: !item.subtask.isCompleted,
-                            taskId: item.parentTask.id,
-                          })
-                        } else {
-                          handleToggleTask(item.task.id, item.task.isCompleted)
-                        }
-                      }}
-                      progressStyle="circle"
-                      task={displayTask as Task}
-                    />
+                    <div className="space-y-1" key={group.id}>
+                      {taskGroupBy !== 'none' && (
+                        <button
+                          className="sticky top-0 z-10 flex w-full items-center gap-1.5 rounded-md bg-theme-50/95 px-2 py-1 text-left text-xs font-medium text-theme-500 transition-colors hover:bg-theme-100 dark:bg-theme-900/80 dark:text-theme-400 dark:hover:bg-theme-800"
+                          onClick={() =>
+                            setCollapsedTaskGroups((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? false) }))
+                          }
+                          type="button"
+                        >
+                          {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          <span className="min-w-0 flex-1 truncate">{group.title}</span>
+                          <span className="shrink-0 text-[11px] text-theme-400 dark:text-theme-500">
+                            {group.tasks.length}
+                          </span>
+                        </button>
+                      )}
+                      {!isCollapsed &&
+                        group.items.map((item) => {
+                          const isSubtask = item.type === 'subtask'
+                          const displayTask = isSubtask
+                            ? {
+                                ...item.subtask,
+                                createdAt: item.subtask.createdAt || '',
+                                description: '',
+                                groupBy: 'none' as const,
+                                priority: 0 as Priority,
+                                sortBy: 'sortOrder' as const,
+                                sortOrder: item.subtask.sortOrder,
+                                updatedAt: item.subtask.updatedAt || '',
+                              }
+                            : item.task
+
+                          return (
+                            <TaskRow
+                              isSelected={
+                                isSubtask
+                                  ? selectedSubtaskId === displayTask.id
+                                  : selectedTaskId === displayTask.id && !selectedSubtaskId
+                              }
+                              key={displayTask.id}
+                              onContextMenu={(e) => {
+                                setTaskContextMenu({ taskId: displayTask.id, x: e.clientX, y: e.clientY })
+                                setTaskMenuPanel(null)
+                              }}
+                              onSelect={() => {
+                                if (isSubtask) {
+                                  setSelectedTaskId(item.parentTask.id)
+                                  setSelectedSubtaskId(item.subtask.id)
+                                } else {
+                                  setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id)
+                                  setSelectedSubtaskId(null)
+                                }
+                              }}
+                              onToggle={() => {
+                                if (isSubtask) {
+                                  updateSubtask.mutate({
+                                    id: item.subtask.id,
+                                    isCompleted: !item.subtask.isCompleted,
+                                    taskId: item.parentTask.id,
+                                  })
+                                } else {
+                                  handleToggleTask(item.task.id, item.task.isCompleted)
+                                }
+                              }}
+                              progressStyle="circle"
+                              task={displayTask as Task}
+                            />
+                          )
+                        })}
+                    </div>
                   )
                 })}
               </div>
@@ -3814,7 +4011,7 @@ export default function TasksPage() {
             }}
           />
           <div
-            className="fixed z-50 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 py-1 min-w-[160px]"
+            className="fixed z-50 bg-white dark:bg-theme-800 rounded-lg shadow-xl border border-theme-200 dark:border-theme-700 py-1 min-w-40"
             ref={contextMenuRef}
             style={{
               left: contextMenu.x,
@@ -3924,7 +4121,7 @@ export default function TasksPage() {
             }}
           >
             {/* Main menu */}
-            <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-300 dark:border-theme-600 py-1 min-w-[180px]">
+            <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-300 dark:border-theme-600 py-1 min-w-45">
               {/* 1. 今天 */}
               {todayAtomTag &&
                 (() => {
@@ -4110,9 +4307,9 @@ export default function TasksPage() {
                       createTemplate.mutate({
                         description: task.description || undefined,
                         name: task.title,
-                        title: task.title,
                         steps: stepsJson,
                         tagIds: task.tagIds || undefined,
+                        title: task.title,
                       })
                     }
                   }
@@ -4147,37 +4344,45 @@ export default function TasksPage() {
 
                 // Priority panel
                 if (taskMenuPanel === 'priority') {
-                  const priorities = [
-                    { color: '#9CA3AF', label: t('tasks.priority.none'), value: 0 },
-                    { color: '#3B82F6', label: t('tasks.priority.low'), value: 3 },
-                    { color: '#F59E0B', label: t('tasks.priority.medium'), value: 6 },
-                    { color: '#EF4444', label: t('tasks.priority.high'), value: 9 },
-                  ]
                   return (
-                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[180px] ml-0.5">
-                      {priorities.map((p) => (
-                        <button
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                            currentTask?.priority === p.value
-                              ? 'bg-theme-100 dark:bg-theme-700 font-medium'
-                              : 'text-theme-700 dark:text-theme-300 hover:bg-theme-50 dark:hover:bg-theme-700'
-                          }`}
-                          key={p.value}
-                          onClick={() => {
-                            updateTask.mutate({ id: taskContextMenu.taskId, priority: p.value })
+                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 max-h-80 overflow-y-auto ml-0.5">
+                      {priorityMode === 'OxygenNotIncluded' ? (
+                        <OxygenNotIncludedPriorityPicker
+                          onSelect={(priority) => {
+                            updateTask.mutate({ id: taskContextMenu.taskId, priority })
                             setTaskContextMenu(null)
                             setTaskMenuPanel(null)
                           }}
-                          type="button"
-                        >
-                          <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: p.color }}
-                          />
-                          {p.label}
-                          {currentTask?.priority === p.value && <span className="ml-auto text-xs">✓</span>}
-                        </button>
-                      ))}
+                          options={priorityOptions}
+                          selectedPriority={currentTask?.priority}
+                        />
+                      ) : (
+                        <div className="w-45">
+                          {priorityOptions.map((p) => (
+                            <button
+                              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                                currentTask?.priority === p.value
+                                  ? 'bg-theme-100 dark:bg-theme-700 font-medium'
+                                  : 'text-theme-700 dark:text-theme-300 hover:bg-theme-50 dark:hover:bg-theme-700'
+                              }`}
+                              key={p.value}
+                              onClick={() => {
+                                updateTask.mutate({ id: taskContextMenu.taskId, priority: p.value })
+                                setTaskContextMenu(null)
+                                setTaskMenuPanel(null)
+                              }}
+                              type="button"
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: p.color.bg }}
+                              />
+                              {p.label}
+                              {currentTask?.priority === p.value && <span className="ml-auto text-xs">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 }
@@ -4192,7 +4397,7 @@ export default function TasksPage() {
                     { color: '#6B7280', key: 'closed' },
                   ]
                   return (
-                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[180px] ml-0.5">
+                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-45 ml-0.5">
                       {statuses.map((s) => (
                         <button
                           className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
@@ -4208,10 +4413,7 @@ export default function TasksPage() {
                           }}
                           type="button"
                         >
-                          <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: s.color }}
-                          />
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
                           {t(`tasks.status.${s.key}`)}
                           {(currentTask?.status || 'pending') === s.key && <span className="ml-auto text-xs">✓</span>}
                         </button>
@@ -4223,13 +4425,12 @@ export default function TasksPage() {
                 // List panel
                 if (taskMenuPanel === 'list') {
                   const lists = allLists.filter(
-                    (l) =>
-                      !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent', 'eisenhower'].includes(l.id),
+                    (l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent'].includes(l.id),
                   )
                   const q = taskPanelSearch.toLowerCase().trim()
                   const filteredLists = q ? lists.filter((l) => l.name.toLowerCase().includes(q)) : lists
                   return (
-                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[220px] ml-0.5">
+                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-55 ml-0.5">
                       <div className="px-2 pb-1">
                         <div className="relative">
                           <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
@@ -4242,7 +4443,7 @@ export default function TasksPage() {
                           />
                         </div>
                       </div>
-                      <div className="max-h-[300px] overflow-auto">
+                      <div className="max-h-75 overflow-auto">
                         <button
                           className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                             !currentTask?.listId
@@ -4276,11 +4477,11 @@ export default function TasksPage() {
                             type="button"
                           >
                             <span
-                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: l.color || '#3B82F6' }}
                             />
                             <span className="truncate">{l.name}</span>
-                            {currentTask?.listId === l.id && <span className="ml-auto text-xs flex-shrink-0">✓</span>}
+                            {currentTask?.listId === l.id && <span className="ml-auto text-xs shrink-0">✓</span>}
                           </button>
                         ))}
                       </div>
@@ -4296,7 +4497,7 @@ export default function TasksPage() {
                   : incompleteTasks
 
                 return (
-                  <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-[220px] ml-0.5">
+                  <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-55 ml-0.5">
                     <div className="px-2 pb-1">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-theme-400" />
@@ -4309,7 +4510,7 @@ export default function TasksPage() {
                         />
                       </div>
                     </div>
-                    <div className="max-h-[300px] overflow-auto">
+                    <div className="max-h-75 overflow-auto">
                       {filtered.length === 0 ? (
                         <div className="px-3 py-2 text-sm text-theme-400">{t('tasks.context.no_candidates')}</div>
                       ) : (
@@ -4338,7 +4539,7 @@ export default function TasksPage() {
                               type="button"
                             >
                               <span className="truncate">{tk.title}</span>
-                              {isLinked && <span className="ml-auto text-xs flex-shrink-0 text-theme-500">✓</span>}
+                              {isLinked && <span className="ml-auto text-xs shrink-0 text-theme-500">✓</span>}
                             </button>
                           )
                         })

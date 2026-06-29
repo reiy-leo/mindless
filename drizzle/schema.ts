@@ -134,6 +134,7 @@ export const listSettings = sqliteTable('list_settings', {
   groupBy: text('group_by').notNull().default('none'),
   filterStatus: text('filter_status').notNull().default('all'),
   viewMode: text('view_mode').notNull().default('list'),
+  statusSettings: text('status_settings'),
 });
 
 // Person groups table

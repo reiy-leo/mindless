@@ -81,14 +81,14 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onMouseDown={onClose} />
       <div
         className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
         onKeyDown={handleKeyDown}
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <Search className="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -97,7 +97,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
             placeholder={t('search.placeholder')}
             className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
           />
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button type="button" onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
@@ -120,7 +120,7 @@ export default function GlobalSearchDialog({ isOpen, onClose }: { isOpen: boolea
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
                 >
                   {/* Icon */}
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
                     {result.type === 'task' ? (
                       <div
                         className="w-3 h-3 rounded-full"

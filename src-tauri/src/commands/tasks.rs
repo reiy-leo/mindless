@@ -216,7 +216,7 @@ pub async fn update_task(
     if is_completed.is_some() {
         let completed = is_completed.unwrap();
         if completed {
-            sql.push_str(", is_completed = 1, status = 'completed', completed_at = datetime('now')");
+            sql.push_str(", is_completed = 1, status = 'completed', completed_at = strftime('%Y-%m-%d %H:%M:%f', 'now')");
         } else {
             sql.push_str(", is_completed = 0, status = 'pending', completed_at = NULL");
         }
@@ -327,7 +327,7 @@ pub async fn update_task(
     if status.is_some() {
         let s = status.as_ref().unwrap();
         let is_done = if s == "completed" || s == "closed" { 1 } else { 0 };
-        let completed_at_sql = if is_done == 1 { "datetime('now')" } else { "NULL" };
+        let completed_at_sql = if is_done == 1 { "strftime('%Y-%m-%d %H:%M:%f', 'now')" } else { "NULL" };
         sql.push_str(&format!(", status = ?{}, is_completed = {}, completed_at = {}", param_idx, is_done, completed_at_sql));
         updates.push("status".to_string());
         param_idx += 1;
@@ -546,7 +546,7 @@ pub async fn complete_recurring_task(
         Some(r) if !r.is_empty() => r.clone(),
         _ => {
             conn.execute(
-                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = strftime('%Y-%m-%d %H:%M:%f', 'now'), updated_at = datetime('now') WHERE id = ?1",
                 [&id],
             ).map_err(|e| format!("Failed to complete task: {}", e))?;
             return Ok(None);
@@ -558,7 +558,7 @@ pub async fn complete_recurring_task(
         let today = chrono::Local::now().format("%Y-%m-%d").to_string();
         if today > *end_date {
             conn.execute(
-                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+                "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = strftime('%Y-%m-%d %H:%M:%f', 'now'), updated_at = datetime('now') WHERE id = ?1",
                 [&id],
             ).map_err(|e| format!("Failed to complete task: {}", e))?;
             return Ok(None);
@@ -571,7 +571,7 @@ pub async fn complete_recurring_task(
 
     // Mark current task as complete
     conn.execute(
-        "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+        "UPDATE tasks SET is_completed = 1, status = 'completed', completed_at = strftime('%Y-%m-%d %H:%M:%f', 'now'), updated_at = datetime('now') WHERE id = ?1",
         [&id],
     ).map_err(|e| format!("Failed to complete task: {}", e))?;
 

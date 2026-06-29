@@ -63,18 +63,24 @@
     monospace;
   --crepe-color-selected: hsl(from var(--theme-color) h s 40% / 70%);
   --crepe-color-highlight: hsl(from var(--theme-color) h s 60% / 70%);
+  --crepe-color-placeholder: hsl(from var(--theme-color) h s 30% / 40%);
 
   .dark & {
     --crepe-color-background: inherit;
     --crepe-color-on-background: inherit;
     --crepe-color-selected: hsl(from var(--theme-color) h s 60% / 70%);
     --crepe-color-highlight: hsl(from var(--theme-color) h s 40% / 70%);
+    --crepe-color-placeholder: hsl(from var(--theme-color) h s 80% / 40%);
   }
 
   .ProseMirror {
     caret-color: hsl(from var(--theme-color) h s calc(l - 10));
     caret-shape: bar;
     caret: 5px;
+
+    .crepe-placeholder {
+      color: var(--crepe-color-placeholder);
+    }
 
     a {
       text-decoration-thickness: 2px;

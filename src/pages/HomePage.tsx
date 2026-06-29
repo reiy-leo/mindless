@@ -56,9 +56,7 @@ export default function HomePage() {
   }
 
   return (
-    <div
-      className="flex-1 overflow-auto px-8 py-4 bg-200/20 dark:bg-theme-800/20"
-    >
+    <div data-tauri-drag-region className="flex-1 overflow-auto px-8 py-4 bg-200/20 dark:bg-theme-800/20">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Tasks Heatmap */}
         <div>
@@ -92,7 +90,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 p-3">
                   {watchingMedia.slice(0, 20).map((item) => (
                     <Link key={item.id} to={`/media?itemId=${item.id}`} className="group block">
-                      <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mb-1">
+                      <div className="relative aspect-2/3 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mb-1">
                         {item.cover ? (
                           <img
                             src={item.cover}
@@ -164,7 +162,9 @@ export default function HomePage() {
           {/* Pinned Notes */}
           <section className="w-full">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-theme-700 dark:text-theme-200">{t('dashboard.pinned_notes')}</h2>
+              <h2 className="text-sm font-semibold text-theme-700 dark:text-theme-200">
+                {t('dashboard.pinned_notes')}
+              </h2>
             </div>
             <div className="bg-theme-200/20 dark:bg-theme-900/20 rounded-xl shadow-sm border border-theme-100 dark:border-theme-800 overflow-hidden">
               {pinnedNotes.length === 0 ? (

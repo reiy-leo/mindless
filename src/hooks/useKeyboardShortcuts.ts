@@ -248,6 +248,55 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Cmd+Shift+N: Notes
+      if (e.key.toLowerCase() === 'n' && e.shiftKey) {
+        e.preventDefault();
+        navigate('/notes');
+        return;
+      }
+
+      // Cmd+Shift+F: Attachment management dialog
+      if (e.key.toLowerCase() === 'f' && e.shiftKey) {
+        e.preventDefault();
+        openAttachmentManagementDialog();
+        return;
+      }
+
+      // Cmd+Shift+M: Task template management dialog
+      if (e.key.toLowerCase() === 'm' && e.shiftKey) {
+        e.preventDefault();
+        openTemplateManagementDialog();
+        return;
+      }
+
+      // Cmd+Shift+T: Tasks (changed from Cmd+T)
+      if (e.key === 'T' && e.shiftKey) {
+        e.preventDefault();
+        navigate('/tasks');
+        return;
+      }
+
+      // Cmd+Shift+X: Habits
+      if (e.key.toLowerCase() === 'x' && e.shiftKey) {
+        e.preventDefault();
+        navigate('/habits');
+        return;
+      }
+
+      // Cmd+Shift+D: Countdowns
+      if (e.key.toLowerCase() === 'd' && e.shiftKey) {
+        e.preventDefault();
+        navigate('/countdowns');
+        return;
+      }
+
+      // Cmd+Shift+B: Tags management dialog
+      if (e.key.toLowerCase() === 'b' && e.shiftKey) {
+        e.preventDefault();
+        openTagManagementDialog();
+        return;
+      }
+
       // Cmd+N: New task
       if (e.key === 'n') {
         e.preventDefault();
@@ -262,48 +311,6 @@ export function useKeyboardShortcuts() {
       if (e.key === 'f') {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('mindless:global-search'));
-        return;
-      }
-
-      // Cmd+T: Task template management dialog
-      if (e.key === 't') {
-        e.preventDefault();
-        openTemplateManagementDialog();
-        return;
-      }
-
-      // Cmd+Shift+T: Tasks (changed from Cmd+T)
-      if (e.key === 'T' && e.shiftKey) {
-        e.preventDefault();
-        navigate('/tasks');
-        return;
-      }
-
-      // Cmd+H: Habits
-      if (e.key === 'h') {
-        e.preventDefault();
-        navigate('/habits');
-        return;
-      }
-
-      // Cmd+D: Countdowns
-      if (e.key === 'd') {
-        e.preventDefault();
-        navigate('/countdowns');
-        return;
-      }
-
-      // Cmd+B: Tags management dialog
-      if (e.key === 'b') {
-        e.preventDefault();
-        openTagManagementDialog();
-        return;
-      }
-
-      // Cmd+Shift+B: Attachment management dialog
-      if (e.key === 'B' && e.shiftKey) {
-        e.preventDefault();
-        openAttachmentManagementDialog();
         return;
       }
 

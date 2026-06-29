@@ -36,7 +36,7 @@ import TasksPage from './pages/TasksPage'
 import { ensurePermission, startNotificationService, stopNotificationService } from './services/notificationService'
 import { type DateFormat, type FontSize, type TimeFormat, type TimezoneFormat, useAppStore } from './stores/useAppStore'
 import { useViewStore } from './stores/useViewStore'
-import type { Language, PriorityMode, Theme } from './types'
+import type { Language, Theme } from './types'
 
 const MAIN_ROUTE_PAGES = [
   { component: HomePage, path: '/' },
@@ -242,7 +242,7 @@ function SettingsSync() {
         const map = new Map(entries)
         const dbTheme = map.get('theme') as 'light' | 'dark' | 'system' | undefined
         const dbLang = map.get('language') as 'zh' | 'en' | 'ja' | undefined
-        const dbPriority = map.get('priority_mode') as PriorityMode | undefined
+        const dbPriority = map.get('priority_mode')
         const dbNotif = map.get('notification_enabled')
         const dbWeekStart = map.get('week_start_day')
         const dbTaskSortBy = map.get('task_sort_by') as
@@ -251,9 +251,10 @@ function SettingsSync() {
           | 'startDate'
           | 'priority'
           | 'createdAt'
+          | 'completedAt'
           | undefined
         const dbTaskSortOrder = map.get('task_sort_order') as 'asc' | 'desc' | undefined
-        const dbTaskGroupBy = map.get('task_group_by') as 'none' | 'priority' | 'list' | undefined
+        const dbTaskGroupBy = map.get('task_group_by') as 'none' | 'priority' | 'list' | 'time' | undefined
         const dbFontSize = map.get('font_size') as 'small' | 'default' | 'large' | 'xlarge' | undefined
         const dbThemeColor = map.get('theme_color')
 
@@ -267,8 +268,10 @@ function SettingsSync() {
           setLanguage(dbLang)
           i18n.changeLanguage(dbLang)
         }
-        if (dbPriority && ['Traditional', 'OxygenNotIncluded'].includes(dbPriority)) {
-          setPriorityMode(dbPriority)
+        if (dbPriority === 'Traditional' || dbPriority === 'simple') {
+          setPriorityMode('Traditional')
+        } else if (dbPriority === 'OxygenNotIncluded' || dbPriority === 'detailed') {
+          setPriorityMode('OxygenNotIncluded')
         }
         if (dbNotif !== undefined) {
           setNotificationEnabled(dbNotif === '1')
@@ -309,13 +312,16 @@ function SettingsSync() {
         ) {
           setTimezoneFormat(dbTimezoneFormat as TimezoneFormat)
         }
-        if (dbTaskSortBy && ['sortOrder', 'dueDate', 'startDate', 'priority', 'createdAt'].includes(dbTaskSortBy)) {
+        if (
+          dbTaskSortBy &&
+          ['sortOrder', 'dueDate', 'startDate', 'priority', 'createdAt', 'completedAt'].includes(dbTaskSortBy)
+        ) {
           useAppStore.getState().setTaskSortBy(dbTaskSortBy)
         }
         if (dbTaskSortOrder && ['asc', 'desc'].includes(dbTaskSortOrder)) {
           useAppStore.getState().setTaskSortOrder(dbTaskSortOrder)
         }
-        if (dbTaskGroupBy && ['none', 'priority', 'list'].includes(dbTaskGroupBy)) {
+        if (dbTaskGroupBy && ['none', 'priority', 'list', 'time'].includes(dbTaskGroupBy)) {
           useAppStore.getState().setTaskGroupBy(dbTaskGroupBy)
         }
         if (dbFontSize && ['small', 'default', 'large', 'xlarge'].includes(dbFontSize)) {

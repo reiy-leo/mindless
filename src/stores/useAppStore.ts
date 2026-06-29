@@ -4,9 +4,9 @@ import type { Language, PriorityMode, Theme } from '@/types'
 
 export type ThemeColor = string
 export type SidebarMode = 'icon' | 'text' | 'both'
-type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt'
+type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt' | 'completedAt'
 type SortOrder = 'asc' | 'desc'
-type GroupBy = 'none' | 'priority' | 'list'
+type GroupBy = 'none' | 'priority' | 'list' | 'time'
 export type FontSize = 'small' | 'default' | 'large' | 'xlarge'
 export type TimeFormat = 'cn_natural' | 'cn_24h' | 'cn_12h' | 'en_12h' | '24h'
 export type DateFormat = 'relative' | 'yyyy_slash_mm_dd' | 'yyyy_dash_mm_dd' | 'mm_dd_yyyy' | 'mm_dd'

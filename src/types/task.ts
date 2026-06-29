@@ -3,8 +3,9 @@ import type { Tag } from './tag'
 
 export type Priority = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 export type TaskStatus = 'pending' | 'in_progress' | 'today' | 'completed' | 'closed'
-export type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt'
-export type GroupBy = 'none' | 'priority' | 'list'
+export type TaskFilterStatus = 'all' | 'active' | 'completed'
+export type SortBy = 'sortOrder' | 'dueDate' | 'startDate' | 'priority' | 'createdAt' | 'completedAt'
+export type GroupBy = 'none' | 'priority' | 'list' | 'time'
 
 export interface Task {
   completedAt?: string
@@ -101,12 +102,19 @@ export interface List {
 }
 
 export interface ListSettings {
-  filterStatus: 'all' | 'active' | 'completed'
+  filterStatus: TaskFilterStatus
   groupBy: GroupBy
   listId: string
   sortBy: SortBy
   sortOrder: 'asc' | 'desc'
+  statusSettings?: Partial<Record<TaskFilterStatus, TaskStatusViewSettings>>
   viewMode: 'list' | 'calendar' | 'kanban' | 'matrix'
+}
+
+export interface TaskStatusViewSettings {
+  groupBy: GroupBy
+  sortBy: SortBy
+  sortOrder: 'asc' | 'desc'
 }
 
 export interface CalendarEvent {

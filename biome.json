@@ -56,7 +56,9 @@
         "useButtonType": {
           "level": "warn"
         },
-        "useKeyWithClickEvents": "warn"
+        "useKeyWithClickEvents": {
+          "level": "warn"
+        }
       },
       "complexity": {
         "noImportantStyles": "off"

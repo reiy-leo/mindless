@@ -92,6 +92,9 @@ export default function SettingsPage() {
     emit('settings:changed', { key: 'fontSize', value: fontSize })
   }, [fontSize])
   useEffect(() => {
+    emit('settings:changed', { key: 'priorityMode', value: priorityMode })
+  }, [priorityMode])
+  useEffect(() => {
     emit('settings:changed', { key: 'language', value: language })
   }, [language])
   useEffect(() => {
@@ -770,12 +773,12 @@ export default function SettingsPage() {
                   {
                     description: t('settings.priority_mode.simple_desc'),
                     label: t('settings.priority_mode.simple'),
-                    value: 'simple',
+                    value: 'Traditional',
                   },
                   {
                     description: t('settings.priority_mode.detailed_desc'),
                     label: t('settings.priority_mode.detailed'),
-                    value: 'detailed',
+                    value: 'OxygenNotIncluded',
                   },
                 ].map((option) => (
                   <label

@@ -171,11 +171,9 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .build(app)
         .map_err(|e| e.to_string())?;
     let new_note = MenuItemBuilder::with_id("file:new_note", &l.new_note)
-        .accelerator("CmdOrCtrl+Shift+N")
         .build(app)
         .map_err(|e| e.to_string())?;
     let global_search = MenuItemBuilder::with_id("file:global_search", &l.global_search)
-        .accelerator("CmdOrCtrl+Shift+F")
         .build(app)
         .map_err(|e| e.to_string())?;
 
@@ -233,26 +231,27 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .build(app)
         .map_err(|e| e.to_string())?;
     let nav_habits = MenuItemBuilder::with_id("nav:habits", &l.nav_habits)
-        .accelerator("CmdOrCtrl+H")
+        .accelerator("CmdOrCtrl+Shift+X")
         .build(app)
         .map_err(|e| e.to_string())?;
     let nav_countdowns = MenuItemBuilder::with_id("nav:countdowns", &l.nav_countdowns)
-        .accelerator("CmdOrCtrl+D")
+        .accelerator("CmdOrCtrl+Shift+D")
         .build(app)
         .map_err(|e| e.to_string())?;
     let nav_notes = MenuItemBuilder::with_id("nav:notes", &l.nav_notes)
+        .accelerator("CmdOrCtrl+Shift+N")
         .build(app)
         .map_err(|e| e.to_string())?;
     let manage_tags = MenuItemBuilder::with_id("nav:manage_tags", &l.manage_tags)
-        .accelerator("CmdOrCtrl+B")
+        .accelerator("CmdOrCtrl+Shift+B")
         .build(app)
         .map_err(|e| e.to_string())?;
     let manage_task_templates = MenuItemBuilder::with_id("nav:manage_task_templates", &l.manage_task_templates)
-        .accelerator("CmdOrCtrl+T")
+        .accelerator("CmdOrCtrl+Shift+M")
         .build(app)
         .map_err(|e| e.to_string())?;
     let manage_attachments = MenuItemBuilder::with_id("nav:manage_attachments", &l.manage_attachments)
-        .accelerator("CmdOrCtrl+Shift+B")
+        .accelerator("CmdOrCtrl+Shift+F")
         .build(app)
         .map_err(|e| e.to_string())?;
 

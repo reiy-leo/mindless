@@ -1,7 +1,8 @@
 import { Crepe } from '@milkdown/crepe'
 import { editorViewCtx, schemaCtx } from '@milkdown/kit/core'
 import { InputRule } from '@milkdown/kit/prose/inputrules'
-import { $inputRule, getMarkdown, replaceAll } from '@milkdown/kit/utils'
+import { Plugin } from '@milkdown/kit/prose/state'
+import { $inputRule, $prose, getMarkdown, replaceAll } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useEffect, useRef } from 'react'
@@ -24,6 +25,92 @@ const linkInputRule = $inputRule((ctx) => {
   )
 })
 
+function sanitizeStepMarkdown(markdown: string) {
+  const lines = markdown.split('\n')
+  const result: string[] = []
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i]
+    const nextLine = lines[i + 1]
+    const withoutImage = line.replace(/!\[[^\]]*]\([^)]*\)/g, '').trim()
+    if (!withoutImage) {
+      continue
+    }
+    const atxHeading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/)
+
+    if (atxHeading?.[2]) {
+      result.push(atxHeading[2])
+      continue
+    }
+
+    if (nextLine && /^(=+|-+)\s*$/.test(nextLine) && line.trim()) {
+      result.push(line)
+      i += 1
+      continue
+    }
+
+    result.push(withoutImage)
+  }
+
+  return result.join('\n')
+}
+
+function clipboardHasAsset(event: { clipboardData?: DataTransfer | null }) {
+  const data = event.clipboardData
+  if (!data) {
+    return false
+  }
+
+  if (data.files.length > 0) {
+    return true
+  }
+
+  if ([...data.items].some((item) => item.kind === 'file')) {
+    return true
+  }
+
+  const html = data.getData('text/html')
+  const text = data.getData('text/plain')
+  const uri = data.getData('text/uri-list')
+  return /<img\b/i.test(html) || /(^|\s)blob:/.test(text) || /(^|\s)blob:/.test(uri) || /!\[[^\]]*]\([^)]*\)/.test(text)
+}
+
+const stepEditorRestrictions = $prose(() => {
+  return new Plugin({
+    filterTransaction: (tr) => {
+      if (!tr.docChanged) {
+        return true
+      }
+
+      let hasHeading = false
+      let hasAsset = false
+      tr.doc.descendants((node) => {
+        if (node.type.name === 'heading') {
+          hasHeading = true
+          return false
+        }
+        if (node.type.name === 'image' || node.type.name === 'image-block') {
+          hasAsset = true
+          return false
+        }
+        return true
+      })
+
+      return !hasHeading && !hasAsset
+    },
+    props: {
+      handlePaste: (_view, event) => {
+        if (!(event instanceof ClipboardEvent) || !clipboardHasAsset(event)) {
+          return false
+        }
+
+        event.preventDefault()
+        return true
+      },
+    },
+  })
+})
+
 interface MilkdownStepEditorInnerProps {
   markdown: string
   onBlur?: () => void
@@ -41,13 +128,14 @@ function MilkdownStepEditorInner({
   onFocus,
   placeholder,
 }: MilkdownStepEditorInnerProps) {
-  const prevMarkdownRef = useRef<string>(markdown)
+  const initialMarkdown = sanitizeStepMarkdown(markdown)
+  const prevMarkdownRef = useRef<string>(initialMarkdown)
   const updatingRef = useRef(false)
   const initializedRef = useRef(false)
 
   const { loading, get } = useEditor((root) => {
     const crepe = new Crepe({
-      defaultValue: markdown,
+      defaultValue: initialMarkdown,
       featureConfigs: {
         [Crepe.Feature.Placeholder]: {
           text: placeholder || '',
@@ -68,7 +156,7 @@ function MilkdownStepEditorInner({
       },
       root,
     })
-    crepe.editor.use(linkInputRule)
+    crepe.editor.use(linkInputRule).use(stepEditorRestrictions)
     return crepe
   }, [])
 
@@ -80,25 +168,26 @@ function MilkdownStepEditorInner({
     if (!instance) {
       return
     }
+    const nextMarkdown = sanitizeStepMarkdown(markdown)
 
     if (!initializedRef.current) {
       initializedRef.current = true
-      prevMarkdownRef.current = markdown
+      prevMarkdownRef.current = nextMarkdown
       return
     }
 
-    if (markdown === prevMarkdownRef.current) {
+    if (nextMarkdown === prevMarkdownRef.current) {
       return
     }
 
     const currentMarkdown = instance.action(getMarkdown())
-    if (currentMarkdown === markdown) {
+    if (currentMarkdown === nextMarkdown) {
       return
     }
 
     updatingRef.current = true
-    instance.action(replaceAll(markdown, true))
-    prevMarkdownRef.current = markdown
+    instance.action(replaceAll(nextMarkdown, true))
+    prevMarkdownRef.current = nextMarkdown
     setTimeout(() => {
       updatingRef.current = false
     }, 0)
@@ -125,7 +214,7 @@ function MilkdownStepEditorInner({
         return
       }
       const md = instance.action(getMarkdown())
-      const trimmedMd = md.trim()
+      const trimmedMd = sanitizeStepMarkdown(md).trim()
       if (trimmedMd !== prevMarkdownRef.current) {
         prevMarkdownRef.current = trimmedMd
         onChange(trimmedMd)
@@ -148,13 +237,18 @@ function MilkdownStepEditorInner({
       onFocus?.()
     }
 
-    const handlePaste = () => {
+    const handlePaste = (event: Event) => {
+      if (event instanceof ClipboardEvent && clipboardHasAsset(event)) {
+        event.preventDefault()
+        return
+      }
+
       setTimeout(() => {
         if (updatingRef.current) {
           return
         }
         const md = instance.action(getMarkdown())
-        const trimmedMd = md.trim()
+        const trimmedMd = sanitizeStepMarkdown(md).trim()
         if (trimmedMd !== prevMarkdownRef.current) {
           prevMarkdownRef.current = trimmedMd
           onChange(trimmedMd)
@@ -217,6 +311,15 @@ export default function MilkdownStepEditor({
 }: MilkdownStepEditorProps) {
   const rootRef = useRef<HTMLDivElement>(null)
 
+  const handlePasteCapture = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!clipboardHasAsset(event)) {
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   const handleBlur = () => {
     setTimeout(() => {
       if (rootRef.current?.contains(document.activeElement)) {
@@ -231,6 +334,7 @@ export default function MilkdownStepEditor({
       className="text-sm text-theme-800 dark:text-theme-100"
       data-step-toolbar-active={isToolbarActive ? 'true' : 'false'}
       onBlurCapture={handleBlur}
+      onPasteCapture={handlePasteCapture}
       ref={rootRef}
     >
       <MilkdownProvider>

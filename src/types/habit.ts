@@ -1,81 +1,81 @@
 // Habit types
 
-export type TargetType = 'binary' | 'count' | 'duration';
-export type HabitFrequency = 'daily' | 'every_x_days' | 'weekly' | 'monthly';
+export type TargetType = 'binary' | 'count' | 'duration'
+export type HabitFrequency = 'daily' | 'every_x_days' | 'weekly' | 'monthly'
 
 export interface Habit {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  targetType: TargetType;
-  targetValue: number;
-  targetUnit: string;
-  frequency: HabitFrequency;
-  frequencyDays?: string;
-  reminderTime?: string;
-  reminderEnabled: boolean;
-  currentStreak: number;
-  longestStreak: number;
-  totalCompletions: number;
-  startDate: string;
-  createdAt: string;
-  updatedAt: string;
-  archivedAt?: string;
+  archivedAt?: string
+  color: string
+  createdAt: string
+  currentStreak: number
+  description: string
+  frequency: HabitFrequency
+  frequencyDays?: string
+  icon: string
+  id: string
+  longestStreak: number
+  name: string
+  reminderEnabled: boolean
+  reminderTime?: string
+  startDate: string
+  targetType: TargetType
+  targetUnit: string
+  targetValue: number
+  totalCompletions: number
+  updatedAt: string
 }
 
 export interface CreateHabitParams {
-  name: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  targetType?: TargetType;
-  targetValue?: number;
-  targetUnit?: string;
-  frequency: HabitFrequency;
-  frequencyDays?: string;
-  reminderTime?: string;
-  reminderEnabled?: boolean;
-  startDate?: string;
-  groupId?: string;
+  color?: string
+  description?: string
+  frequency: HabitFrequency
+  frequencyDays?: string
+  groupId?: string
+  icon?: string
+  name: string
+  reminderEnabled?: boolean
+  reminderTime?: string
+  startDate?: string
+  targetType?: TargetType
+  targetUnit?: string
+  targetValue?: number
 }
 
 export interface UpdateHabitParams {
-  name?: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  targetType?: TargetType;
-  targetValue?: number;
-  frequency?: HabitFrequency;
-  frequencyDays?: string;
-  reminderTime?: string;
-  reminderEnabled?: boolean;
-  startDate?: string;
+  color?: string
+  description?: string
+  frequency?: HabitFrequency
+  frequencyDays?: string
+  icon?: string
+  name?: string
+  reminderEnabled?: boolean
+  reminderTime?: string
+  startDate?: string
+  targetType?: TargetType
+  targetValue?: number
 }
 
 export interface HabitLog {
-  id: string;
-  habitId: string;
-  logDate: string;    // YYYY-MM-DD
-  logTime: string;
-  completed: boolean;
-  value: number;
-  note: string;
+  completed: boolean
+  habitId: string
+  id: string
+  logDate: string // YYYY-MM-DD
+  logTime: string
+  note: string
+  value: number
 }
 
 export interface TodayCheckinInfo {
-  habitId: string;
-  value: number;
+  habitId: string
+  value: number
 }
 
 export interface HabitGroup {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  color: string
+  createdAt: string
+  icon: string
+  id: string
+  name: string
+  sortOrder: number
+  updatedAt: string
 }

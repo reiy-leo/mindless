@@ -1,5 +1,6 @@
 use tauri::AppHandle;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 fn get_db(app: &AppHandle) -> Result<rusqlite::Connection, String> {
     let db_path = crate::db::connection::get_db_connection(app);
@@ -20,13 +21,15 @@ pub struct ListSettings {
     pub filter_status: String,
     #[serde(rename = "viewMode")]
     pub view_mode: String,
+    #[serde(rename = "statusSettings", skip_serializing_if = "Option::is_none")]
+    pub status_settings: Option<Value>,
 }
 
 #[tauri::command]
 pub async fn get_list_settings(app: AppHandle, list_id: String) -> Result<Option<ListSettings>, String> {
     let conn = get_db(&app)?;
     let mut stmt = conn.prepare(
-        "SELECT list_id, sort_by, sort_order, group_by, filter_status, view_mode FROM list_settings WHERE list_id = ?1"
+        "SELECT list_id, sort_by, sort_order, group_by, filter_status, view_mode, status_settings FROM list_settings WHERE list_id = ?1"
     ).map_err(|e| format!("Failed to prepare: {}", e))?;
 
     let mut rows = stmt.query_map(rusqlite::params![list_id], |row| {
@@ -37,6 +40,9 @@ pub async fn get_list_settings(app: AppHandle, list_id: String) -> Result<Option
             group_by: row.get(3)?,
             filter_status: row.get(4)?,
             view_mode: row.get(5)?,
+            status_settings: row
+                .get::<_, Option<String>>(6)?
+                .and_then(|value| serde_json::from_str(&value).ok()),
         })
     }).map_err(|e| format!("Failed to query: {}", e))?;
 
@@ -51,10 +57,10 @@ pub async fn get_list_settings(app: AppHandle, list_id: String) -> Result<Option
 pub async fn save_list_settings(app: AppHandle, settings: ListSettings) -> Result<(), String> {
     let conn = get_db(&app)?;
     conn.execute(
-        "INSERT INTO list_settings (list_id, sort_by, sort_order, group_by, filter_status, view_mode)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        "INSERT INTO list_settings (list_id, sort_by, sort_order, group_by, filter_status, view_mode, status_settings)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
          ON CONFLICT(list_id) DO UPDATE SET
-           sort_by = ?2, sort_order = ?3, group_by = ?4, filter_status = ?5, view_mode = ?6",
+           sort_by = ?2, sort_order = ?3, group_by = ?4, filter_status = ?5, view_mode = ?6, status_settings = ?7",
         rusqlite::params![
             settings.list_id,
             settings.sort_by,
@@ -62,6 +68,7 @@ pub async fn save_list_settings(app: AppHandle, settings: ListSettings) -> Resul
             settings.group_by,
             settings.filter_status,
             settings.view_mode,
+            settings.status_settings.map(|value| value.to_string()),
         ],
     ).map_err(|e| format!("Failed to save list settings: {}", e))?;
     Ok(())

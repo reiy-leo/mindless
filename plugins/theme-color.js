@@ -20,6 +20,13 @@ const alphaList = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80
 export default plugin(({ addUtilities }) => {
   const utilities = {}
 
+  utilities[`.bg-theme-sidebar`] = {
+    background: `linear-gradient(to bottom, hsl(from var(--theme-color) h s 60%), hsl(from var(--theme-color) h s 70%))`,
+  }
+  utilities[`.bg-theme-sidebar-dark`] = {
+    background: `linear-gradient(to bottom, hsl(from var(--theme-color) h s 20%), hsl(from var(--theme-color) h s 30%))`,
+  }
+
   // 为每个色阶生成 text-*、bg-*、border-* 工具类
   Object.entries(lightnessMap).forEach(([shade, lightness]) => {
     const colorValue = `hsl(from var(--theme-color) h s ${lightness})`

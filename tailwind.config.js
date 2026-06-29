@@ -8,6 +8,8 @@ export default {
   darkMode: 'class',
   plugins: [themeColors],
   safelist: [
+    'bg-theme-sidebar',
+    'bg-theme-sidebar-dark',
     {
       pattern: /^(bg|text|border)-theme-(50|100|200|300|400|500|600|700|800|900|950)$/,
     },

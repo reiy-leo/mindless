@@ -1,87 +1,95 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Clipboard, Search } from 'lucide-react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useTaskTemplates, useCreateTaskTemplate, useUpdateTaskTemplate, useDeleteTaskTemplate } from '@/queries/useTaskQueries';
-import type { TaskTemplate } from '@/types';
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { Clipboard, Plus, Search, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
+import {
+  useCreateTaskTemplate,
+  useDeleteTaskTemplate,
+  useTaskTemplates,
+  useUpdateTaskTemplate,
+} from '@/queries/useTaskQueries'
+import type { TaskTemplate } from '@/types'
 
 function formatDate(dateStr: string): string {
   try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const d = new Date(dateStr)
+    return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
   } catch {
-    return dateStr;
+    return dateStr
   }
 }
 
 export default function TaskTemplateManagementDialogPage() {
-  const { t } = useTranslation('common');
-  const { data: templates = [], isLoading } = useTaskTemplates();
-  const createTemplate = useCreateTaskTemplate();
-  const updateTemplate = useUpdateTaskTemplate();
-  const deleteTemplate = useDeleteTaskTemplate();
+  const { t } = useTranslation('common')
+  const { data: templates = [], isLoading } = useTaskTemplates()
+  const createTemplate = useCreateTaskTemplate()
+  const updateTemplate = useUpdateTaskTemplate()
+  const deleteTemplate = useDeleteTaskTemplate()
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
-  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null)
 
-  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null)
 
-    const filteredTemplates = useMemo(() => {
-    if (!searchQuery.trim()) return templates;
-    const q = searchQuery.toLowerCase();
-    return templates.filter((tpl) => tpl.name.toLowerCase().includes(q));
-  }, [templates, searchQuery]);
+  const filteredTemplates = useMemo(() => {
+    if (!searchQuery.trim()) return templates
+    const q = searchQuery.toLowerCase()
+    return templates.filter((tpl) => tpl.name.toLowerCase().includes(q))
+  }, [templates, searchQuery])
 
   const handleCreate = useCallback(() => {
-    createTemplate.mutate({ name: t('template_mgmt.create_template') || 'Untitled' });
-  }, [createTemplate, t]);
+    createTemplate.mutate({ name: t('template_mgmt.create_template') || 'Untitled' })
+  }, [createTemplate, t])
 
   const handleStartEdit = useCallback((tpl: TaskTemplate) => {
-    setEditingId(tpl.id);
-    setEditingName(tpl.name);
-  }, []);
+    setEditingId(tpl.id)
+    setEditingName(tpl.name)
+  }, [])
 
   const handleSaveEdit = useCallback(() => {
     if (editingId && editingName.trim()) {
-      const duplicate = templates.find((tpl) => tpl.name === editingName.trim() && tpl.id !== editingId);
+      const duplicate = templates.find((tpl) => tpl.name === editingName.trim() && tpl.id !== editingId)
       if (duplicate) {
         if (!window.confirm(t('template_mgmt.overwrite_confirm', { name: editingName.trim() }))) {
-          setEditingId(null);
-          setEditingName('');
-          return;
+          setEditingId(null)
+          setEditingName('')
+          return
         }
-        deleteTemplate.mutate(duplicate.id);
+        deleteTemplate.mutate(duplicate.id)
       }
-      updateTemplate.mutate({ id: editingId, name: editingName.trim() });
+      updateTemplate.mutate({ id: editingId, name: editingName.trim() })
     }
-    setEditingId(null);
-    setEditingName('');
-  }, [editingId, editingName, updateTemplate, templates, deleteTemplate, t]);
+    setEditingId(null)
+    setEditingName('')
+  }, [editingId, editingName, updateTemplate, templates, deleteTemplate, t])
 
   const handleCancelEdit = useCallback(() => {
-    setEditingId(null);
-    setEditingName('');
-  }, []);
+    setEditingId(null)
+    setEditingName('')
+  }, [])
 
-  const handleDelete = useCallback((id: string) => {
-    deleteTemplate.mutate(id);
-    setContextMenu(null);
-  }, [deleteTemplate]);
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteTemplate.mutate(id)
+      setContextMenu(null)
+    },
+    [deleteTemplate],
+  )
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
-        setContextMenu(null);
+        setContextMenu(null)
       }
-    };
-    if (contextMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [contextMenu]);
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [contextMenu])
 
   if (isLoading) {
     return (
@@ -90,22 +98,31 @@ export default function TaskTemplateManagementDialogPage() {
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
         </div>
       </OverlayWebviewWindow>
-    );
+    )
   }
 
   return (
     <OverlayWebviewWindow closable={false}>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div data-tauri-drag-region className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div data-tauri-drag-region className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 h-8" aria-label="window-controls">
+            <div className="flex items-center gap-1.5 h-8">
               <button
+                type="button"
                 onClick={() => getCurrentWindow().close()}
                 className="w-3 h-3 rounded-full bg-[#898989] hover:bg-[#FF3B30] transition-colors group relative"
                 title="Close"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100"
+                >
+                  <title>close button</title>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -121,8 +138,9 @@ export default function TaskTemplateManagementDialogPage() {
               />
             </div>
             <button
+              type="button"
               onClick={handleCreate}
-              className="p-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex-shrink-0"
+              className="p-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -134,16 +152,18 @@ export default function TaskTemplateManagementDialogPage() {
           {filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-3">
               <Clipboard className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
-              <p className="text-sm text-center">{searchQuery ? t('template_mgmt.no_results') : t('template_mgmt.no_templates')}</p>
+              <p className="text-sm text-center">
+                {searchQuery ? t('template_mgmt.no_results') : t('template_mgmt.no_templates')}
+              </p>
             </div>
           ) : (
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
                   <th className="text-left px-3 py-2 font-medium">{t('template_mgmt.template_name')}</th>
-                  <th className="text-left px-3 py-2 font-medium w-[100px]">{t('template_mgmt.created_at')}</th>
-                  <th className="text-left px-3 py-2 font-medium w-[100px]">{t('template_mgmt.updated_at')}</th>
-                  <th className="text-center px-3 py-2 font-medium w-[70px]">{t('template_mgmt.use_count')}</th>
+                  <th className="text-left px-3 py-2 font-medium w-25">{t('template_mgmt.created_at')}</th>
+                  <th className="text-left px-3 py-2 font-medium w-25">{t('template_mgmt.updated_at')}</th>
+                  <th className="text-center px-3 py-2 font-medium w-17.5">{t('template_mgmt.use_count')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,8 +172,8 @@ export default function TaskTemplateManagementDialogPage() {
                     key={template.id}
                     className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-default"
                     onContextMenu={(e) => {
-                      e.preventDefault();
-                      setContextMenu({ id: template.id, x: e.clientX, y: e.clientY });
+                      e.preventDefault()
+                      setContextMenu({ id: template.id, x: e.clientX, y: e.clientY })
                     }}
                   >
                     <td className="px-3 py-2" onDoubleClick={() => handleStartEdit(template)}>
@@ -163,12 +183,11 @@ export default function TaskTemplateManagementDialogPage() {
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveEdit();
-                            if (e.key === 'Escape') handleCancelEdit();
+                            if (e.key === 'Enter') handleSaveEdit()
+                            if (e.key === 'Escape') handleCancelEdit()
                           }}
                           onBlur={handleSaveEdit}
                           className="w-full px-1 py-0.5 text-xs border border-blue-400 rounded focus:outline-none dark:bg-gray-700 dark:text-gray-100"
-                          autoFocus
                         />
                       ) : (
                         <span className="text-gray-800 dark:text-gray-200">{template.name}</span>
@@ -188,10 +207,11 @@ export default function TaskTemplateManagementDialogPage() {
         {contextMenu && (
           <div
             ref={contextMenuRef}
-            className="fixed z-[100] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[120px]"
+            className="fixed z-100 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-30"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
+              type="button"
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               onClick={() => handleDelete(contextMenu.id)}
             >
@@ -202,5 +222,5 @@ export default function TaskTemplateManagementDialogPage() {
         )}
       </div>
     </OverlayWebviewWindow>
-  );
+  )
 }

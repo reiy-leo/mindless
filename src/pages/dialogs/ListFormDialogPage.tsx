@@ -23,8 +23,7 @@ const ICON_KEY_TO_EMOJI: Record<string, string> = {
 
 function resolveIcon(icon?: string): string {
   if (!icon) return '📁'
-  if (icon.length <= 2) return icon
-  return ICON_KEY_TO_EMOJI[icon] || '📁'
+  return ICON_KEY_TO_EMOJI[icon] || icon
 }
 
 const params = new URLSearchParams(window.location.search)

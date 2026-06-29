@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { PRIORITY } from '@/lib/constants';
+import { getPriorityOptions } from '@/lib/priorityOptions';
 import { useLists, useCalendarEvents } from '@/queries/useTaskQueries';
+import { useAppStore } from '@/stores/useAppStore';
 import { useViewStore } from '@/stores/useViewStore';
 import DateTimePicker from '@/components/DateTimePicker';
 import DateTimeRangePicker from '@/components/DateTimeRangePicker';
@@ -44,6 +46,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
   const { selectedListId } = useViewStore();
   const { data: lists = [] } = useLists();
   const { data: calendarEvents = [] } = useCalendarEvents();
+  const priorityMode = useAppStore((s) => s.priorityMode);
+  const priorityOptions = useMemo(() => getPriorityOptions(priorityMode, t), [priorityMode, t]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(PRIORITY.NONE);
@@ -219,23 +223,18 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('tasks.priority.label')}
             </label>
-            <div className="flex gap-2">
-              {[
-                { value: PRIORITY.NONE, label: t('tasks.priority.none'), color: '#9CA3AF' },
-                { value: PRIORITY.LOW, label: t('tasks.priority.low'), color: '#3B82F6' },
-                { value: PRIORITY.MEDIUM, label: t('tasks.priority.medium'), color: '#F59E0B' },
-                { value: PRIORITY.HIGH, label: t('tasks.priority.high'), color: '#EF4444' },
-              ].map((option) => (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {priorityOptions.map((option) => (
                 <button
-                  key={option.value} type="button" onClick={() => setPriority(option.value as Priority)}
-                  className={`flex-1 px-4 py-2 rounded-lg border-2 transition-all ${
+                  key={option.value} type="button" onClick={() => setPriority(option.value)}
+                  className={`min-w-14 flex-1 px-4 py-2 rounded-lg border-2 transition-all ${
                     priority === option.value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: option.color }} />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: option.color.bg }} />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{option.label}</span>
                   </div>
                 </button>
@@ -253,7 +252,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               onChange={(val) => setListId(val)}
               options={[
                 { value: '', label: t('lists.inbox') },
-                ...lists.filter((l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent', 'eisenhower'].includes(l.id)).map((list) => ({
+                ...lists.filter((l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent'].includes(l.id)).map((list) => ({
                   value: list.id, label: list.name,
                 })),
               ]}

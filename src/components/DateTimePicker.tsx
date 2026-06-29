@@ -1,24 +1,24 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { getLunarInfo, getLunarDayStr } from '@/lib/lunar';
-import { useAppStore } from '@/stores/useAppStore';
-import { formatDisplayDate } from '@/lib/formatUtils';
-import type { CalendarEvent } from '@/types';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { formatDisplayDate } from '@/lib/formatUtils'
+import { getLunarDayStr, getLunarInfo } from '@/lib/lunar'
+import { useAppStore } from '@/stores/useAppStore'
+import type { CalendarEvent } from '@/types'
 
 interface DateTimePickerProps {
-  date?: string;        // YYYY-MM-DD
-  time?: string;        // HH:mm
-  onChange: (date?: string, time?: string) => void;
-  events?: CalendarEvent[];
-  showTime?: boolean;   // default true
-  inline?: boolean;     // default false - show calendar directly without popover
+  date?: string // YYYY-MM-DD
+  events?: CalendarEvent[]
+  inline?: boolean // default false - show calendar directly without popover
+  onChange: (date?: string, time?: string) => void
+  showTime?: boolean // default true
+  time?: string // HH:mm
 }
 
-const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 function toDateStr(year: number, month: number, day: number): string {
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 export default function DateTimePicker({
@@ -29,123 +29,123 @@ export default function DateTimePicker({
   showTime = true,
   inline = false,
 }: DateTimePickerProps) {
-  const { t } = useTranslation('common');
-  const [open, setOpen] = useState(inline);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const showLunar = useAppStore((s) => s.showLunar);
-  const dateFormat = useAppStore((s) => s.dateFormat);
+  const { t } = useTranslation('common')
+  const [open, setOpen] = useState(inline)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const showLunar = useAppStore((s) => s.showLunar)
+  const dateFormat = useAppStore((s) => s.dateFormat)
 
   // Current view month (for calendar navigation)
-  const initialDate = date ? new Date(date + 'T00:00:00') : new Date();
-  const [viewYear, setViewYear] = useState(initialDate.getFullYear());
-  const [viewMonth, setViewMonth] = useState(initialDate.getMonth() + 1);
+  const initialDate = date ? new Date(`${date}T00:00:00`) : new Date()
+  const [viewYear, setViewYear] = useState(initialDate.getFullYear())
+  const [viewMonth, setViewMonth] = useState(initialDate.getMonth() + 1)
 
   // Update view when date prop changes
   useEffect(() => {
     if (date) {
-      const d = new Date(date + 'T00:00:00');
-      setViewYear(d.getFullYear());
-      setViewMonth(d.getMonth() + 1);
+      const d = new Date(`${date}T00:00:00`)
+      setViewYear(d.getFullYear())
+      setViewMonth(d.getMonth() + 1)
     }
-  }, [date]);
+  }, [date])
 
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        setOpen(false)
       }
-    };
-    if (open) {
-      document.addEventListener('mousedown', handler);
     }
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+    if (open) {
+      document.addEventListener('mousedown', handler)
+    }
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
   // Build calendar grid days
   const calendarDays = useMemo(() => {
-    const firstDay = new Date(viewYear, viewMonth - 1, 1);
-    const lastDay = new Date(viewYear, viewMonth, 0);
-    const daysInMonth = lastDay.getDate();
+    const firstDay = new Date(viewYear, viewMonth - 1, 1)
+    const lastDay = new Date(viewYear, viewMonth, 0)
+    const daysInMonth = lastDay.getDate()
     // Day of week: 0=Sun, 1=Mon, ... We start with Monday
-    let startDow = firstDay.getDay() - 1; // Mon=0
-    if (startDow < 0) startDow = 6; // Sun=6
+    let startDow = firstDay.getDay() - 1 // Mon=0
+    if (startDow < 0) startDow = 6 // Sun=6
 
-    const days: { day: number; dateStr: string; inMonth: boolean }[] = [];
+    const days: { day: number; dateStr: string; inMonth: boolean }[] = []
     // Previous month filler
-    const prevMonthLast = new Date(viewYear, viewMonth - 1, 0).getDate();
+    const prevMonthLast = new Date(viewYear, viewMonth - 1, 0).getDate()
     for (let i = startDow - 1; i >= 0; i--) {
-      const d = prevMonthLast - i;
-      const m = viewMonth - 1;
-      const y = m <= 0 ? viewYear - 1 : viewYear;
-      const mo = m <= 0 ? 12 : m;
-      days.push({ day: d, dateStr: toDateStr(y, mo, d), inMonth: false });
+      const d = prevMonthLast - i
+      const m = viewMonth - 1
+      const y = m <= 0 ? viewYear - 1 : viewYear
+      const mo = m <= 0 ? 12 : m
+      days.push({ dateStr: toDateStr(y, mo, d), day: d, inMonth: false })
     }
     // Current month
     for (let d = 1; d <= daysInMonth; d++) {
-      days.push({ day: d, dateStr: toDateStr(viewYear, viewMonth, d), inMonth: true });
+      days.push({ dateStr: toDateStr(viewYear, viewMonth, d), day: d, inMonth: true })
     }
     // Next month filler
-    const remaining = 42 - days.length; // 6 rows of 7
+    const remaining = 42 - days.length // 6 rows of 7
     for (let d = 1; d <= remaining; d++) {
-      const m = viewMonth + 1;
-      const y = m > 12 ? viewYear + 1 : viewYear;
-      const mo = m > 12 ? 1 : m;
-      days.push({ day: d, dateStr: toDateStr(y, mo, d), inMonth: false });
+      const m = viewMonth + 1
+      const y = m > 12 ? viewYear + 1 : viewYear
+      const mo = m > 12 ? 1 : m
+      days.push({ dateStr: toDateStr(y, mo, d), day: d, inMonth: false })
     }
-    return days;
-  }, [viewYear, viewMonth]);
+    return days
+  }, [viewYear, viewMonth])
 
   // Events map: dateStr -> events[]
   const eventsByDate = useMemo(() => {
-    const map: Record<string, CalendarEvent[]> = {};
+    const map: Record<string, CalendarEvent[]> = {}
     for (const ev of events) {
-      if (!map[ev.eventDate]) map[ev.eventDate] = [];
-      map[ev.eventDate].push(ev);
+      if (!map[ev.eventDate]) map[ev.eventDate] = []
+      map[ev.eventDate].push(ev)
     }
-    return map;
-  }, [events]);
+    return map
+  }, [events])
 
   const todayStr = useMemo(() => {
-    const now = new Date();
-    return toDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate());
-  }, []);
+    const now = new Date()
+    return toDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate())
+  }, [])
 
   // Lunar info for selected date
   const selectedLunarInfo = useMemo(() => {
-    if (!date) return null;
-    const parts = date.split('-').map(Number);
-    if (parts.length !== 3) return null;
-    return getLunarInfo(parts[0], parts[1], parts[2]);
-  }, [date]);
+    if (!date) return null
+    const parts = date.split('-').map(Number)
+    if (parts.length !== 3) return null
+    return getLunarInfo(parts[0], parts[1], parts[2])
+  }, [date])
 
   const handleSelectDate = (dateStr: string) => {
-    onChange(dateStr, time);
+    onChange(dateStr, time)
     // Update view month to match selected date
-    const parts = dateStr.split('-').map(Number);
+    const parts = dateStr.split('-').map(Number)
     if (parts.length === 3) {
-      setViewYear(parts[0]);
-      setViewMonth(parts[1]);
+      setViewYear(parts[0])
+      setViewMonth(parts[1])
     }
-  };
+  }
 
   const handlePrevMonth = () => {
     if (viewMonth === 1) {
-      setViewMonth(12);
-      setViewYear(viewYear - 1);
+      setViewMonth(12)
+      setViewYear(viewYear - 1)
     } else {
-      setViewMonth(viewMonth - 1);
+      setViewMonth(viewMonth - 1)
     }
-  };
+  }
 
   const handleNextMonth = () => {
     if (viewMonth === 12) {
-      setViewMonth(1);
-      setViewYear(viewYear + 1);
+      setViewMonth(1)
+      setViewYear(viewYear + 1)
     } else {
-      setViewMonth(viewMonth + 1);
+      setViewMonth(viewMonth + 1)
     }
-  };
+  }
 
   const calendarContent = (
     <>
@@ -182,14 +182,14 @@ export default function DateTimePicker({
       {/* Calendar grid */}
       <div className="grid grid-cols-7">
         {calendarDays.map((cell, idx) => {
-          const isSelected = cell.dateStr === date;
-          const isToday = cell.dateStr === todayStr;
-          const cellEvents = eventsByDate[cell.dateStr] || [];
+          const isSelected = cell.dateStr === date
+          const isToday = cell.dateStr === todayStr
+          const cellEvents = eventsByDate[cell.dateStr] || []
 
           // Get lunar day text (only for current month to save perf)
           const lunarStr = cell.inMonth
-            ? getLunarDayStr(...cell.dateStr.split('-').map(Number) as [number, number, number])
-            : '';
+            ? getLunarDayStr(...(cell.dateStr.split('-').map(Number) as [number, number, number]))
+            : ''
 
           return (
             <button
@@ -204,17 +204,17 @@ export default function DateTimePicker({
                 ${!cell.inMonth ? 'text-gray-300 dark:text-gray-600' : ''}
               `}
             >
-              <span className={`text-sm leading-none ${isSelected ? 'text-white' : ''}`}>
-                {cell.day}
-              </span>
+              <span className={`text-sm leading-none ${isSelected ? 'text-white' : ''}`}>{cell.day}</span>
               {showLunar && lunarStr && (
-                <span className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
-                  isSelected
-                    ? 'text-blue-100'
-                    : cell.inMonth
-                      ? 'text-gray-400 dark:text-gray-500'
-                      : 'text-gray-200 dark:text-gray-700'
-                }`}>
+                <span
+                  className={`text-xs leading-tight mt-0.5 truncate max-w-full px-0.5 ${
+                    isSelected
+                      ? 'text-blue-100'
+                      : cell.inMonth
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : 'text-gray-200 dark:text-gray-700'
+                  }`}
+                >
                   {lunarStr}
                 </span>
               )}
@@ -222,16 +222,12 @@ export default function DateTimePicker({
               {cellEvents.length > 0 && (
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
                   {cellEvents.slice(0, 2).map((ev, i) => (
-                    <span
-                      key={i}
-                      className="w-1 h-1 rounded-full"
-                      style={{ backgroundColor: ev.color || '#3B82F6' }}
-                    />
+                    <span key={i} className="w-1 h-1 rounded-full" style={{ backgroundColor: ev.color || '#3B82F6' }} />
                   ))}
                 </div>
               )}
             </button>
-          );
+          )
         })}
       </div>
 
@@ -239,19 +235,13 @@ export default function DateTimePicker({
       {selectedLunarInfo && (
         <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-medium">{selectedLunarInfo.yearStr}</span>
-            {' '}
-            {selectedLunarInfo.monthStr}
+            <span className="font-medium">{selectedLunarInfo.yearStr}</span> {selectedLunarInfo.monthStr}
             {selectedLunarInfo.dayStr}
             {selectedLunarInfo.festivals.length > 0 && (
-              <span className="ml-1 text-blue-500">
-                {selectedLunarInfo.festivals.join(', ')}
-              </span>
+              <span className="ml-1 text-blue-500">{selectedLunarInfo.festivals.join(', ')}</span>
             )}
             {selectedLunarInfo.solarTerms.length > 0 && (
-              <span className="ml-1 text-green-500">
-                {selectedLunarInfo.solarTerms.join(', ')}
-              </span>
+              <span className="ml-1 text-green-500">{selectedLunarInfo.solarTerms.join(', ')}</span>
             )}
           </p>
         </div>
@@ -260,7 +250,11 @@ export default function DateTimePicker({
       {/* Time picker */}
       {showTime && (
         <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+          <label
+            className="text-xs text-gray-500 dark:text-gray-400 block mb-1"
+            htmlFor="time-picker"
+            aria-labelledby="time picker"
+          >
             {t('tasks.due_time')}
           </label>
           <input
@@ -277,8 +271,8 @@ export default function DateTimePicker({
         <button
           type="button"
           onClick={() => {
-            onChange(undefined, undefined);
-            setOpen(false);
+            onChange(undefined, undefined)
+            setOpen(false)
           }}
           className="mt-2 w-full text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors py-1"
         >
@@ -286,14 +280,10 @@ export default function DateTimePicker({
         </button>
       )}
     </>
-  );
+  )
 
   if (inline) {
-    return (
-      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-3">
-        {calendarContent}
-      </div>
-    );
+    return <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-3">{calendarContent}</div>
   }
 
   return (
@@ -304,7 +294,7 @@ export default function DateTimePicker({
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
       >
-        <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
         <span className={date ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
           {date ? formatDisplayDate(date, dateFormat, t) : t('tasks.date_placeholder')}
           {showTime && time ? ` ${time}` : ''}
@@ -318,5 +308,5 @@ export default function DateTimePicker({
         </div>
       )}
     </div>
-  );
+  )
 }

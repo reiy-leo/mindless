@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
@@ -13,7 +14,6 @@ import {
   StickyNote,
   UsersIcon,
 } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
@@ -215,12 +215,16 @@ export default function Sidebar() {
         y,
       })
       settingsWinRef.current = win
-      win.once('tauri://error', () => {
-        settingsWinRef.current = null
-      }).catch(() => {})
-      win.once('tauri://destroyed', () => {
-        settingsWinRef.current = null
-      }).catch(() => {})
+      win
+        .once('tauri://error', () => {
+          settingsWinRef.current = null
+        })
+        .catch(() => {})
+      win
+        .once('tauri://destroyed', () => {
+          settingsWinRef.current = null
+        })
+        .catch(() => {})
     } catch (err) {
       console.error('Error creating settings window:', err)
     }
@@ -228,7 +232,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className="w-[70px] border-r border-white/10 flex flex-col pb-2 text-white bg-theme-500 dark:bg-theme-800"
+      className="w-17.5 border-r border-white/10 flex flex-col pb-2 text-white bg-theme-sidebar dark:bg-theme-800"
       // style={{
       //   background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))',
       // }}
@@ -354,12 +358,7 @@ export default function Sidebar() {
           }
 
           return (
-            <Link
-              aria-current={isActive ? 'page' : undefined}
-              className={buttonClass}
-              key={item.path}
-              to={item.path}
-            >
+            <Link aria-current={isActive ? 'page' : undefined} className={buttonClass} key={item.path} to={item.path}>
               {showIcon && <Icon className="w-5 h-5" />}
               {showText && (
                 <p className={sidebarMode === 'both' ? 'text-[10px]' : sidebarMode === 'text' ? 'text-lg' : 'text-xs'}>

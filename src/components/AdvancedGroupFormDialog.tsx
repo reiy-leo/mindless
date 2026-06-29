@@ -13,8 +13,7 @@ const ICON_KEY_TO_EMOJI: Record<string, string> = {
 
 function resolveIcon(icon?: string): string {
   if (!icon) return '📁';
-  if (icon.length <= 2) return icon;
-  return ICON_KEY_TO_EMOJI[icon] || '📁';
+  return ICON_KEY_TO_EMOJI[icon] || icon;
 }
 
 interface Props {
@@ -99,7 +98,7 @@ export default function AdvancedGroupFormDialog({ isOpen, onClose, onSubmit, gro
 
   if (!isOpen) return null;
 
-  const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent', 'eisenhower']);
+  const seedIds = new Set(['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent']);
   const userLists = allLists.filter((l) => !seedIds.has(l.id));
 
   return (

@@ -1,52 +1,52 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export interface MultiSelectOption {
-  id: string;
-  label: string;
-  color?: string;
-  emoji?: string;
+  color?: string
+  emoji?: string
+  id: string
+  label: string
 }
 
 interface Props {
-  options: MultiSelectOption[];
-  selected: string[];
-  onChange: (selected: string[]) => void;
-  placeholder?: string;
-  emptyHint?: string;
+  emptyHint?: string
+  onChange: (selected: string[]) => void
+  options: MultiSelectOption[]
+  placeholder?: string
+  selected: string[]
 }
 
 export default function MultiSelectDropdown({ options, selected, onChange, placeholder, emptyHint }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const toggle = (id: string) => {
-    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
-  };
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+  }
 
   const remove = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(selected.filter((x) => x !== id));
-  };
+    e.stopPropagation()
+    onChange(selected.filter((x) => x !== id))
+  }
 
-  const selectedOptions = options.filter((o) => selected.includes(o.id));
+  const selectedOptions = options.filter((o) => selected.includes(o.id))
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full min-h-[34px] px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 flex flex-wrap gap-1 items-center"
+        className="w-full min-h-8.5 px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 flex flex-wrap gap-1 items-center"
       >
         {selectedOptions.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500">{placeholder || '...'}</span>
@@ -56,21 +56,18 @@ export default function MultiSelectDropdown({ options, selected, onChange, place
               key={opt.id}
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
             >
-              {opt.color && (
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: opt.color }} />
-              )}
+              {opt.color && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: opt.color }} />}
               {opt.emoji && <span>{opt.emoji}</span>}
-              <span className="truncate max-w-[100px]">{opt.label}</span>
-              <span
-                onClick={(e) => remove(opt.id, e)}
-                className="ml-0.5 hover:text-red-500 cursor-pointer"
-              >
+              <span className="truncate max-w-25">{opt.label}</span>
+              <span onMouseDown={(e) => remove(opt.id, e)} className="ml-0.5 hover:text-red-500 cursor-pointer">
                 <X className="w-3 h-3" />
               </span>
             </span>
           ))
         )}
-        <ChevronDown className={`w-4 h-4 text-gray-400 ml-auto flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 ml-auto shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
@@ -79,7 +76,7 @@ export default function MultiSelectDropdown({ options, selected, onChange, place
             <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">{emptyHint || '...'}</div>
           ) : (
             options.map((opt) => {
-              const isSelected = selected.includes(opt.id);
+              const isSelected = selected.includes(opt.id)
               return (
                 <button
                   key={opt.id}
@@ -89,24 +86,24 @@ export default function MultiSelectDropdown({ options, selected, onChange, place
                     isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                 >
-                  <span className={`w-4 h-4 flex items-center justify-center rounded border text-xs ${
-                    isSelected
-                      ? 'bg-blue-500 border-blue-500 text-white'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}>
+                  <span
+                    className={`w-4 h-4 flex items-center justify-center rounded border text-xs ${
+                      isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
                     {isSelected && '✓'}
                   </span>
                   {opt.color && (
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: opt.color }} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: opt.color }} />
                   )}
                   {opt.emoji && <span>{opt.emoji}</span>}
                   <span className="truncate text-gray-700 dark:text-gray-300">{opt.label}</span>
                 </button>
-              );
+              )
             })
           )}
         </div>
       )}
     </div>
-  );
+  )
 }

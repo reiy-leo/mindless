@@ -1,197 +1,356 @@
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import CheckNow from '@/components/common/CheckNow';
-import { getTaskTags, parseLocalDate, getLocalToday } from '@/lib/taskHelpers';
-import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
-import { useAppStore } from '@/stores/useAppStore';
-import { formatDisplayDate, formatTime } from '@/lib/formatUtils';
-import type { Task, Priority, UpdateTaskParams } from '@/types/task';
-import type { Tag } from '@/types/tag';
+import {
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import CheckNow from '@/components/common/CheckNow'
+import { PRIORITY } from '@/lib/constants'
+import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
+import { getLocalToday } from '@/lib/taskHelpers'
+import { useAppStore } from '@/stores/useAppStore'
+import type { Tag } from '@/types/tag'
+import type { Priority, Task, UpdateTaskParams } from '@/types/task'
 
 interface EisenhowerMatrixViewProps {
-  tasks: Task[];
-  allTags: Tag[];
-  selectedTaskId: string | null;
-  onSelectTask: (id: string | null) => void;
-  onToggleTask: (id: string, isCompleted: boolean) => void;
-  onUpdateTask: (id: string, params: Partial<UpdateTaskParams>) => void;
+  allTags: Tag[]
+  onSelectTask: (id: string | null) => void
+  onToggleTask: (id: string, isCompleted: boolean) => void
+  onUpdateTask: (id: string, params: Partial<UpdateTaskParams>) => void
+  selectedTaskId: string | null
+  tasks: Task[]
 }
 
-type Quadrant = 'q1' | 'q2' | 'q3' | 'q4';
+type Quadrant = 'q1' | 'q2' | 'q3' | 'q4'
 
-const URGENCY_DAYS = 3;
+const QUADRANT_DROP_ID_PREFIX = 'matrix-quadrant-'
 
-function classifyTask(task: Task, todayStr: string): Quadrant {
-  const today = parseLocalDate(todayStr);
-  const isImportant = task.priority >= 6; // medium or high
+function classifyTask(task: Task): Quadrant {
+  const priority = task.priority
+  if (priority >= 7) return 'q1'
+  if (priority >= 4) return 'q2'
+  if (priority >= 1) return 'q3'
+  return 'q4'
+}
 
-  let isUrgent = false;
-  if (task.dueDate) {
-    const due = parseLocalDate(task.dueDate);
-    const diffMs = due.getTime() - today.getTime();
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-    isUrgent = diffDays <= URGENCY_DAYS; // overdue or due within 3 days
+function getPriorityForQuadrant(quadrant: Quadrant): Priority {
+  switch (quadrant) {
+    case 'q1':
+      return PRIORITY.HIGH as Priority
+    case 'q2':
+      return PRIORITY.MEDIUM as Priority
+    case 'q3':
+      return PRIORITY.LOW as Priority
+    case 'q4':
+      return PRIORITY.NONE as Priority
   }
+}
 
-  if (isUrgent && isImportant) return 'q1';
-  if (!isUrgent && isImportant) return 'q2';
-  if (isUrgent && !isImportant) return 'q3';
-  return 'q4';
+function getQuadrantDropId(quadrant: Quadrant): string {
+  return `${QUADRANT_DROP_ID_PREFIX}${quadrant}`
+}
+
+function getQuadrantFromDropId(id: string | number | undefined): Quadrant | null {
+  if (typeof id !== 'string' || !id.startsWith(QUADRANT_DROP_ID_PREFIX)) return null
+  const quadrant = id.slice(QUADRANT_DROP_ID_PREFIX.length)
+  if (quadrant === 'q1' || quadrant === 'q2' || quadrant === 'q3' || quadrant === 'q4') return quadrant
+  return null
 }
 
 interface QuadrantConfig {
-  key: Quadrant;
-  labelKey: string;
-  hintKey: string;
-  headerBg: string;
-  headerText: string;
-  accentColor: string;
-  ringColor: string;
-  bodyBg: string;
-  bodyBgDark: string;
+  accentColor: string
+  bodyBg: string
+  bodyBgDark: string
+  headerBg: string
+  headerText: string
+  hintKey: string
+  key: Quadrant
+  labelKey: string
+  overBodyBg: string
+  overBodyBgDark: string
+  ringColor: string
 }
 
 const QUADRANT_CONFIGS: QuadrantConfig[] = [
   {
-    key: 'q1',
-    labelKey: 'tasks.matrix.do_first',
-    hintKey: 'tasks.matrix.do_first_hint',
+    accentColor: '#EF4444',
+    bodyBg: 'bg-red-50/50',
+    bodyBgDark: 'dark:bg-red-950/20',
     headerBg: 'bg-red-500',
     headerText: 'text-white',
-    accentColor: '#EF4444',
+    hintKey: 'tasks.matrix.do_first_hint',
+    key: 'q1',
+    labelKey: 'tasks.matrix.do_first',
+    overBodyBg: 'bg-red-100',
+    overBodyBgDark: 'dark:bg-red-900',
     ringColor: 'ring-red-300 dark:ring-red-700',
-    bodyBg: 'bg-red-50',
-    bodyBgDark: 'dark:bg-red-950/20',
   },
   {
+    accentColor: '#3B82F6',
+    bodyBg: 'bg-sky-50/50',
+    bodyBgDark: 'dark:bg-sky-950/20',
+    headerBg: 'bg-sky-500',
+    headerText: 'text-white',
+    hintKey: 'tasks.matrix.schedule_hint',
     key: 'q2',
     labelKey: 'tasks.matrix.schedule',
-    hintKey: 'tasks.matrix.schedule_hint',
-    headerBg: 'bg-blue-500',
-    headerText: 'text-white',
-    accentColor: '#3B82F6',
-    ringColor: 'ring-blue-300 dark:ring-blue-700',
-    bodyBg: 'bg-blue-50',
-    bodyBgDark: 'dark:bg-blue-950/20',
+    overBodyBg: 'bg-sky-100',
+    overBodyBgDark: 'dark:bg-sky-900',
+    ringColor: 'ring-sky-300 dark:ring-sky-700',
   },
   {
+    accentColor: '#F59E0B',
+    bodyBg: 'bg-yellow-50/50',
+    bodyBgDark: 'dark:bg-yellow-950/20',
+    headerBg: 'bg-yellow-500',
+    headerText: 'text-white',
+    hintKey: 'tasks.matrix.delegate_hint',
     key: 'q3',
     labelKey: 'tasks.matrix.delegate',
-    hintKey: 'tasks.matrix.delegate_hint',
-    headerBg: 'bg-amber-500',
-    headerText: 'text-white',
-    accentColor: '#F59E0B',
-    ringColor: 'ring-amber-300 dark:ring-amber-700',
-    bodyBg: 'bg-amber-50',
-    bodyBgDark: 'dark:bg-amber-950/20',
+    overBodyBg: 'bg-yellow-100',
+    overBodyBgDark: 'dark:bg-yellow-900',
+    ringColor: 'ring-yellow-300 dark:ring-yellow-700',
   },
   {
+    accentColor: '#9CA3AF',
+    bodyBg: 'bg-slate-50/50',
+    bodyBgDark: 'dark:bg-slate-900/40',
+    headerBg: 'bg-slate-400',
+    headerText: 'text-white',
+    hintKey: 'tasks.matrix.eliminate_hint',
     key: 'q4',
     labelKey: 'tasks.matrix.eliminate',
-    hintKey: 'tasks.matrix.eliminate_hint',
-    headerBg: 'bg-gray-400',
-    headerText: 'text-white',
-    accentColor: '#9CA3AF',
-    ringColor: 'ring-gray-300 dark:ring-gray-600',
-    bodyBg: 'bg-gray-50',
-    bodyBgDark: 'dark:bg-gray-900/40',
+    overBodyBg: 'bg-slate-100',
+    overBodyBgDark: 'dark:bg-slate-900',
+    ringColor: 'ring-slate-300 dark:ring-slate-600',
   },
-];
+]
+
+interface MatrixTaskCardProps {
+  dateFormat: ReturnType<typeof useAppStore.getState>['dateFormat']
+  onSelectTask: (id: string | null) => void
+  onToggleTask: (id: string, isCompleted: boolean) => void
+  selectedTaskId: string | null
+  t: ReturnType<typeof useTranslation<'common'>>['t']
+  task: Task
+  timeFormat: ReturnType<typeof useAppStore.getState>['timeFormat']
+  todayStr: string
+}
+
+interface MatrixTaskCardContentProps extends MatrixTaskCardProps {
+  isDragging?: boolean
+  isOverlay?: boolean
+}
+
+function MatrixTaskCardContent({
+  dateFormat,
+  onSelectTask,
+  onToggleTask,
+  selectedTaskId,
+  task,
+  t,
+  timeFormat,
+  todayStr,
+  isDragging = false,
+  isOverlay = false,
+}: MatrixTaskCardContentProps) {
+  return (
+    <div
+      onClick={() => onSelectTask(selectedTaskId === task.id ? null : task.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelectTask(selectedTaskId === task.id ? null : task.id)
+        }
+      }}
+      className={`rounded-md shadow-sm cursor-grab active:cursor-grabbing transition-color focus:outline-none focus-visible:bg-theme-100/50 ${
+        selectedTaskId === task.id ? 'bg-theme-100' : 'bg-theme-50/50 border-theme-50'
+      } ${isDragging ? 'opacity-80' : ''} ${isOverlay ? 'ring-1 ring-black/5 dark:ring-white/10' : ''}`}
+    >
+      <div className="flex items-start gap-2 p-2">
+        <CheckNow
+          checked={false}
+          hasSteps={!!(task.steps && task.steps.length > 0)}
+          color1="var(--theme-color)"
+          color2="var(--theme-bg-70)"
+          className="mt-0.5 shrink-0"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleTask(task.id, task.isCompleted)
+          }}
+        />
+        <div className="flex flex-row flex-1 min-w-0">
+          <h4 className="flex-1 text-sm text-theme-900 dark:text-theme-100 truncate">{task.title}</h4>
+          <div className="items-center gap-2 mt-1.5 flex-wrap">
+            {task.dueDate && (
+              <span
+                className={`text-xs flex items-center gap-1 ${
+                  isOverdue(task.dueDate, todayStr)
+                    ? 'text-red-500 dark:text-red-400 font-medium'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {formatDisplayDate(task.dueDate, dateFormat, t)}
+                {task.dueTime && <span>{formatTime(task.dueTime, timeFormat)}</span>}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MatrixTaskCard(props: MatrixTaskCardProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: props.task.id })
+
+  return (
+    <div ref={setNodeRef} {...attributes} {...listeners}>
+      <MatrixTaskCardContent {...props} isDragging={isDragging} />
+    </div>
+  )
+}
+
+interface QuadrantPanelProps {
+  allTags: Tag[]
+  config: QuadrantConfig
+  dateFormat: MatrixTaskCardProps['dateFormat']
+  onSelectTask: (id: string | null) => void
+  onToggleTask: (id: string, isCompleted: boolean) => void
+  qTasks: Task[]
+  selectedTaskId: string | null
+  t: MatrixTaskCardProps['t']
+  timeFormat: MatrixTaskCardProps['timeFormat']
+  todayStr: string
+}
+
+function QuadrantPanel({
+  config,
+  dateFormat,
+  onSelectTask,
+  onToggleTask,
+  qTasks,
+  selectedTaskId,
+  t,
+  timeFormat,
+  todayStr,
+}: QuadrantPanelProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: getQuadrantDropId(config.key) })
+
+  return (
+    <div
+      className={`min-h-0 flex flex-col rounded-md overflow-hidden transition-all ${config.bodyBg} ${config.bodyBgDark} ${
+        isOver ? ` ring-2 ${config.ringColor} ${config.overBodyBg} ${config.overBodyBgDark}` : ''
+      }`}
+    >
+      {/* Quadrant header */}
+      <div className={`${config.headerBg} ${config.headerText} shrink-0 px-4 py-2.5 flex items-center justify-between`}>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-sm">{t(config.labelKey)}</h3>
+          <span className="text-xs opacity-80 bg-white/20 px-2 py-0.5 rounded-full">{qTasks.length}</span>
+        </div>
+        <span className="text-xs opacity-75 hidden sm:inline">{t(config.hintKey)}</span>
+      </div>
+
+      {/* Quadrant body */}
+      <div ref={setNodeRef} className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5">
+        {qTasks.length === 0 && (
+          <p className="text-xs text-theme-800 dark:text-theme-200 text-center py-8 italic">
+            {t('tasks.views.empty_column')}
+          </p>
+        )}
+        {qTasks.map((task) => (
+          <MatrixTaskCard
+            dateFormat={dateFormat}
+            key={task.id}
+            onSelectTask={onSelectTask}
+            onToggleTask={onToggleTask}
+            selectedTaskId={selectedTaskId}
+            task={task}
+            t={t}
+            timeFormat={timeFormat}
+            todayStr={todayStr}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function EisenhowerMatrixView({
-  tasks, allTags, selectedTaskId, onSelectTask, onToggleTask, onUpdateTask,
+  tasks,
+  allTags,
+  selectedTaskId,
+  onSelectTask,
+  onToggleTask,
+  onUpdateTask,
 }: EisenhowerMatrixViewProps) {
-  const { t } = useTranslation('common');
-  const [dragOverQuadrant, setDragOverQuadrant] = useState<Quadrant | null>(null);
-  const dateFormat = useAppStore((s) => s.dateFormat);
-  const timeFormat = useAppStore((s) => s.timeFormat);
+  const { t } = useTranslation('common')
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const dateFormat = useAppStore((s) => s.dateFormat)
+  const timeFormat = useAppStore((s) => s.timeFormat)
 
-  const todayStr = getLocalToday();
+  const todayStr = getLocalToday()
 
   // Classify tasks into quadrants
   const quadrants = useMemo(() => {
-    const map = new Map<Quadrant, Task[]>();
-    map.set('q1', []);
-    map.set('q2', []);
-    map.set('q3', []);
-    map.set('q4', []);
+    const map = new Map<Quadrant, Task[]>()
+    map.set('q1', [])
+    map.set('q2', [])
+    map.set('q3', [])
+    map.set('q4', [])
 
     tasks.forEach((task) => {
-      if (task.isCompleted) return; // Hide completed tasks in matrix
-      const q = classifyTask(task, todayStr);
-      map.get(q)!.push(task);
-    });
+      if (task.isCompleted) return // Hide completed tasks in matrix
+      const q = classifyTask(task)
+      map.get(q)?.push(task)
+    })
 
     // Sort: by due date ascending within each quadrant
     map.forEach((list) => {
       list.sort((a, b) => {
-        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
-        return b.priority - a.priority; // Higher priority first when no dates
-      });
-    });
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
+        if (a.dueDate) return -1
+        if (b.dueDate) return 1
+        return b.priority - a.priority // Higher priority first when no dates
+      })
+    })
 
-    return map;
-  }, [tasks, todayStr]);
+    return map
+  }, [tasks])
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  const activeTask = activeTaskId ? tasks.find((task) => task.id === activeTaskId) : null
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTaskId(String(event.active.id))
+  }
 
-  const handleDrop = (e: React.DragEvent, targetQuadrant: Quadrant) => {
-    e.preventDefault();
-    setDragOverQuadrant(null);
-    const taskId = e.dataTransfer.getData('text/plain');
-    if (!taskId) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTaskId(null)
+    const taskId = String(event.active.id)
+    const targetQuadrant = getQuadrantFromDropId(event.over?.id)
+    if (!targetQuadrant) return
 
-    const task = tasks.find((tk) => tk.id === taskId);
-    if (!task) return;
+    const task = tasks.find((tk) => tk.id === taskId)
+    if (!task) return
 
-    const currentQuadrant = classifyTask(task, todayStr);
-    if (currentQuadrant === targetQuadrant) return;
+    const targetPriority = getPriorityForQuadrant(targetQuadrant)
+    if (task.priority === targetPriority) return
 
-    // Determine what fields to update based on target quadrant
-    const updates: Partial<UpdateTaskParams> = {};
+    onUpdateTask(taskId, { priority: targetPriority })
+  }
 
-    switch (targetQuadrant) {
-      case 'q1': // Urgent & Important
-        updates.priority = 9 as Priority; // high
-        if (!task.dueDate || parseLocalDate(task.dueDate) > addDays(todayStr, URGENCY_DAYS)) {
-          updates.dueDate = todayStr;
-        }
-        break;
-      case 'q2': // Important, Not Urgent
-        if (task.priority < 6) updates.priority = 6 as Priority; // at least medium
-        if (task.dueDate && parseLocalDate(task.dueDate) <= addDays(todayStr, URGENCY_DAYS)) {
-          // Move due date out to make it not urgent
-          updates.dueDate = formatDate(addDays(todayStr, URGENCY_DAYS + 1));
-        }
-        break;
-      case 'q3': // Urgent, Not Important
-        updates.priority = 3 as Priority; // low
-        if (!task.dueDate || parseLocalDate(task.dueDate) > addDays(todayStr, URGENCY_DAYS)) {
-          updates.dueDate = todayStr;
-        }
-        break;
-      case 'q4': // Not Urgent, Not Important
-        updates.priority = 0 as Priority; // none
-        if (task.dueDate && parseLocalDate(task.dueDate) <= addDays(todayStr, URGENCY_DAYS)) {
-          updates.dueDate = undefined; // Clear urgent due date
-        }
-        break;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      onUpdateTask(taskId, updates);
-    }
-  };
+  const handleDragCancel = () => {
+    setActiveTaskId(null)
+  }
 
   // Empty state
   if (tasks.length === 0) {
@@ -200,158 +359,58 @@ export default function EisenhowerMatrixView({
         <p className="text-lg">{t('tasks.no_tasks')}</p>
         <p className="text-sm mt-2">{t('tasks.create_first')}</p>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="flex-1 overflow-auto p-4 md:p-6">
-      {/* Axis labels */}
-      <div className="mb-2 flex items-center justify-between px-2 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-        <span>{t('tasks.matrix.urgent')}</span>
-        <span>{t('tasks.matrix.not_urgent')}</span>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 min-h-0" style={{ minHeight: 'calc(100% - 2rem)' }}>
-        {QUADRANT_CONFIGS.map((config) => {
-          const qTasks = quadrants.get(config.key) || [];
-          const isDragOver = dragOverQuadrant === config.key;
-
-          return (
-            <div
+    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <DndContext
+        onDragCancel={handleDragCancel}
+        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
+        sensors={sensors}
+      >
+        <div className="flex-1 min-h-0 grid sm:grid-cols-1 md:grid-cols-2 sm:grid-rows-4 md:grid-rows-2 sm:gap-1 md:gap-2 p-2">
+          {QUADRANT_CONFIGS.map((config) => (
+            <QuadrantPanel
+              allTags={allTags}
+              config={config}
+              dateFormat={dateFormat}
               key={config.key}
-              className={`flex flex-col rounded-xl overflow-hidden transition-all ${
-                isDragOver
-                  ? `${config.bodyBg} ${config.bodyBgDark} ring-2 ${config.ringColor}`
-                  : `${config.bodyBg} ${config.bodyBgDark}`
-              }`}
-              onDragOver={handleDragOver}
-              onDragEnter={() => setDragOverQuadrant(config.key)}
-              onDragLeave={() => setDragOverQuadrant(null)}
-              onDrop={(e) => handleDrop(e, config.key)}
-            >
-              {/* Quadrant header */}
-              <div className={`${config.headerBg} ${config.headerText} px-4 py-2.5 flex items-center justify-between`}>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-sm">{t(config.labelKey)}</h3>
-                  <span className="text-xs opacity-80 bg-white/20 px-2 py-0.5 rounded-full">
-                    {qTasks.length}
-                  </span>
-                </div>
-                <span className="text-xs opacity-75 hidden sm:inline">
-                  {t(config.hintKey)}
-                </span>
-              </div>
-
-              {/* Quadrant body */}
-              <div className="flex-1 overflow-auto p-2 space-y-1.5">
-                {qTasks.length === 0 && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8 italic">
-                    {t('tasks.views.empty_column')}
-                  </p>
-                )}
-                {qTasks.map((task) => {
-                  const taskTags = getTaskTags(task, allTags);
-                  const priorityColor = PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK;
-
-                  return (
-                    <div
-                      key={task.id}
-                      draggable
-                      role="button"
-                      tabIndex={0}
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      onDragEnd={() => setDragOverQuadrant(null)}
-                      onClick={() => onSelectTask(selectedTaskId === task.id ? null : task.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onSelectTask(selectedTaskId === task.id ? null : task.id);
-                        }
-                      }}
-                      className={`bg-white dark:bg-gray-800 rounded-lg p-2.5 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                        selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <CheckNow
-                          checked={false}
-                          hasSteps={!!(task.steps && task.steps.length > 0)}
-                          color1="var(--theme-color)"
-                          color2="var(--theme-bg-70)"
-                          className="mt-0.5 flex-shrink-0"
-                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                            {task.title}
-                          </h4>
-                          {task.description && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            {task.dueDate && (
-                              <span className={`text-xs flex items-center gap-1 ${
-                                isOverdue(task.dueDate, todayStr)
-                                  ? 'text-red-500 dark:text-red-400 font-medium'
-                                  : 'text-gray-400 dark:text-gray-500'
-                              }`}>
-                                {formatDisplayDate(task.dueDate, dateFormat, t)}
-                                {task.dueTime && <span>{formatTime(task.dueTime, timeFormat)}</span>}
-                              </span>
-                            )}
-                            {task.priority > 0 && (
-                              <span
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: priorityColor }}
-                                title={t(`tasks.priority.${({ 0: 'none', 3: 'low', 6: 'medium', 9: 'high' } as Record<number, string>)[task.priority] || 'none'}`)}
-                              />
-                            )}
-                            {taskTags.slice(0, 2).map((tag) => (
-                              <span
-                                key={tag.id}
-                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs text-white"
-                                style={{ backgroundColor: tag.color || '#3B82F6' }}
-                              >
-                                {tag.emoji && <span className="mr-0.5">{tag.emoji}</span>}
-                                {tag.name}
-                              </span>
-                            ))}
-                            {taskTags.length > 2 && (
-                              <span className="text-xs text-gray-400 dark:text-gray-500">+{taskTags.length - 2}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              onSelectTask={onSelectTask}
+              onToggleTask={onToggleTask}
+              qTasks={quadrants.get(config.key) || []}
+              selectedTaskId={selectedTaskId}
+              t={t}
+              timeFormat={timeFormat}
+              todayStr={todayStr}
+            />
+          ))}
+        </div>
+        <DragOverlay dropAnimation={null}>
+          {activeTask && (
+            <div>
+              <MatrixTaskCardContent
+                dateFormat={dateFormat}
+                isOverlay
+                onSelectTask={onSelectTask}
+                onToggleTask={onToggleTask}
+                selectedTaskId={selectedTaskId}
+                task={activeTask}
+                t={t}
+                timeFormat={timeFormat}
+                todayStr={todayStr}
+              />
             </div>
-          );
-        })}
-      </div>
-
-      {/* Bottom axis labels */}
-      <div className="mt-2 flex items-center justify-between px-2 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-        <span>{t('tasks.matrix.important')}</span>
-        <span>{t('tasks.matrix.not_important')}</span>
-      </div>
+          )}
+        </DragOverlay>
+      </DndContext>
     </div>
-  );
+  )
 }
 
 // ==================== Helpers ====================
 
-function addDays(dateStr: string, days: number): Date {
-  const d = parseLocalDate(dateStr);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function isOverdue(dueDateStr: string, todayStr: string): boolean {
-  return dueDateStr < todayStr;
+  return dueDateStr < todayStr
 }

@@ -108,14 +108,29 @@
     "group": {
       "by": "グループ",
       "none": "グループなし",
-      "list": "リスト別",
-      "priority": "優先度別"
+      "list": "タスクグループ別",
+      "priority": "優先度別",
+      "time": "時間別"
+    },
+    "group_time": {
+      "future7": "今後7日間",
+      "later": "それ以降",
+      "overdue": "期限切れ",
+      "today": "今日"
     },
     "matrix": {
+      "delegate": "重要ではないが緊急",
+      "delegate_hint": "優先度 1、2、3",
+      "do_first": "重要かつ緊急",
+      "do_first_hint": "優先度 7、8、9、10",
+      "eliminate": "保留",
+      "eliminate_hint": "優先度 0",
       "urgent": "緊急",
       "important": "重要",
       "not_urgent": "緊急でない",
-      "not_important": "重要でない"
+      "not_important": "重要でない",
+      "schedule": "重要だが緊急でない",
+      "schedule_hint": "優先度 4、5、6"
     },
     "search_placeholder": "タスクを検索...",
     "no_tasks": "タスクなし",
@@ -136,6 +151,7 @@
       "start_date": "開始日",
       "priority": "優先度",
       "created_at": "作成日時",
+      "completed_at": "完了日時",
       "asc": "昇順",
       "desc": "降順"
     },

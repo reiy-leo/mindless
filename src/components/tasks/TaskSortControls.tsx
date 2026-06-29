@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/stores/useAppStore';
 import Select from '@/components/Select';
+import type { SortBy } from '@/types/task';
 
 export function TaskSortControls({ onChange }: { onChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void } = {}) {
   const { t } = useTranslation('common');
@@ -11,7 +12,7 @@ export function TaskSortControls({ onChange }: { onChange?: (sortBy: string, sor
       <Select
         value={taskSortBy}
         onChange={(val) => {
-          setTaskSortBy(val as any);
+          setTaskSortBy(val as SortBy);
           onChange?.(val, taskSortOrder);
         }}
         options={[
@@ -20,6 +21,7 @@ export function TaskSortControls({ onChange }: { onChange?: (sortBy: string, sor
           { value: 'startDate', label: t('tasks.sort.start_date') },
           { value: 'priority', label: t('tasks.sort.priority') },
           { value: 'createdAt', label: t('tasks.sort.created_at') },
+          { value: 'completedAt', label: t('tasks.sort.completed_at') },
         ]}
         className="w-36"
         aria-label={t('tasks.sort.by')}

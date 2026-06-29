@@ -11,7 +11,7 @@ interface CheckNowProps {
 export default function CheckNow({ checked, hasSteps, color1, color2, size = 16, onClick, className }: CheckNowProps) {
   const r = 4
   const pad = 4
-  const defaultColor = 'oklch(44.6% 0.043 257.281)'
+  const defaultColor = 'oklch(92.8% 0.006 264.531)'
 
   return (
     <svg

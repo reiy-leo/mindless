@@ -1,219 +1,271 @@
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import CheckNow from '@/components/common/CheckNow';
-import { PRIORITY_COLORS, PRIORITY_COLOR_FALLBACK } from '@/lib/constants';
-import { getLocalToday } from '@/lib/taskHelpers';
-import { getLunarDayStr, getLunarInfo } from '@/lib/lunar';
-import { useCalendarEvents } from '@/queries/useTaskQueries';
-import { useAppStore } from '@/stores/useAppStore';
-import type { Task, CalendarEvent } from '@/types/task';
-import type { Tag } from '@/types/tag';
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import CheckNow from '@/components/common/CheckNow'
+import { PRIORITY_COLOR_FALLBACK, PRIORITY_COLORS } from '@/lib/constants'
+import { getLunarDayStr, getLunarInfo } from '@/lib/lunar'
+import { getLocalToday } from '@/lib/taskHelpers'
+import { useCalendarEvents } from '@/queries/useTaskQueries'
+import { useAppStore } from '@/stores/useAppStore'
+import type { Tag } from '@/types/tag'
+import type { CalendarEvent, Task } from '@/types/task'
 
 interface CalendarViewProps {
-  tasks: Task[];
-  allTags: Tag[];
-  selectedTaskId: string | null;
-  onSelectTask: (id: string | null) => void;
-  onToggleTask: (id: string, isCompleted: boolean) => void;
+  allTags: Tag[]
+  onSelectTask: (id: string | null) => void
+  onToggleTask: (id: string, isCompleted: boolean) => void
+  selectedTaskId: string | null
+  tasks: Task[]
 }
 
 /** Classify lunar day string: festival, solar term, month start, or normal */
 function classifyLunarStr(lunarStr: string): 'festival' | 'term' | 'month' | 'normal' {
   // Solar terms (24节气)
   const solarTerms = [
-    '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
-    '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
-    '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
-    '寒露', '霜降', '立冬', '小雪', '大雪', '冬至',
-  ];
-  if (solarTerms.includes(lunarStr)) return 'term';
+    '小寒',
+    '大寒',
+    '立春',
+    '雨水',
+    '惊蛰',
+    '春分',
+    '清明',
+    '谷雨',
+    '立夏',
+    '小满',
+    '芒种',
+    '夏至',
+    '小暑',
+    '大暑',
+    '立秋',
+    '处暑',
+    '白露',
+    '秋分',
+    '寒露',
+    '霜降',
+    '立冬',
+    '小雪',
+    '大雪',
+    '冬至',
+  ]
+  if (solarTerms.includes(lunarStr)) return 'term'
   // Month names (初一 shows as month name like 正月, 二月, etc.)
-  const monthNames = [
-    '正月', '二月', '三月', '四月', '五月', '六月',
-    '七月', '八月', '九月', '十月', '冬月', '腊月',
-  ];
-  if (monthNames.includes(lunarStr)) return 'month';
+  const monthNames = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月']
+  if (monthNames.includes(lunarStr)) return 'month'
   // Known festivals (common ones returned by lunar-javascript)
   const knownFestivals = [
-    '春节', '元宵节', '龙抬头', '上巳节', '端午节', '七夕节',
-    '中元节', '中秋节', '重阳节', '腊八节', '除夕',
-    '元旦', '妇女节', '植树节', '劳动节', '青年节', '儿童节',
-    '建党节', '建军节', '教师节', '国庆节',
-  ];
-  if (knownFestivals.some((f) => lunarStr.includes(f))) return 'festival';
-  return 'normal';
+    '春节',
+    '元宵节',
+    '龙抬头',
+    '上巳节',
+    '端午节',
+    '七夕节',
+    '中元节',
+    '中秋节',
+    '重阳节',
+    '腊八节',
+    '除夕',
+    '元旦',
+    '妇女节',
+    '植树节',
+    '劳动节',
+    '青年节',
+    '儿童节',
+    '建党节',
+    '建军节',
+    '教师节',
+    '国庆节',
+  ]
+  if (knownFestivals.some((f) => lunarStr.includes(f))) return 'festival'
+  return 'normal'
 }
 
 function getLunarColorClass(kind: 'festival' | 'term' | 'month' | 'normal', isToday: boolean): string {
-  if (kind === 'festival') return 'text-red-500 dark:text-red-400';
-  if (kind === 'term') return 'text-green-600 dark:text-green-400';
-  if (kind === 'month') return 'text-orange-500 dark:text-orange-400 font-medium';
-  if (isToday) return 'text-blue-400 dark:text-blue-500';
-  return 'text-gray-400 dark:text-gray-500';
+  if (kind === 'festival') return 'text-red-500 dark:text-red-400'
+  if (kind === 'term') return 'text-green-600 dark:text-green-400'
+  if (kind === 'month') return 'text-orange-500 dark:text-orange-400 font-medium'
+  if (isToday) return 'text-blue-400 dark:text-blue-500'
+  return 'text-gray-400 dark:text-gray-500'
 }
 
 export default function CalendarView({
-  tasks, allTags: _allTags, selectedTaskId, onSelectTask, onToggleTask,
+  tasks,
+  allTags: _allTags,
+  selectedTaskId,
+  onSelectTask,
+  onToggleTask,
 }: CalendarViewProps) {
-  const { t, i18n } = useTranslation('common');
-  const weekStartDay = useAppStore((s) => s.weekStartDay);
+  const { t, i18n } = useTranslation('common')
+  const weekStartDay = useAppStore((s) => s.weekStartDay)
   const [viewMonth, setViewMonth] = useState(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
-  });
+    const now = new Date()
+    return { month: now.getMonth(), year: now.getFullYear() }
+  })
 
   const dayLabels = useMemo(() => {
     const all = [
-      t('habits.calendar.sun'), t('habits.calendar.mon'), t('habits.calendar.tue'),
-      t('habits.calendar.wed'), t('habits.calendar.thu'), t('habits.calendar.fri'),
+      t('habits.calendar.sun'),
+      t('habits.calendar.mon'),
+      t('habits.calendar.tue'),
+      t('habits.calendar.wed'),
+      t('habits.calendar.thu'),
+      t('habits.calendar.fri'),
       t('habits.calendar.sat'),
-    ];
-    return [...all.slice(weekStartDay), ...all.slice(0, weekStartDay)];
-  }, [t, weekStartDay]);
+    ]
+    return [...all.slice(weekStartDay), ...all.slice(0, weekStartDay)]
+  }, [t, weekStartDay])
 
   // Group tasks by due date
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>();
+    const map = new Map<string, Task[]>()
     tasks.forEach((task) => {
       if (task.dueDate) {
-        const existing = map.get(task.dueDate) || [];
-        existing.push(task);
-        map.set(task.dueDate, existing);
+        const existing = map.get(task.dueDate) || []
+        existing.push(task)
+        map.set(task.dueDate, existing)
       }
-    });
-    return map;
-  }, [tasks]);
+    })
+    return map
+  }, [tasks])
 
   // Imported calendar events
-  const { data: calendarEvents = [] } = useCalendarEvents();
+  const { data: calendarEvents = [] } = useCalendarEvents()
 
   // Group calendar events by date
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
+    const map = new Map<string, CalendarEvent[]>()
     calendarEvents.forEach((ev: CalendarEvent) => {
-      const existing = map.get(ev.eventDate) || [];
-      existing.push(ev);
-      map.set(ev.eventDate, existing);
-    });
-    return map;
-  }, [calendarEvents]);
+      const existing = map.get(ev.eventDate) || []
+      existing.push(ev)
+      map.set(ev.eventDate, existing)
+    })
+    return map
+  }, [calendarEvents])
 
   // Memoize calendar computations
   const { daysInMonth, firstDayOfWeek, trailingEmpty, monthLabel, lunarYearLabel, today } = useMemo(() => {
-    const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
-    const rawDow = new Date(viewMonth.year, viewMonth.month, 1).getDay();
-    const firstDayOfWeek = (rawDow - weekStartDay + 7) % 7;
-    const totalCells = firstDayOfWeek + daysInMonth;
-    const trailingEmpty = (7 - (totalCells % 7)) % 7;
+    const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate()
+    const rawDow = new Date(viewMonth.year, viewMonth.month, 1).getDay()
+    const firstDayOfWeek = (rawDow - weekStartDay + 7) % 7
+    const totalCells = firstDayOfWeek + daysInMonth
+    const trailingEmpty = (7 - (totalCells % 7)) % 7
     const monthLabel = new Date(viewMonth.year, viewMonth.month).toLocaleDateString(i18n.language, {
-      year: 'numeric', month: 'long',
-    });
-    const today = getLocalToday();
+      month: 'long',
+      year: 'numeric',
+    })
+    const today = getLocalToday()
 
     // Get lunar year label for the middle of the month (day 15) to avoid edge cases
-    const midLunar = getLunarInfo(viewMonth.year, viewMonth.month + 1, 15);
-    const lunarYearLabel = midLunar.yearStr;
+    const midLunar = getLunarInfo(viewMonth.year, viewMonth.month + 1, 15)
+    const lunarYearLabel = midLunar.yearStr
 
-    return { daysInMonth, firstDayOfWeek, trailingEmpty, monthLabel, lunarYearLabel, today };
-  }, [viewMonth, i18n.language, weekStartDay]);
+    return { daysInMonth, firstDayOfWeek, lunarYearLabel, monthLabel, today, trailingEmpty }
+  }, [viewMonth, i18n.language, weekStartDay])
 
   // Precompute lunar day strings for all days in the visible month
   const lunarDataByDay = useMemo(() => {
-    const data: Map<number, { str: string; kind: 'festival' | 'term' | 'month' | 'normal' }> = new Map();
+    const data: Map<number, { str: string; kind: 'festival' | 'term' | 'month' | 'normal' }> = new Map()
     for (let day = 1; day <= daysInMonth; day++) {
-      const lunarStr = getLunarDayStr(viewMonth.year, viewMonth.month + 1, day);
-      const kind = classifyLunarStr(lunarStr);
-      data.set(day, { str: lunarStr, kind });
+      const lunarStr = getLunarDayStr(viewMonth.year, viewMonth.month + 1, day)
+      const kind = classifyLunarStr(lunarStr)
+      data.set(day, { kind, str: lunarStr })
     }
-    return data;
-  }, [viewMonth.year, viewMonth.month, daysInMonth]);
+    return data
+  }, [viewMonth.year, viewMonth.month, daysInMonth])
 
   const prevMonth = () => {
-    setViewMonth((v) =>
-      v.month === 0 ? { year: v.year - 1, month: 11 } : { ...v, month: v.month - 1 }
-    );
-  };
+    setViewMonth((v) => (v.month === 0 ? { month: 11, year: v.year - 1 } : { ...v, month: v.month - 1 }))
+  }
   const nextMonth = () => {
-    setViewMonth((v) =>
-      v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 }
-    );
-  };
+    setViewMonth((v) => (v.month === 11 ? { month: 0, year: v.year + 1 } : { ...v, month: v.month + 1 }))
+  }
   const goToday = () => {
-    const now = new Date();
-    setViewMonth({ year: now.getFullYear(), month: now.getMonth() });
-  };
+    const now = new Date()
+    setViewMonth({ month: now.getMonth(), year: now.getFullYear() })
+  }
 
   // Tasks without due dates
-  const noDueTasks = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks]);
+  const noDueTasks = useMemo(() => tasks.filter((task) => !task.dueDate), [tasks])
 
   // Check if visible month has any tasks
-  const hasAnyTasks = tasksByDate.size > 0 || noDueTasks.length > 0;
+  const hasAnyTasks = tasksByDate.size > 0 || noDueTasks.length > 0
 
   return (
-    <div className="flex-1 overflow-auto p-6">
+    <div className="flex-1 overflow-auto p-2">
       {/* Calendar header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button onClick={prevMonth} aria-label={t('tasks.views.prev_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={prevMonth}
+            aria-label={t('tasks.views.prev_month')}
+            className="p-2 rounded-lg hover:bg-theme-100 dark:hover:bg-theme-700"
+          >
+            <ChevronLeft className="w-5 h-5 text-theme-600 dark:text-theme-400" />
           </button>
-          <div className="min-w-[200px] text-center">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {monthLabel}
-            </h2>
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {lunarYearLabel}
-            </span>
+          <div className="flex flex-row text-center">
+            <p className="text-md font-semibold text-theme-800 dark:text-theme-100">{monthLabel}</p>
+            <span className="text-xs text-theme-300 dark:text-theme-500">{lunarYearLabel}</span>
           </div>
-          <button onClick={nextMonth} aria-label={t('tasks.views.next_month')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button
+            type="button"
+            onClick={nextMonth}
+            aria-label={t('tasks.views.next_month')}
+            className="p-2 rounded-lg hover:bg-theme-100 dark:hover:bg-theme-700"
+          >
+            <ChevronRight className="w-5 h-5 text-theme-600 dark:text-theme-400" />
           </button>
         </div>
         <button
+          type="button"
           onClick={goToday}
-          className="px-3 py-1.5 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+          className="px-3 py-1 text-sm rounded-lg bg-theme-500 text-white hover:bg-theme-600 transition-colors"
         >
           {t('tasks.views.today')}
         </button>
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 border border-theme-200 dark:border-theme-700 rounded-sm overflow-hidden">
         {/* Day labels */}
         {dayLabels.map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div
+            key={d}
+            className="text-center text-xs font-medium text-theme-500 dark:text-theme-400 py-2 bg-theme-50 dark:bg-theme-800 border-b border-theme-200 dark:border-theme-700"
+          >
             {d}
           </div>
         ))}
 
         {/* Empty cells before first day */}
         {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`empty-${i}`} className="min-h-[110px] bg-gray-50/50 dark:bg-gray-900/50 border-b border-r border-gray-100 dark:border-gray-800" />
+          <div
+            key={`empty-${i}`}
+            className="min-h-27.5 bg-gray-50/50 dark:bg-gray-900/50 border-b border-r border-gray-100 dark:border-gray-800"
+          />
         ))}
 
         {/* Day cells */}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-          const dateStr = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const dayTasks = tasksByDate.get(dateStr) || [];
-          const dayEvents = eventsByDate.get(dateStr) || [];
-          const isToday = dateStr === today;
-          const lunarDay = lunarDataByDay.get(day);
+          const dateStr = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const dayTasks = tasksByDate.get(dateStr) || []
+          const dayEvents = eventsByDate.get(dateStr) || []
+          const isToday = dateStr === today
+          const lunarDay = lunarDataByDay.get(day)
 
           return (
             <div
               key={day}
-              className={`min-h-[110px] border-b border-r border-gray-100 dark:border-gray-800 p-1 ${
-                isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+              className={`min-h-27.5 border-b border-r border-theme-100 dark:border-theme-800 p-1 ${
+                isToday ? 'bg-theme-200/50 dark:bg-theme-800/10' : ''
               }`}
             >
               {/* Date number + lunar day */}
               <div className="flex items-baseline gap-1.5 mb-1 px-1">
-                <span className={`text-xs font-medium ${
-                  isToday
-                    ? 'text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-gray-600 dark:text-gray-400'
-                }`}>
+                <span
+                  className={`text-xs font-medium ${
+                    isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-600 dark:text-gray-400'
+                  }`}
+                >
                   {day}
                 </span>
                 {lunarDay && (
@@ -231,22 +283,20 @@ export default function CalendarView({
                       key={ev.id}
                       className="inline-flex items-center gap-0.5 text-xs leading-tight px-1 py-px rounded truncate max-w-full"
                       style={{
-                        backgroundColor: (ev.color || '#3B82F6') + '20',
+                        backgroundColor: `${ev.color || '#3B82F6'}20`,
                         color: ev.color || '#3B82F6',
                       }}
                       title={ev.title}
                     >
                       <span
-                        className="w-1 h-1 rounded-full flex-shrink-0"
+                        className="w-1 h-1 rounded-full shrink-0"
                         style={{ backgroundColor: ev.color || '#3B82F6' }}
                       />
                       {ev.title}
                     </span>
                   ))}
                   {dayEvents.length > 2 && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                      +{dayEvents.length - 2}
-                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">+{dayEvents.length - 2}</span>
                   )}
                 </div>
               )}
@@ -256,10 +306,16 @@ export default function CalendarView({
                 {dayTasks.slice(0, 3).map((task) => (
                   <div
                     key={task.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => { e.stopPropagation(); onSelectTask(task.id); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectTask(task.id); } }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSelectTask(task.id)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSelectTask(task.id)
+                      }
+                    }}
                     className={`flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer truncate transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
                       selectedTaskId === task.id
                         ? 'ring-1 ring-blue-500 bg-blue-50 dark:bg-blue-900/30'
@@ -272,14 +328,19 @@ export default function CalendarView({
                       color1="var(--theme-color)"
                       color2="var(--theme-bg-70)"
                       size={12}
-                      className="flex-shrink-0"
-                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
+                      className="shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleTask(task.id, task.isCompleted)
+                      }}
                     />
                     <div
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
                     />
-                    <span className={`truncate ${task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                    <span
+                      className={`truncate ${task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}
+                    >
                       {task.title}
                     </span>
                   </div>
@@ -287,19 +348,25 @@ export default function CalendarView({
                 {dayTasks.length > 3 && (
                   <div
                     className="text-xs text-blue-500 dark:text-blue-400 px-1 cursor-default"
-                    title={dayTasks.slice(3).map((tk) => tk.title).join('\n')}
+                    title={dayTasks
+                      .slice(3)
+                      .map((tk) => tk.title)
+                      .join('\n')}
                   >
                     {t('tasks.views.more_tasks', { count: dayTasks.length - 3 })}
                   </div>
                 )}
               </div>
             </div>
-          );
+          )
         })}
 
         {/* Trailing empty cells to complete the last week row */}
         {Array.from({ length: trailingEmpty }).map((_, i) => (
-          <div key={`trailing-${i}`} className="min-h-[110px] bg-gray-50/50 dark:bg-gray-900/50 border-b border-r border-gray-100 dark:border-gray-800" />
+          <div
+            key={`trailing-${i}`}
+            className="min-h-27.5 bg-gray-50/50 dark:bg-gray-900/50 border-b border-r border-gray-100 dark:border-gray-800"
+          />
         ))}
       </div>
 
@@ -320,10 +387,13 @@ export default function CalendarView({
             {noDueTasks.map((task) => (
               <div
                 key={task.id}
-                role="button"
-                tabIndex={0}
                 onClick={() => onSelectTask(task.id)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectTask(task.id); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onSelectTask(task.id)
+                  }
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 shadow-sm cursor-pointer transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   selectedTaskId === task.id ? 'ring-2 ring-blue-500' : ''
                 } ${task.isCompleted ? 'opacity-50' : ''}`}
@@ -333,10 +403,18 @@ export default function CalendarView({
                   hasSteps={!!(task.steps && task.steps.length > 0)}
                   color1="var(--theme-color)"
                   color2="var(--theme-bg-70)"
-                  onClick={(e) => { e.stopPropagation(); onToggleTask(task.id, task.isCompleted); }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleTask(task.id, task.isCompleted)
+                  }}
                 />
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }} />
-                <span className={`text-sm truncate max-w-[200px] ${task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? PRIORITY_COLOR_FALLBACK }}
+                />
+                <span
+                  className={`text-sm truncate max-w-50 ${task.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}
+                >
                   {task.title}
                 </span>
               </div>
@@ -345,5 +423,5 @@ export default function CalendarView({
         </div>
       )}
     </div>
-  );
+  )
 }

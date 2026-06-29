@@ -152,14 +152,14 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             sort_order TEXT NOT NULL DEFAULT 'asc',
             group_by TEXT NOT NULL DEFAULT 'none',
             filter_status TEXT NOT NULL DEFAULT 'all',
-            view_mode TEXT NOT NULL DEFAULT 'list'
+            view_mode TEXT NOT NULL DEFAULT 'list',
+            status_settings TEXT
         );
 
         INSERT OR IGNORE INTO lists (id, name, color, icon) VALUES
             ('inbox', 'Inbox', '#3B82F6', 'inbox'),
             ('today', 'Today', '#10B981', 'calendar'),
-            ('next7days', 'Next 7 Days', '#F59E0B', 'clock'),
-            ('eisenhower', 'Eisenhower Matrix', '#8B5CF6', 'grid');
+            ('next7days', 'Next 7 Days', '#F59E0B', 'clock');
 
         INSERT OR IGNORE INTO settings (key, value) VALUES
             ('language', 'zh'),
@@ -167,7 +167,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             ('start_day_of_week', '1'),
             ('notification_enabled', '1'),
             ('default_list_id', 'inbox'),
-            ('priority_mode', 'simple'),
+            ('priority_mode', 'Traditional'),
             ('task_sort_by', 'due_date'),
             ('task_group_by', 'none'),
             ('default_task_sections', '{"steps":true,"subtasks":true,"attachments":true,"notes":true,"persons":true,"media":true}'),
@@ -237,6 +237,7 @@ pub fn run_migrations(app: &AppHandle) -> Result<(), String> {
             conn.execute_batch(sql).map_err(|e| format!("Migration failed: {}", e))?;
 
             // Try adding new columns (ignore if they already exist)
+            let _ = conn.execute_batch("ALTER TABLE list_settings ADD COLUMN status_settings TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_date TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN end_time TEXT;");
             let _ = conn.execute_batch("ALTER TABLE tasks ADD COLUMN parent_task_id TEXT;");

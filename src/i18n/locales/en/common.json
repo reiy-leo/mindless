@@ -109,14 +109,29 @@
     "group": {
       "by": "Group",
       "none": "No Group",
-      "list": "By List",
-      "priority": "By Priority"
+      "list": "By Task Group",
+      "priority": "By Priority",
+      "time": "By Time"
+    },
+    "group_time": {
+      "future7": "Next 7 Days",
+      "later": "Later",
+      "overdue": "Overdue",
+      "today": "Today"
     },
     "matrix": {
+      "delegate": "Not Important but Urgent",
+      "delegate_hint": "Priority 1, 2, 3",
+      "do_first": "Important and Urgent",
+      "do_first_hint": "Priority 7, 8, 9, 10",
+      "eliminate": "Pending",
+      "eliminate_hint": "Priority 0",
       "urgent": "Urgent",
       "important": "Important",
       "not_urgent": "Not Urgent",
-      "not_important": "Not Important"
+      "not_important": "Not Important",
+      "schedule": "Important, Not Urgent",
+      "schedule_hint": "Priority 4, 5, 6"
     },
     "search_placeholder": "Search tasks...",
     "no_tasks": "No tasks",
@@ -137,6 +152,7 @@
       "start_date": "Start Date",
       "priority": "Priority",
       "created_at": "Created At",
+      "completed_at": "Completed At",
       "asc": "Ascending",
       "desc": "Descending"
     },

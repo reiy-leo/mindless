@@ -1,5 +1,5 @@
-import { Copy, Plus, Trash2 } from 'lucide-react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { Copy, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
@@ -121,11 +121,12 @@ export default function TemplateManagementDialogPage() {
     <OverlayWebviewWindow closable={false}>
       <div className="flex h-full">
         {/* Left panel: Template list */}
-        <div className="w-88 flex flex-col border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div data-tauri-drag-region className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="w-88 flex flex-col border-r border-gray-200 dark:border-gray-700 shrink-0">
+          <div data-tauri-drag-region className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
             <div className="flex items-center gap-2 mb-2">
-              <div className="flex items-center gap-1.5 h-8" aria-label="window-controls">
+              <div className="flex items-center gap-1.5 h-8">
                 <button
+                  type="button"
                   onClick={() => getCurrentWindow().close()}
                   className="w-3 h-3 rounded-full bg-[#898989] hover:bg-[#FF3B30] transition-colors group relative"
                   title="Close"
@@ -138,6 +139,7 @@ export default function TemplateManagementDialogPage() {
                     stroke="currentColor"
                     className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100"
                   >
+                    <title>close button</title>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -150,8 +152,9 @@ export default function TemplateManagementDialogPage() {
                 className="flex-1 px-1.5 py-0.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
+                type="button"
                 onClick={handleCreate}
-                className="p-0.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex-shrink-0"
+                className="p-0.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -176,7 +179,7 @@ export default function TemplateManagementDialogPage() {
                         ? 'bg-blue-100 dark:bg-blue-900/30'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setSelectedTemplateId(template.id)}
+                    onMouseDown={() => setSelectedTemplateId(template.id)}
                   >
                     <div className="flex-1 min-w-0">
                       {editingId === template.id ? (
@@ -204,6 +207,7 @@ export default function TemplateManagementDialogPage() {
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDelete(template.id)
