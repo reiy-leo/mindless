@@ -194,6 +194,10 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .accelerator("CmdOrCtrl+Shift+2")
         .build(app)
         .map_err(|e| e.to_string())?;
+    let priority_urgent = MenuItemBuilder::with_id("priority:10", &l.priority_urgent)
+        .accelerator("CmdOrCtrl+Shift+3")
+        .build(app)
+        .map_err(|e| e.to_string())?;
     let set_date = MenuItemBuilder::with_id("task:set_date", &l.set_date)
         .build(app)
         .map_err(|e| e.to_string())?;
@@ -210,6 +214,7 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
     let priority_submenu = SubmenuBuilder::new(app, &l.priority_menu)
         .item(&priority_traditional)
         .item(&priority_anoxia)
+        .item(&priority_urgent)
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -417,6 +422,7 @@ fn setup_menu_handler(app: &AppHandle) {
             // Task priority
             "priority:3" => { let _ = app_handle.emit("menu:priority", 3); }
             "priority:9" => { let _ = app_handle.emit("menu:priority", 9); }
+            "priority:10" => { let _ = app_handle.emit("menu:priority", 10); }
             // Task actions
             "task:set_date" => { let _ = app_handle.emit("menu:task_action", "set_date"); }
             "task:mark_completed" => { let _ = app_handle.emit("menu:task_action", "mark_completed"); }
@@ -476,6 +482,7 @@ pub struct MenuLabels {
     pub priority_menu: String,
     pub priority_traditional: String,
     pub priority_anoxia: String,
+    pub priority_urgent: String,
     pub set_date: String,
     pub mark_completed: String,
     pub mark_closed: String,
@@ -521,6 +528,7 @@ impl MenuLabels {
             priority_menu: "设置优先级".into(),
             priority_traditional: "传统 (低)".into(),
             priority_anoxia: "缺氧 (高)".into(),
+            priority_urgent: "十万火急 (10)".into(),
             set_date: "设置日期".into(),
             mark_completed: "标记已完成".into(),
             mark_closed: "标记已关闭".into(),

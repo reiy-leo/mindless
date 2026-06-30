@@ -438,12 +438,16 @@ export default function NotesPage() {
   // Listen for date picker overlay results
   useEffect(() => {
     const unlisten = listen<{
+      _source?: string
       type: string
       date?: string
       startDate?: string
       endDate?: string
     }>('date-range-picker-overlay:result', (e) => {
       const p = e.payload
+      if (p._source) {
+        return
+      }
       if (p.type === 'single') {
         handleUpdateNoteField({
           targetDate: p.date || undefined,

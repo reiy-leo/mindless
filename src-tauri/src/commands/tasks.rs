@@ -129,7 +129,7 @@ pub async fn create_task(
 pub async fn get_tasks(app: AppHandle) -> Result<Vec<Task>, String> {
     let conn = get_db(&app)?;
 
-    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE deleted_at IS NULL AND parent_task_id IS NULL ORDER BY sort_order ASC, due_date ASC")
+    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY sort_order ASC, due_date ASC")
         .map_err(|e| format!("Failed to prepare: {}", e))?;
 
     let tasks = stmt.query_map([], row_to_task)

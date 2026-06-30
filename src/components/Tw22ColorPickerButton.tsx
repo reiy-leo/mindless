@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { showOverlay, TW22_COLOR_PICKER_LABEL } from "@/lib/overlayManager";
+import { safeUnlisten } from "@/lib/safeUnlisten";
 
 interface Tw22ColorPickerButtonProps {
   value: string;
@@ -18,7 +19,7 @@ export default function Tw22ColorPickerButton({ isBadge = false, value, onChange
     const unlisten = listen<{ hex: string }>('tw22-color-picker-overlay:result', (e) => {
       onChange(e.payload.hex);
     });
-    return () => { unlisten.then((fn) => fn()); };
+    return safeUnlisten(unlisten);
   }, [onChange]);
 
   const handleClick = async () => {

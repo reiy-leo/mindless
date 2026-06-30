@@ -5,10 +5,13 @@ import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
 import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { EMOJI_PICKER_LABEL } from '@/lib/overlayManager';
+import { safeUnlisten } from '@/lib/safeUnlisten';
 
 export default function EmojiPickerDialogPage() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [parentLabel, setParentLabel] = useState<string | null>(null);
+  const isOverlayRoute = window.location.pathname.startsWith('/overlay/');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -20,19 +23,22 @@ export default function EmojiPickerDialogPage() {
   }, []);
 
   useEffect(() => {
-    const unlisten = listen<{ theme: 'light' | 'dark' }>('emoji-picker:show', (event) => {
+    const unlisten = listen<{ parentLabel?: string; theme: 'light' | 'dark' }>(`${EMOJI_PICKER_LABEL}:show`, (event) => {
+      setParentLabel(event.payload.parentLabel ?? null);
       if (event.payload.theme) {
         setTheme(event.payload.theme);
       }
     });
-    return () => {
-      unlisten.then(fn => fn());
-    };
+    return safeUnlisten(unlisten);
   }, []);
 
   const handleClose = async () => {
     const win = getCurrentWindow();
-    await win.hide();
+    if (isOverlayRoute) {
+      await win.hide();
+    } else {
+      await win.close();
+    }
 
     if (parentLabel) {
       try {

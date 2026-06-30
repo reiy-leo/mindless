@@ -1105,6 +1105,7 @@ export interface MenuLabels {
   priorityMenu: string;
   priorityTraditional: string;
   priorityAnoxia: string;
+  priorityUrgent: string;
   setDate: string;
   markCompleted: string;
   markClosed: string;

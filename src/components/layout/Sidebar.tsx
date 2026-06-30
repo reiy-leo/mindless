@@ -232,7 +232,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className="w-17.5 border-r border-white/10 flex flex-col pb-2 text-white bg-theme-sidebar dark:bg-theme-800"
+      className="w-17.5 border-r border-white/10 flex flex-col pb-2 text-white bg-theme-sidebar dark:bg-theme-sidebar-dark"
       // style={{
       //   background: 'linear-gradient(to top, color-mix(in srgb, var(--theme-color) 50%, white), var(--theme-bg-70))',
       // }}
@@ -254,7 +254,7 @@ export default function Sidebar() {
           const showIcon = sidebarMode === 'icon' || sidebarMode === 'both'
           const showText = sidebarMode === 'text' || sidebarMode === 'both'
 
-          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm cursor-pointer py-3 ${isActive ? 'text-theme-700 dark:text-theme-200 bg-theme-700/30 dark:bg-theme-200/30' : 'hover:text-theme-200 hover:bg-theme-200/20 text-theme-800 dark:text-theme-700'}`
+          const buttonClass = `flex items-center justify-center gap-1 rounded-lg transition-colors text-sm cursor-pointer py-3 ${isActive ? 'text-theme-50 dark:text-theme-200 bg-theme-200/50 dark:bg-theme-200/50' : 'hover:text-theme-100 hover:bg-theme-200/40 text-theme-700 dark:text-theme-300'}`
 
           if (item.path === '/tags') {
             return (

@@ -63,5 +63,10 @@ export function getPriorityOptions(priorityMode: PriorityMode, t: (key: string) 
       label: t('tasks.priority.high'),
       value: PRIORITY.HIGH,
     },
+    {
+      color: { bg: PRIORITY_COLORS[PRIORITY.URGENT], fg: 'text-white' },
+      label: t('tasks.priority.xhigh'),
+      value: PRIORITY.URGENT,
+    },
   ]
 }

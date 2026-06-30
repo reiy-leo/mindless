@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
+import { safeUnlisten } from "@/lib/safeUnlisten";
 import type { CalendarEvent } from "@/types";
 
 export default function DateRangePickerOverlayPage() {
@@ -16,6 +17,7 @@ export default function DateRangePickerOverlayPage() {
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [color, setColor] = useState<string | undefined>();
     const [hideTime, setHideTime] = useState(false);
+    const [source, setSource] = useState<string | undefined>();
     const openingTimezoneRef = useRef(false);
 
     const handleTimezoneOverlayChange = useCallback((opening: boolean) => {
@@ -42,6 +44,7 @@ export default function DateRangePickerOverlayPage() {
             events?: CalendarEvent[];
             color?: string;
             hideTime?: boolean;
+            _source?: string;
             anchorX: number;
             anchorY: number;
             anchorH: number;
@@ -58,16 +61,17 @@ export default function DateRangePickerOverlayPage() {
             setEvents(p.events || []);
             setColor(p.color);
             setHideTime(p.hideTime || false);
+            setSource(p._source);
         });
 
-        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
+        return safeUnlisten(unlisten);
     }, []);
 
     useEffect(() => {
         const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
             if (!focused && !openingTimezoneRef.current) hide();
         });
-        return () => { unlisten.then((fn) => fn()).catch(() => {}); };
+        return safeUnlisten(unlisten);
     }, []);
 
     const hide = async () => {
@@ -75,12 +79,12 @@ export default function DateRangePickerOverlayPage() {
     };
 
     const handleSingleChange = (d?: string, tm?: string) => {
-        emit("date-range-picker-overlay:result", { type: "single", date: d, time: tm });
+        emit("date-range-picker-overlay:result", { type: "single", date: d, time: tm, _source: source });
         hide();
     };
 
     const handleRangeChange = (sd?: string, st?: string, ed?: string, et?: string, allDay?: boolean) => {
-        emit("date-range-picker-overlay:result", { type: "range", startDate: sd, startTime: st, endDate: ed, endTime: et, isAllDay: allDay });
+        emit("date-range-picker-overlay:result", { type: "range", startDate: sd, startTime: st, endDate: ed, endTime: et, isAllDay: allDay, _source: source });
         hide();
     };
 

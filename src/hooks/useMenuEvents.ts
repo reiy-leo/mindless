@@ -156,6 +156,7 @@ function buildMenuLabels(): api.MenuLabels {
     priorityMenu: t('menu.set_priority'),
     priorityTraditional: t('menu.priority_traditional'),
     priorityAnoxia: t('menu.priority_anoxia'),
+    priorityUrgent: t('menu.priority_urgent'),
     setDate: t('menu.set_date'),
     markCompleted: t('menu.mark_completed'),
     markClosed: t('menu.mark_closed'),

@@ -23,6 +23,7 @@ import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
 import { listenFromDialog, openDialogWindow } from '@/lib/dialogWindow'
 import { formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr } from '@/lib/lunar'
+import { showOverlay, UNIT_SELECTOR_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import {
   useArchivedHabits,
@@ -534,13 +535,11 @@ function HabitFormDialog({
                   type="button"
                   onClick={async (e) => {
                     const screenRect = await getScreenRect(e.currentTarget)
-                    await openDialogWindow({
-                      anchorRect: screenRect,
-                      height: 420,
-                      label: 'unit-selector',
-                      title: t('habits.target_unit'),
-                      url: `/dialog/unit-selector?unit=${targetUnit}`,
-                      width: 160,
+                    await showOverlay(UNIT_SELECTOR_LABEL, screenRect.x, screenRect.y + screenRect.height + 4, {
+                      anchorH: screenRect.height,
+                      anchorX: screenRect.x,
+                      anchorY: screenRect.y,
+                      unit: targetUnit,
                     })
                     const unlisten = await listenFromDialog('unit-selector:result', (payload: any) => {
                       if (payload?.unit) setTargetUnit(payload.unit)

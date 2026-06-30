@@ -8,13 +8,12 @@ import AppLayout from './components/layout/AppLayout'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { syncMenuLanguage, useMenuEvents, useMenuLanguageSync } from './hooks/useMenuEvents'
 import * as api from './lib/api'
-import { initOverlayWebviews } from './lib/overlayManager'
+import { bindCurrentOverlayHideOnUnfocus, initOverlayWebviews } from './lib/overlayManager'
 import CountdownsPage from './pages/CountdownsPage'
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage'
 import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
 import CountdownFormDialogPage from './pages/dialogs/CountdownFormDialogPage'
 import EmojiPickerDialogPage from './pages/dialogs/EmojiPickerDialogPage'
-import ListFormDialogPage from './pages/dialogs/ListFormDialogPage'
 import SettingsDialogPage from './pages/dialogs/SettingsDialogPage'
 import TagManagementDialogPage from './pages/dialogs/TagManagementDialogPage'
 import TaskTemplateManagementDialogPage from './pages/dialogs/TaskTemplateManagementDialogPage'
@@ -492,6 +491,7 @@ function KeyboardShortcuts() {
 function OverlayManager() {
   useEffect(() => {
     initOverlayWebviews(window.location.origin)
+    bindCurrentOverlayHideOnUnfocus()
   }, [])
   return null
 }
@@ -522,21 +522,20 @@ function App() {
         <OverlayManager />
         <GlobalSearchManager />
         <Routes>
-          <Route path="/dialog/list-form" element={<ListFormDialogPage />} />
-          <Route path="/dialog/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
-          <Route path="/dialog/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route path="/dialog/tag-management" element={<TagManagementDialogPage />} />
           <Route path="/dialog/task-template-management" element={<TaskTemplateManagementDialogPage />} />
           <Route path="/dialog/attachment-management" element={<AttachmentManagementDialogPage />} />
           <Route path="/dialog/settings" element={<SettingsDialogPage />} />
-          <Route path="/dialog/emoji-picker" element={<EmojiPickerDialogPage />} />
           <Route path="/dialog/countdown-form" element={<CountdownFormDialogPage />} />
           <Route path="/overlay/date-picker" element={<DatePickerOverlayPage />} />
           <Route path="/overlay/date-range-picker" element={<DateRangePickerOverlayPage />} />
           <Route path="/overlay/timezone-picker" element={<TimezonePickerOverlayPage />} />
           <Route path="/overlay/tag-list-picker" element={<TagListPickerOverlayPage />} />
           <Route path="/overlay/group-form" element={<GroupFormOverlayPage />} />
+          <Route path="/overlay/advanced-group-form" element={<AdvancedGroupFormDialogPage />} />
           <Route path="/overlay/tw22-color-picker" element={<Tw22ColorPickerOverlayPage />} />
+          <Route path="/overlay/emoji-picker" element={<EmojiPickerDialogPage />} />
+          <Route path="/overlay/unit-selector" element={<UnitSelectorDialogPage />} />
           <Route
             path="*"
             element={

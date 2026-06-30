@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { formatTimezoneOffset } from '@/lib/formatUtils'
 import { getLunarDayStr } from '@/lib/lunar'
 import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import { useAppStore } from '@/stores/useAppStore'
 import type { CalendarEvent } from '@/types'
@@ -128,9 +129,7 @@ export default function DateTimeCalenderWithRangePicker({
         setSelectedTimezone(e.payload.timezone)
       }
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [setSelectedTimezone, onTimezoneOverlayChange])
 
   const handleOpenTimezonePicker = async () => {
@@ -696,9 +695,9 @@ export default function DateTimeCalenderWithRangePicker({
               <button
                 type="button"
                 onClick={() => setLocalAllDay(!localAllDay)}
-                className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
+                className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors bg-theme-200"
                 style={{
-                  backgroundColor: localAllDay ? colorStyles.toggleBg : undefined,
+                  backgroundColor: localAllDay ? colorStyles.toggleBg : '',
                 }}
               >
                 <span

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, X } from "lucide-react";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useDialogPosition } from "@/hooks/useDialogPosition";
+import { UNIT_SELECTOR_LABEL } from "@/lib/overlayManager";
+import { safeUnlisten } from "@/lib/safeUnlisten";
 
 const UNIT_PRESETS = [
     { value: "次", label: "次" },
@@ -33,18 +35,37 @@ export default function UnitSelectorDialogPage() {
 
     const params = new URLSearchParams(window.location.search);
     const initialUnit = params.get("unit") || "次";
+    const isOverlayRoute = window.location.pathname.startsWith("/overlay/");
 
     const [selectedUnit, setSelectedUnit] = useState(initialUnit);
     const [customUnit, setCustomUnit] = useState(UNIT_PRESETS.some((u) => u.value === initialUnit) ? "" : initialUnit);
 
+    useEffect(() => {
+        const unlisten = listen<{ unit?: string }>(`${UNIT_SELECTOR_LABEL}:show`, (event) => {
+            const unit = event.payload.unit || "次";
+            setSelectedUnit(unit);
+            setCustomUnit(UNIT_PRESETS.some((u) => u.value === unit) ? "" : unit);
+        });
+        return safeUnlisten(unlisten);
+    }, []);
+
+    const closeWindow = async () => {
+        const win = getCurrentWindow();
+        if (isOverlayRoute) {
+            await win.hide();
+        } else {
+            await win.close();
+        }
+    };
+
     const handleConfirm = async () => {
         const unit = customUnit.trim() || selectedUnit;
         await emit("unit-selector:result", { unit });
-        await getCurrentWindow().close();
+        await closeWindow();
     };
 
     const handleClose = async () => {
-        await getCurrentWindow().close();
+        await closeWindow();
     };
 
     return (

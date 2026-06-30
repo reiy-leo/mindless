@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { listen } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import {
   AlertCircle,
   Archive,
@@ -21,6 +20,7 @@ import {
   Flag,
   Inbox,
   List as ListIcon,
+  type LucideIcon,
   MoreVertical,
   Paperclip,
   Pencil,
@@ -34,7 +34,6 @@ import {
   Tag as TagIconLucide,
   Trash2,
   X,
-  type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -55,7 +54,13 @@ import TaskForm from '@/components/tasks/TaskForm'
 import { TaskGroupControls } from '@/components/tasks/TaskGroupControls'
 import { TaskSortControls } from '@/components/tasks/TaskSortControls'
 import { PRIORITY_COLORS, VIEW_MODES } from '@/lib/constants'
-import { DATE_RANGE_PICKER_LABEL, GROUP_FORM_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
+import {
+  ADVANCED_GROUP_FORM_LABEL,
+  DATE_RANGE_PICKER_LABEL,
+  GROUP_FORM_LABEL,
+  showOverlay,
+  TAG_LIST_PICKER_LABEL,
+} from '@/lib/overlayManager'
 import { getPriorityOptions } from '@/lib/priorityOptions'
 import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
@@ -63,7 +68,6 @@ import { useMediaItems } from '@/queries/useMediaQueries'
 import { useAllNotes } from '@/queries/useNoteQueries'
 import { useAllPersons } from '@/queries/usePersonQueries'
 import {
-  useAllSubtasks,
   useAllTasks,
   useAtomTag,
   useAttachments,
@@ -139,7 +143,11 @@ function getStatusViewSettings(settings: ListSettings | null, status: TaskStatus
   return DEFAULT_STATUS_VIEW_SETTINGS[status]
 }
 
-const TASK_VIEW_OPTIONS: { icon: LucideIcon; labelKey: (typeof VIEW_MODES)[keyof typeof VIEW_MODES]; value: keyof typeof VIEW_MODES }[] = [
+const TASK_VIEW_OPTIONS: {
+  icon: LucideIcon
+  labelKey: (typeof VIEW_MODES)[keyof typeof VIEW_MODES]
+  value: keyof typeof VIEW_MODES
+}[] = [
   { icon: Calendar, labelKey: VIEW_MODES.calendar, value: 'calendar' },
   { icon: Columns, labelKey: VIEW_MODES.kanban, value: 'kanban' },
   { icon: ListIcon, labelKey: VIEW_MODES.list, value: 'list' },
@@ -151,6 +159,42 @@ const TASK_STATUS_OPTIONS: { icon: LucideIcon; labelKey: string; value: TaskStat
   { icon: Clock, labelKey: 'tasks.status.active', value: 'active' },
   { icon: ClipboardCheck, labelKey: 'tasks.status.completed', value: 'completed' },
 ]
+
+function addLocalDays(dateStr: string, days: number): string {
+  const date = new Date(`${dateStr}T00:00:00`)
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function getLocalMonthRange(offset: number): [string, string] {
+  const today = new Date(`${getLocalToday()}T00:00:00`)
+  const start = new Date(today.getFullYear(), today.getMonth() + offset, 1)
+  const end = new Date(today.getFullYear(), today.getMonth() + offset + 1, 0)
+  const format = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  return [format(start), format(end)]
+}
+
+function getLocalWeekRange(offset: number): [string, string] {
+  const todayStr = getLocalToday()
+  const today = new Date(`${todayStr}T00:00:00`)
+  const mondayOffset = (today.getDay() + 6) % 7
+  const start = addLocalDays(todayStr, -mondayOffset + offset * 7)
+  return [start, addLocalDays(start, 6)]
+}
+
+function getTaskDateRange(task: Task): [string, string] | null {
+  if (task.startDate || task.endDate) {
+    const start = task.startDate || task.endDate
+    const end = task.endDate || task.startDate
+    return start && end ? [start <= end ? start : end, start <= end ? end : start] : null
+  }
+  return task.dueDate ? [task.dueDate, task.dueDate] : null
+}
+
+function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+  return aStart <= bEnd && aEnd >= bStart
+}
 
 const ICON_KEY_TO_EMOJI: Record<string, string> = {
   book: '📖',
@@ -175,39 +219,6 @@ function resolveIcon(icon?: string): string {
 
 import type { AdvancedGroup } from '@/stores/useAppStore'
 import type { Tag } from '@/types/tag'
-
-// ==================== Helper: Build subtask tree ====================
-function buildSubtaskTree(flatSubtasks: Task[]): (Task & { children?: Task[] })[] {
-  const map = new Map<string, Task & { children?: Task[] }>()
-  const roots: (Task & { children?: Task[] })[] = []
-
-  flatSubtasks.forEach((s) => {
-    map.set(s.id, { ...s, children: [] })
-  })
-
-  flatSubtasks.forEach((s) => {
-    const node = map.get(s.id)
-    if (!node) return
-    if (s.parentTaskId && map.has(s.parentTaskId)) {
-      map.get(s.parentTaskId)?.children?.push(node) ?? ''
-    } else {
-      roots.push(node)
-    }
-  })
-
-  return roots
-}
-
-// ==================== Helper: Get all descendant IDs ====================
-function getDescendantIds(flatSubtasks: Task[], parentId: string): string[] {
-  const children = flatSubtasks.filter((s) => s.parentTaskId === parentId)
-  const result: string[] = []
-  for (const child of children) {
-    result.push(child.id)
-    result.push(...getDescendantIds(flatSubtasks, child.id))
-  }
-  return result
-}
 
 // ==================== Helper: Calculate steps progress ====================
 function calcStepsProgress(steps: StepType[]): { completed: number; total: number } | null {
@@ -1025,26 +1036,8 @@ function TaskDetailPanel({
     setAttachContextMenu({ att, x: e.clientX, y: e.clientY })
   }
 
-  const subtaskTree = useMemo(() => buildSubtaskTree(activeSubtasks), [activeSubtasks])
-
   // Calculate progress
   const progress = useMemo(() => calcFullProgress(activeSubtasks, steps), [activeSubtasks, steps])
-
-  // Auto-complete task when all subtasks and steps are done
-  const autoCompletedRef = useRef(false)
-  useEffect(() => {
-    if (!progress || progress.total === 0) {
-      return
-    }
-    if (progress.completed === progress.total && !activeTask.isCompleted) {
-      if (!autoCompletedRef.current) {
-        autoCompletedRef.current = true
-        onUpdateTask({ isCompleted: true })
-      }
-    } else {
-      autoCompletedRef.current = false
-    }
-  }, [progress, activeTask.isCompleted, onUpdateTask])
 
   // Parse task's tag_ids (comma-separated string)
   const taskTagIds: string[] = useMemo(() => {
@@ -1062,15 +1055,7 @@ function TaskDetailPanel({
   const handleToggleSubtask = (id: string) => {
     const subtask = activeSubtasks.find((s) => s.id === id)
     if (subtask) {
-      const newCompleted = !subtask.isCompleted
-      updateSubtask.mutate({ id, isCompleted: newCompleted, taskId: activeTask.id })
-      const descendants = getDescendantIds(activeSubtasks, id)
-      for (const descId of descendants) {
-        const desc = activeSubtasks.find((s) => s.id === descId)
-        if (desc && desc.isCompleted !== newCompleted) {
-          updateSubtask.mutate({ id: descId, isCompleted: newCompleted, taskId: activeTask.id })
-        }
-      }
+      updateSubtask.mutate({ id, isCompleted: !subtask.isCompleted, taskId: activeTask.id })
     }
   }
 
@@ -1150,6 +1135,7 @@ function TaskDetailPanel({
   // Listen for date picker overlay results
   useEffect(() => {
     const unlisten = listen<{
+      _source?: string
       type: string
       date?: string
       time?: string
@@ -1159,6 +1145,9 @@ function TaskDetailPanel({
       endTime?: string
       isAllDay?: boolean
     }>('date-range-picker-overlay:result', (e) => {
+      if (e.payload._source) {
+        return
+      }
       if (inlineDateOpenedRef?.current) {
         return
       }
@@ -1424,7 +1413,7 @@ function TaskDetailPanel({
               onSubtaskClick={onSubtaskClick}
               onToggle={handleToggleSubtask}
               onUpdateTitle={handleUpdateSubtaskTitle}
-              subtasks={subtaskTree}
+              subtasks={activeSubtasks}
             />
           </div>
         )}
@@ -1903,7 +1892,7 @@ function TaskRow({
   return (
     <div
       className={`group flex items-center gap-3 px-2 py-2 rounded-md transition-shadow cursor-pointer ${
-        isSelected ? 'bg-theme-200/30 dark:bg-theme-700/30' : ''
+        isSelected ? 'bg-theme-100/30 dark:bg-theme-800/30' : ''
       }`}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -2184,6 +2173,9 @@ export default function TasksPage() {
   const [taskPanelSearch, setTaskPanelSearch] = useState('')
   const taskMenuRef = useRef<HTMLDivElement>(null)
   const [menuFlipY, setMenuFlipY] = useState(false)
+  const taskMenuSidePanelMaxHeight = taskContextMenu
+    ? Math.max(160, (menuFlipY ? taskContextMenu.y : window.innerHeight - taskContextMenu.y) - 12)
+    : undefined
 
   useLayoutEffect(() => {
     if (!taskContextMenu || !taskMenuRef.current) {
@@ -2209,7 +2201,6 @@ export default function TasksPage() {
   const deleteTask = useDeleteTask()
   const toggleTask = useToggleTaskCompletion()
   const completeRecurring = useCompleteRecurringTask()
-  const updateSubtask = useUpdateSubtask()
   const createList = useCreateList()
   const updateList = useUpdateList()
   const deleteList = useDeleteList()
@@ -2272,12 +2263,16 @@ export default function TasksPage() {
   // Listen for date picker results for inline form
   useEffect(() => {
     const unlisten = listen<{
+      _source?: string
       type: string
       date?: string
       time?: string
       startDate?: string
       startTime?: string
     }>('date-range-picker-overlay:result', (e) => {
+      if (e.payload._source) {
+        return
+      }
       if (!inlineDateOpenedRef.current) {
         return
       }
@@ -2313,7 +2308,7 @@ export default function TasksPage() {
     }
   }, [queryClient])
 
-  // Listen for dialog results from WebviewWindow
+  // Listen for advanced group dialog results
   useEffect(() => {
     const unlistenAdvGroup = listen<{ action: string; group?: AdvancedGroup }>('dialog:result', (event) => {
       const { action } = event.payload
@@ -2389,7 +2384,63 @@ export default function TasksPage() {
         return false
       }
     }
-    if (f.dateType) {
+    if (f.datePreset && f.datePreset !== 'all') {
+      const taskRange = getTaskDateRange(task)
+      const today = getLocalToday()
+      if (f.datePreset === 'none') {
+        if (taskRange) {
+          return false
+        }
+      } else {
+        if (!taskRange) {
+          return false
+        }
+        const [taskStart, taskEnd] = taskRange
+        let filterRange: [string, string] | null = null
+        switch (f.datePreset) {
+          case 'overdue':
+            if (taskEnd >= today) {
+              return false
+            }
+            break
+          case 'today':
+            filterRange = [today, today]
+            break
+          case 'tomorrow': {
+            const tomorrow = addLocalDays(today, 1)
+            filterRange = [tomorrow, tomorrow]
+            break
+          }
+          case 'thisWeek':
+            filterRange = getLocalWeekRange(0)
+            break
+          case 'nextWeek':
+            filterRange = getLocalWeekRange(1)
+            break
+          case 'thisMonth':
+            filterRange = getLocalMonthRange(0)
+            break
+          case 'nextMonth':
+            filterRange = getLocalMonthRange(1)
+            break
+          case 'absoluteRange': {
+            const start = f.dateFrom || f.dateTo
+            const end = f.dateTo || f.dateFrom
+            filterRange = start && end ? [start <= end ? start : end, start <= end ? end : start] : null
+            break
+          }
+          case 'relativeRange': {
+            const from = Math.max(-32, Math.min(32, f.dateRelativeFrom ?? 0))
+            const to = Math.max(-32, Math.min(32, f.dateRelativeTo ?? 0))
+            filterRange = [addLocalDays(today, Math.min(from, to)), addLocalDays(today, Math.max(from, to))]
+            break
+          }
+        }
+        if (filterRange && !rangesOverlap(taskStart, taskEnd, filterRange[0], filterRange[1])) {
+          return false
+        }
+      }
+    } else if (f.dateType) {
       const dateVal = f.dateType === 'due' ? task.dueDate : task.createdAt?.split('T')[0]
       if (!dateVal) {
         return false
@@ -2410,8 +2461,12 @@ export default function TasksPage() {
         minDate.setDate(minDate.getDate() - pastDays)
         const maxDate = new Date(today)
         maxDate.setDate(maxDate.getDate() + futureDays)
-        const minStr = minDate.toISOString().split('T')[0]
-        const maxStr = maxDate.toISOString().split('T')[0]
+        const minStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(
+          minDate.getDate(),
+        ).padStart(2, '0')}`
+        const maxStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(
+          maxDate.getDate(),
+        ).padStart(2, '0')}`
         if (dateVal < minStr || dateVal > maxStr) {
           return false
         }
@@ -2642,44 +2697,21 @@ export default function TasksPage() {
   }, [allLists, priorityOptions, sortedTasks, taskGroupBy, t])
 
   const filteredTasks = useMemo(() => taskGroups.flatMap((group) => group.tasks), [taskGroups])
+  const previousSelectedListIdRef = useRef<string | null>(selectedListId)
 
-  // Load subtasks for all visible tasks and flatten
-  const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks])
-  const { data: allSubtasksData } = useAllSubtasks(taskIds)
-  const allSubtasks = allSubtasksData ?? []
+  useEffect(() => {
+    if (previousSelectedListIdRef.current === selectedListId) {
+      return
+    }
+    previousSelectedListIdRef.current = selectedListId
+    setSelectedSubtaskId(null)
+    setSelectedTaskId(null)
+  }, [selectedListId])
 
-  // Build flattened list: task followed by its subtasks
-  type FlatItem = { type: 'task'; task: Task } | { type: 'subtask'; subtask: Task; parentTask: Task }
+  type FlatItem = { type: 'task'; task: Task }
   const flatItemGroups = useMemo(() => {
-    // allSubtasks are direct children of filteredTasks (parent_task_id = task.id)
-    const subtasksByTask = new Map<string, Task[]>()
-    allSubtasks.forEach((s) => {
-      if (s.parentTaskId) {
-        const list = subtasksByTask.get(s.parentTaskId) || []
-        list.push(s)
-        subtasksByTask.set(s.parentTaskId, list)
-      }
-    })
-
-    return taskGroups.map((group) => {
-      const items: FlatItem[] = []
-      group.tasks.forEach((task) => {
-        items.push({ task, type: 'task' })
-        const subs = subtasksByTask.get(task.id) || []
-        subs.sort((a, b) => a.sortOrder - b.sortOrder)
-        const filteredSubs =
-          filterStatus === 'active'
-            ? subs.filter((s) => !s.isCompleted)
-            : filterStatus === 'completed'
-              ? subs.filter((s) => s.isCompleted)
-              : subs
-        filteredSubs.forEach((sub) => {
-          items.push({ parentTask: task, subtask: sub, type: 'subtask' })
-        })
-      })
-      return { ...group, items }
-    })
-  }, [taskGroups, allSubtasks, filterStatus])
+    return taskGroups.map((group) => ({ ...group, items: group.tasks.map((task): FlatItem => ({ task, type: 'task' })) }))
+  }, [taskGroups])
 
   const handleAttachmentClick = async () => {
     const { open } = await import('@tauri-apps/plugin-dialog')
@@ -3077,24 +3109,13 @@ export default function TasksPage() {
   const handleEditAdvGroup = async (e: React.MouseEvent, group: AdvancedGroup) => {
     e.stopPropagation()
     setEditingAdvGroup(group)
-    try {
-      const existingWindow = await WebviewWindow.getByLabel('advanced-group-form')
-      if (existingWindow) {
-        await existingWindow.setFocus()
-        return
-      }
-    } catch {}
-
-    new WebviewWindow('advanced-group-form', {
-      alwaysOnTop: true,
-      decorations: false,
-      height: 600,
-      resizable: false,
-      title: t('advanced_groups.edit'),
-      transparent: true,
-      url: `/dialog/advanced-group-form?groupId=${encodeURIComponent(group.id)}`,
-      width: 420,
-      // shadow: true,
+    const rect = await getScreenRect(e.currentTarget as HTMLElement)
+    await showOverlay(ADVANCED_GROUP_FORM_LABEL, rect.x, rect.y, {
+      anchorH: rect.height,
+      anchorX: rect.x,
+      anchorY: rect.y,
+      group,
+      groupId: group.id,
     })
   }
 
@@ -3328,27 +3349,13 @@ export default function TasksPage() {
             <div className="flex items-center gap-0.5">
               <button
                 className="p-0.5 rounded hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors transition-150"
-                onClick={async () => {
+                onClick={async (e) => {
                   setEditingAdvGroup(null)
-                  try {
-                    const existingWindow = await WebviewWindow.getByLabel('advanced-group-form')
-                    if (existingWindow) {
-                      await existingWindow.setFocus()
-                      return
-                    }
-                  } catch {}
-
-                  new WebviewWindow('advanced-group-form', {
-                    alwaysOnTop: true,
-                    center: true,
-                    decorations: false,
-                    height: 700,
-                    resizable: false,
-                    title: t('advanced_groups.create'),
-                    transparent: true,
-                    url: '/dialog/advanced-group-form',
-                    width: 520,
-                    // shadow: true,
+                  const rect = await getScreenRect(e.currentTarget as HTMLElement)
+                  await showOverlay(ADVANCED_GROUP_FORM_LABEL, rect.x, rect.y, {
+                    anchorH: rect.height,
+                    anchorX: rect.x,
+                    anchorY: rect.y,
                   })
                 }}
                 title={t('lists.create_list')}
@@ -3669,10 +3676,10 @@ export default function TasksPage() {
                             selectedPriority={newTaskPriority}
                           />
                         ) : (
-                          <div className="p-1.5 flex gap-1">
+                          <div className="p-1.5 flex flex-col gap-1 items-center w-25">
                             {priorityOptions.map((p) => (
                               <button
-                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                className={`px-2 py-1 rounded text-xs transition-colors w-full ${
                                   newTaskPriority === p.value
                                     ? 'bg-theme-500 text-white'
                                     : 'hover:bg-theme-100 dark:hover:bg-theme-700 text-theme-600 dark:text-theme-400'
@@ -3895,7 +3902,7 @@ export default function TasksPage() {
                     <div className="space-y-1" key={group.id}>
                       {taskGroupBy !== 'none' && (
                         <button
-                          className="sticky top-0 z-10 flex w-full items-center gap-1.5 rounded-md bg-theme-50/95 px-2 py-1 text-left text-xs font-medium text-theme-500 transition-colors hover:bg-theme-100 dark:bg-theme-900/80 dark:text-theme-400 dark:hover:bg-theme-800"
+                          className="sticky top-0 z-10 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs font-medium text-theme-500 transition-colors  dark:bg-theme-900/80 dark:text-theme-400"
                           onClick={() =>
                             setCollapsedTaskGroups((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? false) }))
                           }
@@ -3910,54 +3917,25 @@ export default function TasksPage() {
                       )}
                       {!isCollapsed &&
                         group.items.map((item) => {
-                          const isSubtask = item.type === 'subtask'
-                          const displayTask = isSubtask
-                            ? {
-                                ...item.subtask,
-                                createdAt: item.subtask.createdAt || '',
-                                description: '',
-                                groupBy: 'none' as const,
-                                priority: 0 as Priority,
-                                sortBy: 'sortOrder' as const,
-                                sortOrder: item.subtask.sortOrder,
-                                updatedAt: item.subtask.updatedAt || '',
-                              }
-                            : item.task
+                          const displayTask = item.task
 
                           return (
                             <TaskRow
-                              isSelected={
-                                isSubtask
-                                  ? selectedSubtaskId === displayTask.id
-                                  : selectedTaskId === displayTask.id && !selectedSubtaskId
-                              }
+                              isSelected={selectedTaskId === displayTask.id && !selectedSubtaskId}
                               key={displayTask.id}
                               onContextMenu={(e) => {
                                 setTaskContextMenu({ taskId: displayTask.id, x: e.clientX, y: e.clientY })
                                 setTaskMenuPanel(null)
                               }}
                               onSelect={() => {
-                                if (isSubtask) {
-                                  setSelectedTaskId(item.parentTask.id)
-                                  setSelectedSubtaskId(item.subtask.id)
-                                } else {
-                                  setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id)
-                                  setSelectedSubtaskId(null)
-                                }
+                                setSelectedTaskId(selectedTaskId === item.task.id ? null : item.task.id)
+                                setSelectedSubtaskId(null)
                               }}
                               onToggle={() => {
-                                if (isSubtask) {
-                                  updateSubtask.mutate({
-                                    id: item.subtask.id,
-                                    isCompleted: !item.subtask.isCompleted,
-                                    taskId: item.parentTask.id,
-                                  })
-                                } else {
-                                  handleToggleTask(item.task.id, item.task.isCompleted)
-                                }
+                                handleToggleTask(item.task.id, item.task.isCompleted)
                               }}
                               progressStyle="circle"
-                              task={displayTask as Task}
+                              task={displayTask}
                             />
                           )
                         })}
@@ -4131,7 +4109,7 @@ export default function TasksPage() {
             }}
           />
           <div
-            className="fixed z-50 flex"
+            className="fixed z-50 flex items-start"
             ref={taskMenuRef}
             style={{
               left: taskContextMenu.x,
@@ -4207,12 +4185,16 @@ export default function TasksPage() {
                   })
                   // Listen for result once
                   const unlisten = listen<{
+                    _source?: string
                     type: string
                     date?: string
                     time?: string
                     startDate?: string
                     startTime?: string
                   }>('date-range-picker-overlay:result', (e) => {
+                    if (e.payload._source) {
+                      return
+                    }
                     const p = e.payload
                     if (p.type === 'single') {
                       updateTask.mutate({
@@ -4363,7 +4345,10 @@ export default function TasksPage() {
                 // Priority panel
                 if (taskMenuPanel === 'priority') {
                   return (
-                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 max-h-80 overflow-y-auto ml-0.5">
+                    <div
+                      className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 overflow-y-auto ml-0.5"
+                      style={{ maxHeight: taskMenuSidePanelMaxHeight }}
+                    >
                       {priorityMode === 'OxygenNotIncluded' ? (
                         <OxygenNotIncludedPriorityPicker
                           onSelect={(priority) => {
@@ -4415,7 +4400,10 @@ export default function TasksPage() {
                     { color: '#6B7280', key: 'closed' },
                   ]
                   return (
-                    <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-45 ml-0.5">
+                    <div
+                      className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-45 overflow-y-auto ml-0.5"
+                      style={{ maxHeight: taskMenuSidePanelMaxHeight }}
+                    >
                       {statuses.map((s) => (
                         <button
                           className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${

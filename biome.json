@@ -24,6 +24,9 @@
       "indentWidth": 2,
       "quoteStyle": "double",
       "trailingNewline": false
+    },
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "files": {

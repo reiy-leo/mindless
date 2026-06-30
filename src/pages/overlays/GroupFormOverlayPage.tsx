@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
 import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
-import { hideOverlay, TW22_COLOR_PICKER_LABEL } from '@/lib/overlayManager'
+import { EMOJI_PICKER_LABEL, hideOverlay, TW22_COLOR_PICKER_LABEL } from '@/lib/overlayManager'
 
 export default function GroupFormOverlayPage() {
   const [name, setName] = useState('')
@@ -19,7 +19,6 @@ export default function GroupFormOverlayPage() {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const openingChildRef = useRef(false)
 
   useEffect(() => {
     document.documentElement.style.setProperty('background-color', 'transparent', 'important')
@@ -66,20 +65,11 @@ export default function GroupFormOverlayPage() {
     }
   }, [])
 
-  useEffect(() => {
-    const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-      if (!focused && !openingChildRef.current) hide()
-    })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
-  }, [])
-
   const hide = async () => {
     setVisible(false)
     hideOverlay(TW22_COLOR_PICKER_LABEL)
     try {
-      const emojiWin = await WebviewWindow.getByLabel('emoji-picker')
+      const emojiWin = await WebviewWindow.getByLabel(EMOJI_PICKER_LABEL)
       if (emojiWin) await emojiWin.hide()
     } catch {}
     await getCurrentWindow().hide()
@@ -123,25 +113,10 @@ export default function GroupFormOverlayPage() {
           <div className="p-3 space-y-3">
             <div className="flex items-center gap-2">
               <div className="relative">
-                <div
-                  onMouseDown={() => {
-                    openingChildRef.current = true
-                    setTimeout(() => {
-                      openingChildRef.current = false
-                    }, 500)
-                  }}
-                >
+                <div>
                   <EmojiPickerButton onChange={setIcon} value={icon} />
                 </div>
-                <div
-                  className="absolute -top-1 -right-1 z-10"
-                  onMouseDown={() => {
-                    openingChildRef.current = true
-                    setTimeout(() => {
-                      openingChildRef.current = false
-                    }, 500)
-                  }}
-                >
+                <div className="absolute -top-1 -right-1 z-10">
                   <Tw22ColorPickerButton isBadge={true} onChange={setColor} value={color} />
                 </div>
               </div>

@@ -21,7 +21,6 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 import { CSS } from '@dnd-kit/utilities'
 
 interface Subtask {
-  children?: Subtask[]
   id: string
   isCompleted: boolean
   level: number
@@ -103,11 +102,10 @@ function InlineAddInput({
   )
 }
 
-function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubtaskClick }: SubtaskItemProps) {
+function SubtaskItem({ subtask, onToggle, onDelete, onUpdateTitle, onSubtaskClick }: SubtaskItemProps) {
   const { t } = useTranslation('common')
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(subtask.title)
-  const [showChildInput, setShowChildInput] = useState(false)
 
   const handleSave = () => {
     if (title.trim()) {
@@ -125,119 +123,57 @@ function SubtaskItem({ subtask, onAdd, onToggle, onDelete, onUpdateTitle, onSubt
     }
   }
 
-  const hasChildren = subtask.children && subtask.children.length > 0
-  const canAddChild = subtask.level < 3
-
-  const countDescendants = (node: Subtask): number => {
-    if (!node.children) return 0
-    return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0)
-  }
-
-  const handleDelete = () => {
-    const descendantCount = countDescendants(subtask)
-    if (descendantCount > 0) {
-      if (!window.confirm(t('tasks.subtasks.delete_with_children', { count: descendantCount }))) {
-        return
-      }
-    }
-    onDelete(subtask.id)
-  }
-
   return (
-    <>
-      <div
-        className={`group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
-        onMouseDown={() => (onSubtaskClick ? onSubtaskClick(subtask.id) : undefined)}
-      >
-        {/* Checkbox */}
-        <CheckNow
-          checked={subtask.isCompleted}
-          hasSteps={!!hasChildren}
-          color1="var(--theme-color)"
-          color2="var(--theme-bg-70)"
-          className="shrink-0"
-          onClick={() => onToggle(subtask.id)}
+    <div
+      className={`group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+      onMouseDown={() => (onSubtaskClick ? onSubtaskClick(subtask.id) : undefined)}
+    >
+      {/* Checkbox */}
+      <CheckNow
+        checked={subtask.isCompleted}
+        hasSteps={false}
+        color1="var(--theme-color)"
+        color2="var(--theme-bg-70)"
+        className="shrink-0"
+        onClick={() => onToggle(subtask.id)}
+      />
+
+      {/* Title */}
+      {isEditing ? (
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      ) : (
+        <span
+          className={`flex-1 min-w-0 truncate text-sm ${
+            subtask.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+          }`}
+        >
+          {subtask.title}
+        </span>
+      )}
 
-        {/* Title */}
-        {isEditing ? (
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ) : (
-          <span
-            className={`flex-1 min-w-0 truncate text-sm ${
-              subtask.isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
-            }`}
-          >
-            {subtask.title}
-          </span>
-        )}
-
-        {/* Actions - hidden by default, shown on hover */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {canAddChild && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowChildInput(!showChildInput)
-              }}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={t('tasks.subtasks.add_child')}
-            >
-              <Plus className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDelete()
-            }}
-            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            title={t('common.delete')}
-          >
-            <Trash2 className="w-3.5 h-3.5 text-red-400 dark:text-red-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Child add input */}
-      {showChildInput && (
-        <InlineAddInput
-          placeholder={t('tasks.subtasks.child_placeholder')}
-          onCancel={() => setShowChildInput(false)}
-          onSubmit={(childTitle) => {
-            onAdd(childTitle, subtask.id)
-            setShowChildInput(false)
+      {/* Actions - hidden by default, shown on hover */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(subtask.id)
           }}
-        />
-      )}
-
-      {/* Children */}
-      {hasChildren && (
-        <div className="space-y-2">
-          {subtask.children!.map((child) => (
-            <SubtaskItem
-              key={child.id}
-              subtask={child}
-              onAdd={onAdd}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              onUpdateTitle={onUpdateTitle}
-              onSubtaskClick={onSubtaskClick}
-            />
-          ))}
-        </div>
-      )}
-    </>
+          className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          title={t('common.delete')}
+        >
+          <Trash2 className="w-3.5 h-3.5 text-red-400 dark:text-red-500" />
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -318,7 +254,6 @@ export default function SubtaskList({
       if (!over || active.id === over.id) return
       if (!onReorder) return
 
-      // subtasks is already the tree (top-level nodes only for drag)
       const oldIndex = subtasks.findIndex((s) => s.id === active.id)
       const newIndex = subtasks.findIndex((s) => s.id === over.id)
       if (oldIndex === -1 || newIndex === -1) return
@@ -334,13 +269,8 @@ export default function SubtaskList({
   )
 
   // Count total and completed
-  const countAll = (items: Subtask[]): number =>
-    items.reduce((sum, s) => sum + 1 + (s.children ? countAll(s.children) : 0), 0)
-  const countCompleted = (items: Subtask[]): number =>
-    items.reduce((sum, s) => sum + (s.isCompleted ? 1 : 0) + (s.children ? countCompleted(s.children) : 0), 0)
-
-  const total = countAll(subtasks)
-  const completed = countCompleted(subtasks)
+  const total = subtasks.length
+  const completed = subtasks.filter((s) => s.isCompleted).length
 
   return (
     <div className="space-y-2">

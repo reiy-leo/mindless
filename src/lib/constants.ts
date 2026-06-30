@@ -1,5 +1,6 @@
 // Priority constants
 export const PRIORITY = {
+  URGENT: 10, // 十万火急
   HIGH: 9, // 高优先级
   LOW: 3, // 低优先级
   MEDIUM: 6, // 中等优先级
@@ -12,6 +13,7 @@ export const PRIORITY_COLORS: Record<number, string> = {
   [PRIORITY.LOW]: '#3B82F6', // blue
   [PRIORITY.MEDIUM]: '#F59E0B', // yellow
   [PRIORITY.HIGH]: '#EF4444', // red
+  [PRIORITY.URGENT]: '#F43F5E', // rose
 }
 export const PRIORITY_COLOR_FALLBACK = '#9CA3AF'
 

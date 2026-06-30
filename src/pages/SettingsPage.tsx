@@ -2,42 +2,222 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 
-import { Clock, Cloud, Command, Contact, File, Film, Laptop, Layers, LayoutGrid, List, ListTodo, Moon, Palette, Paperclip, Settings, Sun, Table2, Type } from 'lucide-react'
+import {
+  Clock,
+  Cloud,
+  Command,
+  Contact,
+  File,
+  Film,
+  Laptop,
+  Layers,
+  LayoutGrid,
+  List,
+  ListTodo,
+  Moon,
+  Palette,
+  Paperclip,
+  Settings,
+  Sun,
+  Table2,
+  Type,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDisplayDate, formatTime, formatTimezoneOffset } from '@/lib/formatUtils'
 import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
+import { formatThemeColorName, getThemeColorLabelKey, getThemePaletteLabelKey } from '@/lib/themePaletteLabels'
 import { useCalendarEvents, useClearAllCalendarEvents, useImportCalendarEvents } from '@/queries/useTaskQueries'
 import { checkAndNotify } from '@/services/notificationService'
-import type { DateFormat, DefaultTaskSections, FontSize, SidebarMode, TimeFormat, TimezoneFormat } from '@/stores/useAppStore'
+import type {
+  DateFormat,
+  DefaultTaskSections,
+  FontSize,
+  SidebarMode,
+  TimeFormat,
+  TimezoneFormat,
+} from '@/stores/useAppStore'
 import { useAppStore } from '@/stores/useAppStore'
 import type { PriorityMode, Theme } from '@/types'
 
-const THEME_COLORS = [
-  { hex: '#64748B', name: 'Slate' },
-  { hex: '#6B7280', name: 'Gray' },
-  { hex: '#71717A', name: 'Zinc' },
-  { hex: '#737373', name: 'Neutral' },
-  { hex: '#78716C', name: 'Stone' },
-  { hex: '#EF4444', name: 'Red' },
-  { hex: '#F97316', name: 'Orange' },
-  { hex: '#F59E0B', name: 'Amber' },
-  { hex: '#EAB308', name: 'Yellow' },
-  { hex: '#84CC16', name: 'Lime' },
-  { hex: '#22C55E', name: 'Green' },
-  { hex: '#10B981', name: 'Emerald' },
-  { hex: '#14B8A6', name: 'Teal' },
-  { hex: '#06B6D4', name: 'Cyan' },
-  { hex: '#0EA5E9', name: 'Sky' },
-  { hex: '#3B82F6', name: 'Blue' },
-  { hex: '#6366F1', name: 'Indigo' },
-  { hex: '#8B5CF6', name: 'Violet' },
-  { hex: '#A855F7', name: 'Purple' },
-  { hex: '#D946EF', name: 'Fuchsia' },
-  { hex: '#EC4899', name: 'Pink' },
-  { hex: '#F43F5E', name: 'Rose' },
-  { hex: '#6B8E23', name: 'Olive' },
+const THEME_PALETTES2 = [
+  {
+    colors: [
+      { hex: ['#144D29', '#C84B31', '#DCE6DD'], name: '端午节 (粽叶绿、雄黄橙、艾草青)' },
+      { hex: ['#CD2026', '#D4AF37', '#FAECD1'], name: '春节 (大红灯笼、福运金、喜庆淡金)' },
+      { hex: ['#3B5E2B', '#A31C26', '#FFEBEF'], name: '圣诞节 (圣诞松绿、冬日圣红、雪地圣白)' },
+      { hex: ['#607D8B', '#4A6984', '#E0F2FA'], name: '清明节 (微雨烟灰、折柳青绿、晴空淡蓝)' },
+      { hex: ['#B37D1D', '#1C2833', '#FCEFCE'], name: '中秋节 (玉兔月饼金、深空夜蓝、桂花淡黄)' },
+      { hex: ['#E66800', '#31173B', '#FEF9DC'], name: '万圣节 (南瓜烈橙、巫师暗紫、幽灵莹黄)' },
+      { hex: ['#A33B5D', '#F4C2C2', '#FDEAEA'], name: '情人节 (玫瑰深红、浪漫粉晶、告白淡粉)' },
+      { hex: ['#8C5B2B', '#96C719', '#EBFCD4'], name: '劳动节 (泥土耕耘褐、麦穗新绿、晨曦浅绿)' },
+      { hex: ['#E6AC0E', '#0B57D0', '#D3E3FD'], name: '儿童节 (童真向日葵、梦想纯蓝、气球浅蓝)' },
+      { hex: ['#CD8378', '#5B6A77', '#DFECEF'], name: '感恩节 (火鸡烤栗、深秋沉稳灰、丰收暖米)' },
+      { hex: ['#2E5894', '#16A085', '#DAF4F0'], name: '海洋日 (深海幽蓝、浅滩礁绿、浪花轻蓝)' },
+      { hex: ['#7A5E94', '#E74C3C', '#FFE0FC'], name: '狂欢节 (假面魅紫、游行桑巴红、羽毛淡粉)' },
+      { hex: ['#5F3A9C', '#FFE47E', '#EBE0FF'], name: '复活节 (复活节彩蛋紫、阳光暖黄、破壳嫩紫)' },
+      { hex: ['#8A3324', '#008B8B', '#A6F1E6'], name: '泼水节 (陶罐红泥、澄澈池水蓝、飞溅水花青)' },
+      { hex: ['#006A6A', '#B8530B', '#FFE9D6'], name: '重阳节 (茱萸苍翠、长寿菊橙、九九敬老暖橙)' },
+    ],
+    name: 'holidays',
+  },
+  {
+    colors: [
+      { hex: ['#1A3A70', '#0B57D0', '#D3E3FD'], name: '1 (经典蓝白)' },
+      { hex: ['#4F5154', '#9E9E9E', '#E3E3E3'], name: '2 (风暴灰蓝)' },
+      { hex: ['#112239', '#2A4D7E', '#B2CDFA'], name: '3 (午夜海军蓝)' },
+      { hex: ['#253041', '#475266', '#D9E3FC'], name: '4 (冰川深灰)' },
+      { hex: ['#2F363D', '#5B6A77', '#DFECEF'], name: '5 (莫兰迪石灰)' },
+      { hex: ['#003838', '#008B8B', '#A6F1E6'], name: '6 (松石青绿)' },
+      { hex: ['#1A3E0E', '#3F8A27', '#C4F1A6'], name: '7 (新芽嫩绿)' },
+      { hex: ['#2D3129', '#5B6353', '#E1E4DC'], name: '8 (鼠尾草旷野绿)' },
+      { hex: ['#423800', '#947C00', '#FFE47E'], name: '9 (向日葵沙滩黄)' },
+      { hex: ['#542504', '#B8530B', '#FFDBCC'], name: '10 (晚霞蜜桃橙)' },
+      { hex: ['#3D302C', '#7A6057', '#FCE2D6'], name: '11 (摩卡复古褐)' },
+      { hex: ['#521B2D', '#A33B5D', '#FFE0E6'], name: '12 (玫瑰甜心粉)' },
+      { hex: ['#3D2B2E', '#7A565C', '#FCE5E8'], name: '13 (暗香薄暮粉)' },
+      { hex: ['#421A45', '#8E3D94', '#FFE0FC'], name: '14 (幻境薰衣草)' },
+      { hex: ['#2C194C', '#5F3A9C', '#EBE0FF'], name: '15 (极光曜石紫)' },
+    ],
+    name: 'chrome_themes_15',
+  },
+  {
+    colors: [
+      { hex: ['#2B2A2A', '#1C1C1C', '#ECECEC'], name: '子鼠 (曜石黑)' },
+      { hex: ['#7D694C', '#B0926A', '#F4ECE1'], name: '丑牛 (大麦黄)' },
+      { hex: ['#A1790B', '#E6AC0E', '#FFF3CD'], name: '寅虎 (琥珀橙)' },
+      { hex: ['#688A11', '#96C719', '#EBFCD4'], name: '卯兔 (薄荷绿)' },
+      { hex: ['#8C7324', '#C9A534', '#FAEDCE'], name: '辰龙 (至尊金)' },
+      { hex: ['#0F470F', '#1F8A1F', '#D6F5D6'], name: '巳蛇 (竹叶青)' },
+      { hex: ['#8F1419', '#CD2026', '#FAD8D3'], name: '午马 (中国红)' },
+      { hex: ['#A8A6AB', '#ECE9F2', '#FAFAFA'], name: '未羊 (珍珠白)' },
+      { hex: ['#8A734D', '#C2A36E', '#F7EDDB'], name: '申猴 (香槟金)' },
+      { hex: ['#A64B00', '#E66800', '#FFE9D6'], name: '酉鸡 (赤霞橘)' },
+      { hex: ['#5E3D1D', '#8C5B2B', '#F5EBE0'], name: '戌狗 (陶土棕)' },
+      { hex: ['#7A5E94', '#AD86D1', '#EFE5F7'], name: '亥猪 (丁香紫)' },
+    ],
+    name: 'zodiac_signs_12',
+  },
+  {
+    colors: [
+      { hex: ['#9E1A25', '#E32636', '#FCDAD7'], name: '白羊座 (明烈红)' },
+      { hex: ['#165C16', '#228B22', '#D6ECD6'], name: '金牛座 (森林绿)' },
+      { hex: ['#A6A000', '#FFF700', '#FFFCD0'], name: '双子座 (柠檬黄)' },
+      { hex: ['#9E9EB8', '#E6E6FA', '#F2F2FA'], name: '巨蟹座 (月光银)' },
+      { hex: ['#B39700', '#FFD700', '#FFF4CC'], name: '狮子座 (太阳金)' },
+      { hex: ['#948F8A', '#D1CAC2', '#F7F5F2'], name: '处女座 (杏仁浅灰)' },
+      { hex: ['#A87979', '#F4C2C2', '#FDEAEA'], name: '天秤座 (粉晶色)' },
+      { hex: ['#0E0E12', '#1A1A24', '#E5E5E8'], name: '天蝎座 (冥夜黑)' },
+      { hex: ['#132A45', '#1E3F66', '#D9E3F0'], name: '射手座 (星空蓝)' },
+      { hex: ['#303133', '#48494B', '#ECECED'], name: '摩羯座 (玄武岩灰)' },
+      { hex: ['#00A3A3', '#00FFFF', '#D6FFFF'], name: '水瓶座 (电光青)' },
+      { hex: ['#1E3B63', '#2E5894', '#DBE3F0'], name: '双鱼座 (海之迷蓝)' },
+    ],
+    name: 'astrology_signs_12',
+  },
+  {
+    colors: [
+      { hex: ['#A1AAB3', '#F0F8FF', '#F4FAFF'], name: '一月 (冰雪白)' },
+      { hex: ['#A3A321', '#FAFA33', '#FFFFD4'], name: '二月 (迎春黄)' },
+      { hex: ['#A67780', '#FFB7C5', '#FFE3E7'], name: '三月 (桃花粉)' },
+      { hex: ['#5FB35F', '#98FF98', '#E0FFE0'], name: '四月 (嫩芽绿)' },
+      { hex: ['#5B8D9E', '#87CEEB', '#E0F2FA'], name: '五月 (浅蔚蓝)' },
+      { hex: ['#1F5E3B', '#2E8B57', '#DBEFE4'], name: '六月 (西瓜翠)' },
+      { hex: ['#A31C26', '#ED2939', '#FCDCDD'], name: '七月 (骄阳烈红)' },
+      { hex: ['#A16F16', '#EAA221', '#FCEFCE'], name: '八月 (向日葵黄)' },
+      { hex: ['#A37D1D', '#EDB62B', '#FCF3D7'], name: '九月 (桂花金)' },
+      { hex: ['#8A3322', '#C84B31', '#F7DDD6'], name: '十月 (枫叶红)' },
+      { hex: ['#422C16', '#654321', '#EDE4DB'], name: '十一月 (落叶褐)' },
+      { hex: ['#14331D', '#1E4D2B', '#DCE6DD'], name: '十二月 (松柏绿)' },
+    ],
+    name: 'months_12',
+  },
+  {
+    colors: [
+      { hex: ['#525252', '#7A7A7A', '#EBEBEB'], name: '碳 (C - 石墨黑/暗灰)' },
+      { hex: ['#9E885D', '#E6C687', '#FAF3E3'], name: '硫 (S - 硫磺淡黄)' },
+      { hex: ['#8C7324', '#D4AF37', '#FAECD1'], name: '金 (Au - 赤金)' },
+      { hex: ['#858585', '#C0C0C0', '#F2F2F2'], name: '银 (Ag - 亮银)' },
+      { hex: ['#805024', '#B87333', '#F5E9DC'], name: '铜 (Cu - 紫铜/红铜)' },
+      { hex: ['#6E6E59', '#A3A386', '#F2F2E1'], name: '氯 (Cl - 黄绿)' },
+      { hex: ['#5C2218', '#8A3324', '#F4E3DD'], name: '溴 (Br - 深红褐液体)' },
+      { hex: ['#320057', '#4B0082', '#EFE2F5'], name: '碘 (I - 紫黑固体/碘蒸气)' },
+      { hex: ['#9E9E9E', '#E0E0E0', '#FAFAFA'], name: '铝 (Al - 银白轻金属)' },
+      { hex: ['#808080', '#B7B7B7', '#EBEBEB'], name: '钛 (Ti - 暗银灰)' },
+      { hex: ['#B33000', '#FF4500', '#FFDDD1'], name: '氖 (Ne - 霓虹橙红放电色)' },
+      { hex: ['#3333B3', '#4D4DFF', '#E1E1FF'], name: '氩 (Ar - 薰衣草紫蓝放电色)' },
+    ],
+    name: 'chemical_elements_12',
+  },
+  {
+    colors: [
+      { hex: ['#6D7A85', '#A2B4C3', '#ECF1F5'], name: '锝 (Tc - 银灰放射性过渡金属)' },
+      { hex: ['#00C2C9', '#7DF9FF', '#D6FFFF'], name: '钷 (Pm - 荧光青/盐类淡蓝荧光)' },
+      { hex: ['#975B97', '#DDA0DD', '#F9ECF9'], name: '钋 (Po - 浅紫/空气电离蓝色辉光)' },
+      { hex: ['#00B359', '#00FF7F', '#CEFFEC'], name: '氡 (Rn - 荧光绿/低温固体磷光)' },
+      { hex: ['#9C815E', '#DEB887', '#F9F3EA'], name: '钫 (Fr - 浅棕/碱金属特征暗色)' },
+      { hex: ['#00B3B3', '#00FFFF', '#D6FFFF'], name: '镭 (Ra - 纯白晶体/自发自生苍蓝荧光)' },
+      { hex: ['#8F8F8F', '#CCCCCC', '#F2F2F2'], name: '锕 (Ac - 银白金属/暗处浅蓝辉光)' },
+      { hex: ['#858585', '#C0C0C0', '#F2F2F2'], name: '钍 (Th - 亮银白金属)' },
+      { hex: ['#A8A162', '#F0E68C', '#FDFCE6'], name: '镤 (Pa - 浅黄/空气氧化层色)' },
+      { hex: ['#1F5E3B', '#2E8B57', '#DBEFE4'], name: '铀 (U - 经典铀酰离子墨绿/亮绿)' },
+      { hex: ['#002BB3', '#0040FF', '#D6E0FF'], name: '镎 (Np - 三价镎离子深海蓝)' },
+      { hex: ['#A15818', '#E67E22', '#FCECDD'], name: '钚 (Pu - 四价钚离子肉桂橙棕)' },
+      { hex: ['#B37F87', '#FFB6C1', '#FFEBEF'], name: '镅 (Am - 三价镅离子浅玫瑰粉)' },
+      { hex: ['#A6A8A9', '#F4F6F7', '#FAFBFB'], name: '锔 (Cm - 三价锔无色/金属银白)' },
+      { hex: ['#A86C0C', '#F39C12', '#FEF2DC'], name: '锫 (Bk - 琥珀黄黄绿)' },
+      { hex: ['#1F8F4F', '#2ECC71', '#DCF7E7'], name: '锎 (Cf - 翡翠绿)' },
+      { hex: ['#A1352A', '#E74C3C', '#FCE3E0'], name: '锿 (Es - 三价锿晶体发光红)' },
+      { hex: ['#6D3E80', '#9B59B6', '#F2E7F7'], name: '镄 (Fm - 薰衣草浅紫)' },
+      { hex: ['#0F705D', '#16A085', '#DAF2EE'], name: '钔 (Md - 暗绿)' },
+      { hex: ['#687373', '#95A5A6', '#EFEFEE'], name: '锘 (No - 浅灰金属)' },
+      { hex: ['#943B00', '#D35400', '#FBE6D9'], name: '铹 (Lr - 橙红)' },
+      { hex: ['#596263', '#7F8C8D', '#ECEEED'], name: '鑪 (Rf - 钢灰)' },
+      { hex: ['#202D3A', '#34495E', '#DCDEC1'], name: '𨧀 (Db - 深蓝灰)' },
+      { hex: ['#84898C', '#BDC3C7', '#F2F4F4'], name: '𨭎 (Sg - 银亮金属色)' },
+      { hex: ['#A15818', '#E67E22', '#FCECDD'], name: '𨨏 (Bh - 亮橙)' },
+      { hex: ['#1C2833', '#2C3E50', '#DCE1E5'], name: '𨭆 (Hs - 浓黑/易挥发氧化物)' },
+      { hex: ['#63307A', '#8E44AD', '#F0E4F5'], name: '鿏 (Mt - 钴紫)' },
+      { hex: ['#246A99', '#3498DB', '#DCEDF8'], name: '𨳼 (Ds - 浅天蓝)' },
+      { hex: ['#12846D', '#1ABC9C', '#DAF4F0'], name: '𨾭 (Rg - 铋绿)' },
+      { hex: ['#A8890A', '#F1C40F', '#FEF9DC'], name: '鿔 (Cn - 金黄)' },
+      { hex: ['#8C7324', '#D4AF37', '#FAECD1'], name: '鿭 (Nh - 浅金)' },
+      { hex: ['#31173B', '#4A235A', '#EFE6F2'], name: '鿫 (Og - 气态深紫电离色)' },
+    ],
+    name: 'radioactive_elements_32',
+  },
+  {
+    colors: [
+      { hex: ['#A62F2F', '#EF4444', '#FCEAEA'], name: 'Red' },
+      { hex: ['#AD5010', '#F97316', '#FDF1E8'], name: 'Orange' },
+      { hex: ['#AB6E08', '#F59E0B', '#FDF5E7'], name: 'Amber' },
+      { hex: ['#A37D06', '#EAB308', '#FDF8E6'], name: 'Yellow' },
+      { hex: ['#5C8E10', '#84CC16', '#F3FCE8'], name: 'Lime' },
+      { hex: ['#188A42', '#22C55E', '#EAFCEF'], name: 'Green' },
+      { hex: ['#0B825B', '#10B981', '#E7FAF2'], name: 'Emerald' },
+      { hex: ['#0E8073', '#14B8A6', '#E7FAF6'], name: 'Teal' },
+      { hex: ['#047F94', '#06B6D4', '#E6FAFD'], name: 'Cyan' },
+      { hex: ['#0A73A3', '#0EA5E9', '#E7FAFF'], name: 'Sky' },
+      { hex: ['#295BAC', '#3B82F6', '#EBF3FE'], name: 'Blue' },
+      { hex: ['#4547A8', '#6366F1', '#EFF0FE'], name: 'Indigo' },
+      { hex: ['#6141AC', '#8B5CF6', '#F4EFFF'], name: 'Violet' },
+      { hex: ['#753CAC', '#A855F7', '#F6EFFF'], name: 'Purple' },
+      { hex: ['#9731A6', '#D946EF', '#FBEBFD'], name: 'Fuchsia' },
+      { hex: ['#A5326B', '#EC4899', '#FCEBF5'], name: 'Pink' },
+      { hex: ['#AA2C42', '#F43F5E', '#FCEBEF'], name: 'Rose' },
+      { hex: ['#465161', '#64748B', '#EFF1F4'], name: 'Slate' },
+      { hex: ['#4B505A', '#6B7280', '#F0F1F3'], name: 'Gray' },
+      { hex: ['#4F4F56', '#71717A', '#F1F1F2'], name: 'Zinc' },
+      { hex: ['#505050', '#737373', '#F1F1F1'], name: 'Neutral' },
+      { hex: ['#544F4C', '#78716C', '#F2F1F0'], name: 'Stone' },
+      { hex: ['#574C48', '#7C6D67', '#F2EFEB'], name: 'Taupe' },
+      { hex: ['#544956', '#79697B', '#F2EFF3'], name: 'Mauve' },
+      { hex: ['#485457', '#67787C', '#EFF3F4'], name: 'Mist' },
+      { hex: ['#575748', '#7C7C67', '#F2F2EF'], name: 'Olive' },
+    ],
+    name: 'tailwind',
+  },
 ]
 
 export default function SettingsPage() {
@@ -77,9 +257,15 @@ export default function SettingsPage() {
     setDefaultTaskOpenView,
     setTodayResetHour,
   } = useAppStore()
-  const defaultTaskSections = useAppStore((s) => s.defaultTaskSections, (a, b) =>
-    a.steps === b.steps && a.subtasks === b.subtasks && a.attachments === b.attachments &&
-    a.notes === b.notes && a.persons === b.persons && a.media === b.media
+  const defaultTaskSections = useAppStore(
+    (s) => s.defaultTaskSections,
+    (a, b) =>
+      a.steps === b.steps &&
+      a.subtasks === b.subtasks &&
+      a.attachments === b.attachments &&
+      a.notes === b.notes &&
+      a.persons === b.persons &&
+      a.media === b.media,
   )
 
   useEffect(() => {
@@ -138,7 +324,9 @@ export default function SettingsPage() {
     emit('settings:changed', { key: 'defaultTaskOpenView', value: defaultTaskOpenView })
   }, [defaultTaskOpenView])
 
-  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime' | 'sync' | 'shortcuts' | 'tasks'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'theme' | 'datetime' | 'sync' | 'shortcuts' | 'tasks'>(
+    'general',
+  )
   const [permStatus, setPermStatus] = useState<string | null>(null)
 
   const { data: calendarEvents = [] } = useCalendarEvents()
@@ -150,19 +338,23 @@ export default function SettingsPage() {
   const timezoneButtonRef = useRef<HTMLButtonElement>(null)
 
   // Sync state
-  const [syncProvider, setSyncProvider] = useState<'github' | 'gitlab' | 'gitee'>(() => (localStorage.getItem('mindless-sync-provider') as 'github' | 'gitlab' | 'gitee') || 'github')
+  const [syncProvider, setSyncProvider] = useState<'github' | 'gitlab' | 'gitee'>(
+    () => (localStorage.getItem('mindless-sync-provider') as 'github' | 'gitlab' | 'gitee') || 'github',
+  )
   const [syncUrls, setSyncUrls] = useState<Record<string, string>>(() => ({
+    gitee: localStorage.getItem('mindless-sync-url-gitee') || '',
     github: localStorage.getItem('mindless-sync-url-github') || '',
     gitlab: localStorage.getItem('mindless-sync-url-gitlab') || '',
-    gitee: localStorage.getItem('mindless-sync-url-gitee') || '',
   }))
-  const [syncPats, setSyncPats] = useState<Record<string, string>>({ github: '', gitlab: '', gitee: '' })
+  const [syncPats, setSyncPats] = useState<Record<string, string>>({ gitee: '', github: '', gitlab: '' })
   const [syncHasPat, setSyncHasPat] = useState<Record<string, boolean>>({
+    gitee: !!localStorage.getItem('mindless-sync-has-pat-gitee.com'),
     github: !!localStorage.getItem('mindless-sync-has-pat-github.com'),
     gitlab: !!localStorage.getItem('mindless-sync-has-pat-gitlab.com'),
-    gitee: !!localStorage.getItem('mindless-sync-has-pat-gitee.com'),
   })
-  const [gitlabProjectId, setGitlabProjectId] = useState(() => localStorage.getItem('mindless-sync-gitlab-project-id') || '')
+  const [gitlabProjectId, setGitlabProjectId] = useState(
+    () => localStorage.getItem('mindless-sync-gitlab-project-id') || '',
+  )
   const [syncStatus, setSyncStatus] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [syncLoading, setSyncLoading] = useState(false)
@@ -172,18 +364,18 @@ export default function SettingsPage() {
   const syncPat = syncPats[syncProvider] || ''
 
   const setSyncUrl = (url: string) => {
-    setSyncUrls(prev => ({ ...prev, [syncProvider]: url }))
+    setSyncUrls((prev) => ({ ...prev, [syncProvider]: url }))
     localStorage.setItem(`mindless-sync-url-${syncProvider}`, url)
   }
 
   const setSyncPat = (pat: string) => {
-    setSyncPats(prev => ({ ...prev, [syncProvider]: pat }))
+    setSyncPats((prev) => ({ ...prev, [syncProvider]: pat }))
   }
 
   const domainMap: Record<string, string> = {
+    gitee: 'gitee.com',
     github: 'github.com',
     gitlab: 'gitlab.com',
-    gitee: 'gitee.com',
   }
 
   useEffect(() => {
@@ -191,13 +383,13 @@ export default function SettingsPage() {
   }, [syncProvider])
 
   const loadPatIfNeeded = async (domain: string): Promise<string> => {
-    const existing = syncPats[Object.keys(domainMap).find(k => domainMap[k] === domain) || '']
+    const existing = syncPats[Object.keys(domainMap).find((k) => domainMap[k] === domain) || '']
     if (existing) return existing
     const { loadPat } = await import('@/lib/api')
     const pat = await loadPat(domain)
     if (pat) {
-      const key = Object.keys(domainMap).find(k => domainMap[k] === domain) || ''
-      setSyncPats(prev => ({ ...prev, [key]: pat }))
+      const key = Object.keys(domainMap).find((k) => domainMap[k] === domain) || ''
+      setSyncPats((prev) => ({ ...prev, [key]: pat }))
     }
     return pat || ''
   }
@@ -208,7 +400,7 @@ export default function SettingsPage() {
       const { savePat } = await import('@/lib/api')
       await savePat(domainMap[syncProvider], syncPat)
       localStorage.setItem(`mindless-sync-has-pat-${domainMap[syncProvider]}`, '1')
-      setSyncHasPat(prev => ({ ...prev, [syncProvider]: true }))
+      setSyncHasPat((prev) => ({ ...prev, [syncProvider]: true }))
     } catch {}
   }
 
@@ -260,7 +452,13 @@ export default function SettingsPage() {
       const { exportAllData, getDbBase64 } = await import('@/lib/api')
       const { syncToRepo } = await import('@/lib/sync')
       const [exportJson, dbBase64] = await Promise.all([exportAllData(), getDbBase64()])
-      const result = await syncToRepo(pat, syncUrl, exportJson, dbBase64, syncProvider === 'gitlab' ? gitlabProjectId : undefined)
+      const result = await syncToRepo(
+        pat,
+        syncUrl,
+        exportJson,
+        dbBase64,
+        syncProvider === 'gitlab' ? gitlabProjectId : undefined,
+      )
       setSyncStatus(result.success ? 'sync_success' : 'sync_failed')
     } catch {
       setSyncStatus('sync_failed')
@@ -395,11 +593,11 @@ export default function SettingsPage() {
       {/* Sidebar */}
       <div
         data-tauri-drag-region
-        className="w-[150px] shrink-0 border-r border-white/10 flex flex-col gap-1"
-        style={{
-          background:
-            'linear-gradient(to bottom, color-mix(in srgb, var(--theme-color) 30%, white), color-mix(in srgb, var(--theme-color) 20%, white)',
-        }}
+        className="w-37.5 shrink-0 border-r border-white/10 flex flex-col gap-1 bg-theme-sidebar dark:bg-theme-sidebar-dark"
+        // style={{
+        //   background:
+        //     'linear-gradient(to bottom, color-mix(in srgb, var(--theme-color) 30%, white), color-mix(in srgb, var(--theme-color) 20%, white)',
+        // }}
       >
         <div data-tauri-drag-region className="p-3 flex items-center gap-1.5 h-8">
           <button
@@ -430,12 +628,14 @@ export default function SettingsPage() {
             <button
               type="button"
               key={tab.id}
-              style={{
-                color: `hsl(from var(--theme-color) h s calc(l - 20))`,
-              }}
+              // style={{
+              //   color: `hsl(from var(--theme-color) h s calc(l - 20))`,
+              // }}
               onClick={() => setActiveTab(tab.id)}
-              className={`text-slate-500 text-sm flex flex-row items-center gap-1.5 ps-4 px-2.5 py-3 transition-all cursor-pointer ${
-                isActive ? 'bg-white/25' : 'hover:bg-white/15'
+              className={`text-sm flex flex-row items-center gap-1.5 ps-4 px-2.5 py-3 transition-all cursor-pointer ${
+                isActive
+                  ? 'text-theme-50 dark:text-theme-200 bg-theme-200/50 dark:bg-theme-200/50'
+                  : 'hover:text-theme-100 hover:bg-theme-200/40 text-theme-700 dark:text-theme-300'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -660,6 +860,7 @@ export default function SettingsPage() {
                   />
                   <div className="flex items-center gap-3">
                     <button
+                      type="button"
                       onClick={handleImportICS}
                       disabled={importing}
                       className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
@@ -668,6 +869,7 @@ export default function SettingsPage() {
                     </button>
                     {eventCount > 0 && (
                       <button
+                        type="button"
                         onClick={handleClearEvents}
                         className="px-4 py-2 text-sm border border-red-300 dark:border-red-700 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
@@ -740,11 +942,13 @@ export default function SettingsPage() {
                 {t('settings.tasks.default_open')}
               </h2>
               <div className="space-y-2">
-                {([
-                  { label: t('settings.tasks.default_open.last'), value: 'last' },
-                  { label: t('settings.tasks.default_open.today'), value: 'today' },
-                  { label: t('settings.tasks.default_open.inbox'), value: 'inbox' },
-                ] as const).map((option) => (
+                {(
+                  [
+                    { label: t('settings.tasks.default_open.last'), value: 'last' },
+                    { label: t('settings.tasks.default_open.today'), value: 'today' },
+                    { label: t('settings.tasks.default_open.inbox'), value: 'inbox' },
+                  ] as const
+                ).map((option) => (
                   <label
                     key={option.value}
                     className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -807,9 +1011,7 @@ export default function SettingsPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
                 {t('settings.tasks.today_reset')}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {t('settings.tasks.today_reset_desc')}
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('settings.tasks.today_reset_desc')}</p>
               <div className="grid grid-cols-4 gap-2">
                 {([0, 6, 12, 18] as const).map((hour) => (
                   <button
@@ -979,6 +1181,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowLunar(!showLunar)}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
                     showLunar ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
@@ -1005,6 +1208,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowTimezone(!showTimezone)}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
                     showTimezone ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
@@ -1042,44 +1246,63 @@ export default function SettingsPage() {
         {/* Theme Tab */}
         {activeTab === 'theme' && (
           <div className="space-y-6 max-w-2xl">
-            <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <section className="bg-white dark:bg-gray-800 p-2">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 {t('settings.theme_color.title')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('settings.theme_color.description')}</p>
-
-              <div className="grid grid-cols-12 gap-4">
-                {THEME_COLORS.map((color) => {
-                  const isSelected = themeColor === color.hex
+              <div className="palettes gap-3 flex flex-col">
+                {THEME_PALETTES2.map((palette) => {
                   return (
-                    <button
-                      key={color.hex}
-                      onClick={() => setThemeColor(color.hex)}
-                      className="flex flex-col items-center gap-2 group"
-                    >
-                      <div
-                        className={`w-5 h-5 rounded-md transition-all ${
-                          isSelected
-                            ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 scale-110'
-                            : 'hover:scale-105'
-                        }`}
-                        style={
-                          {
-                            '--tw-ring-color': isSelected ? color.hex : undefined,
-                            backgroundColor: color.hex,
-                          } as React.CSSProperties
-                        }
-                      />
-                      <span
-                        className={`text-xs transition-colors ${
-                          isSelected
-                            ? 'text-gray-900 dark:text-gray-100 font-medium'
-                            : 'text-gray-500 dark:text-gray-400'
-                        }`}
-                      >
-                        {color.name}
-                      </span>
-                    </button>
+                    <div className="p-3" key={palette.name}>
+                      <h3 className="py-3 text-md">
+                        {t(getThemePaletteLabelKey(palette.name), { defaultValue: palette.name })}
+                      </h3>
+                      <div className="grid grid-cols-9 gap-4">
+                        {palette.colors.map((color) => {
+                          const isSelected = color.hex.includes(themeColor)
+                          return (
+                            <button type="button" className="flex flex-col items-center gap-2 group" key={color.name}>
+                              <div className="flex flex-row ">
+                                {color.hex.map((color_i) => {
+                                  const isSelectedSub = themeColor === color_i
+                                  return (
+                                    <div
+                                      key={color_i}
+                                      onMouseUp={() => setThemeColor(color_i)}
+                                      className={`w-4 h-7 transition-all ${
+                                        isSelectedSub ? `inset-ring-1 scale-120` : 'hover:scale-105'
+                                      }`}
+                                      style={
+                                        {
+                                          '--tw-ring-color': isSelected ? color_i : undefined,
+                                          backgroundColor: color_i,
+                                        } as React.CSSProperties
+                                      }
+                                    />
+                                  )
+                                })}
+                              </div>
+                              <span
+                                className={`text-xs transition-colors ${
+                                  isSelected
+                                    ? 'text-gray-900 dark:text-gray-100 font-medium'
+                                    : 'text-gray-500 dark:text-gray-400'
+                                }`}
+                              >
+                                {t(getThemeColorLabelKey(color.name, palette.name), {
+                                  defaultValue: formatThemeColorName(
+                                    color.name,
+                                    palette.name,
+                                    i18n.resolvedLanguage ?? i18n.language,
+                                  ),
+                                })}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -1126,7 +1349,9 @@ export default function SettingsPage() {
                   type="text"
                   value={syncUrl}
                   onChange={(e) => setSyncUrl(e.target.value)}
-                  placeholder={t(`settings.sync.repo_url_placeholder${syncProvider !== 'github' ? `_${syncProvider}` : ''}`)}
+                  placeholder={t(
+                    `settings.sync.repo_url_placeholder${syncProvider !== 'github' ? `_${syncProvider}` : ''}`,
+                  )}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
 
@@ -1145,7 +1370,9 @@ export default function SettingsPage() {
                       placeholder={t('settings.sync.gitlab_project_id_placeholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('settings.sync.gitlab_project_id_help')}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {t('settings.sync.gitlab_project_id_help')}
+                    </p>
                   </>
                 )}
 
@@ -1169,6 +1396,7 @@ export default function SettingsPage() {
 
                 <div className="flex gap-3 mt-6">
                   <button
+                    type="button"
                     onClick={handleTest}
                     disabled={syncLoading}
                     className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm disabled:opacity-50"
@@ -1176,6 +1404,7 @@ export default function SettingsPage() {
                     {syncLoading && syncAction === 'test' ? t('settings.sync.testing') : t('settings.sync.test')}
                   </button>
                   <button
+                    type="button"
                     onClick={handleSync}
                     disabled={syncLoading}
                     className="px-4 py-2 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
@@ -1189,16 +1418,14 @@ export default function SettingsPage() {
                   <div className="mt-4">
                     <p
                       className={`text-sm ${
-                        syncStatus === 'test_success' || syncStatus === 'sync_success' ? 'text-green-500' : 'text-red-500'
+                        syncStatus === 'test_success' || syncStatus === 'sync_success'
+                          ? 'text-green-500'
+                          : 'text-red-500'
                       }`}
                     >
                       {t(`settings.sync.${syncStatus}`)}
                     </p>
-                    {syncError && (
-                      <p className="mt-2 text-xs text-red-400 dark:text-red-500 break-all">
-                        {syncError}
-                      </p>
-                    )}
+                    {syncError && <p className="mt-2 text-xs text-red-400 dark:text-red-500 break-all">{syncError}</p>}
                   </div>
                 )}
               </section>
@@ -1222,13 +1449,13 @@ export default function SettingsPage() {
                   </h3>
                   <div className="space-y-2">
                     {[
-                      { keys: ['⌘', ','], desc: t('settings.shortcuts.open_settings') },
-                      { keys: ['⌘', 'T'], desc: t('settings.shortcuts.open_tasks') },
-                      { keys: ['⌘', 'H'], desc: t('settings.shortcuts.open_habits') },
-                      { keys: ['⌘', 'D'], desc: t('settings.shortcuts.open_countdowns') },
-                      { keys: ['⌘', 'B'], desc: t('settings.shortcuts.open_tags') },
-                      { keys: ['⌘', 'Y'], desc: t('settings.shortcuts.open_media') },
-                      { keys: ['⌘', 'P'], desc: t('settings.shortcuts.open_people') },
+                      { desc: t('settings.shortcuts.open_settings'), keys: ['⌘', ','] },
+                      { desc: t('settings.shortcuts.open_tasks'), keys: ['⌘', 'T'] },
+                      { desc: t('settings.shortcuts.open_habits'), keys: ['⌘', 'H'] },
+                      { desc: t('settings.shortcuts.open_countdowns'), keys: ['⌘', 'D'] },
+                      { desc: t('settings.shortcuts.open_tags'), keys: ['⌘', 'B'] },
+                      { desc: t('settings.shortcuts.open_media'), keys: ['⌘', 'Y'] },
+                      { desc: t('settings.shortcuts.open_people'), keys: ['⌘', 'P'] },
                     ].map((item) => (
                       <div
                         key={item.desc}
@@ -1239,7 +1466,7 @@ export default function SettingsPage() {
                           {item.keys.map((key) => (
                             <kbd
                               key={key}
-                              className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
+                              className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
                             >
                               {key}
                             </kbd>
@@ -1257,9 +1484,9 @@ export default function SettingsPage() {
                   </h3>
                   <div className="space-y-2">
                     {[
-                      { keys: ['⌘', 'N'], desc: t('settings.shortcuts.new_task') },
-                      { keys: ['⌘', 'F'], desc: t('settings.shortcuts.global_search') },
-                      { keys: ['Esc'], desc: t('settings.shortcuts.close_panel') },
+                      { desc: t('settings.shortcuts.new_task'), keys: ['⌘', 'N'] },
+                      { desc: t('settings.shortcuts.global_search'), keys: ['⌘', 'F'] },
+                      { desc: t('settings.shortcuts.close_panel'), keys: ['Esc'] },
                     ].map((item) => (
                       <div
                         key={item.desc}
@@ -1270,7 +1497,7 @@ export default function SettingsPage() {
                           {item.keys.map((key) => (
                             <kbd
                               key={key}
-                              className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
+                              className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
                             >
                               {key}
                             </kbd>
@@ -1291,10 +1518,10 @@ export default function SettingsPage() {
                   </h3>
                   <div className="space-y-2">
                     {[
-                      { keys: ['1'], desc: t('settings.shortcuts.view_list') },
-                      { keys: ['2'], desc: t('settings.shortcuts.view_calendar') },
-                      { keys: ['3'], desc: t('settings.shortcuts.view_kanban') },
-                      { keys: ['4'], desc: t('settings.shortcuts.view_matrix') },
+                      { desc: t('settings.shortcuts.view_list'), keys: ['1'] },
+                      { desc: t('settings.shortcuts.view_calendar'), keys: ['2'] },
+                      { desc: t('settings.shortcuts.view_kanban'), keys: ['3'] },
+                      { desc: t('settings.shortcuts.view_matrix'), keys: ['4'] },
                     ].map((item) => (
                       <div
                         key={item.desc}
@@ -1305,7 +1532,7 @@ export default function SettingsPage() {
                           {item.keys.map((key) => (
                             <kbd
                               key={key}
-                              className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
+                              className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm"
                             >
                               {key}
                             </kbd>

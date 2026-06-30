@@ -2,6 +2,8 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
 import Tw22ColorPicker from '@/components/Tw22ColorPicker'
+import { TW22_COLOR_PICKER_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 
 export default function Tw22ColorPickerOverlayPage() {
   const [value, setValue] = useState('#3B82F6')
@@ -21,24 +23,21 @@ export default function Tw22ColorPickerOverlayPage() {
       anchorX: number
       anchorY: number
       anchorH: number
-    }>('tw22-color-picker-overlay:show', (e) => {
+    }>(`${TW22_COLOR_PICKER_LABEL}:show`, (e) => {
       const { value: v } = e.payload
       setValue(v)
       setVisible(true)
     })
 
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    unlisten.then(() => emit(`${TW22_COLOR_PICKER_LABEL}:ready`)).catch(() => {})
+    return safeUnlisten(unlisten)
   }, [])
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
       if (!focused) hide()
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const hide = async () => {

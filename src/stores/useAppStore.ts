@@ -35,6 +35,20 @@ export interface AdvancedGroupFilter {
   dateFutureDays?: number
   dateMode?: 'absolute' | 'relative'
   datePastDays?: number
+  datePreset?:
+    | 'all'
+    | 'none'
+    | 'overdue'
+    | 'today'
+    | 'tomorrow'
+    | 'thisWeek'
+    | 'nextWeek'
+    | 'thisMonth'
+    | 'nextMonth'
+    | 'absoluteRange'
+    | 'relativeRange'
+  dateRelativeFrom?: number
+  dateRelativeTo?: number
   dateTo?: string
   dateType?: 'due' | 'created'
   listIds?: string[]
