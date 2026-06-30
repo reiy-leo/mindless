@@ -4,7 +4,7 @@ import { Check, X } from "lucide-react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useDialogPosition } from "@/hooks/useDialogPosition";
-import { UNIT_SELECTOR_LABEL } from "@/lib/overlayManager";
+import { notifyOverlayReady, notifyOverlayShowReady, UNIT_SELECTOR_LABEL } from "@/lib/overlayManager";
 import { safeUnlisten } from "@/lib/safeUnlisten";
 
 const UNIT_PRESETS = [
@@ -45,7 +45,9 @@ export default function UnitSelectorDialogPage() {
             const unit = event.payload.unit || "次";
             setSelectedUnit(unit);
             setCustomUnit(UNIT_PRESETS.some((u) => u.value === unit) ? "" : unit);
+            notifyOverlayShowReady(UNIT_SELECTOR_LABEL);
         });
+        unlisten.then(() => notifyOverlayReady(UNIT_SELECTOR_LABEL)).catch(() => {});
         return safeUnlisten(unlisten);
     }, []);
 

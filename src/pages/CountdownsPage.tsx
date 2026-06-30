@@ -1,6 +1,4 @@
 import { listen } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   Calendar,
   CheckCircle,
@@ -21,6 +19,8 @@ import { useTranslation } from 'react-i18next'
 import CountdownSidebar, { type SmartGroupId } from '@/components/countdown/CountdownSidebar'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr, getLunarFullDateStr, getLunarInfo } from '@/lib/lunar'
+import { COUNTDOWN_FORM_LABEL, showOverlay } from '@/lib/overlayManager'
+import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
 import {
   useCountdowns,
@@ -982,27 +982,16 @@ export default function CountdownsPage() {
     setSelectedGroupId(groupId)
   }
 
-  const openCountdownForm = async (countdownId?: string) => {
-    const url = countdownId ? `/dialog/countdown-form?countdownId=${countdownId}` : '/dialog/countdown-form'
-
-    const win = new WebviewWindow(`countdown-form-${Date.now()}`, {
-      closable: false,
-      decorations: true,
-      height: 660,
-      hiddenTitle: true,
-      maximizable: false,
-      minimizable: false,
-      parent: getCurrentWindow(),
-      resizable: false,
-      title: '',
-      titleBarStyle: 'overlay',
-      url,
-      width: 420,
-    })
-
-    win.once('tauri://created', () => {})
-    win.once('tauri://error', (e) => {
-      console.error('Failed to create window:', e)
+  const openCountdownForm = async (countdown?: Countdown, anchor?: HTMLElement | { height: number; x: number; y: number }) => {
+    const rect = anchor instanceof HTMLElement ? await getScreenRect(anchor) : anchor
+    const fallbackX = Math.max(8, Math.round((window.screen.width - 420) / 2))
+    const fallbackY = Math.max(8, Math.round((window.screen.height - 660) / 2))
+    await showOverlay(COUNTDOWN_FORM_LABEL, rect?.x ?? fallbackX, rect?.y ?? fallbackY, {
+      anchorH: rect?.height ?? 0,
+      anchorX: rect?.x ?? fallbackX,
+      anchorY: rect?.y ?? fallbackY,
+      countdown,
+      countdownId: countdown?.id,
     })
   }
 
@@ -1137,7 +1126,7 @@ export default function CountdownsPage() {
             </div>
             <button
               type="button"
-              onClick={() => openCountdownForm()}
+              onClick={(event) => openCountdownForm(undefined, event.currentTarget)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
               style={{
                 backgroundColor: `color-mix(in srgb, var(--theme-color) 40%, white)`,
@@ -1169,7 +1158,7 @@ export default function CountdownsPage() {
             {!selectedSmartGroup && (
               <button
                 type="button"
-                onClick={() => openCountdownForm()}
+                onClick={(event) => openCountdownForm(undefined, event.currentTarget)}
                 className="mt-4 text-purple-500 hover:text-purple-600 dark:hover:text-purple-400"
               >
                 {t('countdowns.create_first')}
@@ -1179,7 +1168,7 @@ export default function CountdownsPage() {
         ) : viewMode === 'calendar' ? (
           <CountdownCalendarView
             countdowns={countdowns}
-            onEdit={(cd) => openCountdownForm(cd.id)}
+            onEdit={(cd) => openCountdownForm(cd)}
             onDelete={handleDelete}
           />
         ) : viewMode === 'list' ? (
@@ -1258,7 +1247,7 @@ export default function CountdownsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      openCountdownForm(contextMenu.countdown.id)
+                      openCountdownForm(contextMenu.countdown, { height: 0, x: contextMenu.x, y: contextMenu.y })
                       setContextMenu(null)
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

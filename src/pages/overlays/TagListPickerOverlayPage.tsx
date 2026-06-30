@@ -1,6 +1,7 @@
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
+import { notifyOverlayReady, notifyOverlayShowReady, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
 import type { Tag } from '@/types/tag'
 
 export default function TagListPickerOverlayPage() {
@@ -26,8 +27,10 @@ export default function TagListPickerOverlayPage() {
       const { tags: t, selectedIds: s } = e.payload
       setTags(t)
       setSelectedIds(s)
+      notifyOverlayShowReady(TAG_LIST_PICKER_LABEL)
     })
 
+    unlisten.then(() => notifyOverlayReady(TAG_LIST_PICKER_LABEL)).catch(() => {})
     return () => {
       unlisten.then((fn) => fn()).catch(() => {})
     }

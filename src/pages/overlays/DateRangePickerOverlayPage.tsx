@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import DateTimeCalenderWithRangePicker from "@/components/DateTimeCalenderWithRangePicker";
+import { DATE_RANGE_PICKER_LABEL, notifyOverlayReady, notifyOverlayShowReady } from "@/lib/overlayManager";
 import { safeUnlisten } from "@/lib/safeUnlisten";
 import type { CalendarEvent } from "@/types";
 
@@ -62,8 +63,10 @@ export default function DateRangePickerOverlayPage() {
             setColor(p.color);
             setHideTime(p.hideTime || false);
             setSource(p._source);
+            notifyOverlayShowReady(DATE_RANGE_PICKER_LABEL);
         });
 
+        unlisten.then(() => notifyOverlayReady(DATE_RANGE_PICKER_LABEL)).catch(() => {});
         return safeUnlisten(unlisten);
     }, []);
 

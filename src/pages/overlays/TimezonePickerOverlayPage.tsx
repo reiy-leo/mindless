@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { formatTimezoneOffset } from "@/lib/formatUtils";
+import { notifyOverlayReady, notifyOverlayShowReady, TIMEZONE_PICKER_LABEL } from "@/lib/overlayManager";
 import { useAppStore } from "@/stores/useAppStore";
 import timezoneNames from "@/i18n/timezoneNames.json";
 
@@ -76,8 +77,10 @@ export default function TimezonePickerOverlayPage() {
       setSearch("");
 
       setTimeout(() => searchInputRef.current?.focus(), 50);
+      notifyOverlayShowReady(TIMEZONE_PICKER_LABEL);
     });
 
+    unlisten.then(() => notifyOverlayReady(TIMEZONE_PICKER_LABEL)).catch(() => {});
     return () => { unlisten.then((fn) => fn()).catch(() => {}); };
   }, []);
 

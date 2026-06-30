@@ -3106,10 +3106,8 @@ export default function TasksPage() {
     setSelectedListId(selectedListId === `adv:${groupId}` ? null : `adv:${groupId}`)
   }
 
-  const handleEditAdvGroup = async (e: React.MouseEvent, group: AdvancedGroup) => {
-    e.stopPropagation()
+  const openAdvGroupEditor = async (group: AdvancedGroup, rect: { height: number; x: number; y: number }) => {
     setEditingAdvGroup(group)
-    const rect = await getScreenRect(e.currentTarget as HTMLElement)
     await showOverlay(ADVANCED_GROUP_FORM_LABEL, rect.x, rect.y, {
       anchorH: rect.height,
       anchorX: rect.x,
@@ -3117,6 +3115,13 @@ export default function TasksPage() {
       group,
       groupId: group.id,
     })
+  }
+
+  const handleEditAdvGroup = async (e: React.MouseEvent, group: AdvancedGroup) => {
+    e.stopPropagation()
+    const target = e.currentTarget as HTMLElement | null
+    if (!target) return
+    await openAdvGroupEditor(group, await getScreenRect(target))
   }
 
   const handleContextMenu = (e: React.MouseEvent, type: 'list' | 'advGroup', id: string) => {
@@ -3179,9 +3184,7 @@ export default function TasksPage() {
     })
   }
 
-  const handleEditList = async (e: React.MouseEvent, list: List) => {
-    e.stopPropagation()
-    const rect = await getScreenRect(e.currentTarget as HTMLElement)
+  const openListEditor = async (list: List, rect: { height: number; x: number; y: number }) => {
     await showOverlay(GROUP_FORM_LABEL, rect.x, rect.y + rect.height + 4, {
       _listId: list.id,
       _source: 'list',
@@ -3194,6 +3197,13 @@ export default function TasksPage() {
       name: list.name,
       showDelete: true,
     })
+  }
+
+  const handleEditList = async (e: React.MouseEvent, list: List) => {
+    e.stopPropagation()
+    const target = e.currentTarget as HTMLElement | null
+    if (!target) return
+    await openListEditor(list, await getScreenRect(target))
   }
 
   const getGroupIcon = (iconKey: string) => {
@@ -4021,7 +4031,7 @@ export default function TasksPage() {
                   onClick={() => {
                     const list = allLists.find((l) => l.id === contextMenu.id)
                     if (list) {
-                      handleEditList({ stopPropagation: () => {} } as React.MouseEvent, list)
+                      void openListEditor(list, { height: 0, x: contextMenu.x, y: contextMenu.y })
                     }
                     setContextMenu(null)
                   }}
@@ -4065,7 +4075,7 @@ export default function TasksPage() {
                   onClick={() => {
                     const group = advancedGroups.find((g) => g.id === contextMenu.id)
                     if (group) {
-                      handleEditAdvGroup({ stopPropagation: () => {} } as React.MouseEvent, group)
+                      void openAdvGroupEditor(group, { height: 0, x: contextMenu.x, y: contextMenu.y })
                     }
                     setContextMenu(null)
                   }}

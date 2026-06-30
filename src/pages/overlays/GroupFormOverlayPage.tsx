@@ -5,7 +5,14 @@ import { useEffect, useRef, useState } from 'react'
 import EmojiPickerButton from '@/components/EmojiPickerButton'
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
 import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
-import { EMOJI_PICKER_LABEL, hideOverlay, TW22_COLOR_PICKER_LABEL } from '@/lib/overlayManager'
+import {
+  EMOJI_PICKER_LABEL,
+  GROUP_FORM_LABEL,
+  hideOverlay,
+  notifyOverlayReady,
+  notifyOverlayShowReady,
+  TW22_COLOR_PICKER_LABEL,
+} from '@/lib/overlayManager'
 
 export default function GroupFormOverlayPage() {
   const [name, setName] = useState('')
@@ -56,10 +63,12 @@ export default function GroupFormOverlayPage() {
       setShowDelete(sd || false)
       extraRef.current = rest
       setVisible(true)
+      notifyOverlayShowReady(GROUP_FORM_LABEL)
 
       setTimeout(() => inputRef.current?.focus(), 50)
     })
 
+    unlisten.then(() => notifyOverlayReady(GROUP_FORM_LABEL)).catch(() => {})
     return () => {
       unlisten.then((fn) => fn()).catch(() => {})
     }

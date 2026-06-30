@@ -6,7 +6,14 @@ import EmojiPickerButton from '@/components/EmojiPickerButton'
 import MultiSelectDropdown from '@/components/MultiSelectDropdown'
 import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
 import WheelPicker from '@/components/WheelPicker'
-import { ADVANCED_GROUP_FORM_LABEL, DATE_RANGE_PICKER_LABEL, hideOverlay, showOverlay } from '@/lib/overlayManager'
+import {
+  ADVANCED_GROUP_FORM_LABEL,
+  DATE_RANGE_PICKER_LABEL,
+  hideOverlay,
+  notifyOverlayReady,
+  notifyOverlayShowReady,
+  showOverlay,
+} from '@/lib/overlayManager'
 import { getPriorityOptions } from '@/lib/priorityOptions'
 import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
@@ -255,8 +262,10 @@ export default function AdvancedGroupFormDialogPage() {
       } else {
         setLoaded(false)
       }
+      notifyOverlayShowReady(ADVANCED_GROUP_FORM_LABEL)
     })
 
+    unlisten.then(() => notifyOverlayReady(ADVANCED_GROUP_FORM_LABEL)).catch(() => {})
     return safeUnlisten(unlisten)
   }, [])
 

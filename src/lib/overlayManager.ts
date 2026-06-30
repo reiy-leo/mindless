@@ -13,21 +13,23 @@ export interface OverlayDef {
 }
 
 export const OVERLAYS: OverlayDef[] = [
-  { height: 440, label: 'date-picker-overlay', route: '/overlay/date-picker', width: 240 },
-  { height: 490, label: 'date-range-picker-overlay', route: '/overlay/date-range-picker', width: 250 },
-  { height: 400, label: 'timezone-picker-overlay', route: '/overlay/timezone-picker', width: 240 },
-  { height: 50, label: 'tag-list-picker-overlay', route: '/overlay/tag-list-picker', width: 200 },
-  { height: 140, label: 'group-form-overlay', route: '/overlay/group-form', width: 280 },
-  { height: 700, label: 'advanced-group-form-overlay', route: '/overlay/advanced-group-form', width: 320 },
+  { height: 440, label: 'date-picker-overlay', route: '/overlay/date-picker', waitForReady: true, width: 240 },
+  { height: 490, label: 'date-range-picker-overlay', route: '/overlay/date-range-picker', waitForReady: true, width: 250 },
+  { height: 400, label: 'timezone-picker-overlay', route: '/overlay/timezone-picker', waitForReady: true, width: 240 },
+  { height: 50, label: 'tag-list-picker-overlay', route: '/overlay/tag-list-picker', waitForReady: true, width: 200 },
+  { height: 140, label: 'group-form-overlay', route: '/overlay/group-form', waitForReady: true, width: 280 },
+  { height: 700, label: 'advanced-group-form-overlay', route: '/overlay/advanced-group-form', waitForReady: true, width: 320 },
   { height: 230, label: 'tw22-color-picker-overlay', route: '/overlay/tw22-color-picker', waitForReady: true, width: 310 },
-  { height: 380, label: 'emoji-picker-overlay', route: '/overlay/emoji-picker', width: 270 },
-  { height: 420, label: 'unit-selector-overlay', route: '/overlay/unit-selector', width: 160 },
+  { height: 380, label: 'emoji-picker-overlay', route: '/overlay/emoji-picker', waitForReady: true, width: 270 },
+  { height: 420, label: 'unit-selector-overlay', route: '/overlay/unit-selector', waitForReady: true, width: 160 },
+  { height: 660, label: 'countdown-form-overlay', route: '/overlay/countdown-form', waitForReady: true, width: 420 },
 ]
 
 export const OVERLAY_SIZES: Record<string, { w: number; h: number }> = {
   'advanced-group-form-overlay': { h: 700, w: 320 },
   'date-picker-overlay': { h: 440, w: 240 },
   'date-range-picker-overlay': { h: 490, w: 250 },
+  'countdown-form-overlay': { h: 660, w: 420 },
   'emoji-picker-overlay': { h: 380, w: 270 },
   'group-form-overlay': { h: 140, w: 280 },
   'tag-list-picker-overlay': { h: 0, w: 200 },
@@ -37,11 +39,29 @@ export const OVERLAY_SIZES: Record<string, { w: number; h: number }> = {
 }
 
 const overlays = new Map<string, WebviewWindow>()
+const overlayHandles = new Map<string, Promise<OverlayHandle | null>>()
 const overlayReady = new Set<string>()
+const overlayReadyPromises = new Map<string, Promise<void>>()
+const OVERLAY_PRELOAD_SESSION_KEY = 'mindless:overlay-preload-complete'
 let baseUrl = ''
+
+export function shouldPreloadOverlayWebviews(currentLabel: string, preloadMarker: string | null) {
+  return !OVERLAYS.some((overlay) => overlay.label === currentLabel) && preloadMarker !== '1'
+}
 
 export function initOverlayWebviews(base: string) {
   baseUrl = base
+  if (!shouldPreloadOverlayWebviews(getCurrentWindow().label, window.sessionStorage.getItem(OVERLAY_PRELOAD_SESSION_KEY))) {
+    return
+  }
+  window.sessionStorage.setItem(OVERLAY_PRELOAD_SESSION_KEY, '1')
+  void preloadOverlayWebviews()
+}
+
+export async function preloadOverlayWebviews() {
+  for (const overlay of OVERLAYS) {
+    await getOrCreateOverlay(overlay.label)
+  }
 }
 
 export function bindCurrentOverlayHideOnUnfocus() {
@@ -66,22 +86,18 @@ interface OverlayHandle {
 
 function waitForOverlayReady(label: string) {
   if (overlayReady.has(label)) return Promise.resolve()
+  const pending = overlayReadyPromises.get(label)
+  if (pending) return pending
 
-  return new Promise<void>((resolve) => {
+  const ready = new Promise<void>((resolve) => {
     let settled = false
     let unlisten: (() => void) | undefined
-    const timeout = window.setTimeout(() => {
-      if (settled) return
-      settled = true
-      unlisten?.()
-      resolve()
-    }, 800)
 
     listen(`${label}:ready`, () => {
       if (settled) return
       settled = true
       overlayReady.add(label)
-      window.clearTimeout(timeout)
+      overlayReadyPromises.delete(label)
       unlisten?.()
       resolve()
     }).then((fn) => {
@@ -93,28 +109,37 @@ function waitForOverlayReady(label: string) {
     }).catch(() => {
       if (settled) return
       settled = true
-      window.clearTimeout(timeout)
+      overlayReadyPromises.delete(label)
       resolve()
     })
   })
+  overlayReadyPromises.set(label, ready)
+  return ready
 }
 
 async function getOrCreateOverlay(label: string): Promise<OverlayHandle | null> {
+  const creating = overlayHandles.get(label)
+  if (creating) return creating
+
+  const handle = createOverlayHandle(label)
+  overlayHandles.set(label, handle)
+  return handle
+}
+
+async function createOverlayHandle(label: string): Promise<OverlayHandle | null> {
   const cached = overlays.get(label)
   if (cached) {
-    const existing = await WebviewWindow.getByLabel(label).catch(() => null)
-    if (existing) {
-      overlays.set(label, existing)
-      return { ready: Promise.resolve(), wv: existing }
-    }
-    overlays.delete(label)
-    overlayReady.delete(label)
+    const def = OVERLAYS.find((d) => d.label === label)
+    const ready = def?.waitForReady ? waitForOverlayReady(label) : Promise.resolve()
+    return { ready, wv: cached }
   }
 
   const existing = await WebviewWindow.getByLabel(label).catch(() => null)
   if (existing) {
     overlays.set(label, existing)
-    return { ready: Promise.resolve(), wv: existing }
+    const def = OVERLAYS.find((d) => d.label === label)
+    const ready = def?.waitForReady ? waitForOverlayReady(label) : Promise.resolve()
+    return { ready, wv: existing }
   }
 
   const def = OVERLAYS.find((d) => d.label === label)
@@ -139,6 +164,9 @@ async function getOrCreateOverlay(label: string): Promise<OverlayHandle | null> 
 
   wv.once('tauri://error', (e) => {
     console.error(`Failed to create overlay ${def.label}:`, e)
+    overlays.delete(def.label)
+    overlayHandles.delete(def.label)
+    overlayReady.delete(def.label)
   })
 
   overlays.set(def.label, wv)
@@ -179,12 +207,38 @@ async function positionAndShowOverlay(label: string, wv: WebviewWindow, payload:
 
   const pos = computeOverlayPosition(anchorX, anchorY, anchorH, overlayW, overlayH)
   await wv.setPosition(new LogicalPosition(pos.x, pos.y))
-  if (label === 'tag-list-picker-overlay') {
-    await wv.setSize(new LogicalSize(overlayW, overlayH))
-  }
-  await emit(`${label}:show`, payload)
+  await wv.setSize(new LogicalSize(overlayW, overlayH))
+  await emitOverlayShowAndWaitForContent(label, payload)
   await wv.show()
   await wv.setFocus()
+}
+
+async function emitOverlayShowAndWaitForContent(label: string, payload: Record<string, unknown>) {
+  let resolveReady: () => void
+  const showReady = new Promise<void>((resolve) => {
+    resolveReady = resolve
+  })
+  const unlisten = await listen(`${label}:show-ready`, () => {
+    unlisten()
+    resolveReady()
+  })
+  try {
+    await emit(`${label}:show`, payload)
+    await showReady
+  } catch (error) {
+    unlisten()
+    throw error
+  }
+}
+
+export function notifyOverlayReady(label: string) {
+  void emit(`${label}:ready`)
+}
+
+export function notifyOverlayShowReady(label: string) {
+  window.requestAnimationFrame(() => {
+    void emit(`${label}:show-ready`)
+  })
 }
 
 export async function showOverlay(label: string, _x: number, _y: number, payload: Record<string, unknown>) {
@@ -233,3 +287,4 @@ export const TW22_COLOR_PICKER_LABEL = 'tw22-color-picker-overlay'
 export const ADVANCED_GROUP_FORM_LABEL = 'advanced-group-form-overlay'
 export const EMOJI_PICKER_LABEL = 'emoji-picker-overlay'
 export const UNIT_SELECTOR_LABEL = 'unit-selector-overlay'
+export const COUNTDOWN_FORM_LABEL = 'countdown-form-overlay'

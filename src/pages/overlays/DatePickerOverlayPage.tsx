@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "@/stores/useAppStore";
-import { showOverlay, TIMEZONE_PICKER_LABEL } from "@/lib/overlayManager";
+import { DATE_PICKER_LABEL, notifyOverlayReady, notifyOverlayShowReady, showOverlay, TIMEZONE_PICKER_LABEL } from "@/lib/overlayManager";
 import { getScreenRect } from "@/lib/screenRect";
 import DateTimeCalenderPicker from "@/components/DateTimeCalenderPicker";
 import type { CalendarEvent } from "@/types";
@@ -68,8 +68,10 @@ export default function DatePickerOverlayPage() {
             if (c) setColor(c);
             setHideTime(ht || false);
             setEvents(evs || []);
+            notifyOverlayShowReady(DATE_PICKER_LABEL);
         });
 
+        unlisten.then(() => notifyOverlayReady(DATE_PICKER_LABEL)).catch(() => {});
         return () => { unlisten.then((fn) => fn()).catch(() => {}); };
     }, []);
 

@@ -526,7 +526,7 @@ function App() {
           <Route path="/dialog/task-template-management" element={<TaskTemplateManagementDialogPage />} />
           <Route path="/dialog/attachment-management" element={<AttachmentManagementDialogPage />} />
           <Route path="/dialog/settings" element={<SettingsDialogPage />} />
-          <Route path="/dialog/countdown-form" element={<CountdownFormDialogPage />} />
+          <Route path="/overlay/countdown-form" element={<CountdownFormDialogPage />} />
           <Route path="/overlay/date-picker" element={<DatePickerOverlayPage />} />
           <Route path="/overlay/date-range-picker" element={<DateRangePickerOverlayPage />} />
           <Route path="/overlay/timezone-picker" element={<TimezonePickerOverlayPage />} />

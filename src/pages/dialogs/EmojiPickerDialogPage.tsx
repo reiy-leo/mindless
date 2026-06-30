@@ -5,7 +5,7 @@ import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
 import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { EMOJI_PICKER_LABEL } from '@/lib/overlayManager';
+import { EMOJI_PICKER_LABEL, notifyOverlayReady, notifyOverlayShowReady } from '@/lib/overlayManager';
 import { safeUnlisten } from '@/lib/safeUnlisten';
 
 export default function EmojiPickerDialogPage() {
@@ -28,7 +28,9 @@ export default function EmojiPickerDialogPage() {
       if (event.payload.theme) {
         setTheme(event.payload.theme);
       }
+      notifyOverlayShowReady(EMOJI_PICKER_LABEL);
     });
+    unlisten.then(() => notifyOverlayReady(EMOJI_PICKER_LABEL)).catch(() => {});
     return safeUnlisten(unlisten);
   }, []);
 

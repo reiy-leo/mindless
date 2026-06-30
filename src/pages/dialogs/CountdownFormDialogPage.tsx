@@ -1,4 +1,4 @@
-import { emit } from '@tauri-apps/api/event'
+import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,16 +7,38 @@ import EmojiPickerButton from '@/components/EmojiPickerButton'
 import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
 import Select from '@/components/Select'
 import Tw22ColorPicker from '@/components/Tw22ColorPicker'
+import { COUNTDOWN_FORM_LABEL, notifyOverlayReady, notifyOverlayShowReady } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import {
   useCountdownGroups,
   useCountdowns,
   useCreateCountdown,
   useUpdateCountdown,
 } from '@/queries/useCountdownQueries'
-import type { CreateCountdownParams, DisplayMode, EventType, RecurrenceRule } from '@/types/countdown'
+import type { Countdown, CreateCountdownParams, DisplayMode, EventType, RecurrenceRule } from '@/types/countdown'
 
-const params = new URLSearchParams(window.location.search)
-const initialCountdownId = params.get('countdownId')
+type CountdownFormShowPayload = {
+  countdown?: Countdown
+  countdownId?: string
+}
+
+function emptyCountdownForm() {
+  return {
+    color: '#8B5CF6',
+    countdown: null as Countdown | null,
+    description: '',
+    displayMode: 'day' as DisplayMode,
+    eventType: 'countdown' as EventType,
+    groupId: '',
+    icon: '🚩',
+    isLunar: false,
+    recurrenceInterval: 1,
+    recurrenceRule: 'none' as RecurrenceRule,
+    targetDate: '',
+    targetTime: '',
+    title: '',
+  }
+}
 
 export default function CountdownFormDialogPage() {
   const { t } = useTranslation('common')
@@ -25,23 +47,63 @@ export default function CountdownFormDialogPage() {
   const createCountdown = useCreateCountdown()
   const updateCountdown = useUpdateCountdown()
 
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [icon, setIcon] = useState('🚩')
-  const [color, setColor] = useState('#8B5CF6')
-  const [targetDate, setTargetDate] = useState('')
-  const [targetTime, setTargetTime] = useState('')
-  const [eventType, setEventType] = useState<EventType>('countdown')
-  const [groupId, setGroupId] = useState('')
-  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>('none')
-  const [recurrenceInterval, setRecurrenceInterval] = useState(1)
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('day')
-  const [isLunar, setIsLunar] = useState(false)
-  const [countdown, setCountdown] = useState<any>(null)
-  const [loaded, setLoaded] = useState(!initialCountdownId)
+  const [title, setTitle] = useState(emptyCountdownForm().title)
+  const [description, setDescription] = useState(emptyCountdownForm().description)
+  const [icon, setIcon] = useState(emptyCountdownForm().icon)
+  const [color, setColor] = useState(emptyCountdownForm().color)
+  const [targetDate, setTargetDate] = useState(emptyCountdownForm().targetDate)
+  const [targetTime, setTargetTime] = useState(emptyCountdownForm().targetTime)
+  const [eventType, setEventType] = useState<EventType>(emptyCountdownForm().eventType)
+  const [groupId, setGroupId] = useState(emptyCountdownForm().groupId)
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>(emptyCountdownForm().recurrenceRule)
+  const [recurrenceInterval, setRecurrenceInterval] = useState(emptyCountdownForm().recurrenceInterval)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(emptyCountdownForm().displayMode)
+  const [isLunar, setIsLunar] = useState(emptyCountdownForm().isLunar)
+  const [countdown, setCountdown] = useState<Countdown | null>(emptyCountdownForm().countdown)
+  const [loaded, setLoaded] = useState(true)
+  const [pendingCountdownId, setPendingCountdownId] = useState<string | null>(null)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const isEditing = !!countdown
+
+  const applyCountdown = (nextCountdown: Countdown) => {
+    setCountdown(nextCountdown)
+    setTitle(nextCountdown.title)
+    setDescription(nextCountdown.description || '')
+    setIcon(nextCountdown.icon || '🚩')
+    setColor(nextCountdown.color || '#8B5CF6')
+    setTargetDate(nextCountdown.targetDate || '')
+    setTargetTime(nextCountdown.targetTime || '')
+    setEventType(nextCountdown.eventType || 'countdown')
+    setGroupId(nextCountdown.groupId || '')
+    setRecurrenceRule(nextCountdown.recurrenceRule || 'none')
+    setRecurrenceInterval(nextCountdown.recurrenceInterval || 1)
+    setDisplayMode(nextCountdown.displayMode || 'day')
+    setIsLunar(nextCountdown.isLunar || false)
+    setLoaded(true)
+    notifyOverlayShowReady(COUNTDOWN_FORM_LABEL)
+  }
+
+  const resetForm = () => {
+    const next = emptyCountdownForm()
+    setCountdown(next.countdown)
+    setTitle(next.title)
+    setDescription(next.description)
+    setIcon(next.icon)
+    setColor(next.color)
+    setTargetDate(next.targetDate)
+    setTargetTime(next.targetTime)
+    setEventType(next.eventType)
+    setGroupId(next.groupId)
+    setRecurrenceRule(next.recurrenceRule)
+    setRecurrenceInterval(next.recurrenceInterval)
+    setDisplayMode(next.displayMode)
+    setIsLunar(next.isLunar)
+    setPendingCountdownId(null)
+    setShowColorPicker(false)
+    setLoaded(true)
+    notifyOverlayShowReady(COUNTDOWN_FORM_LABEL)
+  }
 
   useEffect(() => {
     document.documentElement.style.backgroundColor = 'transparent'
@@ -62,26 +124,32 @@ export default function CountdownFormDialogPage() {
   }, [showColorPicker])
 
   useEffect(() => {
-    if (initialCountdownId && countdowns.length > 0) {
-      const found = countdowns.find((c) => c.id === initialCountdownId)
-      if (found) {
-        setCountdown(found)
-        setTitle(found.title)
-        setDescription(found.description || '')
-        setIcon(found.icon || '🚩')
-        setColor(found.color || '#8B5CF6')
-        setTargetDate(found.targetDate || '')
-        setTargetTime(found.targetTime || '')
-        setEventType(found.eventType || 'countdown')
-        setGroupId(found.groupId || '')
-        setRecurrenceRule(found.recurrenceRule || 'none')
-        setRecurrenceInterval(found.recurrenceInterval || 1)
-        setDisplayMode(found.displayMode || 'day')
-        setIsLunar(found.isLunar || false)
+    const unlisten = listen<CountdownFormShowPayload>(`${COUNTDOWN_FORM_LABEL}:show`, (event) => {
+      if (event.payload.countdown) {
+        setPendingCountdownId(null)
+        applyCountdown(event.payload.countdown)
+        return
       }
-      setLoaded(true)
+      if (event.payload.countdownId) {
+        setPendingCountdownId(event.payload.countdownId)
+        setLoaded(false)
+        return
+      }
+      resetForm()
+    })
+
+    unlisten.then(() => notifyOverlayReady(COUNTDOWN_FORM_LABEL)).catch(() => {})
+    return safeUnlisten(unlisten)
+  }, [])
+
+  useEffect(() => {
+    if (!pendingCountdownId) return
+    const found = countdowns.find((c) => c.id === pendingCountdownId)
+    if (found) {
+      setPendingCountdownId(null)
+      applyCountdown(found)
     }
-  }, [countdowns])
+  }, [countdowns, pendingCountdownId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,7 +178,7 @@ export default function CountdownFormDialogPage() {
         await createCountdown.mutateAsync(params)
       }
       await emit('dialog:result', { action: 'submit' })
-      await getCurrentWindow().close()
+      await getCurrentWindow().hide()
     } catch (error) {
       console.error('Error submitting:', error)
     }
@@ -124,7 +192,7 @@ export default function CountdownFormDialogPage() {
   }
 
   return (
-    <OverlayWebviewWindow closable={true}>
+    <OverlayWebviewWindow closable={true} overlay={true}>
       <div className="min-h-screen bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
         {!loaded ? (
           <div className="p-6 flex items-center justify-center">
@@ -186,7 +254,7 @@ export default function CountdownFormDialogPage() {
               >
                 {t('countdowns.target_date')} *
               </label>
-              {(!initialCountdownId || loaded) && (
+              {loaded && (
                 <BirthdayWheelPicker
                   className="-mt-6"
                   date={targetDate || undefined}
