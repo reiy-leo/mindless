@@ -9,6 +9,7 @@ export default function Tw22ColorPickerOverlayPage() {
   const [value, setValue] = useState('#3B82F6')
   const [visible, setVisible] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const openingRef = useRef(false)
 
   useEffect(() => {
     document.documentElement.style.setProperty('background-color', 'transparent', 'important')
@@ -27,6 +28,7 @@ export default function Tw22ColorPickerOverlayPage() {
       const { value: v } = e.payload
       setValue(v)
       setVisible(true)
+      openingRef.current = true
       notifyOverlayShowReady(TW22_COLOR_PICKER_LABEL)
     })
 
@@ -36,7 +38,11 @@ export default function Tw22ColorPickerOverlayPage() {
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-      if (!focused) hide()
+      if (focused) {
+        openingRef.current = false
+        return
+      }
+      if (!openingRef.current) hide()
     })
     return safeUnlisten(unlisten)
   }, [])

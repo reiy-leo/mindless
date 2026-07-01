@@ -22,31 +22,43 @@ export default function EmojiPickerButton({ value, onChange, className = '' }: E
   }, [onChange]);
 
   const handleClick = useCallback(async () => {
-    if (!buttonRef.current) return;
+    window.setTimeout(async () => {
+      if (!buttonRef.current) return;
 
-    try {
-      const currentWin = getCurrentWindow();
-      const currentWinLabel = currentWin.label;
+      try {
+        const currentWin = getCurrentWindow();
+        const currentWinLabel = currentWin.label;
 
-      const rect = await getScreenRect(buttonRef.current);
-      const isDark = document.documentElement.classList.contains('dark');
-      await showOverlay(EMOJI_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
-        anchorH: rect.height,
-        anchorX: rect.x,
-        anchorY: rect.y,
-        parentLabel: currentWinLabel,
-        theme: isDark ? 'dark' : 'light',
-      });
-    } catch (err) {
-      console.error('Failed to open emoji picker:', err);
-    }
+        const rect = await getScreenRect(buttonRef.current);
+        const isDark = document.documentElement.classList.contains('dark');
+        await showOverlay(EMOJI_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+          anchorH: rect.height,
+          anchorX: rect.x,
+          anchorY: rect.y,
+          parentLabel: currentWinLabel,
+          theme: isDark ? 'dark' : 'light',
+        });
+      } catch (err) {
+        console.error('Failed to open emoji picker:', err);
+      }
+    }, 0);
   }, []);
 
   return (
     <button
       ref={buttonRef}
       type="button"
-      onClick={handleClick}
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void handleClick();
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        void handleClick();
+      }}
       className={`w-10 h-10 rounded-lg flex items-center justify-center text-2xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${className}`}
     >
       {value}

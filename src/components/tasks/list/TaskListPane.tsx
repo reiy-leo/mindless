@@ -16,17 +16,17 @@ import {
   Table2,
   Tag as TagIconLucide,
 } from 'lucide-react'
-import { type Dispatch, type KeyboardEvent, type MutableRefObject, type RefObject, type SetStateAction } from 'react'
+import type { Dispatch, KeyboardEvent, MutableRefObject, RefObject, SetStateAction } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import type { PriorityMode } from '@/types'
 import { VIEW_MODES } from '@/lib/constants'
 import { DATE_RANGE_PICKER_LABEL, showOverlay, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
 import type { PriorityOption } from '@/lib/priorityOptions'
 import { getScreenRect } from '@/lib/screenRect'
+import type { PriorityMode } from '@/types'
 import type { PendingAttachment } from '@/types/attachment'
-import type { ListSettings, Priority, SortBy, Task, TaskFilterStatus } from '@/types/task'
 import type { Tag } from '@/types/tag'
+import type { ListSettings, Priority, SortBy, Task, TaskFilterStatus } from '@/types/task'
 import type { TaskTemplate } from '@/types/taskTemplate'
 import OxygenNotIncludedPriorityPicker from '%/tasks/controls/OxygenNotIncludedPriorityPicker'
 import { TaskGroupControls } from '%/tasks/controls/TaskGroupControls'
@@ -71,8 +71,8 @@ interface TaskListPaneProps {
   dateButtonRef: RefObject<HTMLButtonElement>
   dateExplicitlySetRef: MutableRefObject<boolean>
   detailPanelWidth: number
-  filterStatus: TaskStatus3
   filteredTasks: Task[]
+  filterStatus: TaskStatus3
   flatItemGroups: FlatTaskGroup[]
   handleAttachmentClick: () => void
   handleCreateInline: (onSuccess?: (task: Task) => void) => void
@@ -102,15 +102,15 @@ interface TaskListPaneProps {
   setNewTaskPriority: Dispatch<SetStateAction<Priority>>
   setNewTaskTitle: Dispatch<SetStateAction<string>>
   setPendingAttachments: Dispatch<SetStateAction<PendingAttachment[]>>
-  setSelectedTaskId: Dispatch<SetStateAction<string | null>>
   setSelectedSubtaskId: Dispatch<SetStateAction<string | null>>
+  setSelectedTaskId: Dispatch<SetStateAction<string | null>>
   setShowPriorityPicker: Dispatch<SetStateAction<boolean>>
   setShowSettings: Dispatch<SetStateAction<boolean>>
   setShowTemplatePicker: Dispatch<SetStateAction<boolean>>
+  setTaskContextMenu: Dispatch<SetStateAction<{ taskId: string; x: number; y: number } | null>>
   setTaskMenuPanel: Dispatch<SetStateAction<TaskMenuPanel | null>>
   setTaskSortBy: (sortBy: SortBy) => void
   setTaskSortOrder: (sortOrder: 'asc' | 'desc') => void
-  setTaskContextMenu: Dispatch<SetStateAction<{ taskId: string; x: number; y: number } | null>>
   showPriorityPicker: boolean
   showSettings: boolean
   showTemplatePicker: boolean
@@ -394,6 +394,7 @@ export default function TaskListPane({
                       if (tagButtonRef.current) {
                         const rect = await getScreenRect(tagButtonRef.current)
                         await showOverlay(TAG_LIST_PICKER_LABEL, rect.x, rect.y, {
+                          _source: 'inline-task-form',
                           anchorH: rect.height,
                           anchorX: rect.x,
                           anchorY: rect.y,
@@ -420,6 +421,7 @@ export default function TaskListPane({
                     if (dateButtonRef.current) {
                       const rect = await getScreenRect(dateButtonRef.current)
                       await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+                        _source: 'inline-task-form',
                         anchorH: rect.height,
                         anchorX: rect.x,
                         anchorY: rect.y,
@@ -544,7 +546,7 @@ export default function TaskListPane({
                   <div className="space-y-1" key={group.id}>
                     {taskGroupBy !== 'none' && (
                       <button
-                        className="sticky top-0 z-10 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs font-medium text-theme-500 transition-colors  dark:bg-theme-900/80 dark:text-theme-400"
+                        className="sticky top-0 z-10 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs font-medium text-theme-500 transition-colors dark:text-theme-400"
                         onClick={() =>
                           setCollapsedTaskGroups((prev) => ({ ...prev, [group.id]: !(prev[group.id] ?? false) }))
                         }

@@ -7,7 +7,9 @@ import type { Tag } from '@/types/tag'
 export default function TagListPickerOverlayPage() {
   const [tags, setTags] = useState<Tag[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [source, setSource] = useState<string | undefined>()
   const containerRef = useRef<HTMLDivElement>(null)
+  const openingRef = useRef(false)
 
   useEffect(() => {
     document.documentElement.style.setProperty('background-color', 'transparent', 'important')
@@ -20,13 +22,16 @@ export default function TagListPickerOverlayPage() {
     const unlisten = listen<{
       tags: Tag[]
       selectedIds: string[]
+      _source?: string
       anchorX: number
       anchorY: number
       anchorH: number
     }>('tag-list-picker-overlay:show', (e) => {
-      const { tags: t, selectedIds: s } = e.payload
+      const { tags: t, selectedIds: s, _source } = e.payload
       setTags(t)
       setSelectedIds(s)
+      setSource(_source)
+      openingRef.current = true
       notifyOverlayShowReady(TAG_LIST_PICKER_LABEL)
     })
 
@@ -38,7 +43,11 @@ export default function TagListPickerOverlayPage() {
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-      if (!focused) hide()
+      if (focused) {
+        openingRef.current = false
+        return
+      }
+      if (!openingRef.current) hide()
     })
     return () => {
       unlisten.then((fn) => fn()).catch(() => {})
@@ -52,7 +61,7 @@ export default function TagListPickerOverlayPage() {
   const handleToggle = (tagId: string) => {
     const newIds = selectedIds.includes(tagId) ? selectedIds.filter((id) => id !== tagId) : [...selectedIds, tagId]
     setSelectedIds(newIds)
-    emit('tag-list-picker-overlay:result', { selectedIds: newIds })
+    emit('tag-list-picker-overlay:result', { _source: source, selectedIds: newIds })
   }
 
   return (

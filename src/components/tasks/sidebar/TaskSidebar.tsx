@@ -200,31 +200,36 @@ export default function TaskSidebar({
                 const count = advGroupCounts[group.id] || 0
 
                 return (
-                  <div className="relative group" key={group.id}>
+                  <div
+                    className={`relative group flex items-center gap-1 rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-black/10 dark:bg-white/15'
+                        : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
+                    }`}
+                    key={group.id}
+                    onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
+                    style={isActive ? { color: 'var(--theme-text-70)' } : {}}
+                  >
                     <button
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md transition-colors text-left group/item text-sm ${
-                        isActive
-                          ? 'bg-black/10 dark:bg-white/15'
-                          : 'text-theme-700 dark:text-theme-300 hover:bg-black/5 dark:hover:bg-white/10'
-                      }`}
+                      className="min-w-0 flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left text-sm"
                       onClick={() => handleAdvGroupClick(group.id)}
-                      onContextMenu={(e) => handleContextMenu(e, 'advGroup', group.id)}
-                      style={isActive ? { color: 'var(--theme-text-70)' } : {}}
                       type="button"
                     >
                       <span className="shrink-0 text-sm">{resolveIcon(group.icon)}</span>
                       <span className="flex-1 truncate">{group.name}</span>
-                      {count > 0 && (
-                        <span className="text-xs text-theme-400 dark:text-theme-500 group-hover/item:hidden">
-                          {count}
-                        </span>
-                      )}
-                      <span
-                        className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
-                        onMouseDown={(e) => handleEditAdvGroup(e, group)}
-                      >
+                    </button>
+                    {count > 0 && (
+                      <span className="text-xs text-theme-400 dark:text-theme-500 group-hover:hidden pr-1">{count}</span>
+                    )}
+                    <button
+                      className="hidden group-hover:block p-0.5 mr-1 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleEditAdvGroup(e, group)
+                      }}
+                      type="button"
+                    >
                         <Pencil className="w-3 h-3 text-theme-400 dark:text-theme-500" />
-                      </span>
                     </button>
                   </div>
                 )
@@ -262,31 +267,36 @@ export default function TaskSidebar({
               const count = listTaskCounts[list.id] || 0
 
               return (
-                <div className="relative group" key={list.id}>
+                <div
+                  className={`relative group flex items-center gap-1 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-white/30 dark:bg-black/30'
+                      : 'text-theme-700 dark:text-theme-300 hover:bg-white/30 dark:hover:bg-black/30'
+                  }`}
+                  key={list.id}
+                  onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
+                  style={isActive ? { color: 'var(--theme-text-700)' } : {}}
+                >
                   <button
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors text-left group/item text-sm ${
-                      isActive
-                        ? 'bg-white/30 dark:bg-black/30'
-                        : 'text-theme-700 dark:text-theme-300 hover:bg-white/30 dark:hover:bg-black/30'
-                    }`}
-                    onContextMenu={(e) => handleContextMenu(e, 'list', list.id)}
-                    onMouseDown={() => handleListClick(list.id)}
-                    style={isActive ? { color: 'var(--theme-text-700)' } : {}}
+                    className="min-w-0 flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-sm"
+                    onClick={() => handleListClick(list.id)}
                     type="button"
                   >
                     <span className="shrink-0 text-sm">{resolveIcon(list.icon)}</span>
                     <span className="flex-1 truncate">{list.name}</span>
-                    {count > 0 && (
-                      <span className="text-xs text-theme-400 dark:text-theme-500 group-hover/item:hidden">
-                        {count}
-                      </span>
-                    )}
-                    <span
-                      className="hidden group-hover/item:block p-0.5 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
-                      onMouseDown={(e) => handleEditList(e, list)}
-                    >
+                  </button>
+                  {count > 0 && (
+                    <span className="text-xs text-theme-400 dark:text-theme-500 group-hover:hidden pr-1">{count}</span>
+                  )}
+                  <button
+                    className="hidden group-hover:block p-0.5 mr-1 rounded hover:bg-theme-200 dark:hover:bg-theme-600"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleEditList(e, list)
+                    }}
+                    type="button"
+                  >
                       <Pencil className="w-3 h-3 text-theme-400 dark:text-theme-500" />
-                    </span>
                   </button>
                 </div>
               )

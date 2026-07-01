@@ -973,10 +973,7 @@ export default function TaskDetailPanel({
       endTime?: string
       isAllDay?: boolean
     }>('date-range-picker-overlay:result', (e) => {
-      if (e.payload._source) {
-        return
-      }
-      if (inlineDateOpenedRef?.current) {
+      if (e.payload._source !== 'task-detail') {
         return
       }
       const p = e.payload
@@ -1029,6 +1026,7 @@ export default function TaskDetailPanel({
             onClick={async (e) => {
               const rect = await getScreenRect(e.currentTarget)
               await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+                _source: 'task-detail',
                 anchorH: rect.height,
                 anchorX: rect.x,
                 anchorY: rect.y,

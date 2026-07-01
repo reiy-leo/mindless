@@ -20,6 +20,7 @@ export default function DateRangePickerOverlayPage() {
   const [hideTime, setHideTime] = useState(false)
   const [source, setSource] = useState<string | undefined>()
   const openingTimezoneRef = useRef(false)
+  const openingRef = useRef(false)
 
   const handleTimezoneOverlayChange = useCallback((opening: boolean) => {
     openingTimezoneRef.current = opening
@@ -63,6 +64,7 @@ export default function DateRangePickerOverlayPage() {
       setColor(p.color)
       setHideTime(p.hideTime || false)
       setSource(p._source)
+      openingRef.current = true
       notifyOverlayShowReady(DATE_RANGE_PICKER_LABEL)
     })
 
@@ -72,7 +74,12 @@ export default function DateRangePickerOverlayPage() {
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-      if (!focused && !openingTimezoneRef.current) hide()
+      if (focused) {
+        openingRef.current = false
+        return
+      }
+      if (openingRef.current) return
+      if (!openingTimezoneRef.current) hide()
     })
     return safeUnlisten(unlisten)
   }, [])

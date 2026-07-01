@@ -350,7 +350,8 @@ export default function TasksPage() {
 
   // Listen for tag list picker overlay results
   useEffect(() => {
-    const unlisten = listen<{ selectedIds: string[] }>('tag-list-picker-overlay:result', (e) => {
+    const unlisten = listen<{ _source?: string; selectedIds: string[] }>('tag-list-picker-overlay:result', (e) => {
+      if (e.payload._source !== 'inline-task-form') return
       setNewTaskTagIds(e.payload.selectedIds)
     })
     return () => {
@@ -368,10 +369,7 @@ export default function TasksPage() {
       startDate?: string
       startTime?: string
     }>('date-range-picker-overlay:result', (e) => {
-      if (e.payload._source) {
-        return
-      }
-      if (!inlineDateOpenedRef.current) {
+      if (e.payload._source !== 'inline-task-form') {
         return
       }
       inlineDateOpenedRef.current = false
@@ -996,6 +994,7 @@ export default function TasksPage() {
       const btn = document.querySelector(`[data-task-row="${taskId}"]`) as HTMLElement
       const rect = btn ? await getScreenRect(btn) : { height: 0, x: fallback.x, y: fallback.y }
       await showOverlay(DATE_RANGE_PICKER_LABEL, rect.x, rect.y + rect.height + 4, {
+        _source: 'task-context-menu',
         anchorH: rect.height,
         anchorX: rect.x,
         anchorY: rect.y,
@@ -1013,7 +1012,7 @@ export default function TasksPage() {
         time?: string
         type: string
       }>('date-range-picker-overlay:result', (e) => {
-        if (e.payload._source) {
+        if (e.payload._source !== 'task-context-menu') {
           return
         }
         const p = e.payload

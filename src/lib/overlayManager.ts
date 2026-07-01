@@ -43,6 +43,7 @@ const overlayHandles = new Map<string, Promise<OverlayHandle | null>>()
 const overlayReady = new Set<string>()
 const overlayReadyPromises = new Map<string, Promise<void>>()
 const OVERLAY_PRELOAD_SESSION_KEY = 'mindless:overlay-preload-complete'
+const OVERLAY_READY_STORAGE_PREFIX = 'mindless:overlay-ready:'
 let baseUrl = ''
 
 export function shouldPreloadOverlayWebviews(currentLabel: string, preloadMarker: string | null) {
@@ -86,6 +87,10 @@ interface OverlayHandle {
 
 function waitForOverlayReady(label: string) {
   if (overlayReady.has(label)) return Promise.resolve()
+  if (isOverlayReadyStored(label)) {
+    overlayReady.add(label)
+    return Promise.resolve()
+  }
   const pending = overlayReadyPromises.get(label)
   if (pending) return pending
 
@@ -97,6 +102,7 @@ function waitForOverlayReady(label: string) {
       if (settled) return
       settled = true
       overlayReady.add(label)
+      storeOverlayReady(label)
       overlayReadyPromises.delete(label)
       unlisten?.()
       resolve()
@@ -208,9 +214,9 @@ async function positionAndShowOverlay(label: string, wv: WebviewWindow, payload:
   const pos = computeOverlayPosition(anchorX, anchorY, anchorH, overlayW, overlayH)
   await wv.setPosition(new LogicalPosition(pos.x, pos.y))
   await wv.setSize(new LogicalSize(overlayW, overlayH))
-  await emitOverlayShowAndWaitForContent(label, payload)
   await wv.show()
   await wv.setFocus()
+  await emitOverlayShowAndWaitForContent(label, payload)
 }
 
 async function emitOverlayShowAndWaitForContent(label: string, payload: Record<string, unknown>) {
@@ -232,6 +238,7 @@ async function emitOverlayShowAndWaitForContent(label: string, payload: Record<s
 }
 
 export function notifyOverlayReady(label: string) {
+  storeOverlayReady(label)
   void emit(`${label}:ready`)
 }
 
@@ -288,3 +295,23 @@ export const ADVANCED_GROUP_FORM_LABEL = 'advanced-group-form-overlay'
 export const EMOJI_PICKER_LABEL = 'emoji-picker-overlay'
 export const UNIT_SELECTOR_LABEL = 'unit-selector-overlay'
 export const COUNTDOWN_FORM_LABEL = 'countdown-form-overlay'
+
+function overlayReadyStorageKey(label: string) {
+  return `${OVERLAY_READY_STORAGE_PREFIX}${label}`
+}
+
+function isOverlayReadyStored(label: string) {
+  try {
+    return window.localStorage.getItem(overlayReadyStorageKey(label)) === '1'
+  } catch {
+    return false
+  }
+}
+
+function storeOverlayReady(label: string) {
+  try {
+    window.localStorage.setItem(overlayReadyStorageKey(label), '1')
+  } catch {
+    // ponytail: localStorage can be unavailable in constrained webview states; fallback is the in-memory ready set.
+  }
+}
