@@ -1,5 +1,5 @@
 import { Archive, Pencil, Pin, Trash2 } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AdvancedGroup } from '&/useAppStore'
 import type { List } from '@/types/task'
@@ -40,9 +40,14 @@ export default function ListContextMenu({
 }: ListContextMenuProps) {
   const { t } = useTranslation('common')
   const menuRef = useRef<HTMLDivElement>(null)
+  const pinActionHandledRef = useRef(false)
   const [flipY, setFlipY] = useState(false)
   const list = menu.type === 'list' ? allLists.find((item) => item.id === menu.id) : undefined
   const group = menu.type === 'advGroup' ? advancedGroups.find((item) => item.id === menu.id) : undefined
+
+  useEffect(() => {
+    pinActionHandledRef.current = false
+  }, [menu.id, menu.type])
 
   useLayoutEffect(() => {
     if (!menuRef.current) {
@@ -81,7 +86,24 @@ export default function ListContextMenu({
             </button>
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
-              onClick={() => onPinList(menu.id)}
+              onMouseDown={(e) => {
+                if (pinActionHandledRef.current) {
+                  return
+                }
+                pinActionHandledRef.current = true
+                e.preventDefault()
+                e.stopPropagation()
+                onPinList(menu.id)
+              }}
+              onClick={(e) => {
+                if (pinActionHandledRef.current) {
+                  return
+                }
+                pinActionHandledRef.current = true
+                e.preventDefault()
+                e.stopPropagation()
+                onPinList(menu.id)
+              }}
               type="button"
             >
               <Pin className="w-4 h-4" />
@@ -122,7 +144,24 @@ export default function ListContextMenu({
             </button>
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
-              onClick={() => onPinAdvancedGroup(menu.id)}
+              onMouseDown={(e) => {
+                if (pinActionHandledRef.current) {
+                  return
+                }
+                pinActionHandledRef.current = true
+                e.preventDefault()
+                e.stopPropagation()
+                onPinAdvancedGroup(menu.id)
+              }}
+              onClick={(e) => {
+                if (pinActionHandledRef.current) {
+                  return
+                }
+                pinActionHandledRef.current = true
+                e.preventDefault()
+                e.stopPropagation()
+                onPinAdvancedGroup(menu.id)
+              }}
               type="button"
             >
               <Pin className="w-4 h-4" />

@@ -1,45 +1,54 @@
-import { type ReactNode } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import type { ReactNode } from 'react'
 
 interface OverlayWebviewWindowProps {
-  closable?: Boolean;
-  overlay?: Boolean;
-  children: ReactNode;
+  children: ReactNode
+  closable?: boolean
+  overlay?: boolean
 }
 
-export default function OverlayWebviewWindow({ closable = false, overlay = false, children }: OverlayWebviewWindowProps) {
+export default function OverlayWebviewWindow({
+  closable = false,
+  overlay = false,
+  children,
+}: OverlayWebviewWindowProps) {
   const handleClose = async () => {
-    const win = getCurrentWindow();
+    const win = getCurrentWindow()
     if (overlay) {
-      await win.hide();
+      await win.hide()
     } else {
-      await win.close();
+      await win.close()
     }
-  };
+  }
 
   return (
     <div className="h-screen w-screen bg-transparent">
-      <div className="h-full w-full bg-white">
-
+      <div className="h-full w-full bg-theme-50 dark:bg-theme-950">
         {closable && (
-          <div data-tauri-drag-region className='p-3 flex items-center gap-1.5 h-8' aria-label='window-controls'>
+          <div data-tauri-drag-region className="p-3 flex items-center gap-1.5 h-8">
             <button
+              type="button"
               onClick={handleClose}
               className="w-3 h-3 rounded-full bg-[#898989] hover:bg-[#FF3B30] transition-colors group relative"
               title="Close"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="w-2.5 h-2.5 m-auto opacity-0 group-hover:opacity-100"
+              >
+                <title>close icon</title>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          )
-        }
+        )}
 
-        <div className="h-full w-full overflow-hidden">
-        {children}
-        </div>
+        <div className="h-full w-full overflow-hidden">{children}</div>
       </div>
     </div>
-  );
+  )
 }
