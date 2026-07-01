@@ -1,11 +1,9 @@
+import type { AdvancedGroup, AdvancedGroupFilter } from '&/useAppStore'
+import { useAppStore } from '&/useAppStore'
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
-import MultiSelectDropdown from '@/components/MultiSelectDropdown'
-import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
-import WheelPicker from '@/components/WheelPicker'
 import {
   ADVANCED_GROUP_FORM_LABEL,
   DATE_RANGE_PICKER_LABEL,
@@ -18,8 +16,10 @@ import { getPriorityOptions } from '@/lib/priorityOptions'
 import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import { useLists, useTags } from '@/queries/useTaskQueries'
-import type { AdvancedGroup, AdvancedGroupFilter } from '@/stores/useAppStore'
-import { useAppStore } from '@/stores/useAppStore'
+import EmojiPickerButton from '%/EmojiPickerButton'
+import MultiSelectDropdown from '%/MultiSelectDropdown'
+import Tw22ColorPickerButton from '%/Tw22ColorPickerButton'
+import WheelPicker from '%/WheelPicker'
 
 type DatePreset = NonNullable<AdvancedGroupFilter['datePreset']>
 
@@ -237,33 +237,36 @@ export default function AdvancedGroupFormDialogPage() {
   }, [])
 
   useEffect(() => {
-    const unlisten = listen<{ group?: AdvancedGroup; groupId?: string }>(`${ADVANCED_GROUP_FORM_LABEL}:show`, (event) => {
-      const nextGroupId = typeof event.payload.groupId === 'string' ? event.payload.groupId : null
-      setCurrentGroupId(nextGroupId)
-      setRegexError(null)
-      setShowFixedRangePicker(false)
-      hideOverlay(DATE_RANGE_PICKER_LABEL)
-      if (!nextGroupId) {
-        const next = resetForm()
-        setGroup(next.group)
-        setName(next.name)
-        setColor(next.color)
-        setIcon(next.icon)
-        setFilters(next.filters)
-        setLoaded(true)
-      } else if (event.payload.group) {
-        const next = applyGroupToForm(event.payload.group)
-        setGroup(next.group)
-        setName(next.name)
-        setColor(next.color)
-        setIcon(next.icon)
-        setFilters(next.filters)
-        setLoaded(true)
-      } else {
-        setLoaded(false)
-      }
-      notifyOverlayShowReady(ADVANCED_GROUP_FORM_LABEL)
-    })
+    const unlisten = listen<{ group?: AdvancedGroup; groupId?: string }>(
+      `${ADVANCED_GROUP_FORM_LABEL}:show`,
+      (event) => {
+        const nextGroupId = typeof event.payload.groupId === 'string' ? event.payload.groupId : null
+        setCurrentGroupId(nextGroupId)
+        setRegexError(null)
+        setShowFixedRangePicker(false)
+        hideOverlay(DATE_RANGE_PICKER_LABEL)
+        if (!nextGroupId) {
+          const next = resetForm()
+          setGroup(next.group)
+          setName(next.name)
+          setColor(next.color)
+          setIcon(next.icon)
+          setFilters(next.filters)
+          setLoaded(true)
+        } else if (event.payload.group) {
+          const next = applyGroupToForm(event.payload.group)
+          setGroup(next.group)
+          setName(next.name)
+          setColor(next.color)
+          setIcon(next.icon)
+          setFilters(next.filters)
+          setLoaded(true)
+        } else {
+          setLoaded(false)
+        }
+        notifyOverlayShowReady(ADVANCED_GROUP_FORM_LABEL)
+      },
+    )
 
     unlisten.then(() => notifyOverlayReady(ADVANCED_GROUP_FORM_LABEL)).catch(() => {})
     return safeUnlisten(unlisten)

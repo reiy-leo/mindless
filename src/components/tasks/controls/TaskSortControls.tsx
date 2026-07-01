@@ -1,8 +1,8 @@
+import { useAppStore } from '&/useAppStore'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import WheelPicker from '@/components/WheelPicker'
-import { useAppStore } from '@/stores/useAppStore'
 import type { SortBy } from '@/types/task'
+import WheelPicker from '%/WheelPicker'
 
 export function TaskSortControls({
   onChange,

@@ -1,6 +1,6 @@
-import ErrorBoundary from '@/components/ErrorBoundary';
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
-import SettingsPage from '@/pages/SettingsPage';
+import SettingsPage from '#/SettingsPage'
+import ErrorBoundary from '%/ErrorBoundary'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
 
 export default function SettingsDialogPage() {
   return (
@@ -9,5 +9,5 @@ export default function SettingsDialogPage() {
         <SettingsPage />
       </ErrorBoundary>
     </OverlayWebviewWindow>
-  );
+  )
 }

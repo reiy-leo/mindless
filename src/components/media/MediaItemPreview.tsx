@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { Calendar, ExternalLink, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
@@ -12,7 +13,6 @@ import {
 } from '@/queries/useMediaQueries'
 import { useNotes } from '@/queries/useNoteQueries'
 import { useTasks } from '@/queries/useTaskQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { MediaItem, MediaStatus } from '@/types/media'
 import WatchHistoryForm from './WatchHistoryForm'
 

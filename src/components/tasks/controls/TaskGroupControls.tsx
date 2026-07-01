@@ -1,12 +1,15 @@
-import { Clock, Flag, FolderTree, MinusCircle, type LucideIcon } from 'lucide-react'
+import { useAppStore } from '&/useAppStore'
+import { Clock, Flag, FolderTree, type LucideIcon, MinusCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '@/stores/useAppStore'
 import type { GroupBy } from '@/types/task'
 
 export function TaskGroupControls({
   disableTaskGroup = false,
   onChange,
-}: { disableTaskGroup?: boolean; onChange?: (groupBy: string) => void } = {}) {
+}: {
+  disableTaskGroup?: boolean
+  onChange?: (groupBy: string) => void
+} = {}) {
   const { t } = useTranslation('common')
   const { taskGroupBy, setTaskGroupBy } = useAppStore()
   const options: { icon: LucideIcon; label: string; value: GroupBy }[] = [
@@ -17,7 +20,10 @@ export function TaskGroupControls({
   ]
 
   return (
-    <div aria-label={t('tasks.group.by')} className={`grid gap-1 ${options.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+    <div
+      aria-label={t('tasks.group.by')}
+      className={`grid gap-1 ${options.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}
+    >
       {options.map((option) => {
         const Icon = option.icon
         const isActive = taskGroupBy === option.value

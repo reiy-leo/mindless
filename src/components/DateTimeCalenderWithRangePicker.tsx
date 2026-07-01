@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { listen } from '@tauri-apps/api/event'
 import {
   Calendar,
@@ -20,7 +21,6 @@ import { getLunarDayStr } from '@/lib/lunar'
 import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
 import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
-import { useAppStore } from '@/stores/useAppStore'
 import type { CalendarEvent } from '@/types'
 
 interface DateTimeCalenderWithRangePickerProps {

@@ -1,175 +1,175 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
-import { PRIORITY } from '@/lib/constants';
-import { getPriorityOptions } from '@/lib/priorityOptions';
-import { useLists, useCalendarEvents } from '@/queries/useTaskQueries';
-import { useAppStore } from '@/stores/useAppStore';
-import { useViewStore } from '@/stores/useViewStore';
-import DateTimePicker from '@/components/DateTimePicker';
-import DateTimeRangePicker from '@/components/DateTimeRangePicker';
-import Select from '@/components/Select';
-import type { Priority, Task } from '@/types/task';
+import { useAppStore } from '&/useAppStore'
+import { useViewStore } from '&/useViewStore'
+import { X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { PRIORITY } from '@/lib/constants'
+import { getPriorityOptions } from '@/lib/priorityOptions'
+import { useCalendarEvents, useLists } from '@/queries/useTaskQueries'
+import type { Priority, Task } from '@/types/task'
+import DateTimePicker from '%/DateTimePicker'
+import DateTimeRangePicker from '%/DateTimeRangePicker'
+import Select from '%/Select'
 
 // Recurrence rule options
 const RECURRENCE_OPTIONS = [
-  { value: '', labelKey: 'tasks.recurrence.none' },
-  { value: 'daily', labelKey: 'tasks.recurrence.daily' },
-  { value: 'weekly', labelKey: 'tasks.recurrence.weekly' },
-  { value: 'monthly', labelKey: 'tasks.recurrence.monthly' },
-  { value: 'yearly', labelKey: 'tasks.recurrence.yearly' },
-  { value: 'custom', labelKey: 'tasks.recurrence.custom' },
-] as const;
+  { labelKey: 'tasks.recurrence.none', value: '' },
+  { labelKey: 'tasks.recurrence.daily', value: 'daily' },
+  { labelKey: 'tasks.recurrence.weekly', value: 'weekly' },
+  { labelKey: 'tasks.recurrence.monthly', value: 'monthly' },
+  { labelKey: 'tasks.recurrence.yearly', value: 'yearly' },
+  { labelKey: 'tasks.recurrence.custom', value: 'custom' },
+] as const
 
 interface TaskFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
   onSubmit: (task: {
-    title: string;
-    description?: string;
-    priority: Priority;
-    dueDate?: string;
-    dueTime?: string;
-    endDate?: string;
-    endTime?: string;
-    startDate?: string;
-    listId?: string;
-    tagIds?: string;
-    recurrenceRule?: string;
-    recurrenceEndDate?: string;
-  }) => void;
-  task?: Task | null;
+    title: string
+    description?: string
+    priority: Priority
+    dueDate?: string
+    dueTime?: string
+    endDate?: string
+    endTime?: string
+    startDate?: string
+    listId?: string
+    tagIds?: string
+    recurrenceRule?: string
+    recurrenceEndDate?: string
+  }) => void
+  task?: Task | null
 }
 
 export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
-  const { t } = useTranslation('common');
-  const { selectedListId } = useViewStore();
-  const { data: lists = [] } = useLists();
-  const { data: calendarEvents = [] } = useCalendarEvents();
-  const priorityMode = useAppStore((s) => s.priorityMode);
-  const priorityOptions = useMemo(() => getPriorityOptions(priorityMode, t), [priorityMode, t]);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<Priority>(PRIORITY.NONE);
-  const [dueDate, setDueDate] = useState('');
-  const [dueTime, setDueTime] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [listId, setListId] = useState('');
-  const [dateMode, setDateMode] = useState<'single' | 'range'>('single');
+  const { t } = useTranslation('common')
+  const { selectedListId } = useViewStore()
+  const { data: lists = [] } = useLists()
+  const { data: calendarEvents = [] } = useCalendarEvents()
+  const priorityMode = useAppStore((s) => s.priorityMode)
+  const priorityOptions = useMemo(() => getPriorityOptions(priorityMode, t), [priorityMode, t])
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<Priority>(PRIORITY.NONE)
+  const [dueDate, setDueDate] = useState('')
+  const [dueTime, setDueTime] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [listId, setListId] = useState('')
+  const [dateMode, setDateMode] = useState<'single' | 'range'>('single')
 
   // Recurrence state
-  const [recurrenceType, setRecurrenceType] = useState('');
-  const [customInterval, setCustomInterval] = useState(2);
-  const [customUnit, setCustomUnit] = useState<'days' | 'weeks' | 'months'>('days');
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [recurrenceType, setRecurrenceType] = useState('')
+  const [customInterval, setCustomInterval] = useState(2)
+  const [customUnit, setCustomUnit] = useState<'days' | 'weeks' | 'months'>('days')
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('')
 
-  const isEditing = !!task;
+  const isEditing = !!task
 
   // Determine effective list: if a list is selected in sidebar, pre-fill it
-  const effectiveSelectedListId = selectedListId && !selectedListId.startsWith('smart:') ? selectedListId : '';
+  const effectiveSelectedListId = selectedListId && !selectedListId.startsWith('smart:') ? selectedListId : ''
 
   // Derive the recurrence type from the rule string
   function parseRecurrenceRule(rule?: string) {
-    if (!rule) return { type: '', interval: 2, unit: 'days' as const };
-    const basic: Record<string, string> = { daily: 'daily', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' };
-    if (basic[rule]) return { type: rule, interval: 2, unit: 'days' as const };
+    if (!rule) return { interval: 2, type: '', unit: 'days' as const }
+    const basic: Record<string, string> = { daily: 'daily', monthly: 'monthly', weekly: 'weekly', yearly: 'yearly' }
+    if (basic[rule]) return { interval: 2, type: rule, unit: 'days' as const }
     if (rule.startsWith('every_')) {
-      const parts = rule.split('_');
+      const parts = rule.split('_')
       if (parts.length >= 3) {
         return {
-          type: 'custom',
           interval: parseInt(parts[1]) || 2,
+          type: 'custom',
           unit: (parts[2] as 'days' | 'weeks' | 'months') || 'days',
-        };
+        }
       }
     }
-    return { type: '', interval: 2, unit: 'days' as const };
+    return { interval: 2, type: '', unit: 'days' as const }
   }
 
   // Build the recurrence rule string from form state
   function buildRecurrenceRule(): string | undefined {
-    if (!recurrenceType) return undefined;
+    if (!recurrenceType) return undefined
     if (recurrenceType === 'custom') {
-      return `every_${customInterval}_${customUnit}`;
+      return `every_${customInterval}_${customUnit}`
     }
-    return recurrenceType;
+    return recurrenceType
   }
 
   // Reset form when dialog opens/closes, or pre-fill for editing
   useEffect(() => {
     if (isOpen && task) {
-      setTitle(task.title);
-      setDescription(task.description || '');
-      setPriority(task.priority);
-      setDueDate(task.dueDate || '');
-      setDueTime(task.dueTime || '');
-      setEndDate(task.endDate || '');
-      setEndTime(task.endTime || '');
-      setStartDate(task.startDate || '');
-      setListId(task.listId || '');
+      setTitle(task.title)
+      setDescription(task.description || '')
+      setPriority(task.priority)
+      setDueDate(task.dueDate || '')
+      setDueTime(task.dueTime || '')
+      setEndDate(task.endDate || '')
+      setEndTime(task.endTime || '')
+      setStartDate(task.startDate || '')
+      setListId(task.listId || '')
       // Auto-switch to range mode if the task has an endDate
-      setDateMode(task.endDate ? 'range' : 'single');
-      const parsed = parseRecurrenceRule(task.recurrenceRule);
-      setRecurrenceType(parsed.type);
-      setCustomInterval(parsed.interval);
-      setCustomUnit(parsed.unit);
-      setRecurrenceEndDate(task.recurrenceEndDate || '');
+      setDateMode(task.endDate ? 'range' : 'single')
+      const parsed = parseRecurrenceRule(task.recurrenceRule)
+      setRecurrenceType(parsed.type)
+      setCustomInterval(parsed.interval)
+      setCustomUnit(parsed.unit)
+      setRecurrenceEndDate(task.recurrenceEndDate || '')
     } else if (!isOpen) {
-      setTitle('');
-      setDescription('');
-      setPriority(PRIORITY.NONE);
-      setDueDate('');
-      setDueTime('');
-      setEndDate('');
-      setEndTime('');
-      setStartDate('');
-      setListId(effectiveSelectedListId);
-      setDateMode('single');
-      setRecurrenceType('');
-      setCustomInterval(2);
-      setCustomUnit('days');
-      setRecurrenceEndDate('');
+      setTitle('')
+      setDescription('')
+      setPriority(PRIORITY.NONE)
+      setDueDate('')
+      setDueTime('')
+      setEndDate('')
+      setEndTime('')
+      setStartDate('')
+      setListId(effectiveSelectedListId)
+      setDateMode('single')
+      setRecurrenceType('')
+      setCustomInterval(2)
+      setCustomUnit('days')
+      setRecurrenceEndDate('')
     } else {
-      setListId(effectiveSelectedListId);
-      setDateMode('single');
-      setRecurrenceType('');
-      setCustomInterval(2);
-      setCustomUnit('days');
-      setRecurrenceEndDate('');
-      setEndDate('');
-      setEndTime('');
+      setListId(effectiveSelectedListId)
+      setDateMode('single')
+      setRecurrenceType('')
+      setCustomInterval(2)
+      setCustomUnit('days')
+      setRecurrenceEndDate('')
+      setEndDate('')
+      setEndTime('')
     }
-  }, [isOpen, task, effectiveSelectedListId]);
+  }, [isOpen, task, effectiveSelectedListId])
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+    e.preventDefault()
+    if (!title.trim()) return
 
-    const rule = buildRecurrenceRule();
+    const rule = buildRecurrenceRule()
     onSubmit({
-      title: title.trim(),
       description: description.trim() || undefined,
-      priority,
       dueDate: dueDate || undefined,
       dueTime: dueTime || undefined,
       endDate: endDate || undefined,
       endTime: endTime || undefined,
-      startDate: startDate || undefined,
       listId: listId || undefined,
+      priority,
+      recurrenceEndDate: rule ? recurrenceEndDate || undefined : undefined,
       recurrenceRule: rule,
-      recurrenceEndDate: rule ? (recurrenceEndDate || undefined) : undefined,
-    });
-  };
+      startDate: startDate || undefined,
+      title: title.trim(),
+    })
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      onClose();
+      onClose()
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -186,7 +186,10 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {isEditing ? t('tasks.edit_task') : t('tasks.new_task')}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
@@ -199,8 +202,12 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               {t('tasks.title')} <span className="text-red-500">*</span>
             </label>
             <input
-              type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('tasks.title_placeholder')} required autoFocus
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t('tasks.title_placeholder')}
+              required
+              autoFocus
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -209,11 +216,15 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('tasks.description')}
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">({t('tasks.supports_markdown')})</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">
+                ({t('tasks.supports_markdown')})
+              </span>
             </label>
             <textarea
-              value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('tasks.description_placeholder')} rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('tasks.description_placeholder')}
+              rows={3}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
             />
           </div>
@@ -226,7 +237,9 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             <div className="flex gap-2 overflow-x-auto pb-1">
               {priorityOptions.map((option) => (
                 <button
-                  key={option.value} type="button" onClick={() => setPriority(option.value)}
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPriority(option.value)}
                   className={`min-w-14 flex-1 px-4 py-2 rounded-lg border-2 transition-all ${
                     priority === option.value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
@@ -251,10 +264,10 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               value={listId}
               onChange={(val) => setListId(val)}
               options={[
-                { value: '', label: t('lists.inbox') },
-                ...lists.filter((l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent'].includes(l.id)).map((list) => ({
-                  value: list.id, label: list.name,
-                })),
+                { label: t('lists.inbox'), value: '' },
+                ...lists
+                  .filter((l) => !['inbox', 'today', 'tomorrow', 'next7days', 'thismonth', 'recent'].includes(l.id))
+                  .map((list) => ({ label: list.name, value: list.id })),
               ]}
             />
           </div>
@@ -308,7 +321,10 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                   <DateTimePicker
                     date={dueDate || undefined}
                     time={dueTime || undefined}
-                    onChange={(d, tm) => { setDueDate(d || ''); setDueTime(tm || ''); }}
+                    onChange={(d, tm) => {
+                      setDueDate(d || '')
+                      setDueTime(tm || '')
+                    }}
                     events={calendarEvents}
                     showTime={true}
                   />
@@ -325,10 +341,10 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                   endDate={endDate || undefined}
                   endTime={endTime || undefined}
                   onChange={(sd, st, ed, et) => {
-                    setDueDate(sd || '');
-                    setDueTime(st || '');
-                    setEndDate(ed || '');
-                    setEndTime(et || '');
+                    setDueDate(sd || '')
+                    setDueTime(st || '')
+                    setEndDate(ed || '')
+                    setEndTime(et || '')
                   }}
                   events={calendarEvents}
                 />
@@ -344,9 +360,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             <Select
               value={recurrenceType}
               onChange={(val) => setRecurrenceType(val)}
-              options={RECURRENCE_OPTIONS.map((opt) => ({
-                value: opt.value, label: t(opt.labelKey),
-              }))}
+              options={RECURRENCE_OPTIONS.map((opt) => ({ label: t(opt.labelKey), value: opt.value }))}
             />
 
             {/* Custom interval */}
@@ -354,7 +368,10 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{t('tasks.recurrence.every')}</span>
                 <input
-                  type="number" min={2} max={365} value={customInterval}
+                  type="number"
+                  min={2}
+                  max={365}
+                  value={customInterval}
                   onChange={(e) => setCustomInterval(Math.max(2, parseInt(e.target.value) || 2))}
                   className="w-16 px-2 py-1.5 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -362,9 +379,9 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                   value={customUnit}
                   onChange={(val) => setCustomUnit(val as 'days' | 'weeks' | 'months')}
                   options={[
-                    { value: 'days', label: t('tasks.recurrence.days') },
-                    { value: 'weeks', label: t('tasks.recurrence.weeks') },
-                    { value: 'months', label: t('tasks.recurrence.months') },
+                    { label: t('tasks.recurrence.days'), value: 'days' },
+                    { label: t('tasks.recurrence.weeks'), value: 'weeks' },
+                    { label: t('tasks.recurrence.months'), value: 'months' },
                   ]}
                   className="w-28"
                 />
@@ -374,7 +391,9 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
             {/* Recurrence end date */}
             {recurrenceType && (
               <div className="mt-2">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('tasks.recurrence.end_date')}</label>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  {t('tasks.recurrence.end_date')}
+                </label>
                 <DateTimePicker
                   date={recurrenceEndDate || undefined}
                   onChange={(d) => setRecurrenceEndDate(d || '')}
@@ -387,12 +406,16 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose}
+            <button
+              type="button"
+              onClick={onClose}
               className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               {t('common.cancel')}
             </button>
-            <button type="submit" disabled={!title.trim()}
+            <button
+              type="submit"
+              disabled={!title.trim()}
               className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isEditing ? t('common.save') : t('common.create')}
@@ -401,5 +424,5 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
         </form>
       </div>
     </div>
-  );
+  )
 }

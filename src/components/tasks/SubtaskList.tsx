@@ -11,7 +11,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import CheckNow from '@/components/common/CheckNow'
+import CheckNow from '%/common/CheckNow'
 
 const restrictToVerticalAxis: Modifier = ({ transform }) => ({
   ...transform,

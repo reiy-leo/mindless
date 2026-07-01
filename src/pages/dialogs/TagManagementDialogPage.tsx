@@ -13,11 +13,11 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Check, ChevronDown, ChevronRight, GripVertical, Plus, Tag as TagLucide, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
-import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
 import { useCreateTag, useDeleteTag, useMoveTags, useTags, useTasks, useUpdateTag } from '@/queries/useTaskQueries'
 import type { Tag } from '@/types/tag'
+import EmojiPickerButton from '%/EmojiPickerButton'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
+import Tw22ColorPickerButton from '%/Tw22ColorPickerButton'
 
 // ==================== Constants ====================
 

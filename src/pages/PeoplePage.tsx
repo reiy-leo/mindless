@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Archive,
@@ -14,12 +15,6 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import PhoneEmailListEditor from '@/components/PhoneEmailListEditor'
-import { AvatarImage } from '@/components/people/AvatarImage'
-import { ResizeHandle } from '@/components/ResizeHandle'
-import SimpleListEditor from '@/components/SimpleListEditor'
-import TagCombobox from '@/components/TagCombobox'
-import GroupFormPopup from '@/components/ui/GroupFormPopup'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import {
   useAllPersons,
@@ -44,8 +39,13 @@ import {
   useUpdatePersonGroup,
 } from '@/queries/usePersonQueries'
 import { useCreateTag, useTags } from '@/queries/useTaskQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { EmailEntry, OtherNameEntry, Person, PersonGroup, PhoneEntry } from '@/types/person'
+import PhoneEmailListEditor from '%/PhoneEmailListEditor'
+import { AvatarImage } from '%/people/AvatarImage'
+import { ResizeHandle } from '%/ResizeHandle'
+import SimpleListEditor from '%/SimpleListEditor'
+import TagCombobox from '%/TagCombobox'
+import GroupFormPopup from '%/ui/GroupFormPopup'
 
 // ==================== Helper ====================
 const ICON_KEY_TO_EMOJI: Record<string, string> = {

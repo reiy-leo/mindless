@@ -1,9 +1,9 @@
+import { useAppStore } from '&/useAppStore'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDisplayDate } from '@/lib/formatUtils'
 import { getLunarDayStr, getLunarInfo } from '@/lib/lunar'
-import { useAppStore } from '@/stores/useAppStore'
 import type { CalendarEvent } from '@/types'
 
 interface DateTimeRangePickerProps {

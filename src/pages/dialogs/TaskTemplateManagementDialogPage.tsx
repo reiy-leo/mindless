@@ -2,7 +2,6 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Clipboard, Plus, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
 import {
   useCreateTaskTemplate,
   useDeleteTaskTemplate,
@@ -10,6 +9,7 @@ import {
   useUpdateTaskTemplate,
 } from '@/queries/useTaskQueries'
 import type { TaskTemplate } from '@/types'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
 
 function formatDate(dateStr: string): string {
   try {

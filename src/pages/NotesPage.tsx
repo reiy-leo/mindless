@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { listen } from '@tauri-apps/api/event'
 import {
   Archive,
@@ -16,12 +17,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import MilkdownEditor from '@/components/MilkdownEditor'
-import LinkedItemSelector from '@/components/media/LinkedItemSelector'
-import { AvatarImage } from '@/components/people/AvatarImage'
-import { ResizeHandle } from '@/components/ResizeHandle'
-import TagCombobox from '@/components/TagCombobox'
-import GroupFormPopup from '@/components/ui/GroupFormPopup'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { DATE_RANGE_PICKER_LABEL, showOverlay } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
@@ -46,8 +41,13 @@ import {
 } from '@/queries/useNoteQueries'
 import { useAllPersons } from '@/queries/usePersonQueries'
 import { useTags, useTasks } from '@/queries/useTaskQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { Note, NoteGroup } from '@/types/note'
+import MilkdownEditor from '%/MilkdownEditor'
+import LinkedItemSelector from '%/media/LinkedItemSelector'
+import { AvatarImage } from '%/people/AvatarImage'
+import { ResizeHandle } from '%/ResizeHandle'
+import TagCombobox from '%/TagCombobox'
+import GroupFormPopup from '%/ui/GroupFormPopup'
 
 // ==================== Helper: Resolve icon ====================
 const ICON_KEY_TO_EMOJI: Record<string, string> = {

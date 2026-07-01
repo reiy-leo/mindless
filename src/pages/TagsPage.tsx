@@ -12,9 +12,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { ChevronDown, ChevronRight, GripVertical, Plus, Tag as TagLucide, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
 import { useCreateTag, useDeleteTag, useMoveTags, useTags, useTasks, useUpdateTag } from '@/queries/useTaskQueries'
 import type { Tag } from '@/types/tag'
+import EmojiPickerButton from '%/EmojiPickerButton'
 
 // ==================== Constants ====================
 

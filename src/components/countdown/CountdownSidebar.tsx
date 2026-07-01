@@ -1,36 +1,36 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { AlertTriangle, CheckCircle, Trash2 as DeletedIcon, List, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Star,
-  CheckCircle,
-  Trash2 as DeletedIcon,
-  List,
-  AlertTriangle,
-} from 'lucide-react';
-import { useCountdownGroups, useCreateCountdownGroup, useUpdateCountdownGroup, useDeleteCountdownGroup } from '@/queries/useCountdownQueries';
-import type { CountdownGroupWithCount } from '@/types/countdown';
-import GroupFormPopup from '@/components/ui/GroupFormPopup';
+  useCountdownGroups,
+  useCreateCountdownGroup,
+  useDeleteCountdownGroup,
+  useUpdateCountdownGroup,
+} from '@/queries/useCountdownQueries'
+import type { CountdownGroupWithCount } from '@/types/countdown'
+import GroupFormPopup from '%/ui/GroupFormPopup'
 
-export type SmartGroupId = 'all' | 'favorites' | 'completed' | 'missed' | 'deleted';
+export type SmartGroupId = 'all' | 'favorites' | 'completed' | 'missed' | 'deleted'
 
-const SMART_GROUPS: { id: SmartGroupId | 'divider'; icon?: React.ComponentType<{ className?: string }>; labelKey?: string }[] = [
-  { id: 'all', icon: List, labelKey: 'countdowns.smart_groups.all' },
-  { id: 'favorites', icon: Star, labelKey: 'countdowns.smart_groups.favorites' },
+const SMART_GROUPS: {
+  id: SmartGroupId | 'divider'
+  icon?: React.ComponentType<{ className?: string }>
+  labelKey?: string
+}[] = [
+  { icon: List, id: 'all', labelKey: 'countdowns.smart_groups.all' },
+  { icon: Star, id: 'favorites', labelKey: 'countdowns.smart_groups.favorites' },
   { id: 'divider' },
-  { id: 'completed', icon: CheckCircle, labelKey: 'countdowns.smart_groups.completed' },
-  { id: 'missed', icon: AlertTriangle, labelKey: 'countdowns.smart_groups.missed' },
-  { id: 'deleted', icon: DeletedIcon, labelKey: 'countdowns.smart_groups.deleted' },
-];
+  { icon: CheckCircle, id: 'completed', labelKey: 'countdowns.smart_groups.completed' },
+  { icon: AlertTriangle, id: 'missed', labelKey: 'countdowns.smart_groups.missed' },
+  { icon: DeletedIcon, id: 'deleted', labelKey: 'countdowns.smart_groups.deleted' },
+]
 
 interface CountdownSidebarProps {
-  selectedSmartGroup: SmartGroupId | null;
-  selectedGroupId: string | null;
-  onSelectSmartGroup: (groupId: SmartGroupId) => void;
-  onSelectGroup: (groupId: string) => void;
-  width: number;
+  onSelectGroup: (groupId: string) => void
+  onSelectSmartGroup: (groupId: SmartGroupId) => void
+  selectedGroupId: string | null
+  selectedSmartGroup: SmartGroupId | null
+  width: number
 }
 
 export default function CountdownSidebar({
@@ -40,69 +40,70 @@ export default function CountdownSidebar({
   onSelectGroup,
   width,
 }: CountdownSidebarProps) {
-  const { t } = useTranslation('common');
-  const { data: groups = [] } = useCountdownGroups();
-  const createGroup = useCreateCountdownGroup();
-  const updateGroup = useUpdateCountdownGroup();
-  const deleteGroup = useDeleteCountdownGroup();
+  const { t } = useTranslation('common')
+  const { data: groups = [] } = useCountdownGroups()
+  const createGroup = useCreateCountdownGroup()
+  const updateGroup = useUpdateCountdownGroup()
+  const deleteGroup = useDeleteCountdownGroup()
 
-  const [groupsExpanded, setGroupsExpanded] = useState(true);
-  const [showGroupForm, setShowGroupForm] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<CountdownGroupWithCount | null>(null);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupColor, setNewGroupColor] = useState('#3B82F6');
-  const [newGroupIcon, setNewGroupIcon] = useState('📅');
-  const [groupFormTriggerRect, setGroupFormTriggerRect] = useState<DOMRect | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: CountdownGroupWithCount } | null>(null);
+  const [groupsExpanded, setGroupsExpanded] = useState(true)
+  const [showGroupForm, setShowGroupForm] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<CountdownGroupWithCount | null>(null)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupColor, setNewGroupColor] = useState('#3B82F6')
+  const [newGroupIcon, setNewGroupIcon] = useState('📅')
+  const [groupFormTriggerRect, setGroupFormTriggerRect] = useState<DOMRect | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; group: CountdownGroupWithCount } | null>(null)
 
   const handleCreateGroup = async (result: { name: string; icon: string; color: string }) => {
-    if (!result.name.trim()) return;
+    if (!result.name.trim()) return
     await createGroup.mutateAsync({
-      name: result.name,
       color: result.color,
       icon: result.icon,
-    });
-    setShowGroupForm(false);
-  };
+      name: result.name,
+    })
+    setShowGroupForm(false)
+  }
 
   const handleUpdateGroup = async (result: { name: string; icon: string; color: string }) => {
-    if (!editingGroup || !result.name.trim()) return;
+    if (!editingGroup || !result.name.trim()) return
     await updateGroup.mutateAsync({
-      id: editingGroup.id,
-      name: result.name,
       color: result.color,
       icon: result.icon,
-    });
-    setEditingGroup(null);
-    setShowGroupForm(false);
-  };
+      id: editingGroup.id,
+      name: result.name,
+    })
+    setEditingGroup(null)
+    setShowGroupForm(false)
+  }
 
   const handleDeleteGroup = async (id: string) => {
     if (window.confirm(t('countdowns.confirm_delete_group'))) {
-      await deleteGroup.mutateAsync(id);
+      await deleteGroup.mutateAsync(id)
     }
-  };
+  }
 
   const startEditGroup = (e: React.MouseEvent, group: CountdownGroupWithCount) => {
-    setEditingGroup(group);
-    setNewGroupName(group.name);
-    setNewGroupColor(group.color || '#3B82F6');
-    setNewGroupIcon(group.icon || '📅');
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setGroupFormTriggerRect(rect);
-    setShowGroupForm(true);
-  };
+    setEditingGroup(group)
+    setNewGroupName(group.name)
+    setNewGroupColor(group.color || '#3B82F6')
+    setNewGroupIcon(group.icon || '📅')
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setGroupFormTriggerRect(rect)
+    setShowGroupForm(true)
+  }
 
   const handleGroupContextMenu = (e: React.MouseEvent, group: CountdownGroupWithCount) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, group });
-  };
+    e.preventDefault()
+    setContextMenu({ group, x: e.clientX, y: e.clientY })
+  }
 
   return (
-    <div className="flex flex-col h-full border-r border-gray-200 dark:border-gray-700" 
-      style={{ 
-        width, 
+    <div
+      className="flex flex-col h-full border-r border-gray-200 dark:border-gray-700"
+      style={{
         backgroundColor: `var(--theme-bg-20)`,
+        width,
       }}
     >
       {/* Smart Groups */}
@@ -110,10 +111,10 @@ export default function CountdownSidebar({
         <div className="space-y-1">
           {SMART_GROUPS.map((group) => {
             if (group.id === 'divider') {
-              return <div key="divider" className="my-1 border-t border-gray-200 dark:border-gray-700" />;
+              return <div key="divider" className="my-1 border-t border-gray-200 dark:border-gray-700" />
             }
-            const Icon = group.icon!;
-            const isSelected = selectedSmartGroup === group.id;
+            const Icon = group.icon!
+            const isSelected = selectedSmartGroup === group.id
             return (
               <button
                 key={group.id}
@@ -127,7 +128,7 @@ export default function CountdownSidebar({
                 <Icon className="w-4 h-4" />
                 <span>{t(group.labelKey!)}</span>
               </button>
-            );
+            )
           })}
         </div>
       </div>
@@ -144,12 +145,12 @@ export default function CountdownSidebar({
           </button>
           <button
             onClick={(e) => {
-              setEditingGroup(null);
-              setNewGroupName('');
-              setNewGroupColor('#3B82F6');
-              setNewGroupIcon('📅');
-              setGroupFormTriggerRect(e.currentTarget.getBoundingClientRect());
-              setShowGroupForm(true);
+              setEditingGroup(null)
+              setNewGroupName('')
+              setNewGroupColor('#3B82F6')
+              setNewGroupIcon('📅')
+              setGroupFormTriggerRect(e.currentTarget.getBoundingClientRect())
+              setShowGroupForm(true)
             }}
             className="p-1 rounded"
             title={t('countdowns.new_group')}
@@ -163,27 +164,25 @@ export default function CountdownSidebar({
             {groups.map((group) => (
               <div
                 key={group.id}
-                className={`group flex items-center justify-between px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors` }
+                className={`group flex items-center justify-between px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors`}
                 onClick={() => onSelectGroup(group.id)}
                 onContextMenu={(e) => handleGroupContextMenu(e, group)}
-                style={{ 
-                  backgroundColor: `${selectedGroupId ===  group.id ? 'color-mix(in srgb, var(--theme-bg-30) 40%, white)' : ''}`
+                style={{
+                  backgroundColor: `${selectedGroupId === group.id ? 'color-mix(in srgb, var(--theme-bg-30) 40%, white)' : ''}`,
                 }}
               >
                 <div className="flex items-center gap-2">
                   <span>{group.icon || '📅'}</span>
                   <span>{group.name}</span>
-                  {group.count > 0 && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">({group.count})</span>
-                  )}
+                  {group.count > 0 && <span className="text-xs text-gray-400 dark:text-gray-500">({group.count})</span>}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                   {!group.isPreset && (
                     <>
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
-                          startEditGroup(e, group);
+                          e.stopPropagation()
+                          startEditGroup(e, group)
                         }}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title={t('countdowns.edit_group')}
@@ -192,8 +191,8 @@ export default function CountdownSidebar({
                       </button>
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGroup(group.id);
+                          e.stopPropagation()
+                          handleDeleteGroup(group.id)
                         }}
                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                         title={t('countdowns.delete_group')}
@@ -212,8 +211,8 @@ export default function CountdownSidebar({
         <GroupFormPopup
           isOpen={showGroupForm}
           onClose={() => {
-            setShowGroupForm(false);
-            setEditingGroup(null);
+            setShowGroupForm(false)
+            setEditingGroup(null)
           }}
           onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
           triggerRect={groupFormTriggerRect}
@@ -234,8 +233,13 @@ export default function CountdownSidebar({
             >
               <button
                 onClick={() => {
-                  startEditGroup({ currentTarget: document.elementFromPoint(contextMenu.x, contextMenu.y) } as unknown as React.MouseEvent, contextMenu.group);
-                  setContextMenu(null);
+                  startEditGroup(
+                    {
+                      currentTarget: document.elementFromPoint(contextMenu.x, contextMenu.y),
+                    } as unknown as React.MouseEvent,
+                    contextMenu.group,
+                  )
+                  setContextMenu(null)
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
@@ -247,8 +251,8 @@ export default function CountdownSidebar({
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                   <button
                     onClick={() => {
-                      handleDeleteGroup(contextMenu.group.id);
-                      setContextMenu(null);
+                      handleDeleteGroup(contextMenu.group.id)
+                      setContextMenu(null)
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
@@ -262,5 +266,5 @@ export default function CountdownSidebar({
         )}
       </div>
     </div>
-  );
+  )
 }

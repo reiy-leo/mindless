@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import {
   DndContext,
   type DragEndEvent,
@@ -11,12 +12,11 @@ import {
 } from '@dnd-kit/core'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import CheckNow from '@/components/common/CheckNow'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { getTaskTags } from '@/lib/taskHelpers'
-import { useAppStore } from '@/stores/useAppStore'
 import type { Tag } from '@/types/tag'
 import type { Task, TaskStatus, UpdateTaskParams } from '@/types/task'
+import CheckNow from '%/common/CheckNow'
 
 interface KanbanViewProps {
   allTags: Tag[]

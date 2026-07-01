@@ -1,12 +1,11 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-
-import HeatmapGrid from '@/components/HeatmapGrid'
 import { useCountdowns } from '@/queries/useCountdownQueries'
 import { useHeatmapData } from '@/queries/useHeatmapQueries'
 import { useMediaItems } from '@/queries/useMediaQueries'
 import { useNotes } from '@/queries/useNoteQueries'
+import HeatmapGrid from '%/HeatmapGrid'
 
 const COUNTDOWN_ICONS: Record<string, string> = {
   baby: '�',

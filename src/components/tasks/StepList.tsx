@@ -13,11 +13,11 @@ import { listen } from '@tauri-apps/api/event'
 import { Calendar, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import CheckNow from '@/components/common/CheckNow'
-import MilkdownStepEditor from '@/components/MilkdownStepEditor'
 import { DATE_PICKER_LABEL, showOverlay } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import { useCalendarEvents } from '@/queries/useTaskQueries'
+import CheckNow from '%/common/CheckNow'
+import MilkdownStepEditor from '%/MilkdownStepEditor'
 
 const restrictToVerticalAxis: Modifier = ({ transform }) => ({
   ...transform,

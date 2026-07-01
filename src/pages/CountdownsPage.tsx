@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { listen } from '@tauri-apps/api/event'
 import {
   Calendar,
@@ -16,7 +17,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import CountdownSidebar, { type SmartGroupId } from '@/components/countdown/CountdownSidebar'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr, getLunarFullDateStr, getLunarInfo } from '@/lib/lunar'
 import { COUNTDOWN_FORM_LABEL, showOverlay } from '@/lib/overlayManager'
@@ -29,8 +29,8 @@ import {
   useToggleCountdownCompleted,
   useToggleCountdownFavorite,
 } from '@/queries/useCountdownQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { Countdown, DisplayMode, RecurrenceRule } from '@/types/countdown'
+import CountdownSidebar, { type SmartGroupId } from '%/countdown/CountdownSidebar'
 
 // ==================== Icon Map ====================
 const ICON_MAP: Record<string, string> = {
@@ -681,8 +681,7 @@ function CountdownCalendarView({
                     isToday ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
                   }`}
                 >
-                  {' '}
-                  d{/* Date number + lunar day */}
+                  {/* Date number + lunar day */}
                   <div className="flex items-baseline gap-1.5 mb-1 px-1">
                     <span
                       className={`text-xs font-medium ${
@@ -982,7 +981,10 @@ export default function CountdownsPage() {
     setSelectedGroupId(groupId)
   }
 
-  const openCountdownForm = async (countdown?: Countdown, anchor?: HTMLElement | { height: number; x: number; y: number }) => {
+  const openCountdownForm = async (
+    countdown?: Countdown,
+    anchor?: HTMLElement | { height: number; x: number; y: number },
+  ) => {
     const rect = anchor instanceof HTMLElement ? await getScreenRect(anchor) : anchor
     const fallbackX = Math.max(8, Math.round((window.screen.width - 420) / 2))
     const fallbackY = Math.max(8, Math.round((window.screen.height - 660) / 2))

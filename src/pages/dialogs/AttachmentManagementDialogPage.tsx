@@ -3,11 +3,11 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Database, File, Square } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
 import * as api from '@/lib/api'
 import { getActiveProvider } from '@/lib/sync'
 import { useAllAttachments, useDeleteAttachmentLocalCache, useUpdateAttachmentFilename } from '@/queries/useTaskQueries'
 import type { Attachment } from '@/types/attachment'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
 
 // ==================== Context Menu ====================
 

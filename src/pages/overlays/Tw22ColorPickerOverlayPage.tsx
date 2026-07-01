@@ -1,9 +1,9 @@
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
-import Tw22ColorPicker from '@/components/Tw22ColorPicker'
 import { notifyOverlayReady, notifyOverlayShowReady, TW22_COLOR_PICKER_LABEL } from '@/lib/overlayManager'
 import { safeUnlisten } from '@/lib/safeUnlisten'
+import Tw22ColorPicker from '%/Tw22ColorPicker'
 
 export default function Tw22ColorPickerOverlayPage() {
   const [value, setValue] = useState('#3B82F6')

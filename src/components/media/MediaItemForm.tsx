@@ -2,8 +2,6 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import { Archive, CheckCircle, ChevronDown, Clock, ExternalLink, EyeOff, Film, Pencil, Plus, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import DropdownWithSearch from '@/components/DropdownWithSearch'
-import PhoneEmailListEditor from '@/components/PhoneEmailListEditor'
 import {
   useCreateMediaItem,
   useMediaItemDetails,
@@ -15,6 +13,8 @@ import {
 import { useNotes } from '@/queries/useNoteQueries'
 import { useTasks } from '@/queries/useTaskQueries'
 import type { CreateMediaItemInput, MediaItem, UpdateMediaItemInput } from '@/types/media'
+import DropdownWithSearch from '%/DropdownWithSearch'
+import PhoneEmailListEditor from '%/PhoneEmailListEditor'
 import CoverUploader from './CoverUploader'
 import GenreSelector from './GenreSelector'
 import LinkedItemSelector from './LinkedItemSelector'

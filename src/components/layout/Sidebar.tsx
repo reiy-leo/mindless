@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import { useQueryClient } from '@tanstack/react-query'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -17,7 +18,6 @@ import {
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
-import { useAppStore } from '@/stores/useAppStore'
 
 const isMac = navigator.userAgent.includes('Mac')
 

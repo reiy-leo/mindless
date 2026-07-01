@@ -11,6 +11,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
+      "%/*": ["./src/components/*"],
+      "#/*": ["./src/pages/*"],
+      "&/*": ["./src/stores/*"],
       "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,

@@ -1,3 +1,4 @@
+import { useAppStore } from '&/useAppStore'
 import {
   Archive,
   CalendarDays,
@@ -15,15 +16,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
-import MilkdownEditor from '@/components/MilkdownEditor'
-import { ResizeHandle } from '@/components/ResizeHandle'
-import Select from '@/components/Select'
-import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
-import { listenFromDialog, openDialogWindow } from '@/lib/dialogWindow'
+import { listenFromDialog } from '@/lib/dialogWindow'
 import { formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr } from '@/lib/lunar'
-import { showOverlay, UNIT_SELECTOR_LABEL } from '@/lib/overlayManager'
+import { DATE_PICKER_LABEL, showOverlay, UNIT_SELECTOR_LABEL } from '@/lib/overlayManager'
 import { getScreenRect } from '@/lib/screenRect'
 import {
   useArchivedHabits,
@@ -43,8 +39,12 @@ import {
   useUpdateHabit,
   useUpdateHabitGroup,
 } from '@/queries/useHabitQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { CreateHabitParams, Habit, HabitFrequency, HabitGroup, TargetType } from '@/types/habit'
+import EmojiPickerButton from '%/EmojiPickerButton'
+import MilkdownEditor from '%/MilkdownEditor'
+import { ResizeHandle } from '%/ResizeHandle'
+import Select from '%/Select'
+import Tw22ColorPickerButton from '%/Tw22ColorPickerButton'
 
 // ==================== Check if Habit is Due on Date ====================
 function isHabitDueOnDate(habit: Habit, dateStr: string): boolean {
@@ -455,17 +455,16 @@ function HabitFormDialog({
               type="button"
               onClick={async (e) => {
                 const screenRect = await getScreenRect(e.currentTarget)
-                await openDialogWindow({
-                  anchorRect: screenRect,
-                  height: 420,
-                  label: 'date-picker',
-                  title: t('habits.start_date'),
-                  url: `/dialog/date-picker?date=${startDate}`,
-                  width: 240,
-                })
-                const unlisten = await listenFromDialog('date-picker:result', (payload: any) => {
+                const unlisten = await listenFromDialog('date-picker-overlay:result', (payload: any) => {
                   if (payload?.date) setStartDate(payload.date)
                   unlisten()
+                })
+                await showOverlay(DATE_PICKER_LABEL, screenRect.x, screenRect.y + screenRect.height + 4, {
+                  anchorH: screenRect.height,
+                  anchorX: screenRect.x,
+                  anchorY: screenRect.y,
+                  date: startDate,
+                  hideTime: true,
                 })
               }}
               className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"

@@ -2,9 +2,6 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
-import Tw22ColorPickerButton from '@/components/Tw22ColorPickerButton'
 import {
   EMOJI_PICKER_LABEL,
   GROUP_FORM_LABEL,
@@ -13,6 +10,9 @@ import {
   notifyOverlayShowReady,
   TW22_COLOR_PICKER_LABEL,
 } from '@/lib/overlayManager'
+import EmojiPickerButton from '%/EmojiPickerButton'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
+import Tw22ColorPickerButton from '%/Tw22ColorPickerButton'
 
 export default function GroupFormOverlayPage() {
   const [name, setName] = useState('')
@@ -46,15 +46,7 @@ export default function GroupFormOverlayPage() {
       anchorY: number
       anchorH: number
     }>('group-form-overlay:show', (e) => {
-      const {
-        name: n,
-        icon: ic,
-        color: c,
-        namePlaceholder: np,
-        isEditing: ie,
-        showDelete: sd,
-        ...rest
-      } = e.payload
+      const { name: n, icon: ic, color: c, namePlaceholder: np, isEditing: ie, showDelete: sd, ...rest } = e.payload
       setName(n)
       setIcon(ic)
       setColor(c)

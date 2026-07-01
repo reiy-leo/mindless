@@ -1,65 +1,68 @@
-import { CSSProperties, useEffect, useState } from 'react';
-import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react';
-import type { EmojiClickData } from 'emoji-picker-react';
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow';
-import { emit, listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { EMOJI_PICKER_LABEL, notifyOverlayReady, notifyOverlayShowReady } from '@/lib/overlayManager';
-import { safeUnlisten } from '@/lib/safeUnlisten';
+import { emit, listen } from '@tauri-apps/api/event'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import type { EmojiClickData } from 'emoji-picker-react'
+import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react'
+import { type CSSProperties, useEffect, useState } from 'react'
+import { EMOJI_PICKER_LABEL, notifyOverlayReady, notifyOverlayShowReady } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
 
 export default function EmojiPickerDialogPage() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [parentLabel, setParentLabel] = useState<string | null>(null);
-  const isOverlayRoute = window.location.pathname.startsWith('/overlay/');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [parentLabel, setParentLabel] = useState<string | null>(null)
+  const isOverlayRoute = window.location.pathname.startsWith('/overlay/')
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const parent = params.get('parentLabel');
-    setParentLabel(parent);
+    const params = new URLSearchParams(window.location.search)
+    const parent = params.get('parentLabel')
+    setParentLabel(parent)
 
-    document.documentElement.style.setProperty('background-color', 'transparent', 'important');
-    document.body.style.setProperty('background-color', 'transparent', 'important');
-  }, []);
+    document.documentElement.style.setProperty('background-color', 'transparent', 'important')
+    document.body.style.setProperty('background-color', 'transparent', 'important')
+  }, [])
 
   useEffect(() => {
-    const unlisten = listen<{ parentLabel?: string; theme: 'light' | 'dark' }>(`${EMOJI_PICKER_LABEL}:show`, (event) => {
-      setParentLabel(event.payload.parentLabel ?? null);
-      if (event.payload.theme) {
-        setTheme(event.payload.theme);
-      }
-      notifyOverlayShowReady(EMOJI_PICKER_LABEL);
-    });
-    unlisten.then(() => notifyOverlayReady(EMOJI_PICKER_LABEL)).catch(() => {});
-    return safeUnlisten(unlisten);
-  }, []);
+    const unlisten = listen<{ parentLabel?: string; theme: 'light' | 'dark' }>(
+      `${EMOJI_PICKER_LABEL}:show`,
+      (event) => {
+        setParentLabel(event.payload.parentLabel ?? null)
+        if (event.payload.theme) {
+          setTheme(event.payload.theme)
+        }
+        notifyOverlayShowReady(EMOJI_PICKER_LABEL)
+      },
+    )
+    unlisten.then(() => notifyOverlayReady(EMOJI_PICKER_LABEL)).catch(() => {})
+    return safeUnlisten(unlisten)
+  }, [])
 
   const handleClose = async () => {
-    const win = getCurrentWindow();
+    const win = getCurrentWindow()
     if (isOverlayRoute) {
-      await win.hide();
+      await win.hide()
     } else {
-      await win.close();
+      await win.close()
     }
 
     if (parentLabel) {
       try {
-        const parentWin = await WebviewWindow.getByLabel(parentLabel);
+        const parentWin = await WebviewWindow.getByLabel(parentLabel)
         if (parentWin) {
-          await parentWin.setFocus();
+          await parentWin.setFocus()
         }
       } catch (err) {
-        console.error('Failed to focus parent window:', err);
+        console.error('Failed to focus parent window:', err)
       }
     }
-  };
+  }
 
   const handleEmojiClick = async (emojiData: EmojiClickData) => {
     await emit('emoji-picker:result', {
       emoji: emojiData.emoji,
-    });
-    await handleClose();
-  };
+    })
+    await handleClose()
+  }
 
   return (
     <OverlayWebviewWindow closable={false}>
@@ -67,7 +70,7 @@ export default function EmojiPickerDialogPage() {
         className="w-full h-full flex items-center justify-center"
         onClick={async (e) => {
           if (e.target === e.currentTarget) {
-            await handleClose();
+            await handleClose()
           }
         }}
       >
@@ -80,14 +83,16 @@ export default function EmojiPickerDialogPage() {
           emojiStyle={EmojiStyle.NATIVE}
           searchDisabled={false}
           previewConfig={{ showPreview: false }}
-          style={{
-            '--epr-header-padding': '0.25rem',
-            '--epr-category-navigation-button-size': '24px',
-            '--epr-emoji-size': '24px',
-            '--epr-search-input-height': '24px'
-          } as CSSProperties}
+          style={
+            {
+              '--epr-category-navigation-button-size': '24px',
+              '--epr-emoji-size': '24px',
+              '--epr-header-padding': '0.25rem',
+              '--epr-search-input-height': '24px',
+            } as CSSProperties
+          }
         />
       </div>
     </OverlayWebviewWindow>
-  );
+  )
 }

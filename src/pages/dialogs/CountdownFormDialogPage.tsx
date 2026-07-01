@@ -2,11 +2,6 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import BirthdayWheelPicker from '@/components/BirthdayWheelPicker'
-import EmojiPickerButton from '@/components/EmojiPickerButton'
-import OverlayWebviewWindow from '@/components/OverlayWebviewWindow'
-import Select from '@/components/Select'
-import Tw22ColorPicker from '@/components/Tw22ColorPicker'
 import { COUNTDOWN_FORM_LABEL, notifyOverlayReady, notifyOverlayShowReady } from '@/lib/overlayManager'
 import { safeUnlisten } from '@/lib/safeUnlisten'
 import {
@@ -16,6 +11,11 @@ import {
   useUpdateCountdown,
 } from '@/queries/useCountdownQueries'
 import type { Countdown, CreateCountdownParams, DisplayMode, EventType, RecurrenceRule } from '@/types/countdown'
+import BirthdayWheelPicker from '%/BirthdayWheelPicker'
+import EmojiPickerButton from '%/EmojiPickerButton'
+import OverlayWebviewWindow from '%/OverlayWebviewWindow'
+import Select from '%/Select'
+import Tw22ColorPicker from '%/Tw22ColorPicker'
 
 type CountdownFormShowPayload = {
   countdown?: Countdown

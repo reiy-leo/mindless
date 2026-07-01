@@ -82,6 +82,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "assist": {
+        "actions": {
+          "source": {
+            "useSortedKeys": "off"
+          }
+        }
+      },
+      "includes": ["vite.config.ts", "tsconfig.json", "tsconfig.json"]
+    }
+  ],
   "vcs": {
     "clientKind": "git",
     "enabled": true,

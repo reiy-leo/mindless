@@ -1,14 +1,14 @@
+import { useAppStore } from '&/useAppStore'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import CheckNow from '@/components/common/CheckNow'
 import { PRIORITY_COLOR_FALLBACK, PRIORITY_COLORS } from '@/lib/constants'
 import { getLunarDayStr, getLunarInfo } from '@/lib/lunar'
 import { getLocalToday } from '@/lib/taskHelpers'
 import { useCalendarEvents } from '@/queries/useTaskQueries'
-import { useAppStore } from '@/stores/useAppStore'
 import type { Tag } from '@/types/tag'
 import type { CalendarEvent, Task } from '@/types/task'
+import CheckNow from '%/common/CheckNow'
 
 interface CalendarViewProps {
   allTags: Tag[]

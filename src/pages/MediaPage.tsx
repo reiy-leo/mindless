@@ -1,26 +1,26 @@
-import { useState } from 'react';
-import { useAppStore } from '@/stores/useAppStore';
-import { ResizeHandle } from '@/components/ResizeHandle';
-import MediaSidebar from '@/components/media/MediaSidebar';
-import MediaContent from '@/components/media/MediaContent';
+import { useAppStore } from '&/useAppStore'
+import { useState } from 'react'
+import MediaContent from '%/media/MediaContent'
+import MediaSidebar from '%/media/MediaSidebar'
+import { ResizeHandle } from '%/ResizeHandle'
 
-type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived';
+type SmartGroupId = 'all' | 'favorites' | 'unwatched' | 'planned' | 'normal' | 'watched' | 'archived'
 
 export default function MediaPage() {
-  const { mediaSidebarWidth, mediaViewMode, setMediaSidebarWidth, setMediaViewMode } = useAppStore();
+  const { mediaSidebarWidth, mediaViewMode, setMediaSidebarWidth, setMediaViewMode } = useAppStore()
 
-  const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>('all');
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedSmartGroup, setSelectedSmartGroup] = useState<SmartGroupId | null>('all')
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
   const handleSelectSmartGroup = (groupId: SmartGroupId) => {
-    setSelectedSmartGroup(groupId);
-    setSelectedGroupId(null);
-  };
+    setSelectedSmartGroup(groupId)
+    setSelectedGroupId(null)
+  }
 
   const handleSelectGroup = (groupId: string) => {
-    setSelectedSmartGroup(null);
-    setSelectedGroupId(groupId);
-  };
+    setSelectedSmartGroup(null)
+    setSelectedGroupId(groupId)
+  }
 
   return (
     <div className="flex h-full">
@@ -34,9 +34,7 @@ export default function MediaPage() {
       />
 
       {/* Resize Handle */}
-      <ResizeHandle
-        onResize={(delta) => setMediaSidebarWidth(mediaSidebarWidth + delta)}
-      />
+      <ResizeHandle onResize={(delta) => setMediaSidebarWidth(mediaSidebarWidth + delta)} />
 
       {/* Content */}
       <MediaContent
@@ -46,5 +44,5 @@ export default function MediaPage() {
         onViewModeChange={setMediaViewMode}
       />
     </div>
-  );
+  )
 }
