@@ -61,6 +61,7 @@
     "notes": "Notes",
     "settings": "Settings",
     "people": "People",
+    "items": "Items",
     "media": "Media",
     "attachments": "Attachments",
     "templates": "Templates"
@@ -168,6 +169,7 @@
     },
     "context": {
       "add_today": "Add to \"Today\"",
+      "abandon": "Abandon",
       "remove_today": "Remove from \"Today\"",
       "set_priority": "Set Priority",
       "set_date": "Set Date",
@@ -645,6 +647,7 @@
       "open_tags": "Open Tags Management",
       "open_media": "Open Media",
       "open_people": "Open People",
+      "switch_items": "Switch to Items",
       "new_task": "New Task",
       "global_search": "Global Search",
       "close_panel": "Close Panel / Modal",
@@ -926,6 +929,68 @@
   "editor": {
     "image_upload_not_supported": "Local image upload is not supported. Please use an image URL."
   },
+  "items": {
+    "actions": {
+      "add_attachment": "Add attachment",
+      "edit": "Edit Item",
+      "hide_group": "Hide group",
+      "new": "New Item",
+      "new_group": "New Group",
+      "paste_image": "Paste image",
+      "show_group": "Show group"
+    },
+    "empty": {
+      "attachments": "No attachments",
+      "items": "No items",
+      "purchase_lines": "No purchase lines"
+    },
+    "fields": {
+      "attachments": "Attachments",
+      "group": "Group",
+      "link_label": "Link label",
+      "link_url": "URL",
+      "links": "Links",
+      "line_name": "Line item",
+      "name": "Name",
+      "note": "Note",
+      "notes": "Notes",
+      "purchase_date": "Purchase Date",
+      "purchase_lines": "Purchase List",
+      "purchase_price": "Purchase Price",
+      "quantity": "Qty",
+      "relations": "Related",
+      "source": "Source",
+      "unit_price": "Unit"
+    },
+    "groups": {
+      "all": "All Items",
+      "name_placeholder": "Group name",
+      "title": "Groups",
+      "ungrouped": "Ungrouped"
+    },
+    "links": {
+      "countdowns": "Countdowns",
+      "notes": "Notes",
+      "people": "People",
+      "search": "Search...",
+      "tasks": "Tasks"
+    },
+    "messages": {
+      "confirm_delete": "Delete this item?",
+      "confirm_delete_group": "Delete this group?"
+    },
+    "placeholder": {
+      "search": "Search items..."
+    },
+    "sources": {
+      "amazon": "Amazon",
+      "jd": "JD",
+      "offline_store": "Offline Store",
+      "taobao": "Taobao",
+      "xiaomi_youpin": "Xiaomi Youpin",
+      "xiaoxiang_supermarket": "Xiaoxiang Supermarket"
+    }
+  },
   "media": {
     "title": "Media",
     "linkedNotes": "Linked Notes",
@@ -1061,6 +1126,7 @@
     "switch_habits": "Switch to Habits",
     "switch_countdowns": "Switch to Countdowns",
     "switch_notes": "Switch to Notes",
+    "switch_items": "Switch to Items",
     "manage_tags": "Manage Tags",
     "manage_attachments": "Manage Attachments",
     "manage_templates": "Manage Task Templates",

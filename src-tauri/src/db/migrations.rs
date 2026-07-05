@@ -740,6 +740,114 @@ pub fn migrate_media_tables(conn: &rusqlite::Connection) -> Result<(), String> {
             let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN uploaded_to TEXT;");
             let _ = conn.execute_batch("ALTER TABLE attachments ADD COLUMN raw_url TEXT;");
 
+    let has_attachment_owner_type: bool = conn.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('attachments') WHERE name = 'owner_type'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(false);
+    if !has_attachment_owner_type {
+        conn.execute_batch("
+            PRAGMA foreign_keys = OFF;
+            ALTER TABLE attachments RENAME TO attachments_old;
+            CREATE TABLE attachments (
+                id TEXT PRIMARY KEY,
+                task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+                owner_type TEXT NOT NULL DEFAULT 'task',
+                owner_id TEXT NOT NULL,
+                original_filename TEXT NOT NULL,
+                filename TEXT NOT NULL,
+                added_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+                sha256 TEXT NOT NULL,
+                local_path TEXT,
+                sync_status TEXT NOT NULL DEFAULT 'none',
+                sync_provider TEXT,
+                sync_error TEXT,
+                uploaded_to TEXT,
+                raw_url TEXT
+            );
+            INSERT INTO attachments (
+                id, task_id, owner_type, owner_id, original_filename, filename, added_datetime,
+                sha256, local_path, sync_status, sync_provider, sync_error, uploaded_to, raw_url
+            )
+            SELECT
+                id, task_id, 'task', task_id, original_filename, filename, added_datetime,
+                sha256, local_path, COALESCE(sync_status, 'none'), sync_provider, sync_error, uploaded_to, raw_url
+            FROM attachments_old;
+            DROP TABLE attachments_old;
+            PRAGMA foreign_keys = ON;
+        ").map_err(|e| format!("Failed to migrate attachment ownership: {}", e))?;
+    }
+    conn.execute_batch("
+        CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+        CREATE INDEX IF NOT EXISTS idx_attachments_owner ON attachments(owner_type, owner_id);
+    ").map_err(|e| format!("Failed to index attachment ownership: {}", e))?;
+
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS item_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            is_builtin INTEGER NOT NULL DEFAULT 0,
+            is_hidden INTEGER NOT NULL DEFAULT 0,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS items (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            source TEXT,
+            purchase_price REAL,
+            purchase_date TEXT,
+            group_id TEXT REFERENCES item_groups(id) ON DELETE SET NULL,
+            tag_ids TEXT,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            deleted_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS item_purchase_lines (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            quantity REAL NOT NULL DEFAULT 1,
+            unit_price REAL,
+            note TEXT,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS item_links (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+            url TEXT NOT NULL,
+            label TEXT,
+            sort_order REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS item_linked_items (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+            linked_type TEXT NOT NULL,
+            linked_id TEXT NOT NULL,
+            UNIQUE(item_id, linked_type, linked_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_items_group_id ON items(group_id);
+        CREATE INDEX IF NOT EXISTS idx_item_links_item_id ON item_links(item_id);
+        CREATE INDEX IF NOT EXISTS idx_item_purchase_lines_item_id ON item_purchase_lines(item_id);
+        CREATE INDEX IF NOT EXISTS idx_item_linked_items_item_id ON item_linked_items(item_id);
+    ").map_err(|e| format!("Failed to migrate items tables: {}", e))?;
+
+    conn.execute_batch("
+        INSERT OR IGNORE INTO item_groups (id, name, color, icon, is_builtin, sort_order)
+        VALUES
+            ('electronics', '电子产品', '#2563EB', '💻', 1, 0),
+            ('clothing', '衣物', '#DB2777', '👕', 1, 1),
+            ('daily_goods', '日用品', '#16A34A', '🧴', 1, 2);
+    ").map_err(|e| format!("Failed to seed item groups: {}", e))?;
+
     // Task linked items (bidirectional relations)
     conn.execute_batch("
         CREATE TABLE IF NOT EXISTS task_linked_items (

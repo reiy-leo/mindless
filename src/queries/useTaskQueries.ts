@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { emit, listen } from '@tauri-apps/api/event'
 import { useEffect } from 'react'
 import * as api from '@/lib/api'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import type { CreateTaskParams, List, ListSettings, UpdateTaskParams } from '@/types/task'
 
 function notifyTagsChanged() {
@@ -51,9 +52,7 @@ export function useLists() {
       queryClient.invalidateQueries({ queryKey: ['lists'] })
     })
 
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [queryClient])
 
   return useQuery({
@@ -585,10 +584,10 @@ export function useAttachments(taskId: string) {
 export function useCreateAttachment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (params: { taskId: string; originalFilename: string; fileBytes: number[] }) =>
+    mutationFn: (params: { taskId?: string; ownerType?: 'task' | 'item'; ownerId?: string; originalFilename: string; fileBytes: number[] }) =>
       api.createAttachment(params),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['attachments', variables.taskId] })
+      queryClient.invalidateQueries({ queryKey: ['attachments', variables.taskId ?? variables.ownerId] })
     },
   })
 }
@@ -598,7 +597,7 @@ export function useDeleteAttachment() {
   return useMutation({
     mutationFn: (id: string) => api.deleteAttachment(id),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['attachments', data.taskId] })
+      queryClient.invalidateQueries({ queryKey: ['attachments', data.taskId ?? data.ownerId] })
     },
   })
 }

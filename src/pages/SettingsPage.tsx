@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDisplayDate, formatTime, formatTimezoneOffset } from '@/lib/formatUtils'
 import { showOverlay, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import { formatThemeColorName, getThemeColorLabelKey, getThemePaletteLabelKey } from '@/lib/themePaletteLabels'
 import { useCalendarEvents, useClearAllCalendarEvents, useImportCalendarEvents } from '@/queries/useTaskQueries'
@@ -290,9 +291,7 @@ export default function SettingsPage() {
         setSelectedTimezone(e.payload.timezone)
       }
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [setSelectedTimezone])
 
   const handleOpenTimezonePicker = async () => {

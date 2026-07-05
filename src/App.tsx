@@ -9,6 +9,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { syncMenuLanguage, useMenuEvents, useMenuLanguageSync } from './hooks/useMenuEvents'
 import * as api from './lib/api'
 import { bindCurrentOverlayHideOnUnfocus, initOverlayWebviews } from './lib/overlayManager'
+import { safeUnlisten } from './lib/safeUnlisten'
 import CountdownsPage from './pages/CountdownsPage'
 import AdvancedGroupFormDialogPage from './pages/dialogs/AdvancedGroupFormDialogPage'
 import AttachmentManagementDialogPage from './pages/dialogs/AttachmentManagementDialogPage'
@@ -20,6 +21,7 @@ import TaskTemplateManagementDialogPage from './pages/dialogs/TaskTemplateManage
 import UnitSelectorDialogPage from './pages/dialogs/UnitSelectorDialogPage'
 import HabitsPage from './pages/HabitsPage'
 import HomePage from './pages/HomePage'
+import ItemsPage from './pages/ItemsPage'
 import MediaPage from './pages/MediaPage'
 import NotesPage from './pages/NotesPage'
 import DatePickerOverlayPage from './pages/overlays/DatePickerOverlayPage'
@@ -45,6 +47,7 @@ const MAIN_ROUTE_PAGES = [
   { component: TagsPage, path: '/tags' },
   { component: NotesPage, path: '/notes' },
   { component: PeoplePage, path: '/people' },
+  { component: ItemsPage, path: '/items' },
   { component: MediaPage, path: '/media' },
   { component: SettingsPage, path: '/settings' },
 ] as const
@@ -439,9 +442,7 @@ function SettingsSync() {
           break
       }
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [i18n])
 
   return null

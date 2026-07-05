@@ -10,6 +10,7 @@ import {
   Search,
   Sun,
   Trash2,
+  X,
 } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -392,6 +393,17 @@ export default function TaskContextMenu({
           >
             <ClipboardCheck className="w-4 h-4" />
             {t('tasks.save_as_template')}
+          </button>
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"
+            onClick={() => {
+              onUpdateTask({ id: menu.taskId, status: 'closed' })
+              closeMenu()
+            }}
+            type="button"
+          >
+            <X className="w-4 h-4" />
+            {t('tasks.context.abandon')}
           </button>
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

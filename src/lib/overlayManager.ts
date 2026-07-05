@@ -3,6 +3,7 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { bindHideOnUnfocus, suppressNextHideOnUnfocus } from '@/lib/overlayLifecycle'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 
 export interface OverlayDef {
   height: number
@@ -96,28 +97,23 @@ function waitForOverlayReady(label: string) {
 
   const ready = new Promise<void>((resolve) => {
     let settled = false
-    let unlisten: (() => void) | undefined
 
-    listen(`${label}:ready`, () => {
+    const unlisten = listen(`${label}:ready`, () => {
       if (settled) return
       settled = true
       overlayReady.add(label)
       storeOverlayReady(label)
       overlayReadyPromises.delete(label)
-      unlisten?.()
+      cleanup()
       resolve()
-    }).then((fn) => {
-      if (settled) {
-        fn()
-      } else {
-        unlisten = fn
-      }
-    }).catch(() => {
+    })
+    unlisten.catch(() => {
       if (settled) return
       settled = true
       overlayReadyPromises.delete(label)
       resolve()
     })
+    const cleanup = safeUnlisten(unlisten)
   })
   overlayReadyPromises.set(label, ready)
   return ready
@@ -224,15 +220,17 @@ async function emitOverlayShowAndWaitForContent(label: string, payload: Record<s
   const showReady = new Promise<void>((resolve) => {
     resolveReady = resolve
   })
-  const unlisten = await listen(`${label}:show-ready`, () => {
-    unlisten()
+  const unlisten = listen(`${label}:show-ready`, () => {
+    cleanup()
     resolveReady()
   })
+  const cleanup = safeUnlisten(unlisten)
   try {
+    await unlisten
     await emit(`${label}:show`, payload)
     await showReady
   } catch (error) {
-    unlisten()
+    cleanup()
     throw error
   }
 }

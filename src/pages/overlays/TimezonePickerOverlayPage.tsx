@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import timezoneNames from '@/i18n/timezoneNames.json'
 import { formatTimezoneOffset } from '@/lib/formatUtils'
 import { notifyOverlayReady, notifyOverlayShowReady, TIMEZONE_PICKER_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 
 type Locale = 'zh' | 'en' | 'ja'
 
@@ -81,18 +82,14 @@ export default function TimezonePickerOverlayPage() {
     })
 
     unlisten.then(() => notifyOverlayReady(TIMEZONE_PICKER_LABEL)).catch(() => {})
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
       if (!focused) hide()
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const hide = async () => {

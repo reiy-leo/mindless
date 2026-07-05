@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next'
 import { DATE_RANGE_PICKER_LABEL, showOverlay } from '@/lib/overlayManager'
 import { getPriorityOptions } from '@/lib/priorityOptions'
 import { getScreenRect } from '@/lib/screenRect'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { useMediaItems } from '@/queries/useMediaQueries'
 import { useAllNotes } from '@/queries/useNoteQueries'
 import { useAllPersons } from '@/queries/usePersonQueries'
@@ -363,6 +364,8 @@ export default function TaskDetailPanel({
       filename: '',
       id: tempId,
       localPath: null,
+      ownerId: activeTask.id,
+      ownerType: 'task',
       originalFilename: fileName,
       rawUrl: null,
       sha256: '',
@@ -522,6 +525,8 @@ export default function TaskDetailPanel({
         filename: '',
         id: tempId,
         localPath: null,
+        ownerId: activeTask.id,
+        ownerType: 'task',
         originalFilename: fileName,
         rawUrl: null,
         sha256: '',
@@ -988,9 +993,7 @@ export default function TaskDetailPanel({
         })
       }
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [onUpdateTask, inlineDateOpenedRef])
 
   // Debounced save description

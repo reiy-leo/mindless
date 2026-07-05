@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { DATE_RANGE_PICKER_LABEL, showOverlay } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import { useMediaItems } from '@/queries/useMediaQueries'
 import {
@@ -460,9 +461,7 @@ export default function NotesPage() {
         })
       }
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [handleUpdateNoteField])
 
   // Note Group CRUD

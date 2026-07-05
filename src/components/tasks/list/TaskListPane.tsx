@@ -64,6 +64,17 @@ const TASK_STATUS_OPTIONS: { icon: LucideIcon; labelKey: string; value: TaskStat
   { icon: ClipboardCheck, labelKey: 'tasks.status.completed', value: 'completed' },
 ]
 
+export function applyTaskFilterStatus(
+  status: TaskStatus3,
+  actions: {
+    handleSetFilterStatus: (status: TaskStatus3) => void
+    setShowSettings: (show: boolean) => void
+  },
+) {
+  actions.handleSetFilterStatus(status)
+  actions.setShowSettings(false)
+}
+
 interface TaskListPaneProps {
   allTags: Tag[]
   allTemplates: TaskTemplate[]
@@ -253,7 +264,7 @@ export default function TaskListPane({
                                 : 'bg-theme-100 text-theme-700 hover:bg-theme-200 dark:bg-theme-700 dark:text-theme-300 dark:hover:bg-theme-600'
                             }`}
                             key={opt.value}
-                            onClick={() => handleSetFilterStatus(opt.value)}
+                            onClick={() => applyTaskFilterStatus(opt.value, { handleSetFilterStatus, setShowSettings })}
                             type="button"
                           >
                             <Icon className="h-4 w-4" />
@@ -324,7 +335,7 @@ export default function TaskListPane({
         />
       ) : (
         <div className="flex-1 overflow-auto p-1">
-          <div className="mb-1 bg-theme-100/30 dark:bg-theme-800/30 rounded-lg shadow-sm border border-theme-200 dark:border-theme-800">
+          <div className="mb-1 bg-theme-100/30 dark:bg-theme-800/30 rounded-sm shadow-sm border border-theme-200 dark:border-theme-800">
             <input
               className="w-full px-4 py-3 text-sm text-theme-900 dark:text-theme-100 bg-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
               onChange={(e) => setNewTaskTitle(e.target.value)}

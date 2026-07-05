@@ -10,6 +10,7 @@ import {
   notifyOverlayShowReady,
   TW22_COLOR_PICKER_LABEL,
 } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import EmojiPickerButton from '%/EmojiPickerButton'
 import OverlayWebviewWindow from '%/OverlayWebviewWindow'
 import Tw22ColorPickerButton from '%/Tw22ColorPickerButton'
@@ -61,9 +62,7 @@ export default function GroupFormOverlayPage() {
     })
 
     unlisten.then(() => notifyOverlayReady(GROUP_FORM_LABEL)).catch(() => {})
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const hide = async () => {

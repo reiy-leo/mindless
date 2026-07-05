@@ -61,6 +61,7 @@
     "notes": "ノート",
     "settings": "設定",
     "people": "人物",
+    "items": "持ち物",
     "media": "メディア",
     "attachments": "添付ファイル管理",
     "templates": "テンプレート"
@@ -168,6 +169,7 @@
     },
     "context": {
       "add_today": "「今日」に追加",
+      "abandon": "放棄",
       "remove_today": "「今日」から削除",
       "set_priority": "優先度を設定",
       "set_date": "日付を設定",
@@ -645,6 +647,7 @@
       "open_tags": "タグ管理を開く",
       "open_media": "メディアを開く",
       "open_people": "人物を開く",
+      "switch_items": "持ち物に切替",
       "new_task": "新しいタスク",
       "global_search": "グローバル検索",
       "close_panel": "パネル/モーダルを閉じる",
@@ -926,6 +929,68 @@
   "editor": {
     "image_upload_not_supported": "ローカル画像のアップロードはサポートされていません。画像URLをご使用ください。"
   },
+  "items": {
+    "actions": {
+      "add_attachment": "添付を追加",
+      "edit": "持ち物を編集",
+      "hide_group": "グループを非表示",
+      "new": "新しい持ち物",
+      "new_group": "新しいグループ",
+      "paste_image": "画像を貼り付け",
+      "show_group": "グループを表示"
+    },
+    "empty": {
+      "attachments": "添付ファイルなし",
+      "items": "持ち物がありません",
+      "purchase_lines": "購入リストなし"
+    },
+    "fields": {
+      "attachments": "添付ファイル",
+      "group": "グループ",
+      "link_label": "リンク名",
+      "link_url": "リンクURL",
+      "links": "リンク",
+      "line_name": "明細",
+      "name": "名前",
+      "note": "メモ",
+      "notes": "メモ",
+      "purchase_date": "購入日",
+      "purchase_lines": "購入リスト",
+      "purchase_price": "購入価格",
+      "quantity": "数量",
+      "relations": "関連",
+      "source": "購入元",
+      "unit_price": "単価"
+    },
+    "groups": {
+      "all": "すべての持ち物",
+      "name_placeholder": "グループ名",
+      "title": "グループ",
+      "ungrouped": "未分類"
+    },
+    "links": {
+      "countdowns": "カウントダウン",
+      "notes": "ノート",
+      "people": "人物",
+      "search": "検索...",
+      "tasks": "タスク"
+    },
+    "messages": {
+      "confirm_delete": "この持ち物を削除しますか？",
+      "confirm_delete_group": "このグループを削除しますか？"
+    },
+    "placeholder": {
+      "search": "持ち物を検索..."
+    },
+    "sources": {
+      "amazon": "Amazon",
+      "jd": "JD",
+      "offline_store": "実店舗",
+      "taobao": "Taobao",
+      "xiaomi_youpin": "Xiaomi Youpin",
+      "xiaoxiang_supermarket": "Xiaoxiang Supermarket"
+    }
+  },
   "media": {
     "title": "メディア",
     "linkedNotes": "リンクされたノート",
@@ -1061,6 +1126,7 @@
     "switch_habits": "習慣に切替",
     "switch_countdowns": "カウントダウンに切替",
     "switch_notes": "ノートに切替",
+    "switch_items": "持ち物に切替",
     "manage_tags": "タグを管理",
     "manage_attachments": "添付ファイルを管理",
     "manage_templates": "タスクテンプレートを管理",

@@ -247,6 +247,9 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .accelerator("CmdOrCtrl+Shift+N")
         .build(app)
         .map_err(|e| e.to_string())?;
+    let nav_items = MenuItemBuilder::with_id("nav:items", &l.nav_items)
+        .build(app)
+        .map_err(|e| e.to_string())?;
     let manage_tags = MenuItemBuilder::with_id("nav:manage_tags", &l.manage_tags)
         .accelerator("CmdOrCtrl+Shift+B")
         .build(app)
@@ -265,6 +268,7 @@ fn build_menu(app: &AppHandle, labels: Option<MenuLabels>) -> Result<Menu<Wry>, 
         .item(&nav_habits)
         .item(&nav_countdowns)
         .item(&nav_notes)
+        .item(&nav_items)
         .separator()
         .item(&manage_tags)
         .item(&manage_task_templates)
@@ -433,6 +437,7 @@ fn setup_menu_handler(app: &AppHandle) {
             "nav:habits" => { let _ = app_handle.emit("menu:navigate", "/habits"); }
             "nav:countdowns" => { let _ = app_handle.emit("menu:navigate", "/countdowns"); }
             "nav:notes" => { let _ = app_handle.emit("menu:navigate", "/notes"); }
+            "nav:items" => { let _ = app_handle.emit("menu:navigate", "/items"); }
             "nav:manage_tags" => { let _ = app_handle.emit("menu:navigate", "manage_tags"); }
             "nav:manage_task_templates" => { let _ = app_handle.emit("menu:navigate", "manage_task_templates"); }
             "nav:manage_attachments" => { let _ = app_handle.emit("menu:navigate", "manage_attachments"); }
@@ -492,6 +497,7 @@ pub struct MenuLabels {
     pub nav_habits: String,
     pub nav_countdowns: String,
     pub nav_notes: String,
+    pub nav_items: String,
     pub manage_tags: String,
     pub manage_task_templates: String,
     pub manage_attachments: String,
@@ -538,6 +544,7 @@ impl MenuLabels {
             nav_habits: "切换到「习惯」".into(),
             nav_countdowns: "切换到「倒数日」".into(),
             nav_notes: "切换到「笔记」".into(),
+            nav_items: "切换到「物品」".into(),
             manage_tags: "管理「标签」".into(),
             manage_task_templates: "管理「任务模板」".into(),
             manage_attachments: "管理「附件」".into(),

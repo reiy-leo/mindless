@@ -1,4 +1,5 @@
 interface CheckNowProps {
+  abandoned?: boolean
   checked: boolean
   className?: string
   color1: string
@@ -8,7 +9,16 @@ interface CheckNowProps {
   size?: number
 }
 
-export default function CheckNow({ checked, hasSteps, color1, color2, size = 16, onClick, className }: CheckNowProps) {
+export default function CheckNow({
+  abandoned = false,
+  checked,
+  hasSteps,
+  color1,
+  color2,
+  size = 16,
+  onClick,
+  className,
+}: CheckNowProps) {
   const r = 4
   const pad = 4
   const defaultColor = 'oklch(92.8% 0.006 264.531)'
@@ -37,8 +47,14 @@ export default function CheckNow({ checked, hasSteps, color1, color2, size = 16,
         y="0.5"
       />
 
-      {checked ? (
-        /* unchecked */
+      {abandoned ? (
+        <path
+          d="M5 5L11 11M11 5L5 11"
+          stroke={color1 ?? defaultColor}
+          strokeLinecap="round"
+          strokeWidth="1.8"
+        />
+      ) : checked ? (
         <path
           d="M4 8.5L6.5 11L12 5"
           stroke={color1 ?? defaultColor}

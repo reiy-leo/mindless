@@ -434,6 +434,73 @@ pub struct TaskLinkedItem {
     pub linked_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemGroup {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+    pub icon: String,
+    pub is_builtin: bool,
+    pub is_hidden: bool,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub usage_count: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Item {
+    pub id: String,
+    pub name: String,
+    pub links: Vec<ItemLink>,
+    pub source: Option<String>,
+    pub purchase_price: Option<f64>,
+    pub purchase_date: Option<String>,
+    pub group_id: Option<String>,
+    pub tag_ids: Option<String>,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub deleted_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemLink {
+    pub id: String,
+    pub item_id: String,
+    pub url: String,
+    pub label: Option<String>,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemPurchaseLine {
+    pub id: String,
+    pub item_id: String,
+    pub name: String,
+    pub quantity: f64,
+    pub unit_price: Option<f64>,
+    pub note: Option<String>,
+    pub sort_order: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemLinkedItem {
+    pub id: String,
+    pub item_id: String,
+    pub linked_type: String,
+    pub linked_id: String,
+}
+
 // Media watch history model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -474,7 +541,9 @@ pub struct MediaWatchHistoryLinkDetail {
 #[serde(rename_all = "camelCase")]
 pub struct Attachment {
     pub id: String,
-    pub task_id: String,
+    pub task_id: Option<String>,
+    pub owner_type: String,
+    pub owner_id: String,
     pub original_filename: String,
     pub filename: String,
     pub added_datetime: String,

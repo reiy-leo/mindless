@@ -1,6 +1,7 @@
 import { type MouseEvent, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PRIORITY_COLORS } from '@/lib/constants'
+import { isTaskAbandoned, isTaskCompletedForFilter } from '@/lib/tasks/taskStatus'
 import { useLists, useSteps } from '@/queries/useTaskQueries'
 import type { Step as StepType, Task } from '@/types/task'
 import CheckNow from '%/common/CheckNow'
@@ -11,6 +12,10 @@ function calcStepsProgress(steps: StepType[]): { completed: number; total: numbe
   }
   const completed = steps.filter((s) => s.isCompleted).length
   return { completed, total: steps.length }
+}
+
+export function shouldSelectTaskFromMouseDown(e: Pick<MouseEvent, 'button' | 'ctrlKey'>): boolean {
+  return e.button === 0 && !e.ctrlKey
 }
 
 export default function TaskRow({
@@ -151,9 +156,14 @@ export default function TaskRow({
         e.preventDefault()
         onContextMenu?.(e)
       }}
-      onMouseDown={onSelect}
+      onMouseDown={(e) => {
+        if (shouldSelectTaskFromMouseDown(e)) {
+          onSelect()
+        }
+      }}
     >
       <CheckNow
+        abandoned={isTaskAbandoned(task)}
         checked={task.isCompleted}
         className="shrink-0"
         color1={listColor || 'var(--theme-color)'}
@@ -166,7 +176,9 @@ export default function TaskRow({
       />
       <span
         className={`flex-1 truncate text-sm ${
-          task.isCompleted ? 'line-through text-theme-700 dark:text-theme-200' : 'text-theme-900 dark:text-theme-100'
+          isTaskCompletedForFilter(task)
+            ? 'line-through text-theme-700 dark:text-theme-200'
+            : 'text-theme-900 dark:text-theme-100'
         }`}
       >
         {task.title}

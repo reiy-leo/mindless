@@ -20,34 +20,45 @@ fn is_image_file(filename: &str) -> bool {
     matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp")
 }
 
-const ATTACHMENT_COLUMNS: &str = "id, task_id, original_filename, filename, added_datetime, sha256, local_path, sync_status, sync_provider, sync_error, uploaded_to, raw_url";
+const ATTACHMENT_COLUMNS: &str = "id, task_id, owner_type, owner_id, original_filename, filename, added_datetime, sha256, local_path, sync_status, sync_provider, sync_error, uploaded_to, raw_url";
 
 fn row_to_attachment(row: &rusqlite::Row) -> rusqlite::Result<Attachment> {
     Ok(Attachment {
         id: row.get(0)?,
         task_id: row.get(1)?,
-        original_filename: row.get(2)?,
-        filename: row.get(3)?,
-        added_datetime: row.get(4)?,
-        sha256: row.get(5)?,
-        local_path: row.get(6)?,
-        sync_status: row.get(7)?,
-        sync_provider: row.get(8)?,
-        sync_error: row.get(9)?,
-        uploaded_to: row.get(10)?,
-        raw_url: row.get(11)?,
+        owner_type: row.get(2)?,
+        owner_id: row.get(3)?,
+        original_filename: row.get(4)?,
+        filename: row.get(5)?,
+        added_datetime: row.get(6)?,
+        sha256: row.get(7)?,
+        local_path: row.get(8)?,
+        sync_status: row.get(9)?,
+        sync_provider: row.get(10)?,
+        sync_error: row.get(11)?,
+        uploaded_to: row.get(12)?,
+        raw_url: row.get(13)?,
     })
 }
 
 #[tauri::command]
 pub async fn create_attachment(
     app: AppHandle,
-    task_id: String,
+    task_id: Option<String>,
+    owner_type: Option<String>,
+    owner_id: Option<String>,
     original_filename: String,
     file_bytes: Vec<u8>,
 ) -> Result<Attachment, String> {
     let conn = get_db(&app)?;
     let id = Uuid::new_v7(uuid::Timestamp::now(uuid::NoContext)).to_string();
+    let owner_type = owner_type.unwrap_or_else(|| "task".to_string());
+    let owner_id = owner_id.or_else(|| task_id.clone()).ok_or_else(|| "ownerId is required".to_string())?;
+    let task_id_for_row = if owner_type == "task" {
+        task_id.or_else(|| Some(owner_id.clone()))
+    } else {
+        None
+    };
 
     let ext = original_filename
         .rsplit('.')
@@ -71,13 +82,15 @@ pub async fn create_attachment(
     };
 
     conn.execute(
-        "INSERT INTO attachments (id, task_id, original_filename, filename, sha256, local_path, sync_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'none')",
-        rusqlite::params![&id, &task_id, &original_filename, &filename, &sha256, &local_path],
+        "INSERT INTO attachments (id, task_id, owner_type, owner_id, original_filename, filename, sha256, local_path, sync_status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'none')",
+        rusqlite::params![&id, &task_id_for_row, &owner_type, &owner_id, &original_filename, &filename, &sha256, &local_path],
     ).map_err(|e| format!("Failed to create attachment: {}", e))?;
 
     Ok(Attachment {
         id,
-        task_id,
+        task_id: task_id_for_row,
+        owner_type,
+        owner_id,
         original_filename,
         filename,
         added_datetime: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
@@ -111,11 +124,30 @@ pub async fn get_attachments_by_task(
 ) -> Result<Vec<Attachment>, String> {
     let conn = get_db(&app)?;
     let mut stmt = conn
-        .prepare(&format!("SELECT {} FROM attachments WHERE task_id = ?1 ORDER BY added_datetime", ATTACHMENT_COLUMNS))
+        .prepare(&format!("SELECT {} FROM attachments WHERE (owner_type = 'task' AND owner_id = ?1) OR task_id = ?1 ORDER BY added_datetime", ATTACHMENT_COLUMNS))
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     let rows = stmt
         .query_map([&task_id], row_to_attachment)
+        .map_err(|e| format!("Failed to query attachments: {}", e))?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to read attachments: {}", e))
+}
+
+#[tauri::command]
+pub async fn get_attachments_by_owner(
+    app: AppHandle,
+    owner_type: String,
+    owner_id: String,
+) -> Result<Vec<Attachment>, String> {
+    let conn = get_db(&app)?;
+    let mut stmt = conn
+        .prepare(&format!("SELECT {} FROM attachments WHERE owner_type = ?1 AND owner_id = ?2 ORDER BY added_datetime", ATTACHMENT_COLUMNS))
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let rows = stmt
+        .query_map(rusqlite::params![&owner_type, &owner_id], row_to_attachment)
         .map_err(|e| format!("Failed to query attachments: {}", e))?;
 
     rows.collect::<Result<Vec<_>, _>>()

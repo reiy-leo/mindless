@@ -15,6 +15,7 @@ pub mod sync;
 pub mod media;
 pub mod attachments;
 pub mod task_templates;
+pub mod items;
 
 pub use tasks::*;
 pub use habits::*;
@@ -32,3 +33,4 @@ pub use data::*;
 pub use sync::*;
 pub use attachments::*;
 pub use task_templates::*;
+pub use items::*;

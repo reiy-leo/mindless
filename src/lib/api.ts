@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, TaskLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment, TaskTemplate } from '@/types';
+import type { Task, Habit, Countdown, Tag, Step, List, ListSettings, TodayCheckinInfo, HabitLog, CalendarEvent, HabitGroup, Note, NoteGroup, NoteLinkedItem, TaskLinkedItem, Person, PersonGroup, PersonPhone, PersonEmail, PersonOtherName, MediaGroup, MediaGroupWithCount, MediaItem, MediaItemWithDetails, CreateMediaItemInput, UpdateMediaItemInput, MediaWatchHistoryWithLinks, CreateMediaWatchHistoryInput, CountdownGroup, CountdownGroupWithCount, Attachment, TaskTemplate, Item, ItemGroup, ItemLinkedItem, ItemPurchaseLine, CreateItemInput, UpdateItemInput } from '@/types';
 
 // Task APIs
 export async function getTasks(): Promise<Task[]> {
@@ -103,9 +103,9 @@ export async function updateList(id: string, params: {
     name: params.name,
     color: params.color,
     icon: params.icon,
-    sort_order: params.sortOrder,
-    is_pinned: params.isPinned,
-    is_archived: params.isArchived,
+    sortOrder: params.sortOrder,
+    isPinned: params.isPinned,
+    isArchived: params.isArchived,
   });
 }
 
@@ -1021,9 +1021,76 @@ export async function getHeatmapData(): Promise<HeatmapData> {
   return await invoke<HeatmapData>('get_heatmap_data');
 }
 
+// Item APIs
+export async function getItemGroups(includeHidden?: boolean): Promise<ItemGroup[]> {
+  return await invoke<ItemGroup[]>('get_item_groups', { includeHidden });
+}
+
+export async function createItemGroup(params: {
+  name: string;
+  color?: string;
+  icon?: string;
+}): Promise<ItemGroup> {
+  return await invoke<ItemGroup>('create_item_group', params);
+}
+
+export async function updateItemGroup(id: string, params: {
+  name?: string;
+  color?: string;
+  icon?: string;
+  isHidden?: boolean;
+}): Promise<ItemGroup> {
+  return await invoke<ItemGroup>('update_item_group', { id, ...params });
+}
+
+export async function deleteItemGroup(id: string): Promise<void> {
+  return await invoke<void>('delete_item_group', { id });
+}
+
+export async function getItems(filters?: { groupId?: string; search?: string }): Promise<Item[]> {
+  return await invoke<Item[]>('get_items', {
+    groupId: filters?.groupId,
+    search: filters?.search,
+  });
+}
+
+export async function getItemById(id: string): Promise<Item> {
+  return await invoke<Item>('get_item_by_id', { id });
+}
+
+export async function createItem(params: CreateItemInput): Promise<Item> {
+  return await invoke<Item>('create_item', { ...params });
+}
+
+export async function updateItem(id: string, params: UpdateItemInput): Promise<Item> {
+  return await invoke<Item>('update_item', { id, ...params });
+}
+
+export async function deleteItem(id: string): Promise<void> {
+  return await invoke<void>('delete_item', { id });
+}
+
+export async function getItemPurchaseLines(itemId: string): Promise<ItemPurchaseLine[]> {
+  return await invoke<ItemPurchaseLine[]>('get_item_purchase_lines', { itemId });
+}
+
+export async function getItemLinkedItems(itemId: string): Promise<ItemLinkedItem[]> {
+  return await invoke<ItemLinkedItem[]>('get_item_linked_items', { itemId });
+}
+
+export async function linkItem(itemId: string, linkedType: string, linkedId: string): Promise<ItemLinkedItem> {
+  return await invoke<ItemLinkedItem>('link_item', { itemId, linkedType, linkedId });
+}
+
+export async function unlinkItem(id: string): Promise<void> {
+  return await invoke<void>('unlink_item', { id });
+}
+
 // Attachment APIs
 export async function createAttachment(params: {
-  taskId: string;
+  taskId?: string;
+  ownerType?: 'task' | 'item';
+  ownerId?: string;
   originalFilename: string;
   fileBytes: number[];
 }): Promise<Attachment> {
@@ -1032,6 +1099,10 @@ export async function createAttachment(params: {
 
 export async function getAttachmentsByTask(taskId: string): Promise<Attachment[]> {
   return await invoke<Attachment[]>('get_attachments_by_task', { taskId });
+}
+
+export async function getAttachmentsByOwner(ownerType: 'task' | 'item', ownerId: string): Promise<Attachment[]> {
+  return await invoke<Attachment[]>('get_attachments_by_owner', { ownerType, ownerId });
 }
 
 export async function getAttachmentById(id: string): Promise<Attachment> {
@@ -1115,6 +1186,7 @@ export interface MenuLabels {
   navHabits: string;
   navCountdowns: string;
   navNotes: string;
+  navItems: string;
   manageTags: string;
   manageTaskTemplates: string;
   manageAttachments: string;

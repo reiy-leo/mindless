@@ -9,6 +9,7 @@ import {
   showOverlay,
   TIMEZONE_PICKER_LABEL,
 } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import type { CalendarEvent } from '@/types'
 import DateTimeCalenderPicker from '%/DateTimeCalenderPicker'
@@ -44,9 +45,7 @@ export default function DatePickerOverlayPage() {
         setSelectedTimezone(e.payload.timezone)
       }
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [setSelectedTimezone])
 
   const handleOpenTimezonePicker = async () => {
@@ -80,27 +79,14 @@ export default function DatePickerOverlayPage() {
     })
 
     unlisten.then(() => notifyOverlayReady(DATE_PICKER_LABEL)).catch(() => {})
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
       if (!focused && !openingTimezoneRef.current) hide()
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
-  }, [])
-
-  useEffect(() => {
-    const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-      if (!focused && !openingTimezoneRef.current) hide()
-    })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const hide = async () => {

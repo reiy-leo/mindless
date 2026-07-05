@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { formatDisplayDate, formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr, getLunarFullDateStr, getLunarInfo } from '@/lib/lunar'
 import { COUNTDOWN_FORM_LABEL, showOverlay } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import { getLocalToday } from '@/lib/taskHelpers'
 import {
@@ -1003,9 +1004,7 @@ export default function CountdownsPage() {
         refetch()
       }
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [refetch])
 
   const handleDelete = (id: string) => {

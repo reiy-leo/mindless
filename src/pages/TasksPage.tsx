@@ -12,7 +12,10 @@ import {
 } from '@/lib/overlayManager'
 import { getPriorityOptions } from '@/lib/priorityOptions'
 import { getScreenRect } from '@/lib/screenRect'
+import { safeUnlisten } from '@/lib/safeUnlisten'
+import { runAfterTaskCompletionDelay } from '@/lib/tasks/taskCompletionDelay'
 import { matchAdvancedGroup } from '@/lib/tasks/taskFiltering'
+import { isTaskCompletedForFilter } from '@/lib/tasks/taskStatus'
 import { DEFAULT_STATUS_VIEW_SETTINGS, getStatusViewSettings } from '@/lib/tasks/taskViewSettings'
 import { getLocalToday } from '@/lib/taskHelpers'
 import {
@@ -354,9 +357,7 @@ export default function TasksPage() {
       if (e.payload._source !== 'inline-task-form') return
       setNewTaskTagIds(e.payload.selectedIds)
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   // Listen for date picker results for inline form
@@ -383,9 +384,7 @@ export default function TasksPage() {
         setNewTaskDueTime(p.startTime || '')
       }
     })
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const selectedTask = useMemo(() => tasks.find((task) => task.id === selectedTaskId) || null, [tasks, selectedTaskId])
@@ -399,9 +398,7 @@ export default function TasksPage() {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
     })
 
-    return () => {
-      unlisten.then((fn) => fn())
-    }
+    return safeUnlisten(unlisten)
   }, [queryClient])
 
   // Listen for advanced group dialog results
@@ -461,10 +458,11 @@ export default function TasksPage() {
   const filteredTasksBase = useMemo(
     () =>
       tasks.filter((task) => {
-        if (filterStatus === 'active' && task.isCompleted) {
+        const isCompleted = isTaskCompletedForFilter(task)
+        if (filterStatus === 'active' && isCompleted) {
           return false
         }
-        if (filterStatus === 'completed' && !task.isCompleted) {
+        if (filterStatus === 'completed' && !isCompleted) {
           return false
         }
 
@@ -949,11 +947,13 @@ export default function TasksPage() {
   const handleToggleTask = (id: string, isCompleted: boolean) => {
     const task = tasks.find((t) => t.id === id)
     // If completing a recurring task, generate the next occurrence
-    if (!isCompleted && task?.recurrenceRule) {
-      completeRecurring.mutate(id)
-    } else {
-      toggleTask.mutate({ id, isCompleted: !isCompleted })
-    }
+    void runAfterTaskCompletionDelay(() => {
+      if (!isCompleted && task?.recurrenceRule) {
+        completeRecurring.mutate(id)
+      } else {
+        toggleTask.mutate({ id, isCompleted: !isCompleted })
+      }
+    })
   }
 
   const handleDeleteTask = (id: string) => {
@@ -1009,11 +1009,11 @@ export default function TasksPage() {
         date?: string
         startDate?: string
         startTime?: string
-        time?: string
-        type: string
-      }>('date-range-picker-overlay:result', (e) => {
-        if (e.payload._source !== 'task-context-menu') {
-          return
+      time?: string
+      type: string
+    }>('date-range-picker-overlay:result', (e) => {
+      if (e.payload._source !== 'task-context-menu') {
+        return
         }
         const p = e.payload
         if (p.type === 'single') {
@@ -1027,11 +1027,12 @@ export default function TasksPage() {
             dueDate: p.startDate ?? '',
             dueTime: p.startTime ?? '',
             id: taskId,
-          })
-        }
-        unlisten.then((fn) => fn())
-      })
-    },
+        })
+      }
+      cleanup()
+    })
+    const cleanup = safeUnlisten(unlisten)
+  },
     [handleCloseTaskContextMenu, updateTask],
   )
 
@@ -1166,7 +1167,7 @@ export default function TasksPage() {
     ).padStart(2, '0')}`
 
     allTasksForCount.forEach((task) => {
-      if (task.isCompleted) return
+      if (isTaskCompletedForFilter(task)) return
       const lid = task.listId || 'inbox'
       counts[lid] = (counts[lid] || 0) + 1
       if (
@@ -1196,7 +1197,9 @@ export default function TasksPage() {
   const advGroupCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     advancedGroups.forEach((group) => {
-      counts[group.id] = allTasksForCount.filter((task) => !task.isCompleted && matchAdvancedGroup(task, group)).length
+      counts[group.id] = allTasksForCount.filter(
+        (task) => !isTaskCompletedForFilter(task) && matchAdvancedGroup(task, group),
+      ).length
     })
     return counts
   }, [allTasksForCount, advancedGroups, matchAdvancedGroup])
@@ -1512,7 +1515,13 @@ export default function TasksPage() {
           onSaveAsTemplate={handleSaveTaskAsTemplate}
           onSetDate={handleSetTaskDateFromMenu}
           onToggleTodayTag={handleToggleTodayTag}
-          onUpdateTask={(params) => updateTask.mutate(params)}
+          onUpdateTask={(params) => {
+            if (params.status === 'closed') {
+              void runAfterTaskCompletionDelay(() => updateTask.mutate(params))
+              return
+            }
+            updateTask.mutate(params)
+          }}
           panel={taskMenuPanel}
           priorityMode={priorityMode}
           priorityOptions={priorityOptions}

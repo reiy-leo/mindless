@@ -80,6 +80,7 @@ export function useMenuEvents() {
           case '/habits':
           case '/countdowns':
           case '/notes':
+          case '/items':
             navigate(target);
             break;
           case 'manage_tags':
@@ -166,6 +167,7 @@ function buildMenuLabels(): api.MenuLabels {
     navHabits: t('menu.switch_habits'),
     navCountdowns: t('menu.switch_countdowns'),
     navNotes: t('menu.switch_notes'),
+    navItems: t('menu.switch_items'),
     manageTags: t('menu.manage_tags'),
     manageTaskTemplates: t('menu.manage_templates'),
     manageAttachments: t('menu.manage_attachments'),

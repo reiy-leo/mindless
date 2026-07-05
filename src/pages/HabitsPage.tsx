@@ -20,6 +20,7 @@ import { listenFromDialog } from '@/lib/dialogWindow'
 import { formatTime } from '@/lib/formatUtils'
 import { getLunarDayStr } from '@/lib/lunar'
 import { DATE_PICKER_LABEL, showOverlay, UNIT_SELECTOR_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import { getScreenRect } from '@/lib/screenRect'
 import {
   useArchivedHabits,
@@ -455,10 +456,10 @@ function HabitFormDialog({
               type="button"
               onClick={async (e) => {
                 const screenRect = await getScreenRect(e.currentTarget)
-                const unlisten = await listenFromDialog('date-picker-overlay:result', (payload: any) => {
+                const cleanup = safeUnlisten(listenFromDialog('date-picker-overlay:result', (payload: any) => {
                   if (payload?.date) setStartDate(payload.date)
-                  unlisten()
-                })
+                  cleanup()
+                }))
                 await showOverlay(DATE_PICKER_LABEL, screenRect.x, screenRect.y + screenRect.height + 4, {
                   anchorH: screenRect.height,
                   anchorX: screenRect.x,
@@ -540,10 +541,10 @@ function HabitFormDialog({
                       anchorY: screenRect.y,
                       unit: targetUnit,
                     })
-                    const unlisten = await listenFromDialog('unit-selector:result', (payload: any) => {
+                    const cleanup = safeUnlisten(listenFromDialog('unit-selector:result', (payload: any) => {
                       if (payload?.unit) setTargetUnit(payload.unit)
-                      unlisten()
-                    })
+                      cleanup()
+                    }))
                   }}
                   className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 >

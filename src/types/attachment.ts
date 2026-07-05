@@ -1,6 +1,8 @@
 export interface Attachment {
   id: string;
-  taskId: string;
+  taskId?: string | null;
+  ownerType: 'task' | 'item';
+  ownerId: string;
   originalFilename: string;
   filename: string;
   addedDatetime: string;

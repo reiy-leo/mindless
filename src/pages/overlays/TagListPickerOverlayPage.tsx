@@ -2,6 +2,7 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useRef, useState } from 'react'
 import { notifyOverlayReady, notifyOverlayShowReady, TAG_LIST_PICKER_LABEL } from '@/lib/overlayManager'
+import { safeUnlisten } from '@/lib/safeUnlisten'
 import type { Tag } from '@/types/tag'
 
 export default function TagListPickerOverlayPage() {
@@ -36,9 +37,7 @@ export default function TagListPickerOverlayPage() {
     })
 
     unlisten.then(() => notifyOverlayReady(TAG_LIST_PICKER_LABEL)).catch(() => {})
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   useEffect(() => {
@@ -49,9 +48,7 @@ export default function TagListPickerOverlayPage() {
       }
       if (!openingRef.current) hide()
     })
-    return () => {
-      unlisten.then((fn) => fn()).catch(() => {})
-    }
+    return safeUnlisten(unlisten)
   }, [])
 
   const hide = async () => {

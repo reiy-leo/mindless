@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { showOverlay, GROUP_FORM_LABEL } from '@/lib/overlayManager';
+import { safeUnlisten } from '@/lib/safeUnlisten';
 
 interface GroupFormPopupProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export default function GroupFormPopup({
       }
     );
 
-    return () => { unlisten.then((fn) => fn()); };
+    return safeUnlisten(unlisten);
   }, [isOpen, onSubmit, onClose]);
 
   return null;
