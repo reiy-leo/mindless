@@ -13,10 +13,10 @@ import {
 } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PriorityMode } from '@/types'
-import type { List, Task, TaskStatus, UpdateTaskParams } from '@/types/task'
-import type { Tag } from '@/types/tag'
 import type { PriorityOption } from '@/lib/priorityOptions'
+import type { PriorityMode } from '@/types'
+import type { Tag } from '@/types/tag'
+import type { List, Task, TaskStatus, UpdateTaskParams } from '@/types/task'
 import OxygenNotIncludedPriorityPicker from '%/tasks/controls/OxygenNotIncludedPriorityPicker'
 
 export type TaskMenuPanel = 'parent' | 'subtask' | 'priority' | 'status' | 'list'
@@ -154,7 +154,7 @@ export default function TaskContextMenu({
     if (panel === 'priority') {
       return (
         <div
-          className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 overflow-y-auto ml-0.5"
+          className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-900 dark:border-theme-100 py-1 overflow-y-auto ml-0.5"
           style={{ maxHeight: sidePanelMaxHeight }}
         >
           {priorityMode === 'OxygenNotIncluded' ? (
@@ -275,7 +275,7 @@ export default function TaskContextMenu({
     const filtered = query ? incompleteTasks.filter((tk) => tk.title.toLowerCase().includes(query)) : incompleteTasks
 
     return (
-      <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-200 dark:border-theme-700 py-1 w-55 ml-0.5">
+      <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-100 dark:border-theme-900 py-1 w-55 ml-0.5">
         {renderSearchInput()}
         <div className="max-h-75 overflow-auto">
           {filtered.length === 0 ? (
@@ -324,7 +324,7 @@ export default function TaskContextMenu({
           ...(flipY ? { bottom: window.innerHeight - menu.y } : { top: menu.y }),
         }}
       >
-        <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-300 dark:border-theme-600 py-1 min-w-45">
+        <div className="bg-white dark:bg-theme-800 rounded-lg shadow-2xl border border-theme-100 dark:border-theme-900 py-1 min-w-45">
           {renderTodayButton()}
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-theme-700 dark:text-theme-300 hover:bg-theme-100 dark:hover:bg-theme-700 transition-colors"

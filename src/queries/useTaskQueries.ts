@@ -2,14 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { emit, listen } from '@tauri-apps/api/event'
 import { useEffect } from 'react'
 import * as api from '@/lib/api'
-import type { CreateTaskParams, ListSettings, UpdateTaskParams } from '@/types/task'
+import type { CreateTaskParams, List, ListSettings, UpdateTaskParams } from '@/types/task'
 
 function notifyTagsChanged() {
   emit('tags:changed').catch((err) => console.warn('Failed to emit tags:changed:', err))
 }
 
-function notifyListsChanged() {
-  emit('lists:changed').catch((err) => console.warn('Failed to emit lists:changed:', err))
+const LISTS_EVENT_SOURCE = globalThis.crypto?.randomUUID?.() ?? `lists-${Date.now()}-${Math.random()}`
+
+function notifyListsChanged(source?: string) {
+  emit('lists:changed', source ? { source } : undefined).catch((err) =>
+    console.warn('Failed to emit lists:changed:', err),
+  )
 }
 
 // ==================== Queries ====================
@@ -40,7 +44,10 @@ export function useLists() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const unlisten = listen('lists:changed', () => {
+    const unlisten = listen<{ source?: string }>('lists:changed', (event) => {
+      if (event.payload?.source === LISTS_EVENT_SOURCE) {
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['lists'] })
     })
 
@@ -342,9 +349,36 @@ export function useUpdateList() {
       isPinned?: boolean
       isArchived?: boolean
     }) => api.updateList(id, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lists'] })
-      notifyListsChanged()
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['lists'] })
+      const previousLists = queryClient.getQueryData<List[]>(['lists'])
+      queryClient.setQueryData<List[]>(['lists'], (current) =>
+        current?.map((item) =>
+          item.id === variables.id
+            ? {
+                ...item,
+                isArchived: variables.isArchived ?? item.isArchived,
+                isPinned: variables.isPinned ?? item.isPinned,
+                color: variables.color ?? item.color,
+                icon: variables.icon ?? item.icon,
+                name: variables.name ?? item.name,
+                sortOrder: variables.sortOrder ?? item.sortOrder,
+              }
+            : item,
+        ),
+      )
+      return { previousLists }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousLists) {
+        queryClient.setQueryData(['lists'], context.previousLists)
+      }
+    },
+    onSuccess: (updatedList, variables) => {
+      queryClient.setQueryData<List[]>(['lists'], (current) =>
+        current?.map((item) => (item.id === variables.id ? updatedList : item)),
+      )
+      notifyListsChanged(LISTS_EVENT_SOURCE)
     },
   })
 }
